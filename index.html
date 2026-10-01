@@ -10,41 +10,51 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: Arial, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
     }
 
     body {
-      min-height: 100vh;
       background: #000;
       color: #fff;
+      min-height: 100vh;
     }
 
     button {
-      border: none;
+      border: 0;
       cursor: pointer;
     }
 
-    .screen {
+    /* ================= AUTH ================= */
+
+    #auth {
       min-height: 100vh;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       padding: 20px;
     }
 
     .auth-box {
       width: 100%;
-      max-width: 420px;
+      max-width: 390px;
       text-align: center;
     }
 
     .logo {
-      font-size: 45px;
+      width: 90px;
+      height: 90px;
+      border-radius: 24px;
+      object-fit: cover;
+      margin-bottom: 20px;
+    }
+
+    .brand {
+      font-size: 36px;
       font-weight: 800;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       background: linear-gradient(
         90deg,
-        #ff0050,
+        #ff1493,
         #8b5cf6,
         #00c6ff
       );
@@ -52,91 +62,84 @@
       color: transparent;
     }
 
-    .subtitle {
+    .tagline {
       color: #999;
-      margin-bottom: 30px;
-      font-size: 15px;
+      font-size: 14px;
+      margin-bottom: 28px;
     }
 
     .btn {
       width: 100%;
       height: 52px;
-      border-radius: 14px;
-      margin: 8px 0;
-      font-size: 16px;
+      border-radius: 12px;
+      margin: 7px 0;
+      font-size: 15px;
       font-weight: 700;
     }
 
-    .skip {
+    .create-btn {
+      background: #0095f6;
+      color: white;
+    }
+
+    .login-btn {
+      background: #222;
+      color: white;
+    }
+
+    .skip-btn {
       background: transparent;
-      color: #aaa;
+      color: #999;
     }
 
-    .google {
-      background: #fff;
-      color: #111;
-    }
-
-    .primary {
-      background: linear-gradient(
-        90deg,
-        #ff0050,
-        #8b5cf6
-      );
-      color: #fff;
-    }
-
-    .secondary {
-      background: #202020;
-      color: #fff;
-    }
+    /* ================= FORMS ================= */
 
     .form {
       display: none;
     }
 
     .form h2 {
+      font-size: 28px;
       margin-bottom: 20px;
     }
 
     input {
       width: 100%;
       height: 52px;
-      margin: 7px 0;
-      padding: 0 16px;
-      border-radius: 12px;
+      margin: 6px 0;
+      padding: 0 15px;
+      border-radius: 10px;
       border: 1px solid #333;
-      background: #151515;
-      color: #fff;
+      background: #121212;
+      color: white;
       font-size: 15px;
       outline: none;
     }
 
     input:focus {
-      border-color: #8b5cf6;
-    }
-
-    .small {
-      color: #999;
-      margin-top: 15px;
-      font-size: 14px;
-    }
-
-    .link {
-      color: #9b7cff;
-      cursor: pointer;
-      font-weight: bold;
+      border-color: #777;
     }
 
     .message {
       min-height: 22px;
-      margin-top: 12px;
-      color: #ff9db7;
-      font-size: 14px;
-      line-height: 1.4;
+      color: #ff8fa3;
+      font-size: 13px;
+      margin-top: 8px;
     }
 
-    /* APP */
+    .info {
+      color: #888;
+      font-size: 14px;
+      margin-top: 16px;
+    }
+
+    .link {
+      color: #0095f6;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* ================= APP ================= */
 
     #app {
       display: none;
@@ -144,13 +147,12 @@
       background: #080808;
     }
 
-    .top {
-      height: 65px;
+    .topbar {
+      height: 60px;
+      border-bottom: 1px solid #222;
       display: flex;
       align-items: center;
-      justify-content: space-between;
       padding: 0 18px;
-      border-bottom: 1px solid #222;
     }
 
     .top-logo {
@@ -158,70 +160,45 @@
       font-weight: 800;
       background: linear-gradient(
         90deg,
-        #ff0050,
-        #8b5cf6
+        #ff1493,
+        #8b5cf6,
+        #00c6ff
       );
       -webkit-background-clip: text;
       color: transparent;
     }
 
-    .content {
-      padding: 35px 20px;
+    .home {
       text-align: center;
+      padding: 50px 20px;
     }
 
     .profile {
-      width: 95px;
-      height: 95px;
+      width: 90px;
+      height: 90px;
       border-radius: 50%;
-      background: #222;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 22px auto;
-      font-size: 40px;
-      overflow: hidden;
-    }
-
-    .profile img {
-      width: 100%;
-      height: 100%;
       object-fit: cover;
-    }
-
-    .email {
-      color: #888;
-      margin-top: 8px;
-    }
-
-    .guest-note {
-      color: #777;
-      margin-top: 12px;
+      margin: 20px auto;
+      display: block;
+      background: #222;
     }
 
     .logout {
-      background: #222;
-      color: #fff;
+      margin-top: 25px;
       padding: 13px 28px;
       border-radius: 12px;
-      margin-top: 25px;
-      font-size: 15px;
+      background: #222;
+      color: white;
       font-weight: 600;
-    }
-
-    .logout:hover {
-      background: #333;
     }
   </style>
 </head>
 
 <body>
 
-  <!-- =========================
-       AUTH SCREEN
-  ========================== -->
+  <!-- ================= AUTH ================= -->
 
-  <div id="authScreen" class="screen">
+  <div id="auth">
 
     <div class="auth-box">
 
@@ -229,44 +206,36 @@
 
       <div id="welcome">
 
-        <div class="logo">
+        <img
+          class="logo"
+          src="reelhub-logo.jpg"
+          alt="ReelHub"
+        >
+
+        <div class="brand">
           ReelHub
         </div>
 
-        <div class="subtitle">
+        <div class="tagline">
           Watch • Create • Share
         </div>
 
-        <!-- SKIP -->
+        <button
+          class="btn create-btn"
+          id="createBtn">
+          Create new account
+        </button>
 
         <button
-          class="btn skip"
+          class="btn login-btn"
+          id="loginBtn">
+          Log in
+        </button>
+
+        <button
+          class="btn skip-btn"
           id="skipBtn">
           Skip
-        </button>
-
-        <!-- GOOGLE -->
-
-        <button
-          class="btn google"
-          id="googleBtn">
-          Continue with Google
-        </button>
-
-        <!-- CREATE -->
-
-        <button
-          class="btn primary"
-          id="createBtn">
-          Create Account
-        </button>
-
-        <!-- LOGIN -->
-
-        <button
-          class="btn secondary"
-          id="loginBtn">
-          Login
         </button>
 
         <div
@@ -277,58 +246,62 @@
       </div>
 
 
-      <!-- =========================
-           CREATE ACCOUNT
-      ========================== -->
+      <!-- CREATE ACCOUNT -->
 
       <div id="createForm" class="form">
 
         <h2>
-          Create Account
+          Create account
         </h2>
 
         <input
-          id="signupName"
+          id="name"
           type="text"
-          placeholder="Full Name"
-          autocomplete="name">
+          placeholder="Full name"
+        >
+
+        <input
+          id="username"
+          type="text"
+          placeholder="Username"
+        >
 
         <input
           id="signupEmail"
           type="email"
           placeholder="Email"
-          autocomplete="email">
+        >
 
         <input
           id="signupPassword"
           type="password"
-          placeholder="Password (minimum 6 characters)"
-          autocomplete="new-password">
+          placeholder="Password"
+        >
 
         <button
-          class="btn primary"
-          id="createAccountBtn">
-          Create Account
+          class="btn create-btn"
+          id="signupBtn">
+          Create account
         </button>
 
         <div
-          id="createMessage"
+          id="signupMessage"
           class="message">
         </div>
 
-        <div class="small">
+        <div class="info">
           Already have an account?
           <span
             class="link"
-            id="toLogin">
-            Login
+            id="showLogin">
+            Log in
           </span>
         </div>
 
-        <div class="small">
+        <div class="info">
           <span
             class="link"
-            id="backFromCreate">
+            id="backCreate">
             ← Back
           </span>
         </div>
@@ -336,38 +309,30 @@
       </div>
 
 
-      <!-- =========================
-           LOGIN
-      ========================== -->
+      <!-- LOGIN -->
 
       <div id="loginForm" class="form">
 
         <h2>
-          Login
+          Log in
         </h2>
 
         <input
           id="loginEmail"
           type="email"
           placeholder="Email"
-          autocomplete="email">
+        >
 
         <input
           id="loginPassword"
           type="password"
           placeholder="Password"
-          autocomplete="current-password">
+        >
 
         <button
-          class="btn primary"
+          class="btn login-btn"
           id="loginAccountBtn">
-          Login
-        </button>
-
-        <button
-          class="btn google"
-          id="googleBtn2">
-          Continue with Google
+          Log in
         </button>
 
         <div
@@ -375,19 +340,19 @@
           class="message">
         </div>
 
-        <div class="small">
+        <div class="info">
           Don't have an account?
           <span
             class="link"
-            id="toCreate">
-            Create Account
+            id="showCreate">
+            Create account
           </span>
         </div>
 
-        <div class="small">
+        <div class="info">
           <span
             class="link"
-            id="backFromLogin">
+            id="backLogin">
             ← Back
           </span>
         </div>
@@ -399,36 +364,28 @@
   </div>
 
 
-  <!-- =========================
-       MAIN APP
-  ========================== -->
+  <!-- ================= APP ================= -->
 
   <div id="app">
 
-    <div class="top">
-
+    <div class="topbar">
       <div class="top-logo">
         ReelHub
       </div>
-
-      <div>
-        🏠
-      </div>
-
     </div>
 
-
-    <div class="content">
+    <div class="home">
 
       <h1>
         Welcome to ReelHub
       </h1>
 
-      <div
+      <img
+        id="profile"
         class="profile"
-        id="profileIcon">
-        👤
-      </div>
+        src="reelhub-logo.jpg"
+        alt="Profile"
+      >
 
       <h2 id="userName">
         Guest
@@ -436,19 +393,14 @@
 
       <p
         id="userEmail"
-        class="email">
-        Browsing as Guest
-      </p>
-
-      <p
-        id="guestNote"
-        class="guest-note">
+        style="color:#888;margin-top:8px;">
+        Guest mode
       </p>
 
       <button
         class="logout"
         id="logoutBtn">
-        Logout
+        Log out
       </button>
 
     </div>
@@ -456,9 +408,7 @@
   </div>
 
 
-  <!-- =========================
-       FIREBASE
-  ========================== -->
+  <!-- ================= FIREBASE ================= -->
 
   <script type="module">
 
@@ -467,11 +417,8 @@
     } from
     "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-
     import {
       getAuth,
-      GoogleAuthProvider,
-      signInWithPopup,
       createUserWithEmailAndPassword,
       signInWithEmailAndPassword,
       onAuthStateChanged,
@@ -481,9 +428,7 @@
     "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
-    /* =========================
-       YOUR FIREBASE CONFIG
-    ========================== */
+    /* FIREBASE CONFIG */
 
     const firebaseConfig = {
 
@@ -507,34 +452,22 @@
 
       measurementId:
         "G-81RN37XN6H"
-
     };
 
 
-    /* =========================
-       INITIALIZE FIREBASE
-    ========================== */
-
-    const app =
+    const firebaseApp =
       initializeApp(firebaseConfig);
 
-
     const auth =
-      getAuth(app);
+      getAuth(firebaseApp);
 
 
-    const googleProvider =
-      new GoogleAuthProvider();
+    /* ELEMENTS */
 
+    const authPage =
+      document.getElementById("auth");
 
-    /* =========================
-       ELEMENTS
-    ========================== */
-
-    const authScreen =
-      document.getElementById("authScreen");
-
-    const appScreen =
+    const appPage =
       document.getElementById("app");
 
     const welcome =
@@ -547,11 +480,9 @@
       document.getElementById("loginForm");
 
 
-    /* =========================
-       SHOW WELCOME
-    ========================== */
+    /* SCREEN FUNCTIONS */
 
-    function showWelcome() {
+    function showWelcome(){
 
       welcome.style.display =
         "block";
@@ -561,16 +492,10 @@
 
       loginForm.style.display =
         "none";
-
-      clearMessages();
     }
 
 
-    /* =========================
-       SHOW CREATE
-    ========================== */
-
-    function showCreate() {
+    function showCreate(){
 
       welcome.style.display =
         "none";
@@ -580,16 +505,10 @@
 
       loginForm.style.display =
         "none";
-
-      clearMessages();
     }
 
 
-    /* =========================
-       SHOW LOGIN
-    ========================== */
-
-    function showLogin() {
+    function showLogin(){
 
       welcome.style.display =
         "none";
@@ -599,459 +518,264 @@
 
       loginForm.style.display =
         "block";
-
-      clearMessages();
     }
 
 
-    /* =========================
-       CLEAR MESSAGES
-    ========================== */
+    /* CREATE ACCOUNT */
 
-    function clearMessages() {
+    document
+      .getElementById("signupBtn")
+      .onclick = async function(){
 
-      document.getElementById(
-        "welcomeMessage"
-      ).textContent = "";
+        const name =
+          document
+          .getElementById("name")
+          .value
+          .trim();
 
-      document.getElementById(
-        "createMessage"
-      ).textContent = "";
+        const username =
+          document
+          .getElementById("username")
+          .value
+          .trim();
 
-      document.getElementById(
-        "loginMessage"
-      ).textContent = "";
-    }
+        const email =
+          document
+          .getElementById("signupEmail")
+          .value
+          .trim();
+
+        const password =
+          document
+          .getElementById("signupPassword")
+          .value;
+
+        const message =
+          document
+          .getElementById("signupMessage");
 
 
-    /* =========================
-       FIREBASE ERROR
-    ========================== */
+        message.textContent = "";
 
-    function firebaseError(error) {
 
-      const messages = {
+        if(
+          !name ||
+          !username ||
+          !email ||
+          !password
+        ){
 
-        "auth/email-already-in-use":
-          "This email is already registered.",
+          message.textContent =
+            "Please fill all fields.";
 
-        "auth/invalid-email":
-          "Please enter a valid email.",
+          return;
+        }
 
-        "auth/weak-password":
-          "Password must contain at least 6 characters.",
 
-        "auth/invalid-credential":
-          "Email or password is incorrect.",
+        if(password.length < 6){
 
-        "auth/user-not-found":
-          "No account found with this email.",
+          message.textContent =
+            "Password must be at least 6 characters.";
 
-        "auth/wrong-password":
-          "Email or password is incorrect.",
+          return;
+        }
 
-        "auth/popup-closed-by-user":
-          "Google login was cancelled.",
 
-        "auth/popup-blocked":
-          "The browser blocked the Google login popup.",
+        try{
 
-        "auth/unauthorized-domain":
-          "This domain is not authorized in Firebase.",
+          const result =
+            await createUserWithEmailAndPassword(
+              auth,
+              email,
+              password
+            );
 
-        "auth/network-request-failed":
-          "Network error. Check your internet connection."
+
+          await updateProfile(
+            result.user,
+            {
+              displayName:name
+            }
+          );
+
+        }
+        catch(error){
+
+          message.textContent =
+            error.message;
+        }
 
       };
 
-      return (
-        messages[error?.code] ||
-        error?.message ||
-        "Something went wrong."
-      );
-    }
 
+    /* LOGIN */
 
-    /* =========================
-       GOOGLE LOGIN
-    ========================== */
+    document
+      .getElementById("loginAccountBtn")
+      .onclick = async function(){
 
-    async function googleLogin() {
+        const email =
+          document
+          .getElementById("loginEmail")
+          .value
+          .trim();
 
-      clearMessages();
-
-      try {
-
-        await signInWithPopup(
-          auth,
-          googleProvider
-        );
-
-      } catch (error) {
+        const password =
+          document
+          .getElementById("loginPassword")
+          .value;
 
         const message =
-          firebaseError(error);
-
-        document.getElementById(
-          "welcomeMessage"
-        ).textContent = message;
-
-        document.getElementById(
-          "loginMessage"
-        ).textContent = message;
-
-      }
-
-    }
+          document
+          .getElementById("loginMessage");
 
 
-    /* =========================
-       CREATE ACCOUNT
-    ========================== */
-
-    async function createAccount() {
-
-      const name =
-        document.getElementById(
-          "signupName"
-        ).value.trim();
+        message.textContent = "";
 
 
-      const email =
-        document.getElementById(
-          "signupEmail"
-        ).value.trim();
+        if(!email || !password){
+
+          message.textContent =
+            "Enter email and password.";
+
+          return;
+        }
 
 
-      const password =
-        document.getElementById(
-          "signupPassword"
-        ).value;
+        try{
 
-
-      const message =
-        document.getElementById(
-          "createMessage"
-        );
-
-
-      message.textContent = "";
-
-
-      if (
-        !name ||
-        !email ||
-        !password
-      ) {
-
-        message.textContent =
-          "Please fill all fields.";
-
-        return;
-      }
-
-
-      if (password.length < 6) {
-
-        message.textContent =
-          "Password must contain at least 6 characters.";
-
-        return;
-      }
-
-
-      try {
-
-        const result =
-          await createUserWithEmailAndPassword(
+          await signInWithEmailAndPassword(
             auth,
             email,
             password
           );
 
+        }
+        catch(error){
 
-        await updateProfile(
-          result.user,
-          {
-            displayName: name
-          }
-        );
+          message.textContent =
+            error.message;
+        }
 
-
-      } catch (error) {
-
-        message.textContent =
-          firebaseError(error);
-
-      }
-
-    }
+      };
 
 
-    /* =========================
-       EMAIL LOGIN
-    ========================== */
-
-    async function loginAccount() {
-
-      const email =
-        document.getElementById(
-          "loginEmail"
-        ).value.trim();
-
-
-      const password =
-        document.getElementById(
-          "loginPassword"
-        ).value;
-
-
-      const message =
-        document.getElementById(
-          "loginMessage"
-        );
-
-
-      message.textContent = "";
-
-
-      if (!email || !password) {
-
-        message.textContent =
-          "Please enter email and password.";
-
-        return;
-      }
-
-
-      try {
-
-        await signInWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
-
-      } catch (error) {
-
-        message.textContent =
-          firebaseError(error);
-
-      }
-
-    }
-
-
-    /* =========================
-       SKIP LOGIN
-    ========================== */
-
-    function skipLogin() {
-
-      authScreen.style.display =
-        "none";
-
-      appScreen.style.display =
-        "block";
-
-
-      document.getElementById(
-        "userName"
-      ).textContent =
-        "Guest";
-
-
-      document.getElementById(
-        "userEmail"
-      ).textContent =
-        "Browsing as Guest";
-
-
-      document.getElementById(
-        "guestNote"
-      ).textContent =
-        "You are using ReelHub as a guest.";
-
-    }
-
-
-    /* =========================
-       LOGOUT
-    ========================== */
-
-    async function logoutUser() {
-
-      try {
-
-        await signOut(auth);
-
-        appScreen.style.display =
-          "none";
-
-        authScreen.style.display =
-          "flex";
-
-        showWelcome();
-
-      } catch (error) {
-
-        alert(
-          firebaseError(error)
-        );
-
-      }
-
-    }
-
-
-    /* =========================
-       BUTTON EVENTS
-    ========================== */
-
-    document
-      .getElementById("skipBtn")
-      .addEventListener(
-        "click",
-        skipLogin
-      );
-
-
-    document
-      .getElementById("googleBtn")
-      .addEventListener(
-        "click",
-        googleLogin
-      );
-
-
-    document
-      .getElementById("googleBtn2")
-      .addEventListener(
-        "click",
-        googleLogin
-      );
-
+    /* NAVIGATION */
 
     document
       .getElementById("createBtn")
-      .addEventListener(
-        "click",
-        showCreate
-      );
+      .onclick =
+      showCreate;
 
 
     document
       .getElementById("loginBtn")
-      .addEventListener(
-        "click",
-        showLogin
-      );
+      .onclick =
+      showLogin;
 
 
     document
-      .getElementById("createAccountBtn")
-      .addEventListener(
-        "click",
-        createAccount
-      );
+      .getElementById("showLogin")
+      .onclick =
+      showLogin;
 
 
     document
-      .getElementById("loginAccountBtn")
-      .addEventListener(
-        "click",
-        loginAccount
-      );
+      .getElementById("showCreate")
+      .onclick =
+      showCreate;
 
 
     document
-      .getElementById("toLogin")
-      .addEventListener(
-        "click",
-        showLogin
-      );
+      .getElementById("backCreate")
+      .onclick =
+      showWelcome;
 
 
     document
-      .getElementById("toCreate")
-      .addEventListener(
-        "click",
-        showCreate
-      );
+      .getElementById("backLogin")
+      .onclick =
+      showWelcome;
 
 
-    document
-      .getElementById("backFromCreate")
-      .addEventListener(
-        "click",
-        showWelcome
-      );
-
+    /* SKIP */
 
     document
-      .getElementById("backFromLogin")
-      .addEventListener(
-        "click",
-        showWelcome
-      );
+      .getElementById("skipBtn")
+      .onclick = function(){
 
+        authPage.style.display =
+          "none";
+
+        appPage.style.display =
+          "block";
+
+        document
+          .getElementById("userName")
+          .textContent =
+          "Guest";
+
+        document
+          .getElementById("userEmail")
+          .textContent =
+          "Guest mode";
+      };
+
+
+    /* LOGOUT */
 
     document
       .getElementById("logoutBtn")
-      .addEventListener(
-        "click",
-        logoutUser
-      );
+      .onclick =
+      async function(){
+
+        await signOut(auth);
+
+        appPage.style.display =
+          "none";
+
+        authPage.style.display =
+          "flex";
+
+        showWelcome();
+      };
 
 
-    /* =========================
-       AUTH STATE
-    ========================== */
+    /* AUTH STATE */
 
     onAuthStateChanged(
       auth,
-      (user) => {
+      function(user){
 
-        if (user) {
+        if(user){
 
-          authScreen.style.display =
+          authPage.style.display =
             "none";
 
-          appScreen.style.display =
+          appPage.style.display =
             "block";
 
 
-          document.getElementById(
-            "userName"
-          ).textContent =
+          document
+            .getElementById("userName")
+            .textContent =
             user.displayName ||
             "ReelHub User";
 
 
-          document.getElementById(
-            "userEmail"
-          ).textContent =
+          document
+            .getElementById("userEmail")
+            .textContent =
             user.email || "";
 
 
-          document.getElementById(
-            "guestNote"
-          ).textContent = "";
+          if(user.photoURL){
 
-
-          if (user.photoURL) {
-
-            document.getElementById(
-              "profileIcon"
-            ).innerHTML =
-              `
-              <img
-                src="${user.photoURL}"
-                alt="Profile">
-              `;
-
+            document
+              .getElementById("profile")
+              .src =
+              user.photoURL;
           }
-
         }
 
       }
