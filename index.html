@@ -10,777 +10,140 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: Arial, Helvetica, sans-serif;
     }
 
+    html,
     body {
+      width: 100%;
+      height: 100%;
       background: #000;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: #fff;
-      min-height: 100vh;
     }
 
-    button {
-      border: 0;
-      cursor: pointer;
-    }
-
-    /* ================= AUTH ================= */
-
-    #auth {
-      min-height: 100vh;
+    /* ---------- SPLASH SCREEN ---------- */
+    .splash {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      background: #000;
+      z-index: 9999;
+      opacity: 1;
+      transition: opacity 0.5s ease;
     }
 
-    .auth-box {
+    .splash.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .splash img {
       width: 100%;
-      max-width: 390px;
-      text-align: center;
-    }
-
-    .logo {
-      width: 90px;
-      height: 90px;
-      border-radius: 24px;
+      height: 100%;
       object-fit: cover;
-      margin-bottom: 20px;
-    }
-
-    .brand {
-      font-size: 36px;
-      font-weight: 800;
-      margin-bottom: 8px;
-      background: linear-gradient(
-        90deg,
-        #ff1493,
-        #8b5cf6,
-        #00c6ff
-      );
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-
-    .tagline {
-      color: #999;
-      font-size: 14px;
-      margin-bottom: 28px;
-    }
-
-    .btn {
-      width: 100%;
-      height: 52px;
-      border-radius: 12px;
-      margin: 7px 0;
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    .create-btn {
-      background: #0095f6;
-      color: white;
-    }
-
-    .login-btn {
-      background: #222;
-      color: white;
-    }
-
-    .skip-btn {
-      background: transparent;
-      color: #999;
-    }
-
-    /* ================= FORMS ================= */
-
-    .form {
-      display: none;
-    }
-
-    .form h2 {
-      font-size: 28px;
-      margin-bottom: 20px;
-    }
-
-    input {
-      width: 100%;
-      height: 52px;
-      margin: 6px 0;
-      padding: 0 15px;
-      border-radius: 10px;
-      border: 1px solid #333;
-      background: #121212;
-      color: white;
-      font-size: 15px;
-      outline: none;
-    }
-
-    input:focus {
-      border-color: #777;
-    }
-
-    .message {
-      min-height: 22px;
-      color: #ff8fa3;
-      font-size: 13px;
-      margin-top: 8px;
-    }
-
-    .info {
-      color: #888;
-      font-size: 14px;
-      margin-top: 16px;
-    }
-
-    .link {
-      color: #0095f6;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    /* ================= APP ================= */
-
-    #app {
-      display: none;
-      min-height: 100vh;
-      background: #080808;
-    }
-
-    .topbar {
-      height: 60px;
-      border-bottom: 1px solid #222;
-      display: flex;
-      align-items: center;
-      padding: 0 18px;
-    }
-
-    .top-logo {
-      font-size: 25px;
-      font-weight: 800;
-      background: linear-gradient(
-        90deg,
-        #ff1493,
-        #8b5cf6,
-        #00c6ff
-      );
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-
-    .home {
-      text-align: center;
-      padding: 50px 20px;
-    }
-
-    .profile {
-      width: 90px;
-      height: 90px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin: 20px auto;
       display: block;
-      background: #222;
+      user-select: none;
+      -webkit-user-drag: none;
     }
 
-    .logout {
-      margin-top: 25px;
-      padding: 13px 28px;
-      border-radius: 12px;
-      background: #222;
-      color: white;
-      font-weight: 600;
+    /* ---------- MAIN APP ---------- */
+    #app {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 24px;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    #app.show {
+      opacity: 1;
+    }
+
+    #app h1 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #ff2e63, #ff8a00);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    #app p {
+      font-size: 15px;
+      color: #888;
+      max-width: 320px;
+      line-height: 1.5;
+    }
+
+    .loader {
+      margin-top: 12px;
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-top-color: #ff2e63;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
 
 <body>
 
-  <!-- ================= AUTH ================= -->
-
-  <div id="auth">
-
-    <div class="auth-box">
-
-      <!-- WELCOME -->
-
-      <div id="welcome">
-
-        <img
-          class="logo"
-          src="reelhub-logo.jpg"
-          alt="ReelHub"
-        >
-
-        <div class="brand">
-          ReelHub
-        </div>
-
-        <div class="tagline">
-          Watch • Create • Share
-        </div>
-
-        <button
-          class="btn create-btn"
-          id="createBtn">
-          Create new account
-        </button>
-
-        <button
-          class="btn login-btn"
-          id="loginBtn">
-          Log in
-        </button>
-
-        <button
-          class="btn skip-btn"
-          id="skipBtn">
-          Skip
-        </button>
-
-        <div
-          id="welcomeMessage"
-          class="message">
-        </div>
-
-      </div>
-
-
-      <!-- CREATE ACCOUNT -->
-
-      <div id="createForm" class="form">
-
-        <h2>
-          Create account
-        </h2>
-
-        <input
-          id="name"
-          type="text"
-          placeholder="Full name"
-        >
-
-        <input
-          id="username"
-          type="text"
-          placeholder="Username"
-        >
-
-        <input
-          id="signupEmail"
-          type="email"
-          placeholder="Email"
-        >
-
-        <input
-          id="signupPassword"
-          type="password"
-          placeholder="Password"
-        >
-
-        <button
-          class="btn create-btn"
-          id="signupBtn">
-          Create account
-        </button>
-
-        <div
-          id="signupMessage"
-          class="message">
-        </div>
-
-        <div class="info">
-          Already have an account?
-          <span
-            class="link"
-            id="showLogin">
-            Log in
-          </span>
-        </div>
-
-        <div class="info">
-          <span
-            class="link"
-            id="backCreate">
-            ← Back
-          </span>
-        </div>
-
-      </div>
-
-
-      <!-- LOGIN -->
-
-      <div id="loginForm" class="form">
-
-        <h2>
-          Log in
-        </h2>
-
-        <input
-          id="loginEmail"
-          type="email"
-          placeholder="Email"
-        >
-
-        <input
-          id="loginPassword"
-          type="password"
-          placeholder="Password"
-        >
-
-        <button
-          class="btn login-btn"
-          id="loginAccountBtn">
-          Log in
-        </button>
-
-        <div
-          id="loginMessage"
-          class="message">
-        </div>
-
-        <div class="info">
-          Don't have an account?
-          <span
-            class="link"
-            id="showCreate">
-            Create account
-          </span>
-        </div>
-
-        <div class="info">
-          <span
-            class="link"
-            id="backLogin">
-            ← Back
-          </span>
-        </div>
-
-      </div>
-
-    </div>
-
+  <!-- ========== SPLASH SCREEN ========== -->
+  <div class="splash" id="splash">
+    <img src="reelhub-logo.jpg" alt="ReelHub">
   </div>
 
-
-  <!-- ================= APP ================= -->
-
+  <!-- ========== MAIN APP ========== -->
   <div id="app">
-
-    <div class="topbar">
-      <div class="top-logo">
-        ReelHub
-      </div>
-    </div>
-
-    <div class="home">
-
-      <h1>
-        Welcome to ReelHub
-      </h1>
-
-      <img
-        id="profile"
-        class="profile"
-        src="reelhub-logo.jpg"
-        alt="Profile"
-      >
-
-      <h2 id="userName">
-        Guest
-      </h2>
-
-      <p
-        id="userEmail"
-        style="color:#888;margin-top:8px;">
-        Guest mode
-      </p>
-
-      <button
-        class="logout"
-        id="logoutBtn">
-        Log out
-      </button>
-
-    </div>
-
+    <h1>ReelHub</h1>
+    <p>Short videos. Big vibes. 🎬</p>
+    <div class="loader"></div>
   </div>
 
-
-  <!-- ================= FIREBASE ================= -->
-
-  <script type="module">
-
-    import {
-      initializeApp
-    } from
-    "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-    import {
-      getAuth,
-      createUserWithEmailAndPassword,
-      signInWithEmailAndPassword,
-      onAuthStateChanged,
-      signOut,
-      updateProfile
-    } from
-    "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-
-    /* FIREBASE CONFIG */
-
-    const firebaseConfig = {
-
-      apiKey:
-        "AIzaSyC6421R1kr0jYwUJFbjB2YzIerlJw_cdLc",
-
-      authDomain:
-        "reelhub-24616.firebaseapp.com",
-
-      projectId:
-        "reelhub-24616",
-
-      storageBucket:
-        "reelhub-24616.firebasestorage.app",
-
-      messagingSenderId:
-        "397521504045",
-
-      appId:
-        "1:397521504045:web:bf6d3652a7375fd632b5a4",
-
-      measurementId:
-        "G-81RN37XN6H"
-    };
-
-
-    const firebaseApp =
-      initializeApp(firebaseConfig);
-
-    const auth =
-      getAuth(firebaseApp);
-
-
-    /* ELEMENTS */
-
-    const authPage =
-      document.getElementById("auth");
-
-    const appPage =
-      document.getElementById("app");
-
-    const welcome =
-      document.getElementById("welcome");
-
-    const createForm =
-      document.getElementById("createForm");
-
-    const loginForm =
-      document.getElementById("loginForm");
-
-
-    /* SCREEN FUNCTIONS */
-
-    function showWelcome(){
-
-      welcome.style.display =
-        "block";
-
-      createForm.style.display =
-        "none";
-
-      loginForm.style.display =
-        "none";
-    }
-
-
-    function showCreate(){
-
-      welcome.style.display =
-        "none";
-
-      createForm.style.display =
-        "block";
-
-      loginForm.style.display =
-        "none";
-    }
-
-
-    function showLogin(){
-
-      welcome.style.display =
-        "none";
-
-      createForm.style.display =
-        "none";
-
-      loginForm.style.display =
-        "block";
-    }
-
-
-    /* CREATE ACCOUNT */
-
-    document
-      .getElementById("signupBtn")
-      .onclick = async function(){
-
-        const name =
-          document
-          .getElementById("name")
-          .value
-          .trim();
-
-        const username =
-          document
-          .getElementById("username")
-          .value
-          .trim();
-
-        const email =
-          document
-          .getElementById("signupEmail")
-          .value
-          .trim();
-
-        const password =
-          document
-          .getElementById("signupPassword")
-          .value;
-
-        const message =
-          document
-          .getElementById("signupMessage");
-
-
-        message.textContent = "";
-
-
-        if(
-          !name ||
-          !username ||
-          !email ||
-          !password
-        ){
-
-          message.textContent =
-            "Please fill all fields.";
-
-          return;
-        }
-
-
-        if(password.length < 6){
-
-          message.textContent =
-            "Password must be at least 6 characters.";
-
-          return;
-        }
-
-
-        try{
-
-          const result =
-            await createUserWithEmailAndPassword(
-              auth,
-              email,
-              password
-            );
-
-
-          await updateProfile(
-            result.user,
-            {
-              displayName:name
-            }
-          );
-
-        }
-        catch(error){
-
-          message.textContent =
-            error.message;
-        }
-
-      };
-
-
-    /* LOGIN */
-
-    document
-      .getElementById("loginAccountBtn")
-      .onclick = async function(){
-
-        const email =
-          document
-          .getElementById("loginEmail")
-          .value
-          .trim();
-
-        const password =
-          document
-          .getElementById("loginPassword")
-          .value;
-
-        const message =
-          document
-          .getElementById("loginMessage");
-
-
-        message.textContent = "";
-
-
-        if(!email || !password){
-
-          message.textContent =
-            "Enter email and password.";
-
-          return;
-        }
-
-
-        try{
-
-          await signInWithEmailAndPassword(
-            auth,
-            email,
-            password
-          );
-
-        }
-        catch(error){
-
-          message.textContent =
-            error.message;
-        }
-
-      };
-
-
-    /* NAVIGATION */
-
-    document
-      .getElementById("createBtn")
-      .onclick =
-      showCreate;
-
-
-    document
-      .getElementById("loginBtn")
-      .onclick =
-      showLogin;
-
-
-    document
-      .getElementById("showLogin")
-      .onclick =
-      showLogin;
-
-
-    document
-      .getElementById("showCreate")
-      .onclick =
-      showCreate;
-
-
-    document
-      .getElementById("backCreate")
-      .onclick =
-      showWelcome;
-
-
-    document
-      .getElementById("backLogin")
-      .onclick =
-      showWelcome;
-
-
-    /* SKIP */
-
-    document
-      .getElementById("skipBtn")
-      .onclick = function(){
-
-        authPage.style.display =
-          "none";
-
-        appPage.style.display =
-          "block";
-
-        document
-          .getElementById("userName")
-          .textContent =
-          "Guest";
-
-        document
-          .getElementById("userEmail")
-          .textContent =
-          "Guest mode";
-      };
-
-
-    /* LOGOUT */
-
-    document
-      .getElementById("logoutBtn")
-      .onclick =
-      async function(){
-
-        await signOut(auth);
-
-        appPage.style.display =
-          "none";
-
-        authPage.style.display =
-          "flex";
-
-        showWelcome();
-      };
-
-
-    /* AUTH STATE */
-
-    onAuthStateChanged(
-      auth,
-      function(user){
-
-        if(user){
-
-          authPage.style.display =
-            "none";
-
-          appPage.style.display =
-            "block";
-
-
-          document
-            .getElementById("userName")
-            .textContent =
-            user.displayName ||
-            "ReelHub User";
-
-
-          document
-            .getElementById("userEmail")
-            .textContent =
-            user.email || "";
-
-
-          if(user.photoURL){
-
-            document
-              .getElementById("profile")
-              .src =
-              user.photoURL;
-          }
-        }
-
+  <script>
+    (function () {
+      const SPLASH_DURATION = 1000; // splash kitni der dikhe (ms)
+
+      const splash = document.getElementById('splash');
+      const app    = document.getElementById('app');
+
+      function showApp() {
+        splash.classList.add('hide');
+        setTimeout(() => splash.remove(), 600); // fade ke baad DOM se hatao
+        app.classList.add('show');
       }
-    );
 
+      const img = splash.querySelector('img');
+
+      if (img && !img.complete) {
+        img.addEventListener('load', () => {
+          setTimeout(showApp, SPLASH_DURATION);
+        });
+        img.addEventListener('error', () => {
+          console.warn('reelhub-logo.jpg load nahi hui.');
+          setTimeout(showApp, SPLASH_DURATION);
+        });
+      } else {
+        setTimeout(showApp, SPLASH_DURATION);
+      }
+    })();
   </script>
 
 </body>
