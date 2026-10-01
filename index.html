@@ -261,7 +261,7 @@
       text-align: center;
     }
 
-    /* ================= BOTTOM NAV (Instagram style) ================= */
+    /* ================= BOTTOM NAV ================= */
     .bottom-nav-wrap {
       position: relative;
       flex-shrink: 0;
@@ -297,7 +297,6 @@
       background: none;
       border: none;
       font-family: inherit;
-      position: relative;
     }
     .nav-item svg {
       width: 24px;
@@ -316,7 +315,6 @@
     .nav-item.active { color: #fff; }
     .nav-item.active svg { stroke: #4ea8ff; }
 
-    /* Center Upload button (floating +) */
     .nav-upload {
       flex: 1;
       display: flex;
@@ -336,23 +334,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: inherit;
-
-      /* gradient blue like reference image */
-      background:
-        radial-gradient(circle at 30% 25%, #3f8fd6 0%, #2a5f9e 45%, #1c3f6e 100%);
+      background: radial-gradient(circle at 30% 25%, #3f8fd6 0%, #2a5f9e 45%, #1c3f6e 100%);
       box-shadow:
         0 0 0 6px #0a0a0a,
         0 10px 22px rgba(46, 122, 200, 0.55),
         inset 0 2px 4px rgba(255, 255, 255, 0.25),
         inset 0 -4px 8px rgba(0, 0, 0, 0.45);
-      transition: transform 0.15s ease, box-shadow 0.2s;
+      transition: transform 0.15s ease;
     }
-
-    .upload-btn:active {
-      transform: scale(0.94);
-    }
-
+    .upload-btn:active { transform: scale(0.94); }
     .upload-btn svg {
       width: 30px;
       height: 30px;
@@ -361,49 +351,23 @@
       stroke-linecap: round;
       fill: none;
     }
-
-    .upload-label {
-      position: absolute;
-      bottom: 6px;
-      font-size: 10px;
-      font-weight: 600;
-      color: #fff;
-      pointer-events: none;
-    }
-
-    /* Hide the label on the upload (it's inside the circle visually) */
-    .nav-upload .upload-label { display: none; }
-
-    /* The center gap inside nav so + button visually sits above */
-    .nav-upload .placeholder {
-      width: 68px;
-      height: 100%;
-    }
-
-    @media (min-width: 480px) {
-      .bottom-nav {
-        max-width: 460px;
-        margin: 0 auto;
-      }
-    }
   </style>
 </head>
 
 <body>
 
-  <!-- ================= AUTH (LOGIN / SIGNUP) ================= -->
+  <!-- ================= AUTH ================= -->
   <div id="auth">
     <div class="auth-wrap">
-
       <div class="auth-logo">ReelHub</div>
       <div class="auth-tagline">Short videos. Big vibes. 🎬</div>
 
-      <!-- LOGIN FORM -->
+      <!-- LOGIN -->
       <form id="loginForm">
         <div class="auth-title">Log in</div>
 
         <div class="input-group">
-          <input type="text" id="loginUser" placeholder="Username or email" autocomplete="username">
+          <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
         </div>
 
         <div class="input-group">
@@ -418,7 +382,7 @@
 
         <a class="forgot" id="forgotLink">Forgot password?</a>
 
-        <button type="submit" class="btn-primary">Log In</button>
+        <button type="submit" class="btn-primary" id="loginBtn">Log In</button>
         <div class="error-msg" id="loginMsg"></div>
 
         <div class="divider">OR</div>
@@ -428,7 +392,7 @@
         </div>
       </form>
 
-      <!-- SIGNUP FORM -->
+      <!-- SIGNUP -->
       <form id="signupForm" style="display:none;">
         <div class="auth-title">Create account</div>
 
@@ -437,7 +401,7 @@
         </div>
 
         <div class="input-group">
-          <input type="text" id="signupUser" placeholder="Username" autocomplete="username">
+          <input type="text" id="signupUser" placeholder="Username (a-z, 0-9, ., _)" autocomplete="username">
         </div>
 
         <div class="input-group">
@@ -454,7 +418,7 @@
           </div>
         </div>
 
-        <button type="submit" class="btn-primary">Sign Up</button>
+        <button type="submit" class="btn-primary" id="signupBtn">Sign Up</button>
         <div class="error-msg" id="signupMsg"></div>
 
         <div class="divider">OR</div>
@@ -467,13 +431,11 @@
       <div class="auth-footer">
         By continuing, you agree to our Terms & Privacy Policy.
       </div>
-
     </div>
   </div>
 
   <!-- ================= MAIN APP ================= -->
   <div id="app">
-
     <div class="header">
       <div class="logo">ReelHub</div>
       <div class="header-actions">
@@ -497,19 +459,13 @@
       <div class="page-title">Home Feed</div>
     </div>
 
-    <!-- ================= BOTTOM NAV ================= -->
     <div class="bottom-nav-wrap">
       <nav class="bottom-nav">
-
-        <!-- Home -->
         <button class="nav-item active" data-page="home">
-          <svg viewBox="0 0 24 24">
-            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"/></svg>
           <span>Home</span>
         </button>
 
-        <!-- Shorts (Reels) -->
         <button class="nav-item" data-page="shorts">
           <svg viewBox="0 0 24 24">
             <rect x="3" y="3" width="18" height="18" rx="5"/>
@@ -519,7 +475,6 @@
           <span>Shorts</span>
         </button>
 
-        <!-- Upload (floating +) -->
         <div class="nav-upload">
           <button class="upload-btn" data-page="upload" title="Upload">
             <svg viewBox="0 0 24 24">
@@ -529,227 +484,271 @@
           </button>
         </div>
 
-        <!-- Messages -->
         <button class="nav-item" data-page="messages">
-          <svg viewBox="0 0 24 24">
-            <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
           <span>Messages</span>
         </button>
 
-        <!-- Profile -->
         <button class="nav-item" data-page="profile">
-          <svg viewBox="0 0 24 24">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
           <span>Profile</span>
         </button>
-
       </nav>
     </div>
-
   </div>
 
-  <script>
-    (function () {
-      const auth = document.getElementById('auth');
-      const app  = document.getElementById('app');
+  <!-- ================= FIREBASE + APP LOGIC ================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc,
+      collection,
+      query,
+      where,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-      const loginForm  = document.getElementById('loginForm');
-      const signupForm = document.getElementById('signupForm');
-      const loginMsg   = document.getElementById('loginMsg');
-      const signupMsg  = document.getElementById('signupMsg');
+    // ---------- तेरा Firebase config ----------
+    const firebaseConfig = {
+      apiKey: "AIzaSyC6421R1kr0jYwUJFbjB2YzIerlJw_cdLc",
+      authDomain: "reelhub-24616.firebaseapp.com",
+      projectId: "reelhub-24616",
+      storageBucket: "reelhub-24616.firebasestorage.app",
+      messagingSenderId: "397521504045",
+      appId: "1:397521504045:web:bf6d3652a7375fd632b5a4",
+      measurementId: "G-81RN37XN6H"
+    };
 
-      // ---------- LocalStorage ----------
-      const USERS_KEY   = 'reelhub_users';
-      const SESSION_KEY = 'reelhub_session';
+    const firebaseApp = initializeApp(firebaseConfig);
+    const auth = getAuth(firebaseApp);
+    const db   = getFirestore(firebaseApp);
 
-      function getUsers() {
-        try { return JSON.parse(localStorage.getItem(USERS_KEY)) || []; }
-        catch (e) { return []; }
-      }
-      function saveUsers(users) {
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
-      }
-      function setSession(user) {
-        localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-      }
-      function getSession() {
-        try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
-        catch (e) { return null; }
-      }
-      function clearSession() {
-        localStorage.removeItem(SESSION_KEY);
-      }
+    // ---------- DOM ----------
+    const authScreen = document.getElementById('auth');
+    const appScreen  = document.getElementById('app');
+    const loginForm  = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const loginMsg   = document.getElementById('loginMsg');
+    const signupMsg  = document.getElementById('signupMsg');
+    const loginBtn   = document.getElementById('loginBtn');
+    const signupBtn  = document.getElementById('signupBtn');
 
-      // ---------- Screen switching ----------
-      function showAuth() {
-        auth.style.display = 'block';
-        app.classList.remove('show');
-      }
-      function showApp() {
-        auth.style.display = 'none';
-        app.classList.add('show');
+    let currentUser = null;
 
-        // reset to home
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        const homeBtn = document.querySelector('.nav-item[data-page="home"]');
-        if (homeBtn) homeBtn.classList.add('active');
-        document.getElementById('content').innerHTML =
-          '<div class="page-title">Home Feed</div>';
-      }
+    // ---------- Screen switching ----------
+    function showAuth() {
+      authScreen.style.display = 'block';
+      appScreen.classList.remove('show');
+    }
+    function showApp() {
+      authScreen.style.display = 'none';
+      appScreen.classList.add('show');
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      document.querySelector('.nav-item[data-page="home"]')?.classList.add('active');
+      document.getElementById('content').innerHTML =
+        '<div class="page-title">Home Feed</div>';
+    }
 
-      // ---------- Password eye toggle ----------
-      document.querySelectorAll('.eye').forEach(eye => {
-        eye.addEventListener('click', () => {
-          const input = document.getElementById(eye.dataset.target);
-          input.type = input.type === 'password' ? 'text' : 'password';
-        });
+    // ---------- Password eye toggle ----------
+    document.querySelectorAll('.eye').forEach(eye => {
+      eye.addEventListener('click', () => {
+        const inp = document.getElementById(eye.dataset.target);
+        inp.type = inp.type === 'password' ? 'text' : 'password';
       });
+    });
 
-      // ---------- Login <-> Signup switch ----------
-      document.getElementById('goSignup').addEventListener('click', () => {
-        loginForm.style.display = 'none';
-        signupForm.style.display = 'block';
-        loginMsg.textContent = '';
-        signupMsg.textContent = '';
-      });
-      document.getElementById('goLogin').addEventListener('click', () => {
-        signupForm.style.display = 'none';
-        loginForm.style.display = 'block';
-        loginMsg.textContent = '';
-        signupMsg.textContent = '';
-      });
+    // ---------- Login <-> Signup switch ----------
+    document.getElementById('goSignup').addEventListener('click', () => {
+      loginForm.style.display = 'none';
+      signupForm.style.display = 'block';
+      loginMsg.textContent = '';
+      signupMsg.textContent = '';
+    });
+    document.getElementById('goLogin').addEventListener('click', () => {
+      signupForm.style.display = 'none';
+      loginForm.style.display = 'block';
+      loginMsg.textContent = '';
+      signupMsg.textContent = '';
+    });
 
-      // ---------- Signup ----------
-      signupForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const name  = document.getElementById('signupName').value.trim();
-        const user  = document.getElementById('signupUser').value.trim().toLowerCase();
-        const email = document.getElementById('signupEmail').value.trim().toLowerCase();
-        const pass  = document.getElementById('signupPass').value;
+    // ---------- Signup ----------
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-        signupMsg.className = 'error-msg';
-        signupMsg.textContent = '';
+      const name  = document.getElementById('signupName').value.trim();
+      const user  = document.getElementById('signupUser').value.trim().toLowerCase();
+      const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+      const pass  = document.getElementById('signupPass').value;
 
-        if (!name || !user || !email || !pass) {
-          signupMsg.textContent = 'Please fill all fields.';
-          return;
-        }
-        if (!/^[a-z0-9._]{3,20}$/.test(user)) {
-          signupMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
-          return;
-        }
-        if (!/^\S+@\S+\.\S+$/.test(email)) {
-          signupMsg.textContent = 'Please enter a valid email.';
-          return;
-        }
-        if (pass.length < 6) {
-          signupMsg.textContent = 'Password must be at least 6 characters.';
-          return;
-        }
+      signupMsg.className = 'error-msg';
+      signupMsg.textContent = '';
 
-        const users = getUsers();
-        if (users.some(u => u.user === user)) {
+      if (!name || !user || !email || !pass) {
+        signupMsg.textContent = 'Please fill all fields.';
+        return;
+      }
+      if (!/^[a-z0-9._]{3,20}$/.test(user)) {
+        signupMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
+        return;
+      }
+      if (!/^\S+@\S+\.\S+$/.test(email)) {
+        signupMsg.textContent = 'Please enter a valid email.';
+        return;
+      }
+      if (pass.length < 6) {
+        signupMsg.textContent = 'Password must be at least 6 characters.';
+        return;
+      }
+
+      signupBtn.disabled = true;
+      signupBtn.textContent = 'Creating...';
+
+      try {
+        // Check username unique
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('user', '==', user));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
           signupMsg.textContent = 'Username already taken.';
-          return;
-        }
-        if (users.some(u => u.email === email)) {
-          signupMsg.textContent = 'Email already registered.';
+          signupBtn.disabled = false;
+          signupBtn.textContent = 'Sign Up';
           return;
         }
 
-        users.push({ name, user, email, pass });
-        saveUsers(users);
+        // Create user in Firebase Auth
+        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        const uid = cred.user.uid;
+
+        // Save profile in Firestore
+        await setDoc(doc(db, 'users', uid), {
+          uid: uid,
+          name: name,
+          user: user,
+          email: email,
+          bio: '',
+          followers: 0,
+          following: 0,
+          createdAt: new Date()
+        });
 
         signupMsg.className = 'success-msg';
-        signupMsg.textContent = 'Account created! Logging in...';
-
-        setTimeout(() => {
-          setSession({ name, user, email });
-          showApp();
-        }, 800);
-      });
-
-      // ---------- Login ----------
-      loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const id   = document.getElementById('loginUser').value.trim().toLowerCase();
-        const pass = document.getElementById('loginPass').value;
-
-        loginMsg.className = 'error-msg';
-        loginMsg.textContent = '';
-
-        if (!id || !pass) {
-          loginMsg.textContent = 'Please enter username/email and password.';
-          return;
+        signupMsg.textContent = 'Account created! Welcome 🎉';
+      } catch (err) {
+        console.error(err);
+        signupMsg.className = 'error-msg';
+        if (err.code === 'auth/email-already-in-use') {
+          signupMsg.textContent = 'Email already registered. Try logging in.';
+        } else if (err.code === 'auth/invalid-email') {
+          signupMsg.textContent = 'Invalid email address.';
+        } else if (err.code === 'auth/weak-password') {
+          signupMsg.textContent = 'Password too weak.';
+        } else {
+          signupMsg.textContent = err.message || 'Signup failed.';
         }
+      } finally {
+        signupBtn.disabled = false;
+        signupBtn.textContent = 'Sign Up';
+      }
+    });
 
-        const users = getUsers();
-        const found = users.find(u =>
-          (u.user === id || u.email === id) && u.pass === pass
-        );
+    // ---------- Login ----------
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-        if (!found) {
-          loginMsg.textContent = 'Invalid credentials. Please try again.';
-          return;
+      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+      const pass  = document.getElementById('loginPass').value;
+
+      loginMsg.className = 'error-msg';
+      loginMsg.textContent = '';
+
+      if (!email || !pass) {
+        loginMsg.textContent = 'Please enter email and password.';
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Logging in...';
+
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch (err) {
+        console.error(err);
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+          loginMsg.textContent = 'Invalid email or password.';
+        } else {
+          loginMsg.textContent = err.message || 'Login failed.';
         }
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Log In';
+      }
+    });
 
-        setSession({ name: found.name, user: found.user, email: found.email });
-        loginMsg.className = 'success-msg';
-        loginMsg.textContent = 'Welcome back!';
-        setTimeout(showApp, 500);
-      });
+    // ---------- Forgot password ----------
+    document.getElementById('forgotLink').addEventListener('click', () => {
+      alert('Forgot password feature will be added soon.');
+    });
 
-      // ---------- Forgot password ----------
-      document.getElementById('forgotLink').addEventListener('click', () => {
-        alert('Forgot password feature will be added soon.');
-      });
+    // ---------- Logout ----------
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      if (confirm('Log out of ReelHub?')) {
+        await signOut(auth);
+      }
+    });
 
-      // ---------- Logout ----------
-      document.getElementById('logoutBtn').addEventListener('click', () => {
-        if (confirm('Log out of ReelHub?')) {
-          clearSession();
-          loginForm.reset();
-          signupForm.reset();
-          document.getElementById('goLogin').click();
-          showAuth();
-        }
-      });
-
-      // ---------- Page titles ----------
-      const pages = {
-        home:     'Home Feed',
-        shorts:   'Shorts',
-        upload:   'Upload',
-        messages: 'Messages',
-        profile:  'Profile'
-      };
-
-      // ---------- Bottom nav (regular items) ----------
-      document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', () => {
-          document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-          item.classList.add('active');
-          document.getElementById('content').innerHTML =
-            `<div class="page-title">${pages[item.dataset.page]}</div>`;
-        });
-      });
-
-      // ---------- Center Upload button ----------
-      document.querySelector('.upload-btn').addEventListener('click', () => {
+    // ---------- Bottom nav ----------
+    const pages = {
+      home:     'Home Feed',
+      shorts:   'Shorts',
+      upload:   'Upload',
+      messages: 'Messages',
+      profile:  'Profile'
+    };
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
         document.getElementById('content').innerHTML =
-          `<div class="page-title">${pages.upload}</div>`;
+          `<div class="page-title">${pages[item.dataset.page]}</div>`;
       });
+    });
 
-      // ---------- Auto-login ----------
-      if (getSession()) {
+    document.querySelector('.upload-btn').addEventListener('click', () => {
+      document.getElementById('content').innerHTML =
+        `<div class="page-title">${pages.upload}</div>`;
+    });
+
+    // ---------- Auth state listener ----------
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        try {
+          const snap = await getDoc(doc(db, 'users', user.uid));
+          if (snap.exists()) {
+            console.log('Profile loaded:', snap.data());
+          }
+        } catch (e) {
+          console.warn('Could not load profile:', e);
+        }
         showApp();
       } else {
+        currentUser = null;
+        loginForm.reset();
+        signupForm.reset();
+        document.getElementById('goLogin').click();
         showAuth();
       }
-    })();
+    });
   </script>
 
 </body>
