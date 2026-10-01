@@ -143,19 +143,19 @@ signupForm.addEventListener('submit', async (e) => {
   signupMsg.textContent = '';
 
   if (!name || !user || !email || !pass) {
-    signupMsg.textContent = 'Please fill all fields.';
+    alert('Please fill all fields.');
     return;
   }
   if (!/^[a-z0-9._]{3,20}$/.test(user)) {
-    signupMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
+    alert('Username: 3-20 chars, a-z, 0-9, . or _');
     return;
   }
   if (!/^\S+@\S+\.\S+$/.test(email)) {
-    signupMsg.textContent = 'Please enter a valid email.';
+    alert('Please enter a valid email.');
     return;
   }
   if (pass.length < 6) {
-    signupMsg.textContent = 'Password must be at least 6 characters.';
+    alert('Password must be at least 6 characters.');
     return;
   }
 
@@ -167,7 +167,7 @@ signupForm.addEventListener('submit', async (e) => {
     const q = query(usersRef, where('user', '==', user));
     const snap = await getDocs(q);
     if (!snap.empty) {
-      signupMsg.textContent = 'Username already taken.';
+      alert('Username already taken.');
       signupBtn.disabled = false;
       signupBtn.textContent = 'Sign Up';
       return;
@@ -189,20 +189,18 @@ signupForm.addEventListener('submit', async (e) => {
       createdAt: serverTimestamp()
     });
 
+    alert('✅ Account created!\n\n' + email);
     signupMsg.className = 'success-msg';
     signupMsg.textContent = 'Account created! Welcome 🎉';
   } catch (err) {
     console.error(err);
+    alert(
+      '❌ SIGNUP FAILED\n\n' +
+      'CODE: ' + (err.code || 'no-code') + '\n\n' +
+      'MESSAGE: ' + (err.message || 'no-message')
+    );
     signupMsg.className = 'error-msg';
-    if (err.code === 'auth/email-already-in-use') {
-      signupMsg.textContent = 'Email already registered. Try logging in.';
-    } else if (err.code === 'auth/invalid-email') {
-      signupMsg.textContent = 'Invalid email address.';
-    } else if (err.code === 'auth/weak-password') {
-      signupMsg.textContent = 'Password too weak.';
-    } else {
-      signupMsg.textContent = err.message || 'Signup failed.';
-    }
+    signupMsg.textContent = (err.code || '') + ' — ' + (err.message || 'Signup failed.');
   } finally {
     signupBtn.disabled = false;
     signupBtn.textContent = 'Sign Up';
@@ -210,7 +208,7 @@ signupForm.addEventListener('submit', async (e) => {
 });
 
 /* ============================================================
-   LOGIN
+   LOGIN — with debug alert
    ============================================================ */
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -222,7 +220,7 @@ loginForm.addEventListener('submit', async (e) => {
   loginMsg.textContent = '';
 
   if (!email || !pass) {
-    loginMsg.textContent = 'Please enter email and password.';
+    alert('Please enter email and password.');
     return;
   }
 
@@ -230,25 +228,18 @@ loginForm.addEventListener('submit', async (e) => {
   loginBtn.textContent = 'Logging in...';
 
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
+    const result = await signInWithEmailAndPassword(auth, email, pass);
+    alert('✅ LOGIN SUCCESS!\n\nUser: ' + result.user.email);
     loginMsg.className = 'success-msg';
     loginMsg.textContent = 'Login successful! 🎉';
   } catch (err) {
     console.error(err);
-    if (
-      err.code === 'auth/user-not-found' ||
-      err.code === 'auth/wrong-password' ||
-      err.code === 'auth/invalid-credential' ||
-      err.code === 'auth/invalid-login-credentials'
-    ) {
-      loginMsg.textContent = 'Invalid email or password. Please check and try again.';
-    } else if (err.code === 'auth/too-many-requests') {
-      loginMsg.textContent = 'Too many failed attempts. Please try again later.';
-    } else if (err.code === 'auth/network-request-failed') {
-      loginMsg.textContent = 'Network error. Please check your internet.';
-    } else {
-      loginMsg.textContent = (err.code || '') + ' - ' + (err.message || 'Login failed.');
-    }
+    alert(
+      '❌ LOGIN FAILED\n\n' +
+      'CODE: ' + (err.code || 'no-code') + '\n\n' +
+      'MESSAGE: ' + (err.message || 'no-message')
+    );
+    loginMsg.textContent = (err.code || 'Error') + ' — ' + (err.message || 'Login failed.');
   } finally {
     loginBtn.disabled = false;
     loginBtn.textContent = 'Log In';
@@ -281,11 +272,11 @@ sendResetBtn.addEventListener('click', async () => {
   forgotMsg.textContent = '';
 
   if (!email) {
-    forgotMsg.textContent = 'Please enter your email address.';
+    alert('Please enter your email address.');
     return;
   }
   if (!/^\S+@\S+\.\S+$/.test(email)) {
-    forgotMsg.textContent = 'Please enter a valid email.';
+    alert('Please enter a valid email.');
     return;
   }
 
@@ -295,6 +286,7 @@ sendResetBtn.addEventListener('click', async () => {
   try {
     await sendPasswordResetEmail(auth, email);
 
+    alert('✅ Reset link sent!\n\nEmail: ' + email + '\n\nCheck inbox and spam folder.');
     forgotMsg.className = 'success-msg';
     forgotMsg.textContent = 'Reset link sent! Check your inbox (and spam folder).';
 
@@ -306,17 +298,13 @@ sendResetBtn.addEventListener('click', async () => {
 
   } catch (err) {
     console.error(err);
+    alert(
+      '❌ RESET FAILED\n\n' +
+      'CODE: ' + (err.code || 'no-code') + '\n\n' +
+      'MESSAGE: ' + (err.message || 'no-message')
+    );
     forgotMsg.className = 'error-msg';
-
-    if (err.code === 'auth/user-not-found') {
-      forgotMsg.textContent = 'No account found with this email.';
-    } else if (err.code === 'auth/invalid-email') {
-      forgotMsg.textContent = 'Invalid email address.';
-    } else if (err.code === 'auth/too-many-requests') {
-      forgotMsg.textContent = 'Too many attempts. Please try again later.';
-    } else {
-      forgotMsg.textContent = err.message || 'Failed to send reset email.';
-    }
+    forgotMsg.textContent = (err.code || '') + ' — ' + (err.message || 'Failed to send reset email.');
   } finally {
     sendResetBtn.disabled = false;
     sendResetBtn.textContent = 'Send Reset Link';
@@ -336,6 +324,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
    AUTH STATE LISTENER
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
+  console.log('Auth state changed:', user ? user.email : 'null');
   if (user) {
     currentUser = user;
     await loadProfile(user.uid);
@@ -514,8 +503,7 @@ editPhotoInput.addEventListener('change', async (e) => {
   if (!file) return;
 
   if (file.size > 500 * 1024) {
-    editMsg.className = 'error-msg';
-    editMsg.textContent = 'Image too large. Please choose a smaller photo (< 500 KB).';
+    alert('Image too large. Please choose a smaller photo (< 500 KB).');
     return;
   }
 
@@ -536,15 +524,15 @@ saveProfileBtn.addEventListener('click', async () => {
   editMsg.textContent = '';
 
   if (!newName) {
-    editMsg.textContent = 'Name cannot be empty.';
+    alert('Name cannot be empty.');
     return;
   }
   if (!/^[a-z0-9._]{3,20}$/.test(newUser)) {
-    editMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
+    alert('Username: 3-20 chars, a-z, 0-9, . or _');
     return;
   }
   if (newBio.length > 150) {
-    editMsg.textContent = 'Bio too long (max 150).';
+    alert('Bio too long (max 150).');
     return;
   }
 
@@ -557,7 +545,7 @@ saveProfileBtn.addEventListener('click', async () => {
       const q = query(usersRef, where('user', '==', newUser));
       const snap = await getDocs(q);
       if (!snap.empty) {
-        editMsg.textContent = 'Username already taken.';
+        alert('Username already taken.');
         saveProfileBtn.disabled = false;
         saveProfileBtn.textContent = 'Save Changes';
         return;
@@ -591,6 +579,7 @@ saveProfileBtn.addEventListener('click', async () => {
 
   } catch (err) {
     console.error(err);
+    alert('❌ Update failed:\n\n' + err.message);
     editMsg.className = 'error-msg';
     editMsg.textContent = err.message || 'Update failed.';
   } finally {
