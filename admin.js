@@ -23,7 +23,6 @@ import {
   addDoc,
   serverTimestamp,
   orderBy,
-  limit,
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
@@ -39,6 +38,15 @@ const firebaseConfig = {
   appId: "1:397521504045:web:bf6d3652a7375fd632b5a4",
   measurementId: "G-81RN37XN6H"
 };
+
+/* ============================================================
+   🔐 ADMIN EMAILS — यहाँ अपने emails डालो
+   ============================================================ */
+const ADMIN_EMAILS = [
+  "reehubreelhub@gmail.com"
+  // जितने चाहो उतने emails add करो
+  // "friend@gmail.com",
+];
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
@@ -74,7 +82,17 @@ const modalTitle   = document.getElementById('modalTitle');
 const modalBody    = document.getElementById('modalBody');
 
 /* ============================================================
-   LOGIN
+   HELPER — Email check
+   ============================================================ */
+function isAdminEmail(email) {
+  if (!email) return false;
+  return ADMIN_EMAILS
+    .map(e => e.toLowerCase().trim())
+    .includes(email.toLowerCase().trim());
+}
+
+/* ============================================================
+   LOGIN BUTTON
    ============================================================ */
 loginBtn.addEventListener('click', async () => {
   const email = document.getElementById('adminEmail').value.trim().toLowerCase();
@@ -88,36 +106,29 @@ loginBtn.addEventListener('click', async () => {
     return;
   }
 
+  // ---- Email check FIRST ----
+  if (!isAdminEmail(email)) {
+    loginMsg.textContent = 'Access denied. This email is not an admin.';
+    return;
+  }
+
   loginBtn.disabled = true;
   loginBtn.textContent = 'Checking...';
 
   try {
-    const cred = await signInWithEmailAndPassword(auth, email, pass);
-    const uid = cred.user.uid;
-
-    // check role
-    const snap = await getDoc(doc(db, 'users', uid));
-    if (!snap.exists()) {
-      await signOut(auth);
-      throw new Error('User profile not found.');
-    }
-
-    const profile = snap.data();
-    if (profile.role !== 'admin') {
-      await signOut(auth);
-      throw new Error('Access denied. You are not an admin.');
-    }
-
-    // success — onAuthStateChanged will handle
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged will handle the rest
   } catch (err) {
     console.error(err);
     loginMsg.className = 'error-msg';
-    if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+    if (
+      err.code === 'auth/invalid-credential' ||
+      err.code === 'auth/wrong-password' ||
+      err.code === 'auth/user-not-found'
+    ) {
       loginMsg.textContent = 'Invalid email or password.';
-    } else if (err.message) {
-      loginMsg.textContent = err.message;
     } else {
-      loginMsg.textContent = 'Login failed.';
+      loginMsg.textContent = err.message || 'Login failed.';
     }
   } finally {
     loginBtn.disabled = false;
@@ -135,32 +146,51 @@ document.getElementById('adminLogout').addEventListener('click', async () => {
 });
 
 /* ============================================================
-   AUTH STATE
+   AUTH STATE LISTENER
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
   if (user) {
+    // ---- Email check ----
+    if (!isAdminEmail(user.email)) {
+      // Not an admin — auto logout
+      await signOut(auth);
+      currentAdmin = null;
+      currentAdminProfile = null;
+      showLogin();
+      return;
+    }
+
+    // ---- Load profile ----
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
-      if (snap.exists() && snap.data().role === 'admin') {
-        currentAdmin = user;
-        currentAdminProfile = snap.data();
-        adminNameEl.textContent = currentAdminProfile.name || 'Admin';
-        showApp();
-        return;
-      }
-    } catch (e) { console.warn(e); }
-    await signOut(auth);
+      currentAdminProfile = snap.exists()
+        ? snap.data()
+        : { name: user.email.split('@')[0] };
+    } catch (e) {
+      currentAdminProfile = { name: user.email.split('@')[0] };
+    }
+
+    currentAdmin = user;
+    adminNameEl.textContent = currentAdminProfile.name || 'Admin';
+    showApp();
+    return;
   }
-  // not logged in / not admin
+
   currentAdmin = null;
   currentAdminProfile = null;
   showLogin();
 });
 
+/* ============================================================
+   SHOW SCREENS
+   ============================================================ */
 function showLogin() {
   loader.style.display = 'none';
   loginScreen.style.display = 'flex';
   appScreen.classList.remove('show');
+  // clear password input
+  const passEl = document.getElementById('adminPass');
+  if (passEl) passEl.value = '';
 }
 
 function showApp() {
@@ -189,13 +219,13 @@ async function renderPage(page) {
   adminContent.innerHTML = `<div class="loader-screen" style="min-height:200px;"><div class="spinner"></div></div>`;
 
   try {
-    if (page === 'dashboard')     await renderDashboard();
-    else if (page === 'users')    await renderUsers();
-    else if (page === 'videos')   await renderVideos();
-    else if (page === 'comments') await renderComments();
-    else if (page === 'admins')   await renderAdmins();
+    if (page === 'dashboard')          await renderDashboard();
+    else if (page === 'users')         await renderUsers();
+    else if (page === 'videos')        await renderVideos();
+    else if (page === 'comments')      await renderComments();
+    else if (page === 'admins')        await renderAdmins();
     else if (page === 'notifications') await renderNotify();
-    else if (page === 'reports')  await renderReports();
+    else if (page === 'reports')       await renderReports();
   } catch (err) {
     console.error(err);
     adminContent.innerHTML = `<div class="empty-box">Error: ${err.message}</div>`;
@@ -222,7 +252,6 @@ async function renderDashboard() {
     totalLikes += likes.length;
   });
 
-  // today's signups
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   let todaySignups = 0;
@@ -309,7 +338,7 @@ async function renderUsers() {
     list.forEach(u => {
       const tr = document.createElement('tr');
       const avatar = u.photo || defaultAvatar(u.name);
-      const roleBadge = u.role === 'admin'
+      const roleBadge = isAdminEmail(u.email)
         ? `<span class="badge-pill admin">ADMIN</span>`
         : `<span style="color:#666">user</span>`;
       const verifiedBadge = u.verified ? ` <span class="badge-pill verified">✓</span>` : '';
@@ -331,9 +360,6 @@ async function renderUsers() {
         <td>
           <div class="actions-cell">
             <button class="btn-sm primary" data-action="msg" data-uid="${u.id}">Msg</button>
-            ${u.role !== 'admin'
-              ? `<button class="btn-sm green" data-action="makeAdmin" data-uid="${u.id}">Make Admin</button>`
-              : `<button class="btn-sm gray" data-action="removeAdmin" data-uid="${u.id}">Remove Admin</button>`}
             <button class="btn-sm gray" data-action="verify" data-uid="${u.id}">${u.verified ? 'Unverify' : 'Verify'}</button>
             <button class="btn-sm danger" data-action="ban" data-uid="${u.id}">${u.banned ? 'Unban' : 'Ban'}</button>
             <button class="btn-sm danger" data-action="delete" data-uid="${u.id}">Delete</button>
@@ -343,7 +369,6 @@ async function renderUsers() {
       tbody.appendChild(tr);
     });
 
-    // action handlers
     tbody.querySelectorAll('[data-action]').forEach(btn => {
       btn.addEventListener('click', () => handleUserAction(btn.dataset.action, btn.dataset.uid));
     });
@@ -359,22 +384,6 @@ async function handleUserAction(action, uid) {
 
   if (action === 'msg') {
     openMessageModal(user);
-  }
-  else if (action === 'makeAdmin') {
-    if (!confirm(`Send admin invitation to ${user.email}?`)) return;
-    await sendAdminInvite(user);
-  }
-  else if (action === 'removeAdmin') {
-    if (!confirm(`Remove admin role from ${user.name}?`)) return;
-    await updateDoc(doc(db, 'users', uid), { role: 'user' });
-    user.role = 'user';
-    // send notification
-    await pushNotification(uid, {
-      type: 'admin_removed',
-      title: 'Admin access removed',
-      message: 'Your admin access has been removed.'
-    });
-    await renderUsers();
   }
   else if (action === 'verify') {
     const newVal = !user.verified;
@@ -408,50 +417,6 @@ async function handleUserAction(action, uid) {
     if (!confirm(`Really delete? All data will be lost.`)) return;
     await deleteDoc(doc(db, 'users', uid));
     await renderUsers();
-  }
-}
-
-/* ============================================================
-   ADMIN INVITES
-   ============================================================ */
-async function sendAdminInvite(user) {
-  try {
-    // check if already invited & pending
-    const q = query(
-      collection(db, 'admin_invites'),
-      where('email', '==', user.email.toLowerCase()),
-      where('status', '==', 'pending')
-    );
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      alert('Invitation already pending for this user.');
-      return;
-    }
-
-    // create invite
-    const inviteRef = await addDoc(collection(db, 'admin_invites'), {
-      email: user.email.toLowerCase(),
-      userId: user.id,
-      invitedBy: currentAdmin.uid,
-      invitedByName: currentAdminProfile.name,
-      status: 'pending',
-      createdAt: serverTimestamp()
-    });
-
-    // push notification
-    await pushNotification(user.id, {
-      type: 'admin_invite',
-      title: '🎉 Admin Invitation',
-      message: `You have been invited to become a ReelHub admin by ${currentAdminProfile.name}.`,
-      inviteId: inviteRef.id,
-      actions: ['accept', 'reject']
-    });
-
-    alert(`Invitation sent to ${user.email}!`);
-    await renderUsers();
-  } catch (err) {
-    console.error(err);
-    alert('Failed to send invitation: ' + err.message);
   }
 }
 
@@ -638,24 +603,14 @@ async function renderComments() {
 }
 
 /* ============================================================
-   ADMINS MANAGEMENT
+   ADMINS
    ============================================================ */
 async function renderAdmins() {
-  // all admins
-  const adminQ = query(collection(db, 'users'), where('role', '==', 'admin'));
-  const adminSnap = await getDocs(adminQ);
-  const admins = adminSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-  // pending invites
-  const invQ = query(collection(db, 'admin_invites'), orderBy('createdAt', 'desc'));
-  const invSnap = await getDocs(invQ);
-  const invites = invSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
   adminContent.innerHTML = `
     <div class="page-title-admin">Admin Management</div>
 
     <div class="section-head">
-      <h3>Current Admins (${admins.length})</h3>
+      <h3>Current Admins (${ADMIN_EMAILS.length})</h3>
     </div>
 
     <div id="adminsList"></div>
@@ -668,80 +623,74 @@ async function renderAdmins() {
     <div id="invitesList"></div>
   `;
 
-  // render admins
+  // Current admins (from code)
   const adminsList = document.getElementById('adminsList');
-  if (admins.length === 0) {
-    adminsList.innerHTML = `<div class="empty-box">No admins.</div>`;
-  } else {
-    admins.forEach(a => {
-      const card = document.createElement('div');
-      card.className = 'invite-card';
-      const isMe = a.id === currentAdmin.uid;
-      card.innerHTML = `
-        <div style="display:flex;align-items:center;gap:12px;flex:1;">
-          <img src="${a.photo || defaultAvatar(a.name)}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
-          <div class="info">
-            <b>${escapeHtml(a.name)} ${isMe ? '(You)' : ''}</b>
-            <span>${escapeHtml(a.email || '')}</span>
-          </div>
-        </div>
-        ${!isMe ? `<button class="btn-sm danger" data-uid="${a.id}">Remove Admin</button>` : ''}
-      `;
-      const rmBtn = card.querySelector('button');
-      if (rmBtn) {
-        rmBtn.addEventListener('click', async () => {
-          if (!confirm(`Remove admin from ${a.name}?`)) return;
-          await updateDoc(doc(db, 'users', a.id), { role: 'user' });
-          await pushNotification(a.id, {
-            type: 'admin_removed',
-            title: 'Admin access removed',
-            message: 'Your admin access has been removed.'
-          });
-          await renderAdmins();
-        });
-      }
-      adminsList.appendChild(card);
-    });
-  }
-
-  // render invites
-  const invitesList = document.getElementById('invitesList');
-  if (invites.length === 0) {
-    invitesList.innerHTML = `<div class="empty-box">No invitations yet.</div>`;
-  } else {
-    invites.forEach(inv => {
-      const card = document.createElement('div');
-      card.className = 'invite-card';
-      const created = inv.createdAt?.toDate?.() || null;
-      const timeStr = created ? timeAgo(created) : 'just now';
-
-      let badge = '';
-      if (inv.status === 'pending')  badge = `<span class="badge-pill pending">PENDING</span>`;
-      if (inv.status === 'accepted') badge = `<span class="badge-pill accepted">ACCEPTED</span>`;
-      if (inv.status === 'rejected') badge = `<span class="badge-pill rejected">REJECTED</span>`;
-
-      card.innerHTML = `
+  adminsList.innerHTML = '';
+  ADMIN_EMAILS.forEach(email => {
+    const card = document.createElement('div');
+    card.className = 'invite-card';
+    const isMe = email.toLowerCase() === (currentAdmin?.email || '').toLowerCase();
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;flex:1;">
+        <img src="${defaultAvatar(email)}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
         <div class="info">
-          <b>${escapeHtml(inv.email)} ${badge}</b>
-          <span>Invited ${timeStr} • by ${escapeHtml(inv.invitedByName || 'Admin')}</span>
+          <b>${escapeHtml(email)} ${isMe ? '(You)' : ''}</b>
+          <span>Admin</span>
         </div>
-        ${inv.status === 'pending'
-          ? `<button class="btn-sm danger" data-inv="${inv.id}">Cancel</button>`
-          : ''}
-      `;
-      const btn = card.querySelector('button');
-      if (btn) {
-        btn.addEventListener('click', async () => {
-          if (!confirm('Cancel this invitation?')) return;
-          await updateDoc(doc(db, 'admin_invites', inv.id), {
-            status: 'rejected',
-            respondedAt: serverTimestamp()
+      </div>
+    `;
+    adminsList.appendChild(card);
+  });
+
+  // Pending invites
+  try {
+    const invQ = query(collection(db, 'admin_invites'), orderBy('createdAt', 'desc'));
+    const invSnap = await getDocs(invQ);
+    const invites = invSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const invitesList = document.getElementById('invitesList');
+
+    if (invites.length === 0) {
+      invitesList.innerHTML = `<div class="empty-box">No invitations yet.</div>`;
+    } else {
+      invitesList.innerHTML = '';
+      invites.forEach(inv => {
+        const card = document.createElement('div');
+        card.className = 'invite-card';
+        const created = inv.createdAt?.toDate?.() || null;
+        const timeStr = created ? timeAgo(created) : 'just now';
+
+        let badge = '';
+        if (inv.status === 'pending')  badge = `<span class="badge-pill pending">PENDING</span>`;
+        if (inv.status === 'accepted') badge = `<span class="badge-pill accepted">ACCEPTED</span>`;
+        if (inv.status === 'rejected') badge = `<span class="badge-pill rejected">REJECTED</span>`;
+
+        card.innerHTML = `
+          <div class="info">
+            <b>${escapeHtml(inv.email)} ${badge}</b>
+            <span>Invited ${timeStr} • by ${escapeHtml(inv.invitedByName || 'Admin')}</span>
+          </div>
+          ${inv.status === 'pending'
+            ? `<button class="btn-sm danger" data-inv="${inv.id}">Cancel</button>`
+            : ''}
+        `;
+        const btn = card.querySelector('button');
+        if (btn) {
+          btn.addEventListener('click', async () => {
+            if (!confirm('Cancel this invitation?')) return;
+            await updateDoc(doc(db, 'admin_invites', inv.id), {
+              status: 'rejected',
+              respondedAt: serverTimestamp()
+            });
+            await renderAdmins();
           });
-          await renderAdmins();
-        });
-      }
-      invitesList.appendChild(card);
-    });
+        }
+        invitesList.appendChild(card);
+      });
+    }
+  } catch (e) {
+    console.warn(e);
+    document.getElementById('invitesList').innerHTML = `<div class="empty-box">Could not load invites.</div>`;
   }
 
   // invite new
@@ -755,9 +704,9 @@ function openInviteModal() {
       <input type="email" id="inviteEmailInput" placeholder="user@email.com">
     </div>
     <p style="font-size:12px;color:#888;margin-bottom:12px;">
-      The user will receive an invitation in their app. They can accept or reject it.
+      Aap is email ko ADMIN_EMAILS list me manually add kar sakte ho. Notification bhi bhej sakte ho.
     </p>
-    <button class="btn-primary" id="sendInviteBtn">Send Invitation</button>
+    <button class="btn-primary" id="sendInviteBtn">Send Notification</button>
     <div class="error-msg" id="inviteModalMsg"></div>
   `);
 
@@ -772,7 +721,7 @@ function openInviteModal() {
       return;
     }
 
-    // find user by email
+    // find user
     const q = query(collection(db, 'users'), where('email', '==', email));
     const snap = await getDocs(q);
     if (snap.empty) {
@@ -782,44 +731,28 @@ function openInviteModal() {
 
     const userData = { id: snap.docs[0].id, ...snap.docs[0].data() };
 
-    if (userData.role === 'admin') {
-      msg.textContent = 'This user is already an admin.';
-      return;
-    }
-
-    // check pending
-    const pq = query(
-      collection(db, 'admin_invites'),
-      where('email', '==', email),
-      where('status', '==', 'pending')
-    );
-    const psnap = await getDocs(pq);
-    if (!psnap.empty) {
-      msg.textContent = 'Invitation already pending.';
-      return;
-    }
-
     try {
-      const inviteRef = await addDoc(collection(db, 'admin_invites'), {
+      // Create invite document
+      await addDoc(collection(db, 'admin_invites'), {
         email: email,
         userId: userData.id,
         invitedBy: currentAdmin.uid,
-        invitedByName: currentAdminProfile.name,
+        invitedByName: currentAdminProfile?.name || 'Admin',
         status: 'pending',
         createdAt: serverTimestamp()
       });
 
+      // Send notification
       await pushNotification(userData.id, {
         type: 'admin_invite',
         title: '🎉 Admin Invitation',
-        message: `You have been invited to become a ReelHub admin by ${currentAdminProfile.name}.`,
-        inviteId: inviteRef.id,
+        message: `You have been invited to become a ReelHub admin by ${currentAdminProfile?.name || 'Admin'}.`,
         actions: ['accept', 'reject']
       });
 
       msg.className = 'success-msg';
-      msg.textContent = 'Invitation sent!';
-      setTimeout(() => { closeModal(); renderAdmins(); }, 800);
+      msg.textContent = 'Invitation sent! Notification bhi bheji gayi.';
+      setTimeout(() => { closeModal(); renderAdmins(); }, 1000);
     } catch (err) {
       console.error(err);
       msg.textContent = err.message || 'Failed.';
@@ -986,39 +919,18 @@ async function renderReports() {
       <td style="font-size:12px;color:#888;">${escapeHtml(r.reportedByName || '')}</td>
       <td>
         <button class="btn-sm gray" data-action="ignore" data-id="${r.id}">Ignore</button>
-        ${r.type === 'video'
-          ? `<button class="btn-sm danger" data-action="delVideo" data-id="${r.id}" data-target="${r.targetId}">Delete Video</button>`
-          : ''}
-        ${r.type === 'user'
-          ? `<button class="btn-sm danger" data-action="banUser" data-id="${r.id}" data-target="${r.targetId}">Ban User</button>`
-          : ''}
       </td>
     `;
-    tr.querySelectorAll('[data-action]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const action = btn.dataset.action;
-        if (action === 'ignore') {
-          await deleteDoc(doc(db, 'reports', r.id));
-          await renderReports();
-        } else if (action === 'delVideo') {
-          if (!confirm('Delete reported video?')) return;
-          await deleteDoc(doc(db, 'posts', btn.dataset.target));
-          await deleteDoc(doc(db, 'reports', r.id));
-          await renderReports();
-        } else if (action === 'banUser') {
-          if (!confirm('Ban reported user?')) return;
-          await updateDoc(doc(db, 'users', btn.dataset.target), { banned: true });
-          await deleteDoc(doc(db, 'reports', r.id));
-          await renderReports();
-        }
-      });
+    tr.querySelector('[data-action]').addEventListener('click', async () => {
+      await deleteDoc(doc(db, 'reports', r.id));
+      await renderReports();
     });
     tbody.appendChild(tr);
   });
 }
 
 /* ============================================================
-   MESSAGE MODAL (Send specific message to user)
+   MESSAGE MODAL
    ============================================================ */
 function openMessageModal(user) {
   openModal(`Message to ${user.name}`, `
@@ -1067,7 +979,7 @@ function openMessageModal(user) {
    HELPERS
    ============================================================ */
 async function pushNotification(userId, data) {
-  const notif = {
+  await addDoc(collection(db, 'notifications'), {
     userId: userId,
     type: data.type || 'info',
     title: data.title || '',
@@ -1076,8 +988,7 @@ async function pushNotification(userId, data) {
     actions: data.actions || null,
     read: false,
     createdAt: serverTimestamp()
-  };
-  await addDoc(collection(db, 'notifications'), notif);
+  });
 }
 
 function openModal(title, html) {
