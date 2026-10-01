@@ -8,7 +8,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   onAuthStateChanged,
-  signOut
+  signOut,
+  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import {
   getFirestore,
@@ -20,12 +21,9 @@ import {
   query,
   where,
   getDocs,
-  addDoc,
-  deleteDoc,
   serverTimestamp,
   arrayUnion,
-  arrayRemove,
-  increment
+  arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 /* ============================================================
@@ -71,12 +69,17 @@ const listModal = document.getElementById('listModal');
 const listTitle = document.getElementById('listTitle');
 const userList  = document.getElementById('userList');
 
+const forgotModal  = document.getElementById('forgotModal');
+const forgotEmail  = document.getElementById('forgotEmail');
+const forgotMsg    = document.getElementById('forgotMsg');
+const sendResetBtn = document.getElementById('sendResetBtn');
+
 /* ============================================================
    STATE
    ============================================================ */
-let currentUser   = null;   // Firebase auth user
-let currentProfile = null;  // Firestore profile object
-let selectedPhotoBase64 = null;  // New photo (base64) jodi upload kare
+let currentUser    = null;
+let currentProfile = null;
+let selectedPhotoBase64 = null;
 
 /* ============================================================
    SCREEN SWITCHING
@@ -89,7 +92,6 @@ function showAuth() {
 function showApp() {
   authScreen.style.display = 'none';
   appScreen.classList.add('show');
-  // default page: home
   setActiveNav('home');
   renderPage('home');
 }
@@ -161,7 +163,6 @@ signupForm.addEventListener('submit', async (e) => {
   signupBtn.textContent = 'Creating...';
 
   try {
-    // username uniqueness
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('user', '==', user));
     const snap = await getDocs(q);
@@ -172,11 +173,9 @@ signupForm.addEventListener('submit', async (e) => {
       return;
     }
 
-    // create auth user
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const uid = cred.user.uid;
 
-    // save profile in Firestore
     await setDoc(doc(db, 'users', uid), {
       uid: uid,
       name: name,
@@ -250,10 +249,71 @@ loginForm.addEventListener('submit', async (e) => {
 });
 
 /* ============================================================
-   FORGOT PASSWORD
+   FORGOT PASSWORD — Firebase Reset Email
    ============================================================ */
 document.getElementById('forgotLink').addEventListener('click', () => {
-  alert('Forgot password feature will be added soon.');
+  const loginEmailVal = document.getElementById('loginEmail').value.trim();
+  forgotEmail.value = loginEmailVal;
+  forgotMsg.textContent = '';
+  forgotMsg.className = 'error-msg';
+  forgotModal.classList.add('show');
+});
+
+document.getElementById('closeForgot').addEventListener('click', () => {
+  forgotModal.classList.remove('show');
+});
+
+forgotModal.addEventListener('click', (e) => {
+  if (e.target === forgotModal) forgotModal.classList.remove('show');
+});
+
+sendResetBtn.addEventListener('click', async () => {
+  const email = forgotEmail.value.trim().toLowerCase();
+
+  forgotMsg.className = 'error-msg';
+  forgotMsg.textContent = '';
+
+  if (!email) {
+    forgotMsg.textContent = 'Please enter your email address.';
+    return;
+  }
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    forgotMsg.textContent = 'Please enter a valid email.';
+    return;
+  }
+
+  sendResetBtn.disabled = true;
+  sendResetBtn.textContent = 'Sending...';
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+
+    forgotMsg.className = 'success-msg';
+    forgotMsg.textContent = 'Reset link sent! Check your inbox (and spam folder).';
+
+    setTimeout(() => {
+      forgotModal.classList.remove('show');
+      forgotEmail.value = '';
+      forgotMsg.textContent = '';
+    }, 3500);
+
+  } catch (err) {
+    console.error(err);
+    forgotMsg.className = 'error-msg';
+
+    if (err.code === 'auth/user-not-found') {
+      forgotMsg.textContent = 'No account found with this email.';
+    } else if (err.code === 'auth/invalid-email') {
+      forgotMsg.textContent = 'Invalid email address.';
+    } else if (err.code === 'auth/too-many-requests') {
+      forgotMsg.textContent = 'Too many attempts. Please try again later.';
+    } else {
+      forgotMsg.textContent = err.message || 'Failed to send reset email.';
+    }
+  } finally {
+    sendResetBtn.disabled = false;
+    sendResetBtn.textContent = 'Send Reset Link';
+  }
 });
 
 /* ============================================================
@@ -284,14 +344,13 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 /* ============================================================
-   LOAD PROFILE FROM FIRESTORE
+   LOAD PROFILE
    ============================================================ */
 async function loadProfile(uid) {
   try {
     const snap = await getDoc(doc(db, 'users', uid));
     if (snap.exists()) {
       currentProfile = snap.data();
-      // ensure arrays exist for older profiles
       if (!Array.isArray(currentProfile.followers)) currentProfile.followers = [];
       if (!Array.isArray(currentProfile.following)) currentProfile.following = [];
       if (typeof currentProfile.videoCount !== 'number') currentProfile.videoCount = 0;
@@ -393,13 +452,9 @@ function renderProfile() {
     </div>
   `;
 
-  // edit profile
   document.getElementById('editProfileBtn').addEventListener('click', openEditModal);
-
-  // avatar click -> open edit modal
   document.getElementById('avatarWrap').addEventListener('click', openEditModal);
 
-  // stats clicks
   document.querySelectorAll('.profile-stat').forEach(el => {
     el.addEventListener('click', () => {
       const action = el.dataset.action;
@@ -490,7 +545,6 @@ saveProfileBtn.addEventListener('click', async () => {
   saveProfileBtn.textContent = 'Saving...';
 
   try {
-    // if username changed -> check uniqueness
     if (newUser !== currentProfile.user) {
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('user', '==', newUser));
@@ -515,7 +569,6 @@ saveProfileBtn.addEventListener('click', async () => {
 
     await updateDoc(doc(db, 'users', currentUser.uid), updateData);
 
-    // update local
     currentProfile.name = newName;
     currentProfile.user = newUser;
     currentProfile.bio  = newBio;
@@ -524,7 +577,6 @@ saveProfileBtn.addEventListener('click', async () => {
     editMsg.className = 'success-msg';
     editMsg.textContent = 'Profile updated!';
 
-    // re-render profile
     setTimeout(() => {
       editModal.classList.remove('show');
       renderProfile();
@@ -608,7 +660,6 @@ async function toggleFollow(targetUid, btnEl) {
     const targetRef = doc(db, 'users', targetUid);
 
     if (isFollowing) {
-      // unfollow
       await updateDoc(myRef, {
         following: arrayRemove(targetUid)
       });
@@ -621,7 +672,6 @@ async function toggleFollow(targetUid, btnEl) {
         btnEl.className = 'follow';
       }
     } else {
-      // follow
       await updateDoc(myRef, {
         following: arrayUnion(targetUid)
       });
