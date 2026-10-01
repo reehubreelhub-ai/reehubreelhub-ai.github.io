@@ -33,7 +33,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyC6421R1kr0jYwUJFbjB2YzIerlJw_cdLc",
   authDomain: "reelhub-24616.firebaseapp.com",
   projectId: "reelhub-24616",
-  storageBucket: "reelhub-24616.firebasestorage.app",
+  storageBucket: "reelhub-24616.appspot.com",
   messagingSenderId: "397521504045",
   appId: "1:397521504045:web:bf6d3652a7375fd632b5a4",
   measurementId: "G-81RN37XN6H"
@@ -231,16 +231,23 @@ loginForm.addEventListener('submit', async (e) => {
 
   try {
     await signInWithEmailAndPassword(auth, email, pass);
+    loginMsg.className = 'success-msg';
+    loginMsg.textContent = 'Login successful! 🎉';
   } catch (err) {
     console.error(err);
     if (
       err.code === 'auth/user-not-found' ||
       err.code === 'auth/wrong-password' ||
-      err.code === 'auth/invalid-credential'
+      err.code === 'auth/invalid-credential' ||
+      err.code === 'auth/invalid-login-credentials'
     ) {
-      loginMsg.textContent = 'Invalid email or password.';
+      loginMsg.textContent = 'Invalid email or password. Please check and try again.';
+    } else if (err.code === 'auth/too-many-requests') {
+      loginMsg.textContent = 'Too many failed attempts. Please try again later.';
+    } else if (err.code === 'auth/network-request-failed') {
+      loginMsg.textContent = 'Network error. Please check your internet.';
     } else {
-      loginMsg.textContent = err.message || 'Login failed.';
+      loginMsg.textContent = (err.code || '') + ' - ' + (err.message || 'Login failed.');
     }
   } finally {
     loginBtn.disabled = false;
