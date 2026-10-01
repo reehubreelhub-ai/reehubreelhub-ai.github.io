@@ -5,353 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#000000">
   <title>ReelHub</title>
-
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      background: #0a0a0a;
-      color: #fff;
-      overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-
-    /* ================= AUTH SCREEN ================= */
-    #auth {
-      display: block;
-      width: 100%;
-      height: 100%;
-      overflow-y: auto;
-      background: #000;
-    }
-    #auth::-webkit-scrollbar { display: none; }
-
-    .auth-wrap {
-      min-height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 40px 28px;
-      max-width: 400px;
-      margin: 0 auto;
-    }
-
-    .auth-logo {
-      text-align: center;
-      font-size: 42px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      background: linear-gradient(90deg, #ff2e63, #ff8a00);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 8px;
-    }
-
-    .auth-tagline {
-      text-align: center;
-      font-size: 13px;
-      color: #888;
-      margin-bottom: 32px;
-    }
-
-    .auth-title {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 24px;
-      text-align: center;
-    }
-
-    .input-group {
-      position: relative;
-      margin-bottom: 12px;
-    }
-
-    .input-group input {
-      width: 100%;
-      height: 52px;
-      padding: 0 46px 0 16px;
-      background: #121212;
-      border: 1px solid #262626;
-      border-radius: 10px;
-      color: #fff;
-      font-size: 15px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.2s, background 0.2s;
-    }
-    .input-group input:focus {
-      border-color: #ff2e63;
-      background: #161616;
-    }
-    .input-group input::placeholder { color: #666; }
-
-    .input-group .eye {
-      position: absolute;
-      top: 50%;
-      right: 12px;
-      transform: translateY(-50%);
-      width: 30px;
-      height: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      color: #888;
-      border-radius: 50%;
-    }
-    .input-group .eye:hover { color: #fff; }
-
-    .btn-primary {
-      width: 100%;
-      height: 50px;
-      background: linear-gradient(90deg, #ff2e63, #ff8a00);
-      border: none;
-      border-radius: 10px;
-      color: #fff;
-      font-size: 15px;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: opacity 0.2s, transform 0.1s;
-    }
-    .btn-primary:hover { opacity: 0.9; }
-    .btn-primary:active { transform: scale(0.98); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 22px 0;
-      color: #666;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .divider::before,
-    .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: #262626;
-    }
-
-    .link-row {
-      text-align: center;
-      font-size: 14px;
-      color: #888;
-      margin-top: 20px;
-    }
-    .link-row a {
-      color: #ff2e63;
-      text-decoration: none;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .link-row a:hover { text-decoration: underline; }
-
-    .forgot {
-      display: block;
-      text-align: right;
-      font-size: 13px;
-      color: #ff2e63;
-      margin: 8px 0 16px;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    .error-msg {
-      color: #ff4d4d;
-      font-size: 13px;
-      margin-top: 10px;
-      text-align: center;
-      min-height: 18px;
-    }
-
-    .success-msg {
-      color: #4ade80;
-      font-size: 13px;
-      margin-top: 10px;
-      text-align: center;
-      min-height: 18px;
-    }
-
-    .auth-footer {
-      text-align: center;
-      font-size: 12px;
-      color: #555;
-      margin-top: 32px;
-      line-height: 1.6;
-    }
-
-    /* ================= APP LAYOUT ================= */
-    #app {
-      display: none;
-      flex-direction: column;
-      width: 100%;
-      height: 100%;
-      background: #0a0a0a;
-    }
-    #app.show { display: flex; }
-
-    .header {
-      height: 56px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      border-bottom: 1px solid #1a1a1a;
-      background: #0a0a0a;
-      z-index: 10;
-    }
-    .header .logo {
-      font-size: 22px;
-      font-weight: 800;
-      background: linear-gradient(90deg, #ff2e63, #ff8a00);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: 0.5px;
-    }
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .header .icon-btn {
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      cursor: pointer;
-      transition: background 0.2s;
-      background: none;
-      border: none;
-      color: #fff;
-    }
-    .header .icon-btn:hover { background: #1a1a1a; }
-
-    .content {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      color: #666;
-      font-size: 16px;
-    }
-    .content::-webkit-scrollbar { display: none; }
-
-    .page-title {
-      font-size: 24px;
-      font-weight: 700;
-      color: #fff;
-      text-align: center;
-    }
-
-    /* ================= BOTTOM NAV ================= */
-    .bottom-nav-wrap {
-      position: relative;
-      flex-shrink: 0;
-      padding: 0 12px 10px;
-      padding-bottom: calc(10px + env(safe-area-inset-bottom));
-      background: #0a0a0a;
-    }
-
-    .bottom-nav {
-      position: relative;
-      height: 66px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #101018;
-      border: 1px solid #1e1e28;
-      border-radius: 22px;
-      padding: 0 8px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.03);
-    }
-
-    .nav-item {
-      flex: 1;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      cursor: pointer;
-      color: #9a9aa8;
-      transition: color 0.2s;
-      background: none;
-      border: none;
-      font-family: inherit;
-    }
-    .nav-item svg {
-      width: 24px;
-      height: 24px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 1.8;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      transition: stroke 0.2s;
-    }
-    .nav-item span {
-      font-size: 10px;
-      font-weight: 500;
-    }
-    .nav-item.active { color: #fff; }
-    .nav-item.active svg { stroke: #4ea8ff; }
-
-    .nav-upload {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
-
-    .upload-btn {
-      position: absolute;
-      top: -26px;
-      width: 68px;
-      height: 68px;
-      border-radius: 50%;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle at 30% 25%, #3f8fd6 0%, #2a5f9e 45%, #1c3f6e 100%);
-      box-shadow:
-        0 0 0 6px #0a0a0a,
-        0 10px 22px rgba(46, 122, 200, 0.55),
-        inset 0 2px 4px rgba(255, 255, 255, 0.25),
-        inset 0 -4px 8px rgba(0, 0, 0, 0.45);
-      transition: transform 0.15s ease;
-    }
-    .upload-btn:active { transform: scale(0.94); }
-    .upload-btn svg {
-      width: 30px;
-      height: 30px;
-      stroke: #fff;
-      stroke-width: 2.6;
-      stroke-linecap: round;
-      fill: none;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -455,13 +109,11 @@
       </div>
     </div>
 
-    <div class="content" id="content">
-      <div class="page-title">Home Feed</div>
-    </div>
+    <div class="content" id="content"></div>
 
     <div class="bottom-nav-wrap">
       <nav class="bottom-nav">
-        <button class="nav-item active" data-page="home">
+        <button class="nav-item" data-page="home">
           <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"/></svg>
           <span>Home</span>
         </button>
@@ -497,259 +149,55 @@
     </div>
   </div>
 
-  <!-- ================= FIREBASE + APP LOGIC ================= -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-    import {
-      getAuth,
-      createUserWithEmailAndPassword,
-      signInWithEmailAndPassword,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import {
-      getFirestore,
-      doc,
-      setDoc,
-      getDoc,
-      collection,
-      query,
-      where,
-      getDocs
-    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+  <!-- ================= EDIT PROFILE MODAL ================= -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Edit Profile</h3>
+        <button class="modal-close" id="closeEdit">&times;</button>
+      </div>
 
-    // ---------- तेरा Firebase config ----------
-    const firebaseConfig = {
-      apiKey: "AIzaSyC6421R1kr0jYwUJFbjB2YzIerlJw_cdLc",
-      authDomain: "reelhub-24616.firebaseapp.com",
-      projectId: "reelhub-24616",
-      storageBucket: "reelhub-24616.firebasestorage.app",
-      messagingSenderId: "397521504045",
-      appId: "1:397521504045:web:bf6d3652a7375fd632b5a4",
-      measurementId: "G-81RN37XN6H"
-    };
+      <div class="photo-preview">
+        <img id="editPreviewImg" src="" alt="Preview">
+        <div class="info">
+          <div>Profile photo</div>
+          <label for="editPhoto">Choose photo</label>
+          <input type="file" id="editPhoto" accept="image/*" style="display:none;">
+        </div>
+      </div>
 
-    const firebaseApp = initializeApp(firebaseConfig);
-    const auth = getAuth(firebaseApp);
-    const db   = getFirestore(firebaseApp);
+      <div class="input-group">
+        <label>Full Name</label>
+        <input type="text" id="editName" placeholder="Your name" maxlength="40">
+      </div>
 
-    // ---------- DOM ----------
-    const authScreen = document.getElementById('auth');
-    const appScreen  = document.getElementById('app');
-    const loginForm  = document.getElementById('loginForm');
-    const signupForm = document.getElementById('signupForm');
-    const loginMsg   = document.getElementById('loginMsg');
-    const signupMsg  = document.getElementById('signupMsg');
-    const loginBtn   = document.getElementById('loginBtn');
-    const signupBtn  = document.getElementById('signupBtn');
+      <div class="input-group">
+        <label>Username</label>
+        <input type="text" id="editUser" placeholder="username" maxlength="20">
+      </div>
 
-    let currentUser = null;
+      <div class="input-group">
+        <label>Bio</label>
+        <textarea id="editBio" placeholder="Tell us about yourself..." maxlength="150"></textarea>
+      </div>
 
-    // ---------- Screen switching ----------
-    function showAuth() {
-      authScreen.style.display = 'block';
-      appScreen.classList.remove('show');
-    }
-    function showApp() {
-      authScreen.style.display = 'none';
-      appScreen.classList.add('show');
-      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-      document.querySelector('.nav-item[data-page="home"]')?.classList.add('active');
-      document.getElementById('content').innerHTML =
-        '<div class="page-title">Home Feed</div>';
-    }
+      <button class="btn-primary" id="saveProfileBtn">Save Changes</button>
+      <div class="error-msg" id="editMsg"></div>
+    </div>
+  </div>
 
-    // ---------- Password eye toggle ----------
-    document.querySelectorAll('.eye').forEach(eye => {
-      eye.addEventListener('click', () => {
-        const inp = document.getElementById(eye.dataset.target);
-        inp.type = inp.type === 'password' ? 'text' : 'password';
-      });
-    });
+  <!-- ================= FOLLOW LIST MODAL ================= -->
+  <div class="modal-overlay" id="listModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="listTitle">Followers</h3>
+        <button class="modal-close" id="closeList">&times;</button>
+      </div>
+      <div class="user-list" id="userList"></div>
+    </div>
+  </div>
 
-    // ---------- Login <-> Signup switch ----------
-    document.getElementById('goSignup').addEventListener('click', () => {
-      loginForm.style.display = 'none';
-      signupForm.style.display = 'block';
-      loginMsg.textContent = '';
-      signupMsg.textContent = '';
-    });
-    document.getElementById('goLogin').addEventListener('click', () => {
-      signupForm.style.display = 'none';
-      loginForm.style.display = 'block';
-      loginMsg.textContent = '';
-      signupMsg.textContent = '';
-    });
-
-    // ---------- Signup ----------
-    signupForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const name  = document.getElementById('signupName').value.trim();
-      const user  = document.getElementById('signupUser').value.trim().toLowerCase();
-      const email = document.getElementById('signupEmail').value.trim().toLowerCase();
-      const pass  = document.getElementById('signupPass').value;
-
-      signupMsg.className = 'error-msg';
-      signupMsg.textContent = '';
-
-      if (!name || !user || !email || !pass) {
-        signupMsg.textContent = 'Please fill all fields.';
-        return;
-      }
-      if (!/^[a-z0-9._]{3,20}$/.test(user)) {
-        signupMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
-        return;
-      }
-      if (!/^\S+@\S+\.\S+$/.test(email)) {
-        signupMsg.textContent = 'Please enter a valid email.';
-        return;
-      }
-      if (pass.length < 6) {
-        signupMsg.textContent = 'Password must be at least 6 characters.';
-        return;
-      }
-
-      signupBtn.disabled = true;
-      signupBtn.textContent = 'Creating...';
-
-      try {
-        // Check username unique
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('user', '==', user));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          signupMsg.textContent = 'Username already taken.';
-          signupBtn.disabled = false;
-          signupBtn.textContent = 'Sign Up';
-          return;
-        }
-
-        // Create user in Firebase Auth
-        const cred = await createUserWithEmailAndPassword(auth, email, pass);
-        const uid = cred.user.uid;
-
-        // Save profile in Firestore
-        await setDoc(doc(db, 'users', uid), {
-          uid: uid,
-          name: name,
-          user: user,
-          email: email,
-          bio: '',
-          followers: 0,
-          following: 0,
-          createdAt: new Date()
-        });
-
-        signupMsg.className = 'success-msg';
-        signupMsg.textContent = 'Account created! Welcome 🎉';
-      } catch (err) {
-        console.error(err);
-        signupMsg.className = 'error-msg';
-        if (err.code === 'auth/email-already-in-use') {
-          signupMsg.textContent = 'Email already registered. Try logging in.';
-        } else if (err.code === 'auth/invalid-email') {
-          signupMsg.textContent = 'Invalid email address.';
-        } else if (err.code === 'auth/weak-password') {
-          signupMsg.textContent = 'Password too weak.';
-        } else {
-          signupMsg.textContent = err.message || 'Signup failed.';
-        }
-      } finally {
-        signupBtn.disabled = false;
-        signupBtn.textContent = 'Sign Up';
-      }
-    });
-
-    // ---------- Login ----------
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-      const pass  = document.getElementById('loginPass').value;
-
-      loginMsg.className = 'error-msg';
-      loginMsg.textContent = '';
-
-      if (!email || !pass) {
-        loginMsg.textContent = 'Please enter email and password.';
-        return;
-      }
-
-      loginBtn.disabled = true;
-      loginBtn.textContent = 'Logging in...';
-
-      try {
-        await signInWithEmailAndPassword(auth, email, pass);
-      } catch (err) {
-        console.error(err);
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-          loginMsg.textContent = 'Invalid email or password.';
-        } else {
-          loginMsg.textContent = err.message || 'Login failed.';
-        }
-      } finally {
-        loginBtn.disabled = false;
-        loginBtn.textContent = 'Log In';
-      }
-    });
-
-    // ---------- Forgot password ----------
-    document.getElementById('forgotLink').addEventListener('click', () => {
-      alert('Forgot password feature will be added soon.');
-    });
-
-    // ---------- Logout ----------
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      if (confirm('Log out of ReelHub?')) {
-        await signOut(auth);
-      }
-    });
-
-    // ---------- Bottom nav ----------
-    const pages = {
-      home:     'Home Feed',
-      shorts:   'Shorts',
-      upload:   'Upload',
-      messages: 'Messages',
-      profile:  'Profile'
-    };
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', () => {
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        document.getElementById('content').innerHTML =
-          `<div class="page-title">${pages[item.dataset.page]}</div>`;
-      });
-    });
-
-    document.querySelector('.upload-btn').addEventListener('click', () => {
-      document.getElementById('content').innerHTML =
-        `<div class="page-title">${pages.upload}</div>`;
-    });
-
-    // ---------- Auth state listener ----------
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        currentUser = user;
-        try {
-          const snap = await getDoc(doc(db, 'users', user.uid));
-          if (snap.exists()) {
-            console.log('Profile loaded:', snap.data());
-          }
-        } catch (e) {
-          console.warn('Could not load profile:', e);
-        }
-        showApp();
-      } else {
-        currentUser = null;
-        loginForm.reset();
-        signupForm.reset();
-        document.getElementById('goLogin').click();
-        showAuth();
-      }
-    });
-  </script>
+  <script type="module" src="app.js"></script>
 
 </body>
 </html>
