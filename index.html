@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#000000">
   <title>ReelHub</title>
 
   <style>
@@ -10,138 +11,621 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    html,
-    body {
+    html, body {
       width: 100%;
       height: 100%;
       background: #000;
+      color: #fff;
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: #fff;
     }
 
-    /* ---------- SPLASH SCREEN ---------- */
-    .splash {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #000;
-      z-index: 9999;
-      opacity: 1;
-      transition: opacity 0.5s ease;
-    }
-
-    .splash.hide {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .splash img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    /* ================= AUTH SCREEN ================= */
+    #auth {
       display: block;
-      user-select: none;
-      -webkit-user-drag: none;
-    }
-
-    /* ---------- MAIN APP ---------- */
-    #app {
       width: 100%;
       height: 100%;
+      overflow-y: auto;
+      background: #000;
+    }
+    #auth::-webkit-scrollbar { display: none; }
+
+    .auth-wrap {
+      min-height: 100%;
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: center;
-      gap: 16px;
-      padding: 24px;
+      padding: 40px 28px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .auth-logo {
       text-align: center;
-      opacity: 0;
-      transition: opacity 0.6s ease;
-    }
-
-    #app.show {
-      opacity: 1;
-    }
-
-    #app h1 {
-      font-size: 32px;
-      font-weight: 700;
+      font-size: 42px;
+      font-weight: 800;
       letter-spacing: 0.5px;
       background: linear-gradient(90deg, #ff2e63, #ff8a00);
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
     }
 
-    #app p {
-      font-size: 15px;
+    .auth-tagline {
+      text-align: center;
+      font-size: 13px;
       color: #888;
-      max-width: 320px;
-      line-height: 1.5;
+      margin-bottom: 32px;
     }
 
-    .loader {
-      margin-top: 12px;
+    .auth-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .input-group input {
+      width: 100%;
+      height: 52px;
+      padding: 0 46px 0 16px;
+      background: #121212;
+      border: 1px solid #262626;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .input-group input:focus {
+      border-color: #ff2e63;
+      background: #161616;
+    }
+    .input-group input::placeholder { color: #666; }
+
+    .input-group .eye {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      transform: translateY(-50%);
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #888;
+      border-radius: 50%;
+    }
+    .input-group .eye:hover { color: #fff; }
+
+    .btn-primary {
+      width: 100%;
+      height: 50px;
+      background: linear-gradient(90deg, #ff2e63, #ff8a00);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 22px 0;
+      color: #666;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #262626;
+    }
+
+    .link-row {
+      text-align: center;
+      font-size: 14px;
+      color: #888;
+      margin-top: 20px;
+    }
+    .link-row a {
+      color: #ff2e63;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .link-row a:hover { text-decoration: underline; }
+
+    .forgot {
+      display: block;
+      text-align: right;
+      font-size: 13px;
+      color: #ff2e63;
+      margin: 8px 0 16px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .error-msg {
+      color: #ff4d4d;
+      font-size: 13px;
+      margin-top: 10px;
+      text-align: center;
+      min-height: 18px;
+    }
+
+    .success-msg {
+      color: #4ade80;
+      font-size: 13px;
+      margin-top: 10px;
+      text-align: center;
+      min-height: 18px;
+    }
+
+    .auth-footer {
+      text-align: center;
+      font-size: 12px;
+      color: #555;
+      margin-top: 32px;
+      line-height: 1.6;
+    }
+
+    /* ================= APP LAYOUT ================= */
+    #app {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      background: #000;
+    }
+    #app.show { display: flex; }
+
+    .header {
+      height: 56px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-bottom: 1px solid #1a1a1a;
+      background: #000;
+    }
+    .header .logo {
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #ff2e63, #ff8a00);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.5px;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .header .icon-btn {
       width: 36px;
       height: 36px;
-      border: 3px solid rgba(255, 255, 255, 0.15);
-      border-top-color: #ff2e63;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      cursor: pointer;
+      transition: background 0.2s;
+      background: none;
+      border: none;
+      color: #fff;
+    }
+    .header .icon-btn:hover { background: #1a1a1a; }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #666;
+      font-size: 16px;
+    }
+    .content::-webkit-scrollbar { display: none; }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      text-align: center;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .bottom-nav {
+      height: 60px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      background: #0a0a0a;
+      border-top: 1px solid #1a1a1a;
+      padding-bottom: env(safe-area-inset-bottom);
     }
+    .nav-item {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      cursor: pointer;
+      color: #666;
+      transition: color 0.2s;
+      background: none;
+      border: none;
+      font-family: inherit;
+    }
+    .nav-item svg {
+      width: 24px;
+      height: 24px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .nav-item span {
+      font-size: 10px;
+      font-weight: 500;
+    }
+    .nav-item.active { color: #fff; }
+    .nav-item.active svg { stroke: #ff2e63; }
   </style>
 </head>
 
 <body>
 
-  <!-- ========== SPLASH SCREEN ========== -->
-  <div class="splash" id="splash">
-    <img src="reelhub-logo.jpg" alt="ReelHub">
+  <!-- ================= AUTH (LOGIN / SIGNUP) ================= -->
+  <div id="auth">
+    <div class="auth-wrap">
+
+      <div class="auth-logo">ReelHub</div>
+      <div class="auth-tagline">Short videos. Big vibes. 🎬</div>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm">
+        <div class="auth-title">Log in</div>
+
+        <div class="input-group">
+          <input type="text" id="loginUser" placeholder="Username or email" autocomplete="username">
+        </div>
+
+        <div class="input-group">
+          <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
+          <div class="eye" data-target="loginPass">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+        </div>
+
+        <a class="forgot" id="forgotLink">Forgot password?</a>
+
+        <button type="submit" class="btn-primary">Log In</button>
+        <div class="error-msg" id="loginMsg"></div>
+
+        <div class="divider">OR</div>
+
+        <div class="link-row">
+          Don't have an account? <a id="goSignup">Sign up</a>
+        </div>
+      </form>
+
+      <!-- SIGNUP FORM -->
+      <form id="signupForm" style="display:none;">
+        <div class="auth-title">Create account</div>
+
+        <div class="input-group">
+          <input type="text" id="signupName" placeholder="Full name" autocomplete="name">
+        </div>
+
+        <div class="input-group">
+          <input type="text" id="signupUser" placeholder="Username" autocomplete="username">
+        </div>
+
+        <div class="input-group">
+          <input type="email" id="signupEmail" placeholder="Email" autocomplete="email">
+        </div>
+
+        <div class="input-group">
+          <input type="password" id="signupPass" placeholder="Password (min 6 characters)" autocomplete="new-password">
+          <div class="eye" data-target="signupPass">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary">Sign Up</button>
+        <div class="error-msg" id="signupMsg"></div>
+
+        <div class="divider">OR</div>
+
+        <div class="link-row">
+          Already have an account? <a id="goLogin">Log in</a>
+        </div>
+      </form>
+
+      <div class="auth-footer">
+        By continuing, you agree to our Terms & Privacy Policy.
+      </div>
+
+    </div>
   </div>
 
-  <!-- ========== MAIN APP ========== -->
+  <!-- ================= MAIN APP ================= -->
   <div id="app">
-    <h1>ReelHub</h1>
-    <p>Short videos. Big vibes. 🎬</p>
-    <div class="loader"></div>
+
+    <div class="header">
+      <div class="logo">ReelHub</div>
+      <div class="header-actions">
+        <button class="icon-btn" title="Notifications">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="logoutBtn" title="Logout">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="content" id="content">
+      <div class="page-title">Home Feed</div>
+    </div>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-page="home">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Home</span>
+      </button>
+
+      <button class="nav-item" data-page="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>Search</span>
+      </button>
+
+      <button class="nav-item" data-page="reels">
+        <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="7" y1="2" x2="7" y2="8"/><line x1="17" y1="2" x2="17" y2="8"/><polygon points="10,13 15,16 10,19" fill="currentColor" stroke="none"/></svg>
+        <span>Reels</span>
+      </button>
+
+      <button class="nav-item" data-page="upload">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        <span>Upload</span>
+      </button>
+
+      <button class="nav-item" data-page="profile">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Profile</span>
+      </button>
+    </nav>
+
   </div>
 
   <script>
     (function () {
-      const SPLASH_DURATION = 1000; // splash kitni der dikhe (ms)
+      const auth = document.getElementById('auth');
+      const app  = document.getElementById('app');
 
-      const splash = document.getElementById('splash');
-      const app    = document.getElementById('app');
+      const loginForm  = document.getElementById('loginForm');
+      const signupForm = document.getElementById('signupForm');
+      const loginMsg   = document.getElementById('loginMsg');
+      const signupMsg  = document.getElementById('signupMsg');
 
-      function showApp() {
-        splash.classList.add('hide');
-        setTimeout(() => splash.remove(), 600); // fade ke baad DOM se hatao
-        app.classList.add('show');
+      // ---------- LocalStorage ----------
+      const USERS_KEY   = 'reelhub_users';
+      const SESSION_KEY = 'reelhub_session';
+
+      function getUsers() {
+        try { return JSON.parse(localStorage.getItem(USERS_KEY)) || []; }
+        catch (e) { return []; }
+      }
+      function saveUsers(users) {
+        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      }
+      function setSession(user) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      }
+      function getSession() {
+        try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
+        catch (e) { return null; }
+      }
+      function clearSession() {
+        localStorage.removeItem(SESSION_KEY);
       }
 
-      const img = splash.querySelector('img');
+      // ---------- Screen switching ----------
+      function showAuth() {
+        auth.style.display = 'block';
+        app.classList.remove('show');
+      }
+      function showApp() {
+        auth.style.display = 'none';
+        app.classList.add('show');
+        // reset to home
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        document.querySelector('.nav-item[data-page="home"]').classList.add('active');
+        document.getElementById('content').innerHTML = '<div class="page-title">Home Feed</div>';
+      }
 
-      if (img && !img.complete) {
-        img.addEventListener('load', () => {
-          setTimeout(showApp, SPLASH_DURATION);
+      // ---------- Password eye toggle ----------
+      document.querySelectorAll('.eye').forEach(eye => {
+        eye.addEventListener('click', () => {
+          const input = document.getElementById(eye.dataset.target);
+          input.type = input.type === 'password' ? 'text' : 'password';
         });
-        img.addEventListener('error', () => {
-          console.warn('reelhub-logo.jpg load nahi hui.');
-          setTimeout(showApp, SPLASH_DURATION);
+      });
+
+      // ---------- Login <-> Signup switch ----------
+      document.getElementById('goSignup').addEventListener('click', () => {
+        loginForm.style.display = 'none';
+        signupForm.style.display = 'block';
+        loginMsg.textContent = '';
+        signupMsg.textContent = '';
+      });
+      document.getElementById('goLogin').addEventListener('click', () => {
+        signupForm.style.display = 'none';
+        loginForm.style.display = 'block';
+        loginMsg.textContent = '';
+        signupMsg.textContent = '';
+      });
+
+      // ---------- Signup ----------
+      signupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name  = document.getElementById('signupName').value.trim();
+        const user  = document.getElementById('signupUser').value.trim().toLowerCase();
+        const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+        const pass  = document.getElementById('signupPass').value;
+
+        signupMsg.className = 'error-msg';
+        signupMsg.textContent = '';
+
+        if (!name || !user || !email || !pass) {
+          signupMsg.textContent = 'Please fill all fields.';
+          return;
+        }
+        if (!/^[a-z0-9._]{3,20}$/.test(user)) {
+          signupMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
+          return;
+        }
+        if (!/^\S+@\S+\.\S+$/.test(email)) {
+          signupMsg.textContent = 'Please enter a valid email.';
+          return;
+        }
+        if (pass.length < 6) {
+          signupMsg.textContent = 'Password must be at least 6 characters.';
+          return;
+        }
+
+        const users = getUsers();
+        if (users.some(u => u.user === user)) {
+          signupMsg.textContent = 'Username already taken.';
+          return;
+        }
+        if (users.some(u => u.email === email)) {
+          signupMsg.textContent = 'Email already registered.';
+          return;
+        }
+
+        users.push({ name, user, email, pass });
+        saveUsers(users);
+
+        signupMsg.className = 'success-msg';
+        signupMsg.textContent = 'Account created! Logging in...';
+
+        setTimeout(() => {
+          setSession({ name, user, email });
+          showApp();
+        }, 800);
+      });
+
+      // ---------- Login ----------
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id   = document.getElementById('loginUser').value.trim().toLowerCase();
+        const pass = document.getElementById('loginPass').value;
+
+        loginMsg.className = 'error-msg';
+        loginMsg.textContent = '';
+
+        if (!id || !pass) {
+          loginMsg.textContent = 'Please enter username/email and password.';
+          return;
+        }
+
+        const users = getUsers();
+        const found = users.find(u =>
+          (u.user === id || u.email === id) && u.pass === pass
+        );
+
+        if (!found) {
+          loginMsg.textContent = 'Invalid credentials. Please try again.';
+          return;
+        }
+
+        setSession({ name: found.name, user: found.user, email: found.email });
+        loginMsg.className = 'success-msg';
+        loginMsg.textContent = 'Welcome back!';
+        setTimeout(showApp, 500);
+      });
+
+      // ---------- Forgot password ----------
+      document.getElementById('forgotLink').addEventListener('click', () => {
+        alert('Forgot password feature will be added soon.');
+      });
+
+      // ---------- Logout ----------
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        if (confirm('Log out of ReelHub?')) {
+          clearSession();
+          loginForm.reset();
+          signupForm.reset();
+          document.getElementById('goLogin').click();
+          showAuth();
+        }
+      });
+
+      // ---------- Bottom nav ----------
+      const pages = {
+        home:    'Home Feed',
+        search:  'Search',
+        reels:   'Reels',
+        upload:  'Upload',
+        profile: 'Profile'
+      };
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+          document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+          document.getElementById('content').innerHTML =
+            `<div class="page-title">${pages[item.dataset.page]}</div>`;
         });
+      });
+
+      // ---------- Auto-login if session exists ----------
+      if (getSession()) {
+        showApp();
       } else {
-        setTimeout(showApp, SPLASH_DURATION);
+        showAuth();
       }
     })();
   </script>
