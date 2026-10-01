@@ -1,1 +1,1142 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>ReelHub</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+body{
+  font-family:Arial,Helvetica,sans-serif;
+  background:#000;
+  color:#fff;
+  min-height:100vh;
+}
+
+button,input{
+  font:inherit;
+}
+
+.screen{
+  min-height:100vh;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+
+.screen.active{
+  display:flex;
+}
+
+.card{
+  width:100%;
+  max-width:410px;
+  text-align:center;
+}
+
+.logo{
+  font-size:42px;
+  font-weight:800;
+  margin-bottom:8px;
+  background:linear-gradient(90deg,#ff2d55,#8b5cf6,#00c2ff);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+
+.sub{
+  color:#aaa;
+  margin-bottom:28px;
+}
+
+.btn{
+  width:100%;
+  border:0;
+  border-radius:12px;
+  padding:14px;
+  margin-top:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.primary{
+  background:linear-gradient(90deg,#ff2d55,#8b5cf6);
+  color:#fff;
+}
+
+.dark{
+  background:#1d1d1d;
+  color:#fff;
+}
+
+.outline{
+  background:transparent;
+  border:1px solid #444;
+  color:#fff;
+}
+
+.input{
+  width:100%;
+  background:#151515;
+  border:1px solid #333;
+  color:#fff;
+  padding:14px;
+  border-radius:10px;
+  margin:7px 0;
+  outline:none;
+}
+
+.input:focus{
+  border-color:#8b5cf6;
+}
+
+.link{
+  color:#b794ff;
+  margin-top:18px;
+  cursor:pointer;
+}
+
+.photo{
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  object-fit:cover;
+  background:#222;
+  border:3px solid #8b5cf6;
+  margin:0 auto 15px;
+  display:block;
+}
+
+.addphoto{
+  display:inline-block;
+  color:#b794ff;
+  cursor:pointer;
+  margin-bottom:18px;
+}
+
+.hidden{
+  display:none!important;
+}
+
+.top{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  height:58px;
+  background:#000;
+  border-bottom:1px solid #222;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 16px;
+  z-index:5;
+}
+
+.top .brand{
+  font-size:24px;
+  font-weight:800;
+}
+
+.content{
+  padding:75px 15px 90px;
+  max-width:600px;
+  margin:auto;
+}
+
+.post{
+  background:#111;
+  border-radius:14px;
+  margin-bottom:16px;
+  overflow:hidden;
+}
+
+.posthead{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px;
+}
+
+.avatar{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  object-fit:cover;
+  background:#333;
+}
+
+.posttext{
+  padding:12px;
+  color:#ddd;
+}
+
+.nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  height:72px;
+  background:#090909;
+  border-top:1px solid #222;
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  z-index:5;
+}
+
+.nav button{
+  background:none;
+  border:0;
+  color:#aaa;
+  font-size:12px;
+}
+
+.nav button b{
+  display:block;
+  font-size:23px;
+  margin-bottom:3px;
+}
+
+.nav .upload b{
+  background:#fff;
+  color:#000;
+  border-radius:12px;
+  padding:1px 10px;
+  font-size:27px;
+}
+
+.profileBox{
+  text-align:center;
+  padding-top:10px;
+}
+
+.stats{
+  display:flex;
+  justify-content:center;
+  gap:35px;
+  margin:20px 0;
+}
+
+.stat b{
+  display:block;
+  font-size:19px;
+}
+
+.stat span{
+  color:#999;
+  font-size:12px;
+}
+
+.toast{
+  position:fixed;
+  bottom:85px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#fff;
+  color:#000;
+  padding:12px 18px;
+  border-radius:10px;
+  display:none;
+  z-index:20;
+}
+
+.small{
+  font-size:12px;
+  color:#888;
+  margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ================= WELCOME ================= -->
+
+<section id="welcome" class="screen active">
+
+  <div class="card">
+
+    <div class="logo">
+      ReelHub
+    </div>
+
+    <div class="sub">
+      Watch • Share • Create
+    </div>
+
+    <button
+      class="btn primary"
+      onclick="show('signup')">
+      Create new account
+    </button>
+
+    <button
+      class="btn dark"
+      onclick="show('login')">
+      Log in
+    </button>
+
+    <div class="small">
+      Join ReelHub and start sharing.
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ================= CREATE ACCOUNT ================= -->
+
+<section id="signup" class="screen">
+
+  <div class="card">
+
+    <div
+      class="logo"
+      style="font-size:34px">
+      Create account
+    </div>
+
+    <div class="sub">
+      Join ReelHub
+    </div>
+
+    <!-- Profile Photo -->
+
+    <img
+      id="signupPhoto"
+      class="photo"
+      src=""
+      alt="Profile Photo">
+
+    <label
+      class="addphoto"
+      for="photoInput">
+      ＋ Add profile photo
+    </label>
+
+    <input
+      id="photoInput"
+      class="hidden"
+      type="file"
+      accept="image/*"
+      onchange="previewPhoto(event)">
+
+    <!-- Name -->
+
+    <input
+      id="name"
+      class="input"
+      type="text"
+      placeholder="Full name">
+
+    <!-- Username -->
+
+    <input
+      id="username"
+      class="input"
+      type="text"
+      placeholder="Username">
+
+    <!-- Email -->
+
+    <input
+      id="email"
+      class="input"
+      type="email"
+      placeholder="Email">
+
+    <!-- Password -->
+
+    <input
+      id="password"
+      class="input"
+      type="password"
+      placeholder="Password">
+
+    <button
+      class="btn primary"
+      onclick="createAccount()">
+      Create account
+    </button>
+
+    <div
+      class="link"
+      onclick="show('login')">
+      Already have an account? Log in
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ================= LOGIN ================= -->
+
+<section id="login" class="screen">
+
+  <div class="card">
+
+    <div class="logo">
+      ReelHub
+    </div>
+
+    <div class="sub">
+      Log in to continue
+    </div>
+
+    <input
+      id="loginEmail"
+      class="input"
+      type="email"
+      placeholder="Email">
+
+    <input
+      id="loginPassword"
+      class="input"
+      type="password"
+      placeholder="Password">
+
+    <button
+      class="btn primary"
+      onclick="login()">
+      Log in
+    </button>
+
+    <button
+      class="btn outline"
+      onclick="googleLogin()">
+      Continue with Google
+    </button>
+
+    <div
+      class="link"
+      onclick="show('signup')">
+      Don't have an account? Create one
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ================= MAIN APP ================= -->
+
+<section id="app" class="hidden">
+
+  <!-- Top Bar -->
+
+  <header class="top">
+
+    <div class="brand">
+      ReelHub
+    </div>
+
+    <div>
+      🔔
+    </div>
+
+  </header>
+
+
+  <!-- Home -->
+
+  <main class="content">
+
+    <div class="post">
+
+      <div class="posthead">
+
+        <img
+          id="homeAvatar"
+          class="avatar"
+          src=""
+          alt="Avatar">
+
+        <b id="homeName">
+          ReelHub User
+        </b>
+
+      </div>
+
+      <div class="posttext">
+
+        Welcome to ReelHub 🎬
+
+        <br><br>
+
+        Start creating and sharing your videos.
+
+      </div>
+
+    </div>
+
+
+    <div class="post">
+
+      <div class="posthead">
+
+        <div
+          class="avatar"
+          style="
+          display:flex;
+          align-items:center;
+          justify-content:center;">
+          🔥
+        </div>
+
+        <b>
+          ReelHub Shorts
+        </b>
+
+      </div>
+
+      <div class="posttext">
+
+        Your Shorts, videos and profile
+        will appear here.
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- Bottom Navigation -->
+
+  <nav class="nav">
+
+    <button onclick="home()">
+
+      <b>⌂</b>
+
+      Home
+
+    </button>
+
+
+    <button onclick="toast('Shorts screen coming soon')">
+
+      <b>🔥</b>
+
+      Shorts
+
+    </button>
+
+
+    <button
+      class="upload"
+      onclick="toast('Upload screen coming soon')">
+
+      <b>＋</b>
+
+      Create
+
+    </button>
+
+
+    <button
+      onclick="toast('ReelHub feed')">
+
+      <b>▶</b>
+
+      ReelHub
+
+    </button>
+
+
+    <button onclick="profile()">
+
+      <b>◉</b>
+
+      You
+
+    </button>
+
+  </nav>
+
+</section>
+
+
+<!-- ================= PROFILE ================= -->
+
+<section
+  id="profileScreen"
+  class="hidden">
+
+  <header class="top">
+
+    <div
+      onclick="home()"
+      style="font-size:28px;cursor:pointer;">
+      ‹
+    </div>
+
+    <div
+      class="brand"
+      style="font-size:20px;">
+      Profile
+    </div>
+
+    <div
+      onclick="logout()"
+      style="cursor:pointer;">
+      ↪
+    </div>
+
+  </header>
+
+
+  <main class="content">
+
+    <div class="profileBox">
+
+      <img
+        id="profilePhoto"
+        class="photo"
+        src=""
+        alt="Profile">
+
+      <h2 id="profileName">
+        User
+      </h2>
+
+      <div
+        id="profileUsername"
+        style="color:#aaa;">
+      </div>
+
+
+      <div class="stats">
+
+        <div class="stat">
+          <b>0</b>
+          <span>Posts</span>
+        </div>
+
+        <div class="stat">
+          <b>0</b>
+          <span>Followers</span>
+        </div>
+
+        <div class="stat">
+          <b>0</b>
+          <span>Following</span>
+        </div>
+
+      </div>
+
+
+      <button
+        class="btn dark"
+        onclick="toast('Edit profile coming soon')">
+        Edit profile
+      </button>
+
+
+      <button
+        class="btn outline"
+        onclick="home()">
+        Back to Home
+      </button>
+
+    </div>
+
+  </main>
+
+
+  <nav class="nav">
+
+    <button onclick="home()">
+      <b>⌂</b>
+      Home
+    </button>
+
+    <button
+      onclick="toast('Shorts screen coming soon')">
+      <b>🔥</b>
+      Shorts
+    </button>
+
+    <button
+      class="upload"
+      onclick="toast('Upload screen coming soon')">
+      <b>＋</b>
+      Create
+    </button>
+
+    <button
+      onclick="toast('ReelHub feed')">
+      <b>▶</b>
+      ReelHub
+    </button>
+
+    <button onclick="profile()">
+      <b>◉</b>
+      You
+    </button>
+
+  </nav>
+
+</section>
+
+
+<!-- Toast -->
+
+<div
+  id="toast"
+  class="toast">
+</div>
+
+
+<script>
+
+/* =========================================
+   GLOBAL PHOTO DATA
+========================================= */
+
+let photoData = "";
+
+
+/* =========================================
+   SHORTCUT
+========================================= */
+
+function $(id){
+  return document.getElementById(id);
+}
+
+
+/* =========================================
+   SHOW SCREEN
+========================================= */
+
+function show(id){
+
+  document
+    .querySelectorAll(".screen")
+    .forEach(function(screen){
+
+      screen.classList.remove("active");
+
+    });
+
+
+  $("app")
+    .classList
+    .add("hidden");
+
+
+  $("profileScreen")
+    .classList
+    .add("hidden");
+
+
+  $(id)
+    .classList
+    .add("active");
+
+}
+
+
+/* =========================================
+   PHOTO PREVIEW
+========================================= */
+
+function previewPhoto(event){
+
+  const file =
+    event.target.files[0];
+
+  if(!file){
+    return;
+  }
+
+
+  if(file.size > 5 * 1024 * 1024){
+
+    toast(
+      "Photo 5 MB se chhoti rakho"
+    );
+
+    return;
+  }
+
+
+  const reader =
+    new FileReader();
+
+
+  reader.onload =
+    function(){
+
+      photoData =
+        reader.result;
+
+      $("signupPhoto")
+        .src =
+        photoData;
+
+    };
+
+
+  reader.readAsDataURL(file);
+
+}
+
+
+/* =========================================
+   CREATE ACCOUNT
+========================================= */
+
+function createAccount(){
+
+  const name =
+    $("name")
+    .value
+    .trim();
+
+
+  const username =
+    $("username")
+    .value
+    .trim()
+    .replace(/^@/,"");
+
+
+  const email =
+    $("email")
+    .value
+    .trim()
+    .toLowerCase();
+
+
+  const password =
+    $("password")
+    .value;
+
+
+  if(
+    !name ||
+    !username ||
+    !email ||
+    !password
+  ){
+
+    toast(
+      "Sabhi details bharo"
+    );
+
+    return;
+  }
+
+
+  if(password.length < 6){
+
+    toast(
+      "Password kam se kam 6 characters ka ho"
+    );
+
+    return;
+  }
+
+
+  const user = {
+
+    name:name,
+
+    username:username,
+
+    email:email,
+
+    password:password,
+
+    photo:photoData
+
+  };
+
+
+  localStorage.setItem(
+    "reelhubUser",
+    JSON.stringify(user)
+  );
+
+
+  localStorage.setItem(
+    "reelhubLoggedIn",
+    "1"
+  );
+
+
+  openApp();
+
+}
+
+
+/* =========================================
+   LOGIN
+========================================= */
+
+function login(){
+
+  const email =
+    $("loginEmail")
+    .value
+    .trim()
+    .toLowerCase();
+
+
+  const password =
+    $("loginPassword")
+    .value;
+
+
+  const savedUser =
+    JSON.parse(
+      localStorage.getItem(
+        "reelhubUser"
+      ) || "null"
+    );
+
+
+  if(!savedUser){
+
+    toast(
+      "Pehle Create account karo"
+    );
+
+    return;
+  }
+
+
+  if(
+    savedUser.email !== email ||
+    savedUser.password !== password
+  ){
+
+    toast(
+      "Email ya password galat hai"
+    );
+
+    return;
+  }
+
+
+  localStorage.setItem(
+    "reelhubLoggedIn",
+    "1"
+  );
+
+
+  openApp();
+
+}
+
+
+/* =========================================
+   GOOGLE LOGIN
+========================================= */
+
+function googleLogin(){
+
+  toast(
+    "Google Login ko Firebase Authentication se connect karna hoga"
+  );
+
+}
+
+
+/* =========================================
+   OPEN APP
+========================================= */
+
+function openApp(){
+
+  const user =
+    JSON.parse(
+      localStorage.getItem(
+        "reelhubUser"
+      ) || "{}"
+    );
+
+
+  $("welcome")
+    .classList
+    .remove("active");
+
+
+  $("signup")
+    .classList
+    .remove("active");
+
+
+  $("login")
+    .classList
+    .remove("active");
+
+
+  $("profileScreen")
+    .classList
+    .add("hidden");
+
+
+  $("app")
+    .classList
+    .remove("hidden");
+
+
+  $("homeName")
+    .textContent =
+    user.name ||
+    "ReelHub User";
+
+
+  $("homeAvatar")
+    .src =
+    user.photo ||
+    "";
+
+}
+
+
+/* =========================================
+   HOME
+========================================= */
+
+function home(){
+
+  openApp();
+
+}
+
+
+/* =========================================
+   PROFILE
+========================================= */
+
+function profile(){
+
+  const user =
+    JSON.parse(
+      localStorage.getItem(
+        "reelhubUser"
+      ) || "{}"
+    );
+
+
+  $("app")
+    .classList
+    .add("hidden");
+
+
+  $("profileScreen")
+    .classList
+    .remove("hidden");
+
+
+  $("profilePhoto")
+    .src =
+    user.photo ||
+    "";
+
+
+  $("profileName")
+    .textContent =
+    user.name ||
+    "ReelHub User";
+
+
+  $("profileUsername")
+    .textContent =
+    user.username
+    ? "@" + user.username
+    : "";
+
+}
+
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+function logout(){
+
+  localStorage.removeItem(
+    "reelhubLoggedIn"
+  );
+
+
+  show("welcome");
+
+}
+
+
+/* =========================================
+   TOAST MESSAGE
+========================================= */
+
+function toast(message){
+
+  const t =
+    $("toast");
+
+
+  t.textContent =
+    message;
+
+
+  t.style.display =
+    "block";
+
+
+  clearTimeout(
+    window.reelhubToast
+  );
+
+
+  window.reelhubToast =
+    setTimeout(
+      function(){
+
+        t.style.display =
+          "none";
+
+      },
+      2500
+    );
+
+}
+
+
+/* =========================================
+   AUTO LOGIN
+========================================= */
+
+if(
+  localStorage.getItem(
+    "reelhubLoggedIn"
+  ) === "1"
+  &&
+  localStorage.getItem(
+    "reelhubUser"
+  )
+){
+
+  openApp();
+
+}
+
+</script>
+
+</body>
+</html>
