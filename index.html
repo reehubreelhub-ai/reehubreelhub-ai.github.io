@@ -1,1142 +1,1063 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
-<title>ReelHub</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReelHub</title>
 
-<style>
-*{
-  box-sizing:border-box;
-  margin:0;
-  padding:0;
-}
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
 
-body{
-  font-family:Arial,Helvetica,sans-serif;
-  background:#000;
-  color:#fff;
-  min-height:100vh;
-}
+    body {
+      min-height: 100vh;
+      background: #000;
+      color: #fff;
+    }
 
-button,input{
-  font:inherit;
-}
+    button {
+      border: none;
+      cursor: pointer;
+    }
 
-.screen{
-  min-height:100vh;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  padding:24px;
-}
+    .screen {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
 
-.screen.active{
-  display:flex;
-}
+    .auth-box {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
 
-.card{
-  width:100%;
-  max-width:410px;
-  text-align:center;
-}
+    .logo {
+      font-size: 45px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      background: linear-gradient(
+        90deg,
+        #ff0050,
+        #8b5cf6,
+        #00c6ff
+      );
+      -webkit-background-clip: text;
+      color: transparent;
+    }
 
-.logo{
-  font-size:42px;
-  font-weight:800;
-  margin-bottom:8px;
-  background:linear-gradient(90deg,#ff2d55,#8b5cf6,#00c2ff);
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:transparent;
-}
+    .subtitle {
+      color: #999;
+      margin-bottom: 30px;
+      font-size: 15px;
+    }
 
-.sub{
-  color:#aaa;
-  margin-bottom:28px;
-}
+    .btn {
+      width: 100%;
+      height: 52px;
+      border-radius: 14px;
+      margin: 8px 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
 
-.btn{
-  width:100%;
-  border:0;
-  border-radius:12px;
-  padding:14px;
-  margin-top:12px;
-  font-weight:700;
-  cursor:pointer;
-}
+    .skip {
+      background: transparent;
+      color: #aaa;
+    }
 
-.primary{
-  background:linear-gradient(90deg,#ff2d55,#8b5cf6);
-  color:#fff;
-}
+    .google {
+      background: #fff;
+      color: #111;
+    }
 
-.dark{
-  background:#1d1d1d;
-  color:#fff;
-}
+    .primary {
+      background: linear-gradient(
+        90deg,
+        #ff0050,
+        #8b5cf6
+      );
+      color: #fff;
+    }
 
-.outline{
-  background:transparent;
-  border:1px solid #444;
-  color:#fff;
-}
+    .secondary {
+      background: #202020;
+      color: #fff;
+    }
 
-.input{
-  width:100%;
-  background:#151515;
-  border:1px solid #333;
-  color:#fff;
-  padding:14px;
-  border-radius:10px;
-  margin:7px 0;
-  outline:none;
-}
+    .form {
+      display: none;
+    }
 
-.input:focus{
-  border-color:#8b5cf6;
-}
+    .form h2 {
+      margin-bottom: 20px;
+    }
 
-.link{
-  color:#b794ff;
-  margin-top:18px;
-  cursor:pointer;
-}
+    input {
+      width: 100%;
+      height: 52px;
+      margin: 7px 0;
+      padding: 0 16px;
+      border-radius: 12px;
+      border: 1px solid #333;
+      background: #151515;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+    }
 
-.photo{
-  width:120px;
-  height:120px;
-  border-radius:50%;
-  object-fit:cover;
-  background:#222;
-  border:3px solid #8b5cf6;
-  margin:0 auto 15px;
-  display:block;
-}
+    input:focus {
+      border-color: #8b5cf6;
+    }
 
-.addphoto{
-  display:inline-block;
-  color:#b794ff;
-  cursor:pointer;
-  margin-bottom:18px;
-}
+    .small {
+      color: #999;
+      margin-top: 15px;
+      font-size: 14px;
+    }
 
-.hidden{
-  display:none!important;
-}
+    .link {
+      color: #9b7cff;
+      cursor: pointer;
+      font-weight: bold;
+    }
 
-.top{
-  position:fixed;
-  top:0;
-  left:0;
-  right:0;
-  height:58px;
-  background:#000;
-  border-bottom:1px solid #222;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 16px;
-  z-index:5;
-}
+    .message {
+      min-height: 22px;
+      margin-top: 12px;
+      color: #ff9db7;
+      font-size: 14px;
+      line-height: 1.4;
+    }
 
-.top .brand{
-  font-size:24px;
-  font-weight:800;
-}
+    /* APP */
 
-.content{
-  padding:75px 15px 90px;
-  max-width:600px;
-  margin:auto;
-}
+    #app {
+      display: none;
+      min-height: 100vh;
+      background: #080808;
+    }
 
-.post{
-  background:#111;
-  border-radius:14px;
-  margin-bottom:16px;
-  overflow:hidden;
-}
+    .top {
+      height: 65px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      border-bottom: 1px solid #222;
+    }
 
-.posthead{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:12px;
-}
+    .top-logo {
+      font-size: 25px;
+      font-weight: 800;
+      background: linear-gradient(
+        90deg,
+        #ff0050,
+        #8b5cf6
+      );
+      -webkit-background-clip: text;
+      color: transparent;
+    }
 
-.avatar{
-  width:38px;
-  height:38px;
-  border-radius:50%;
-  object-fit:cover;
-  background:#333;
-}
+    .content {
+      padding: 35px 20px;
+      text-align: center;
+    }
 
-.posttext{
-  padding:12px;
-  color:#ddd;
-}
+    .profile {
+      width: 95px;
+      height: 95px;
+      border-radius: 50%;
+      background: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 22px auto;
+      font-size: 40px;
+      overflow: hidden;
+    }
 
-.nav{
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-  height:72px;
-  background:#090909;
-  border-top:1px solid #222;
-  display:flex;
-  justify-content:space-around;
-  align-items:center;
-  z-index:5;
-}
+    .profile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
 
-.nav button{
-  background:none;
-  border:0;
-  color:#aaa;
-  font-size:12px;
-}
+    .email {
+      color: #888;
+      margin-top: 8px;
+    }
 
-.nav button b{
-  display:block;
-  font-size:23px;
-  margin-bottom:3px;
-}
+    .guest-note {
+      color: #777;
+      margin-top: 12px;
+    }
 
-.nav .upload b{
-  background:#fff;
-  color:#000;
-  border-radius:12px;
-  padding:1px 10px;
-  font-size:27px;
-}
+    .logout {
+      background: #222;
+      color: #fff;
+      padding: 13px 28px;
+      border-radius: 12px;
+      margin-top: 25px;
+      font-size: 15px;
+      font-weight: 600;
+    }
 
-.profileBox{
-  text-align:center;
-  padding-top:10px;
-}
-
-.stats{
-  display:flex;
-  justify-content:center;
-  gap:35px;
-  margin:20px 0;
-}
-
-.stat b{
-  display:block;
-  font-size:19px;
-}
-
-.stat span{
-  color:#999;
-  font-size:12px;
-}
-
-.toast{
-  position:fixed;
-  bottom:85px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#fff;
-  color:#000;
-  padding:12px 18px;
-  border-radius:10px;
-  display:none;
-  z-index:20;
-}
-
-.small{
-  font-size:12px;
-  color:#888;
-  margin-top:10px;
-}
-</style>
+    .logout:hover {
+      background: #333;
+    }
+  </style>
 </head>
 
 <body>
 
-<!-- ================= WELCOME ================= -->
+  <!-- =========================
+       AUTH SCREEN
+  ========================== -->
 
-<section id="welcome" class="screen active">
+  <div id="authScreen" class="screen">
 
-  <div class="card">
+    <div class="auth-box">
 
-    <div class="logo">
-      ReelHub
-    </div>
+      <!-- WELCOME -->
 
-    <div class="sub">
-      Watch • Share • Create
-    </div>
+      <div id="welcome">
 
-    <button
-      class="btn primary"
-      onclick="show('signup')">
-      Create new account
-    </button>
+        <div class="logo">
+          ReelHub
+        </div>
 
-    <button
-      class="btn dark"
-      onclick="show('login')">
-      Log in
-    </button>
+        <div class="subtitle">
+          Watch • Create • Share
+        </div>
 
-    <div class="small">
-      Join ReelHub and start sharing.
-    </div>
+        <!-- SKIP -->
 
-  </div>
+        <button
+          class="btn skip"
+          id="skipBtn">
+          Skip
+        </button>
 
-</section>
+        <!-- GOOGLE -->
 
+        <button
+          class="btn google"
+          id="googleBtn">
+          Continue with Google
+        </button>
 
-<!-- ================= CREATE ACCOUNT ================= -->
+        <!-- CREATE -->
 
-<section id="signup" class="screen">
+        <button
+          class="btn primary"
+          id="createBtn">
+          Create Account
+        </button>
 
-  <div class="card">
+        <!-- LOGIN -->
 
-    <div
-      class="logo"
-      style="font-size:34px">
-      Create account
-    </div>
-
-    <div class="sub">
-      Join ReelHub
-    </div>
-
-    <!-- Profile Photo -->
-
-    <img
-      id="signupPhoto"
-      class="photo"
-      src=""
-      alt="Profile Photo">
-
-    <label
-      class="addphoto"
-      for="photoInput">
-      ＋ Add profile photo
-    </label>
-
-    <input
-      id="photoInput"
-      class="hidden"
-      type="file"
-      accept="image/*"
-      onchange="previewPhoto(event)">
-
-    <!-- Name -->
-
-    <input
-      id="name"
-      class="input"
-      type="text"
-      placeholder="Full name">
-
-    <!-- Username -->
-
-    <input
-      id="username"
-      class="input"
-      type="text"
-      placeholder="Username">
-
-    <!-- Email -->
-
-    <input
-      id="email"
-      class="input"
-      type="email"
-      placeholder="Email">
-
-    <!-- Password -->
-
-    <input
-      id="password"
-      class="input"
-      type="password"
-      placeholder="Password">
-
-    <button
-      class="btn primary"
-      onclick="createAccount()">
-      Create account
-    </button>
-
-    <div
-      class="link"
-      onclick="show('login')">
-      Already have an account? Log in
-    </div>
-
-  </div>
-
-</section>
-
-
-<!-- ================= LOGIN ================= -->
-
-<section id="login" class="screen">
-
-  <div class="card">
-
-    <div class="logo">
-      ReelHub
-    </div>
-
-    <div class="sub">
-      Log in to continue
-    </div>
-
-    <input
-      id="loginEmail"
-      class="input"
-      type="email"
-      placeholder="Email">
-
-    <input
-      id="loginPassword"
-      class="input"
-      type="password"
-      placeholder="Password">
-
-    <button
-      class="btn primary"
-      onclick="login()">
-      Log in
-    </button>
-
-    <button
-      class="btn outline"
-      onclick="googleLogin()">
-      Continue with Google
-    </button>
-
-    <div
-      class="link"
-      onclick="show('signup')">
-      Don't have an account? Create one
-    </div>
-
-  </div>
-
-</section>
-
-
-<!-- ================= MAIN APP ================= -->
-
-<section id="app" class="hidden">
-
-  <!-- Top Bar -->
-
-  <header class="top">
-
-    <div class="brand">
-      ReelHub
-    </div>
-
-    <div>
-      🔔
-    </div>
-
-  </header>
-
-
-  <!-- Home -->
-
-  <main class="content">
-
-    <div class="post">
-
-      <div class="posthead">
-
-        <img
-          id="homeAvatar"
-          class="avatar"
-          src=""
-          alt="Avatar">
-
-        <b id="homeName">
-          ReelHub User
-        </b>
-
-      </div>
-
-      <div class="posttext">
-
-        Welcome to ReelHub 🎬
-
-        <br><br>
-
-        Start creating and sharing your videos.
-
-      </div>
-
-    </div>
-
-
-    <div class="post">
-
-      <div class="posthead">
+        <button
+          class="btn secondary"
+          id="loginBtn">
+          Login
+        </button>
 
         <div
-          class="avatar"
-          style="
-          display:flex;
-          align-items:center;
-          justify-content:center;">
-          🔥
+          id="welcomeMessage"
+          class="message">
         </div>
 
-        <b>
-          ReelHub Shorts
-        </b>
+      </div>
+
+
+      <!-- =========================
+           CREATE ACCOUNT
+      ========================== -->
+
+      <div id="createForm" class="form">
+
+        <h2>
+          Create Account
+        </h2>
+
+        <input
+          id="signupName"
+          type="text"
+          placeholder="Full Name"
+          autocomplete="name">
+
+        <input
+          id="signupEmail"
+          type="email"
+          placeholder="Email"
+          autocomplete="email">
+
+        <input
+          id="signupPassword"
+          type="password"
+          placeholder="Password (minimum 6 characters)"
+          autocomplete="new-password">
+
+        <button
+          class="btn primary"
+          id="createAccountBtn">
+          Create Account
+        </button>
+
+        <div
+          id="createMessage"
+          class="message">
+        </div>
+
+        <div class="small">
+          Already have an account?
+          <span
+            class="link"
+            id="toLogin">
+            Login
+          </span>
+        </div>
+
+        <div class="small">
+          <span
+            class="link"
+            id="backFromCreate">
+            ← Back
+          </span>
+        </div>
 
       </div>
 
-      <div class="posttext">
 
-        Your Shorts, videos and profile
-        will appear here.
+      <!-- =========================
+           LOGIN
+      ========================== -->
+
+      <div id="loginForm" class="form">
+
+        <h2>
+          Login
+        </h2>
+
+        <input
+          id="loginEmail"
+          type="email"
+          placeholder="Email"
+          autocomplete="email">
+
+        <input
+          id="loginPassword"
+          type="password"
+          placeholder="Password"
+          autocomplete="current-password">
+
+        <button
+          class="btn primary"
+          id="loginAccountBtn">
+          Login
+        </button>
+
+        <button
+          class="btn google"
+          id="googleBtn2">
+          Continue with Google
+        </button>
+
+        <div
+          id="loginMessage"
+          class="message">
+        </div>
+
+        <div class="small">
+          Don't have an account?
+          <span
+            class="link"
+            id="toCreate">
+            Create Account
+          </span>
+        </div>
+
+        <div class="small">
+          <span
+            class="link"
+            id="backFromLogin">
+            ← Back
+          </span>
+        </div>
 
       </div>
 
     </div>
 
-  </main>
+  </div>
 
 
-  <!-- Bottom Navigation -->
+  <!-- =========================
+       MAIN APP
+  ========================== -->
 
-  <nav class="nav">
+  <div id="app">
 
-    <button onclick="home()">
+    <div class="top">
 
-      <b>⌂</b>
+      <div class="top-logo">
+        ReelHub
+      </div>
 
-      Home
+      <div>
+        🏠
+      </div>
 
-    </button>
-
-
-    <button onclick="toast('Shorts screen coming soon')">
-
-      <b>🔥</b>
-
-      Shorts
-
-    </button>
-
-
-    <button
-      class="upload"
-      onclick="toast('Upload screen coming soon')">
-
-      <b>＋</b>
-
-      Create
-
-    </button>
-
-
-    <button
-      onclick="toast('ReelHub feed')">
-
-      <b>▶</b>
-
-      ReelHub
-
-    </button>
-
-
-    <button onclick="profile()">
-
-      <b>◉</b>
-
-      You
-
-    </button>
-
-  </nav>
-
-</section>
-
-
-<!-- ================= PROFILE ================= -->
-
-<section
-  id="profileScreen"
-  class="hidden">
-
-  <header class="top">
-
-    <div
-      onclick="home()"
-      style="font-size:28px;cursor:pointer;">
-      ‹
     </div>
 
-    <div
-      class="brand"
-      style="font-size:20px;">
-      Profile
-    </div>
 
-    <div
-      onclick="logout()"
-      style="cursor:pointer;">
-      ↪
-    </div>
+    <div class="content">
 
-  </header>
-
-
-  <main class="content">
-
-    <div class="profileBox">
-
-      <img
-        id="profilePhoto"
-        class="photo"
-        src=""
-        alt="Profile">
-
-      <h2 id="profileName">
-        User
-      </h2>
+      <h1>
+        Welcome to ReelHub
+      </h1>
 
       <div
-        id="profileUsername"
-        style="color:#aaa;">
+        class="profile"
+        id="profileIcon">
+        👤
       </div>
 
+      <h2 id="userName">
+        Guest
+      </h2>
 
-      <div class="stats">
+      <p
+        id="userEmail"
+        class="email">
+        Browsing as Guest
+      </p>
 
-        <div class="stat">
-          <b>0</b>
-          <span>Posts</span>
-        </div>
-
-        <div class="stat">
-          <b>0</b>
-          <span>Followers</span>
-        </div>
-
-        <div class="stat">
-          <b>0</b>
-          <span>Following</span>
-        </div>
-
-      </div>
-
+      <p
+        id="guestNote"
+        class="guest-note">
+      </p>
 
       <button
-        class="btn dark"
-        onclick="toast('Edit profile coming soon')">
-        Edit profile
-      </button>
-
-
-      <button
-        class="btn outline"
-        onclick="home()">
-        Back to Home
+        class="logout"
+        id="logoutBtn">
+        Logout
       </button>
 
     </div>
 
-  </main>
+  </div>
 
 
-  <nav class="nav">
+  <!-- =========================
+       FIREBASE
+  ========================== -->
 
-    <button onclick="home()">
-      <b>⌂</b>
-      Home
-    </button>
+  <script type="module">
 
-    <button
-      onclick="toast('Shorts screen coming soon')">
-      <b>🔥</b>
-      Shorts
-    </button>
-
-    <button
-      class="upload"
-      onclick="toast('Upload screen coming soon')">
-      <b>＋</b>
-      Create
-    </button>
-
-    <button
-      onclick="toast('ReelHub feed')">
-      <b>▶</b>
-      ReelHub
-    </button>
-
-    <button onclick="profile()">
-      <b>◉</b>
-      You
-    </button>
-
-  </nav>
-
-</section>
+    import {
+      initializeApp
+    } from
+    "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 
-<!-- Toast -->
-
-<div
-  id="toast"
-  class="toast">
-</div>
-
-
-<script>
-
-/* =========================================
-   GLOBAL PHOTO DATA
-========================================= */
-
-let photoData = "";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut,
+      updateProfile
+    } from
+    "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
-/* =========================================
-   SHORTCUT
-========================================= */
+    /* =========================
+       YOUR FIREBASE CONFIG
+    ========================== */
 
-function $(id){
-  return document.getElementById(id);
-}
+    const firebaseConfig = {
 
+      apiKey:
+        "AIzaSyC6421R1kr0jYwUJFbjB2YzIerlJw_cdLc",
 
-/* =========================================
-   SHOW SCREEN
-========================================= */
+      authDomain:
+        "reelhub-24616.firebaseapp.com",
 
-function show(id){
+      projectId:
+        "reelhub-24616",
 
-  document
-    .querySelectorAll(".screen")
-    .forEach(function(screen){
+      storageBucket:
+        "reelhub-24616.firebasestorage.app",
 
-      screen.classList.remove("active");
+      messagingSenderId:
+        "397521504045",
 
-    });
+      appId:
+        "1:397521504045:web:bf6d3652a7375fd632b5a4",
 
-
-  $("app")
-    .classList
-    .add("hidden");
-
-
-  $("profileScreen")
-    .classList
-    .add("hidden");
-
-
-  $(id)
-    .classList
-    .add("active");
-
-}
-
-
-/* =========================================
-   PHOTO PREVIEW
-========================================= */
-
-function previewPhoto(event){
-
-  const file =
-    event.target.files[0];
-
-  if(!file){
-    return;
-  }
-
-
-  if(file.size > 5 * 1024 * 1024){
-
-    toast(
-      "Photo 5 MB se chhoti rakho"
-    );
-
-    return;
-  }
-
-
-  const reader =
-    new FileReader();
-
-
-  reader.onload =
-    function(){
-
-      photoData =
-        reader.result;
-
-      $("signupPhoto")
-        .src =
-        photoData;
+      measurementId:
+        "G-81RN37XN6H"
 
     };
 
 
-  reader.readAsDataURL(file);
+    /* =========================
+       INITIALIZE FIREBASE
+    ========================== */
 
-}
+    const app =
+      initializeApp(firebaseConfig);
 
 
-/* =========================================
-   CREATE ACCOUNT
-========================================= */
+    const auth =
+      getAuth(app);
 
-function createAccount(){
 
-  const name =
-    $("name")
-    .value
-    .trim();
+    const googleProvider =
+      new GoogleAuthProvider();
 
 
-  const username =
-    $("username")
-    .value
-    .trim()
-    .replace(/^@/,"");
+    /* =========================
+       ELEMENTS
+    ========================== */
 
+    const authScreen =
+      document.getElementById("authScreen");
 
-  const email =
-    $("email")
-    .value
-    .trim()
-    .toLowerCase();
+    const appScreen =
+      document.getElementById("app");
 
+    const welcome =
+      document.getElementById("welcome");
 
-  const password =
-    $("password")
-    .value;
+    const createForm =
+      document.getElementById("createForm");
 
+    const loginForm =
+      document.getElementById("loginForm");
 
-  if(
-    !name ||
-    !username ||
-    !email ||
-    !password
-  ){
 
-    toast(
-      "Sabhi details bharo"
-    );
+    /* =========================
+       SHOW WELCOME
+    ========================== */
 
-    return;
-  }
+    function showWelcome() {
 
+      welcome.style.display =
+        "block";
 
-  if(password.length < 6){
+      createForm.style.display =
+        "none";
 
-    toast(
-      "Password kam se kam 6 characters ka ho"
-    );
+      loginForm.style.display =
+        "none";
 
-    return;
-  }
+      clearMessages();
+    }
 
 
-  const user = {
+    /* =========================
+       SHOW CREATE
+    ========================== */
 
-    name:name,
+    function showCreate() {
 
-    username:username,
+      welcome.style.display =
+        "none";
 
-    email:email,
+      createForm.style.display =
+        "block";
 
-    password:password,
+      loginForm.style.display =
+        "none";
 
-    photo:photoData
+      clearMessages();
+    }
 
-  };
 
+    /* =========================
+       SHOW LOGIN
+    ========================== */
 
-  localStorage.setItem(
-    "reelhubUser",
-    JSON.stringify(user)
-  );
+    function showLogin() {
 
+      welcome.style.display =
+        "none";
 
-  localStorage.setItem(
-    "reelhubLoggedIn",
-    "1"
-  );
+      createForm.style.display =
+        "none";
 
+      loginForm.style.display =
+        "block";
 
-  openApp();
+      clearMessages();
+    }
 
-}
 
+    /* =========================
+       CLEAR MESSAGES
+    ========================== */
 
-/* =========================================
-   LOGIN
-========================================= */
+    function clearMessages() {
 
-function login(){
+      document.getElementById(
+        "welcomeMessage"
+      ).textContent = "";
 
-  const email =
-    $("loginEmail")
-    .value
-    .trim()
-    .toLowerCase();
+      document.getElementById(
+        "createMessage"
+      ).textContent = "";
 
+      document.getElementById(
+        "loginMessage"
+      ).textContent = "";
+    }
 
-  const password =
-    $("loginPassword")
-    .value;
 
+    /* =========================
+       FIREBASE ERROR
+    ========================== */
 
-  const savedUser =
-    JSON.parse(
-      localStorage.getItem(
-        "reelhubUser"
-      ) || "null"
-    );
+    function firebaseError(error) {
 
+      const messages = {
 
-  if(!savedUser){
+        "auth/email-already-in-use":
+          "This email is already registered.",
 
-    toast(
-      "Pehle Create account karo"
-    );
+        "auth/invalid-email":
+          "Please enter a valid email.",
 
-    return;
-  }
+        "auth/weak-password":
+          "Password must contain at least 6 characters.",
 
+        "auth/invalid-credential":
+          "Email or password is incorrect.",
 
-  if(
-    savedUser.email !== email ||
-    savedUser.password !== password
-  ){
+        "auth/user-not-found":
+          "No account found with this email.",
 
-    toast(
-      "Email ya password galat hai"
-    );
+        "auth/wrong-password":
+          "Email or password is incorrect.",
 
-    return;
-  }
+        "auth/popup-closed-by-user":
+          "Google login was cancelled.",
 
+        "auth/popup-blocked":
+          "The browser blocked the Google login popup.",
 
-  localStorage.setItem(
-    "reelhubLoggedIn",
-    "1"
-  );
+        "auth/unauthorized-domain":
+          "This domain is not authorized in Firebase.",
 
+        "auth/network-request-failed":
+          "Network error. Check your internet connection."
 
-  openApp();
+      };
 
-}
+      return (
+        messages[error?.code] ||
+        error?.message ||
+        "Something went wrong."
+      );
+    }
 
 
-/* =========================================
-   GOOGLE LOGIN
-========================================= */
+    /* =========================
+       GOOGLE LOGIN
+    ========================== */
 
-function googleLogin(){
+    async function googleLogin() {
 
-  toast(
-    "Google Login ko Firebase Authentication se connect karna hoga"
-  );
+      clearMessages();
 
-}
+      try {
 
+        await signInWithPopup(
+          auth,
+          googleProvider
+        );
 
-/* =========================================
-   OPEN APP
-========================================= */
+      } catch (error) {
 
-function openApp(){
+        const message =
+          firebaseError(error);
 
-  const user =
-    JSON.parse(
-      localStorage.getItem(
-        "reelhubUser"
-      ) || "{}"
-    );
+        document.getElementById(
+          "welcomeMessage"
+        ).textContent = message;
 
+        document.getElementById(
+          "loginMessage"
+        ).textContent = message;
 
-  $("welcome")
-    .classList
-    .remove("active");
+      }
 
+    }
 
-  $("signup")
-    .classList
-    .remove("active");
 
+    /* =========================
+       CREATE ACCOUNT
+    ========================== */
 
-  $("login")
-    .classList
-    .remove("active");
+    async function createAccount() {
 
+      const name =
+        document.getElementById(
+          "signupName"
+        ).value.trim();
 
-  $("profileScreen")
-    .classList
-    .add("hidden");
 
+      const email =
+        document.getElementById(
+          "signupEmail"
+        ).value.trim();
 
-  $("app")
-    .classList
-    .remove("hidden");
 
+      const password =
+        document.getElementById(
+          "signupPassword"
+        ).value;
 
-  $("homeName")
-    .textContent =
-    user.name ||
-    "ReelHub User";
 
+      const message =
+        document.getElementById(
+          "createMessage"
+        );
 
-  $("homeAvatar")
-    .src =
-    user.photo ||
-    "";
 
-}
+      message.textContent = "";
 
 
-/* =========================================
-   HOME
-========================================= */
+      if (
+        !name ||
+        !email ||
+        !password
+      ) {
 
-function home(){
+        message.textContent =
+          "Please fill all fields.";
 
-  openApp();
+        return;
+      }
 
-}
 
+      if (password.length < 6) {
 
-/* =========================================
-   PROFILE
-========================================= */
+        message.textContent =
+          "Password must contain at least 6 characters.";
 
-function profile(){
+        return;
+      }
 
-  const user =
-    JSON.parse(
-      localStorage.getItem(
-        "reelhubUser"
-      ) || "{}"
-    );
 
+      try {
 
-  $("app")
-    .classList
-    .add("hidden");
+        const result =
+          await createUserWithEmailAndPassword(
+            auth,
+            email,
+            password
+          );
 
 
-  $("profileScreen")
-    .classList
-    .remove("hidden");
+        await updateProfile(
+          result.user,
+          {
+            displayName: name
+          }
+        );
 
 
-  $("profilePhoto")
-    .src =
-    user.photo ||
-    "";
+      } catch (error) {
 
+        message.textContent =
+          firebaseError(error);
 
-  $("profileName")
-    .textContent =
-    user.name ||
-    "ReelHub User";
+      }
 
+    }
 
-  $("profileUsername")
-    .textContent =
-    user.username
-    ? "@" + user.username
-    : "";
 
-}
+    /* =========================
+       EMAIL LOGIN
+    ========================== */
 
+    async function loginAccount() {
 
-/* =========================================
-   LOGOUT
-========================================= */
+      const email =
+        document.getElementById(
+          "loginEmail"
+        ).value.trim();
 
-function logout(){
 
-  localStorage.removeItem(
-    "reelhubLoggedIn"
-  );
+      const password =
+        document.getElementById(
+          "loginPassword"
+        ).value;
 
 
-  show("welcome");
+      const message =
+        document.getElementById(
+          "loginMessage"
+        );
 
-}
 
+      message.textContent = "";
 
-/* =========================================
-   TOAST MESSAGE
-========================================= */
 
-function toast(message){
+      if (!email || !password) {
 
-  const t =
-    $("toast");
+        message.textContent =
+          "Please enter email and password.";
 
+        return;
+      }
 
-  t.textContent =
-    message;
 
+      try {
 
-  t.style.display =
-    "block";
+        await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
 
+      } catch (error) {
 
-  clearTimeout(
-    window.reelhubToast
-  );
+        message.textContent =
+          firebaseError(error);
 
+      }
 
-  window.reelhubToast =
-    setTimeout(
-      function(){
+    }
 
-        t.style.display =
+
+    /* =========================
+       SKIP LOGIN
+    ========================== */
+
+    function skipLogin() {
+
+      authScreen.style.display =
+        "none";
+
+      appScreen.style.display =
+        "block";
+
+
+      document.getElementById(
+        "userName"
+      ).textContent =
+        "Guest";
+
+
+      document.getElementById(
+        "userEmail"
+      ).textContent =
+        "Browsing as Guest";
+
+
+      document.getElementById(
+        "guestNote"
+      ).textContent =
+        "You are using ReelHub as a guest.";
+
+    }
+
+
+    /* =========================
+       LOGOUT
+    ========================== */
+
+    async function logoutUser() {
+
+      try {
+
+        await signOut(auth);
+
+        appScreen.style.display =
           "none";
 
-      },
-      2500
+        authScreen.style.display =
+          "flex";
+
+        showWelcome();
+
+      } catch (error) {
+
+        alert(
+          firebaseError(error)
+        );
+
+      }
+
+    }
+
+
+    /* =========================
+       BUTTON EVENTS
+    ========================== */
+
+    document
+      .getElementById("skipBtn")
+      .addEventListener(
+        "click",
+        skipLogin
+      );
+
+
+    document
+      .getElementById("googleBtn")
+      .addEventListener(
+        "click",
+        googleLogin
+      );
+
+
+    document
+      .getElementById("googleBtn2")
+      .addEventListener(
+        "click",
+        googleLogin
+      );
+
+
+    document
+      .getElementById("createBtn")
+      .addEventListener(
+        "click",
+        showCreate
+      );
+
+
+    document
+      .getElementById("loginBtn")
+      .addEventListener(
+        "click",
+        showLogin
+      );
+
+
+    document
+      .getElementById("createAccountBtn")
+      .addEventListener(
+        "click",
+        createAccount
+      );
+
+
+    document
+      .getElementById("loginAccountBtn")
+      .addEventListener(
+        "click",
+        loginAccount
+      );
+
+
+    document
+      .getElementById("toLogin")
+      .addEventListener(
+        "click",
+        showLogin
+      );
+
+
+    document
+      .getElementById("toCreate")
+      .addEventListener(
+        "click",
+        showCreate
+      );
+
+
+    document
+      .getElementById("backFromCreate")
+      .addEventListener(
+        "click",
+        showWelcome
+      );
+
+
+    document
+      .getElementById("backFromLogin")
+      .addEventListener(
+        "click",
+        showWelcome
+      );
+
+
+    document
+      .getElementById("logoutBtn")
+      .addEventListener(
+        "click",
+        logoutUser
+      );
+
+
+    /* =========================
+       AUTH STATE
+    ========================== */
+
+    onAuthStateChanged(
+      auth,
+      (user) => {
+
+        if (user) {
+
+          authScreen.style.display =
+            "none";
+
+          appScreen.style.display =
+            "block";
+
+
+          document.getElementById(
+            "userName"
+          ).textContent =
+            user.displayName ||
+            "ReelHub User";
+
+
+          document.getElementById(
+            "userEmail"
+          ).textContent =
+            user.email || "";
+
+
+          document.getElementById(
+            "guestNote"
+          ).textContent = "";
+
+
+          if (user.photoURL) {
+
+            document.getElementById(
+              "profileIcon"
+            ).innerHTML =
+              `
+              <img
+                src="${user.photoURL}"
+                alt="Profile">
+              `;
+
+          }
+
+        }
+
+      }
     );
 
-}
-
-
-/* =========================================
-   AUTO LOGIN
-========================================= */
-
-if(
-  localStorage.getItem(
-    "reelhubLoggedIn"
-  ) === "1"
-  &&
-  localStorage.getItem(
-    "reelhubUser"
-  )
-){
-
-  openApp();
-
-}
-
-</script>
+  </script>
 
 </body>
 </html>
