@@ -80,7 +80,7 @@ const sendResetBtn = document.getElementById('sendResetBtn');
 let currentUser    = null;
 let currentProfile = null;
 let selectedPhotoBase64 = null;
-let isLoggingIn    = false;   // 🔒 Login in progress flag
+let isLoggingIn    = false;
 
 /* ============================================================
    SCREEN SWITCHING
@@ -114,7 +114,7 @@ document.querySelectorAll('.eye').forEach(eye => {
 });
 
 /* ============================================================
-   LOGIN <-> SIGNUP
+   LOGIN <-> SIGNUP SWITCH
    ============================================================ */
 document.getElementById('goSignup').addEventListener('click', () => {
   loginForm.style.display = 'none';
@@ -164,7 +164,6 @@ signupForm.addEventListener('submit', async (e) => {
   signupBtn.textContent = 'Creating...';
 
   try {
-    // Check username unique
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('user', '==', user));
     const snap = await getDocs(q);
@@ -175,11 +174,9 @@ signupForm.addEventListener('submit', async (e) => {
       return;
     }
 
-    // Create auth user
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const uid = cred.user.uid;
 
-    // Save profile in Firestore
     await setDoc(doc(db, 'users', uid), {
       uid: uid,
       name: name,
@@ -195,7 +192,7 @@ signupForm.addEventListener('submit', async (e) => {
 
     signupMsg.className = 'success-msg';
     signupMsg.textContent = 'Account created! Welcome 🎉';
-    // onAuthStateChanged will auto-show app
+
   } catch (err) {
     console.error(err);
     signupMsg.className = 'error-msg';
@@ -231,8 +228,7 @@ loginForm.addEventListener('submit', async (e) => {
     return;
   }
 
-  isLoggingIn = true;   // 🔒 Set flag
-
+  isLoggingIn = true;
   loginBtn.disabled = true;
   loginBtn.textContent = 'Logging in...';
 
@@ -240,26 +236,24 @@ loginForm.addEventListener('submit', async (e) => {
     const result = await signInWithEmailAndPassword(auth, email, pass);
 
     if (!result || !result.user) {
-      throw new Error('Login failed — no user returned');
+      throw new Error('Login failed');
     }
 
     currentUser = result.user;
     await loadProfile(result.user.uid);
 
-    loginMsg.className = 'success-msg';
-    loginMsg.textContent = 'Login successful! 🎉';
-
+    loginMsg.textContent = '';
     showApp();
 
   } catch (err) {
     console.error(err);
-    loginMsg.className = 'error-msg';
 
-    // 🔒 Login fail — sign out if any session remains
     try { await signOut(auth); } catch (e) {}
 
     currentUser = null;
     currentProfile = null;
+
+    loginMsg.className = 'error-msg';
 
     if (
       err.code === 'auth/user-not-found' ||
@@ -267,21 +261,21 @@ loginForm.addEventListener('submit', async (e) => {
       err.code === 'auth/invalid-credential' ||
       err.code === 'auth/invalid-login-credentials'
     ) {
-      loginMsg.textContent = '❌ Invalid email or password.';
+      loginMsg.textContent = 'Invalid email or password.';
     } else if (err.code === 'auth/too-many-requests') {
-      loginMsg.textContent = '⚠️ Too many attempts. Try again later.';
+      loginMsg.textContent = 'Too many attempts. Try again later.';
     } else if (err.code === 'auth/network-request-failed') {
-      loginMsg.textContent = '🌐 Network error. Check your internet.';
+      loginMsg.textContent = 'Network error. Check your internet.';
     } else {
-      loginMsg.textContent = '❌ ' + (err.code || 'Error') + ' — ' + (err.message || 'Login failed.');
+      loginMsg.textContent = err.message || 'Login failed.';
     }
 
-    // Stay on login screen
     showAuth();
+
   } finally {
     loginBtn.disabled = false;
     loginBtn.textContent = 'Log In';
-    isLoggingIn = false;   // 🔒 Clear flag
+    isLoggingIn = false;
   }
 });
 
@@ -326,7 +320,7 @@ sendResetBtn.addEventListener('click', async () => {
     await sendPasswordResetEmail(auth, email);
 
     forgotMsg.className = 'success-msg';
-    forgotMsg.textContent = 'Reset link sent! Check your inbox (and spam).';
+    forgotMsg.textContent = 'Reset link sent! Check your inbox (and spam folder).';
 
     setTimeout(() => {
       forgotModal.classList.remove('show');
@@ -366,13 +360,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
    AUTH STATE LISTENER
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
-  console.log('Auth state changed:', user ? user.email : 'null');
-
-  // 🔒 Skip if login form is processing
-  if (isLoggingIn) {
-    console.log('Login in progress — skipping auto redirect');
-    return;
-  }
+  if (isLoggingIn) return;
 
   if (user) {
     currentUser = user;
