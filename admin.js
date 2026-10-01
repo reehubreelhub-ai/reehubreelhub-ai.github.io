@@ -33,19 +33,17 @@ const firebaseConfig = {
   apiKey: "AIzaSyC6421R1kr0jYwUJFbjB2YzIerlJw_cdLc",
   authDomain: "reelhub-24616.firebaseapp.com",
   projectId: "reelhub-24616",
-  storageBucket: "reelhub-24616.firebasestorage.app",
+  storageBucket: "reelhub-24616.appspot.com",
   messagingSenderId: "397521504045",
   appId: "1:397521504045:web:bf6d3652a7375fd632b5a4",
   measurementId: "G-81RN37XN6H"
 };
 
 /* ============================================================
-   🔐 ADMIN EMAILS — यहाँ अपने emails डालो
+   🔐 ADMIN EMAILS
    ============================================================ */
 const ADMIN_EMAILS = [
   "reehubreelhub@gmail.com"
-  // जितने चाहो उतने emails add करो
-  // "friend@gmail.com",
 ];
 
 const firebaseApp = initializeApp(firebaseConfig);
@@ -58,6 +56,7 @@ const db   = getFirestore(firebaseApp);
 let currentAdmin = null;
 let currentAdminProfile = null;
 let currentPage = 'dashboard';
+let isLoggingIn = false;
 let cachedData = {
   users: [],
   videos: [],
@@ -82,7 +81,7 @@ const modalTitle   = document.getElementById('modalTitle');
 const modalBody    = document.getElementById('modalBody');
 
 /* ============================================================
-   HELPER — Email check
+   HELPER
    ============================================================ */
 function isAdminEmail(email) {
   if (!email) return false;
@@ -106,33 +105,68 @@ loginBtn.addEventListener('click', async () => {
     return;
   }
 
-  // ---- Email check FIRST ----
   if (!isAdminEmail(email)) {
     loginMsg.textContent = 'Access denied. This email is not an admin.';
     return;
   }
 
+  isLoggingIn = true;
   loginBtn.disabled = true;
   loginBtn.textContent = 'Checking...';
 
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
-    // onAuthStateChanged will handle the rest
+    const result = await signInWithEmailAndPassword(auth, email, pass);
+
+    if (!result || !result.user) {
+      throw new Error('Login failed');
+    }
+
+    currentAdmin = result.user;
+
+    try {
+      const snap = await getDoc(doc(db, 'users', result.user.uid));
+      currentAdminProfile = snap.exists()
+        ? snap.data()
+        : { name: email.split('@')[0] };
+    } catch (e) {
+      currentAdminProfile = { name: email.split('@')[0] };
+    }
+
+    adminNameEl.textContent = currentAdminProfile.name || 'Admin';
+
+    loader.style.display = 'none';
+    loginScreen.style.display = 'none';
+    appScreen.classList.add('show');
+    renderPage('dashboard');
+
   } catch (err) {
     console.error(err);
     loginMsg.className = 'error-msg';
+
+    try { await signOut(auth); } catch (e) {}
+
+    currentAdmin = null;
+    currentAdminProfile = null;
+
     if (
       err.code === 'auth/invalid-credential' ||
       err.code === 'auth/wrong-password' ||
-      err.code === 'auth/user-not-found'
+      err.code === 'auth/user-not-found' ||
+      err.code === 'auth/invalid-login-credentials'
     ) {
       loginMsg.textContent = 'Invalid email or password.';
+    } else if (err.code === 'auth/too-many-requests') {
+      loginMsg.textContent = 'Too many attempts. Try again later.';
+    } else if (err.code === 'auth/network-request-failed') {
+      loginMsg.textContent = 'Network error. Check your internet.';
     } else {
-      loginMsg.textContent = err.message || 'Login failed.';
+      loginMsg.textContent = (err.code || '') + ' — ' + (err.message || 'Login failed.');
     }
+
   } finally {
     loginBtn.disabled = false;
     loginBtn.textContent = 'Log In';
+    isLoggingIn = false;
   }
 });
 
@@ -149,10 +183,10 @@ document.getElementById('adminLogout').addEventListener('click', async () => {
    AUTH STATE LISTENER
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
+  if (isLoggingIn) return;
+
   if (user) {
-    // ---- Email check ----
     if (!isAdminEmail(user.email)) {
-      // Not an admin — auto logout
       await signOut(auth);
       currentAdmin = null;
       currentAdminProfile = null;
@@ -160,7 +194,7 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
 
-    // ---- Load profile ----
+    currentAdmin = user;
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
       currentAdminProfile = snap.exists()
@@ -169,8 +203,6 @@ onAuthStateChanged(auth, async (user) => {
     } catch (e) {
       currentAdminProfile = { name: user.email.split('@')[0] };
     }
-
-    currentAdmin = user;
     adminNameEl.textContent = currentAdminProfile.name || 'Admin';
     showApp();
     return;
@@ -188,7 +220,6 @@ function showLogin() {
   loader.style.display = 'none';
   loginScreen.style.display = 'flex';
   appScreen.classList.remove('show');
-  // clear password input
   const passEl = document.getElementById('adminPass');
   if (passEl) passEl.value = '';
 }
@@ -623,7 +654,6 @@ async function renderAdmins() {
     <div id="invitesList"></div>
   `;
 
-  // Current admins (from code)
   const adminsList = document.getElementById('adminsList');
   adminsList.innerHTML = '';
   ADMIN_EMAILS.forEach(email => {
@@ -642,7 +672,6 @@ async function renderAdmins() {
     adminsList.appendChild(card);
   });
 
-  // Pending invites
   try {
     const invQ = query(collection(db, 'admin_invites'), orderBy('createdAt', 'desc'));
     const invSnap = await getDocs(invQ);
@@ -693,7 +722,6 @@ async function renderAdmins() {
     document.getElementById('invitesList').innerHTML = `<div class="empty-box">Could not load invites.</div>`;
   }
 
-  // invite new
   document.getElementById('inviteNewBtn').addEventListener('click', openInviteModal);
 }
 
@@ -704,9 +732,9 @@ function openInviteModal() {
       <input type="email" id="inviteEmailInput" placeholder="user@email.com">
     </div>
     <p style="font-size:12px;color:#888;margin-bottom:12px;">
-      Aap is email ko ADMIN_EMAILS list me manually add kar sakte ho. Notification bhi bhej sakte ho.
+      Notification bhejenge, user accept karega tab admin banega.
     </p>
-    <button class="btn-primary" id="sendInviteBtn">Send Notification</button>
+    <button class="btn-primary" id="sendInviteBtn">Send Invitation</button>
     <div class="error-msg" id="inviteModalMsg"></div>
   `);
 
@@ -721,7 +749,6 @@ function openInviteModal() {
       return;
     }
 
-    // find user
     const q = query(collection(db, 'users'), where('email', '==', email));
     const snap = await getDocs(q);
     if (snap.empty) {
@@ -732,7 +759,6 @@ function openInviteModal() {
     const userData = { id: snap.docs[0].id, ...snap.docs[0].data() };
 
     try {
-      // Create invite document
       await addDoc(collection(db, 'admin_invites'), {
         email: email,
         userId: userData.id,
@@ -742,7 +768,6 @@ function openInviteModal() {
         createdAt: serverTimestamp()
       });
 
-      // Send notification
       await pushNotification(userData.id, {
         type: 'admin_invite',
         title: '🎉 Admin Invitation',
@@ -751,8 +776,8 @@ function openInviteModal() {
       });
 
       msg.className = 'success-msg';
-      msg.textContent = 'Invitation sent! Notification bhi bheji gayi.';
-      setTimeout(() => { closeModal(); renderAdmins(); }, 1000);
+      msg.textContent = 'Invitation sent!';
+      setTimeout(() => { closeModal(); renderAdmins(); }, 800);
     } catch (err) {
       console.error(err);
       msg.textContent = err.message || 'Failed.';
