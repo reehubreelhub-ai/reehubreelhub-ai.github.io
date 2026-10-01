@@ -17,7 +17,7 @@
     html, body {
       width: 100%;
       height: 100%;
-      background: #000;
+      background: #0a0a0a;
       color: #fff;
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -198,7 +198,7 @@
       flex-direction: column;
       width: 100%;
       height: 100%;
-      background: #000;
+      background: #0a0a0a;
     }
     #app.show { display: flex; }
 
@@ -210,7 +210,8 @@
       justify-content: space-between;
       padding: 0 16px;
       border-bottom: 1px solid #1a1a1a;
-      background: #000;
+      background: #0a0a0a;
+      z-index: 10;
     }
     .header .logo {
       font-size: 22px;
@@ -260,16 +261,28 @@
       text-align: center;
     }
 
-    .bottom-nav {
-      height: 60px;
+    /* ================= BOTTOM NAV (Instagram style) ================= */
+    .bottom-nav-wrap {
+      position: relative;
       flex-shrink: 0;
+      padding: 0 12px 10px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom));
+      background: #0a0a0a;
+    }
+
+    .bottom-nav {
+      position: relative;
+      height: 66px;
       display: flex;
       align-items: center;
-      justify-content: space-around;
-      background: #0a0a0a;
-      border-top: 1px solid #1a1a1a;
-      padding-bottom: env(safe-area-inset-bottom);
+      justify-content: space-between;
+      background: #101018;
+      border: 1px solid #1e1e28;
+      border-radius: 22px;
+      padding: 0 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.03);
     }
+
     .nav-item {
       flex: 1;
       height: 100%;
@@ -279,11 +292,12 @@
       justify-content: center;
       gap: 3px;
       cursor: pointer;
-      color: #666;
+      color: #9a9aa8;
       transition: color 0.2s;
       background: none;
       border: none;
       font-family: inherit;
+      position: relative;
     }
     .nav-item svg {
       width: 24px;
@@ -293,13 +307,85 @@
       stroke-width: 1.8;
       stroke-linecap: round;
       stroke-linejoin: round;
+      transition: stroke 0.2s;
     }
     .nav-item span {
       font-size: 10px;
       font-weight: 500;
     }
     .nav-item.active { color: #fff; }
-    .nav-item.active svg { stroke: #ff2e63; }
+    .nav-item.active svg { stroke: #4ea8ff; }
+
+    /* Center Upload button (floating +) */
+    .nav-upload {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .upload-btn {
+      position: absolute;
+      top: -26px;
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: inherit;
+
+      /* gradient blue like reference image */
+      background:
+        radial-gradient(circle at 30% 25%, #3f8fd6 0%, #2a5f9e 45%, #1c3f6e 100%);
+      box-shadow:
+        0 0 0 6px #0a0a0a,
+        0 10px 22px rgba(46, 122, 200, 0.55),
+        inset 0 2px 4px rgba(255, 255, 255, 0.25),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.45);
+      transition: transform 0.15s ease, box-shadow 0.2s;
+    }
+
+    .upload-btn:active {
+      transform: scale(0.94);
+    }
+
+    .upload-btn svg {
+      width: 30px;
+      height: 30px;
+      stroke: #fff;
+      stroke-width: 2.6;
+      stroke-linecap: round;
+      fill: none;
+    }
+
+    .upload-label {
+      position: absolute;
+      bottom: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      color: #fff;
+      pointer-events: none;
+    }
+
+    /* Hide the label on the upload (it's inside the circle visually) */
+    .nav-upload .upload-label { display: none; }
+
+    /* The center gap inside nav so + button visually sits above */
+    .nav-upload .placeholder {
+      width: 68px;
+      height: 100%;
+    }
+
+    @media (min-width: 480px) {
+      .bottom-nav {
+        max-width: 460px;
+        margin: 0 auto;
+      }
+    }
   </style>
 </head>
 
@@ -411,32 +497,57 @@
       <div class="page-title">Home Feed</div>
     </div>
 
-    <nav class="bottom-nav">
-      <button class="nav-item active" data-page="home">
-        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span>Home</span>
-      </button>
+    <!-- ================= BOTTOM NAV ================= -->
+    <div class="bottom-nav-wrap">
+      <nav class="bottom-nav">
 
-      <button class="nav-item" data-page="search">
-        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <span>Search</span>
-      </button>
+        <!-- Home -->
+        <button class="nav-item active" data-page="home">
+          <svg viewBox="0 0 24 24">
+            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"/>
+          </svg>
+          <span>Home</span>
+        </button>
 
-      <button class="nav-item" data-page="reels">
-        <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="7" y1="2" x2="7" y2="8"/><line x1="17" y1="2" x2="17" y2="8"/><polygon points="10,13 15,16 10,19" fill="currentColor" stroke="none"/></svg>
-        <span>Reels</span>
-      </button>
+        <!-- Shorts (Reels) -->
+        <button class="nav-item" data-page="shorts">
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="5"/>
+            <path d="M3 8h6M15 8h6"/>
+            <path d="M10 12l5 3-5 3z" fill="currentColor" stroke="none"/>
+          </svg>
+          <span>Shorts</span>
+        </button>
 
-      <button class="nav-item" data-page="upload">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        <span>Upload</span>
-      </button>
+        <!-- Upload (floating +) -->
+        <div class="nav-upload">
+          <button class="upload-btn" data-page="upload" title="Upload">
+            <svg viewBox="0 0 24 24">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+        </div>
 
-      <button class="nav-item" data-page="profile">
-        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span>Profile</span>
-      </button>
-    </nav>
+        <!-- Messages -->
+        <button class="nav-item" data-page="messages">
+          <svg viewBox="0 0 24 24">
+            <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
+          <span>Messages</span>
+        </button>
+
+        <!-- Profile -->
+        <button class="nav-item" data-page="profile">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>
+          </svg>
+          <span>Profile</span>
+        </button>
+
+      </nav>
+    </div>
 
   </div>
 
@@ -480,10 +591,13 @@
       function showApp() {
         auth.style.display = 'none';
         app.classList.add('show');
+
         // reset to home
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        document.querySelector('.nav-item[data-page="home"]').classList.add('active');
-        document.getElementById('content').innerHTML = '<div class="page-title">Home Feed</div>';
+        const homeBtn = document.querySelector('.nav-item[data-page="home"]');
+        if (homeBtn) homeBtn.classList.add('active');
+        document.getElementById('content').innerHTML =
+          '<div class="page-title">Home Feed</div>';
       }
 
       // ---------- Password eye toggle ----------
@@ -604,14 +718,16 @@
         }
       });
 
-      // ---------- Bottom nav ----------
+      // ---------- Page titles ----------
       const pages = {
-        home:    'Home Feed',
-        search:  'Search',
-        reels:   'Reels',
-        upload:  'Upload',
-        profile: 'Profile'
+        home:     'Home Feed',
+        shorts:   'Shorts',
+        upload:   'Upload',
+        messages: 'Messages',
+        profile:  'Profile'
       };
+
+      // ---------- Bottom nav (regular items) ----------
       document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', () => {
           document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -621,7 +737,13 @@
         });
       });
 
-      // ---------- Auto-login if session exists ----------
+      // ---------- Center Upload button ----------
+      document.querySelector('.upload-btn').addEventListener('click', () => {
+        document.getElementById('content').innerHTML =
+          `<div class="page-title">${pages.upload}</div>`;
+      });
+
+      // ---------- Auto-login ----------
       if (getSession()) {
         showApp();
       } else {
