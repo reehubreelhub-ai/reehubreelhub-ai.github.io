@@ -770,3 +770,86 @@ async function loadUsersByIds(uids) {
   }
   return results;
 }
+/* ============================================================
+   SHARE PROFILE
+   ============================================================ */
+async function shareProfile() {
+  if (!currentProfile) return;
+
+  const appUrl = window.location.origin; // https://reehubreelhub-ai.github.io
+  const shareText = `🎬 Check out ${currentProfile.name}'s profile on ReelHub!\n\n@${currentProfile.user}\n\n${appUrl}`;
+  const shareTitle = `${currentProfile.name} on ReelHub`;
+
+  // Check if Web Share API is available (mobile)
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: shareTitle,
+        text: shareText,
+        url: appUrl
+      });
+      return;
+    } catch (err) {
+      // User ne cancel kar diya ya error aaya — fall through to copy
+      if (err.name === 'AbortError') return;
+      console.warn('Share failed:', err);
+    }
+  }
+
+  // Fallback: Copy to clipboard
+  try {
+    await navigator.clipboard.writeText(shareText);
+    showToast('✅ Link copied to clipboard!');
+  } catch (err) {
+    // Fallback for older browsers
+    const textarea = document.createElement('textarea');
+    textarea.value = shareText;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      showToast('✅ Link copied to clipboard!');
+    } catch (e) {
+      showToast('❌ Could not copy link');
+    }
+    document.body.removeChild(textarea);
+  }
+}
+
+/* ============================================================
+   TOAST NOTIFICATION
+   ============================================================ */
+function showToast(message) {
+  // Remove existing toast
+  const existing = document.getElementById('toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'toast';
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e1e28;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10000;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    border: 1px solid #333;
+    animation: toastSlide 0.3s ease;
+  `;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
