@@ -134,9 +134,9 @@ let isLoggingIn    = false;
 let notifIntervalId = null;
 let viewingUserId  = null;
 
-let currentUploadType = 'short';   // short | long | photo
+let currentUploadType = 'short';
 let selectedFile = null;
-let selectedFileDuration = 0;      // seconds (videos)
+let selectedFileDuration = 0;
 
 /* ============================================================
    SCREEN SWITCHING
@@ -305,12 +305,9 @@ loginForm.addEventListener('submit', async (e) => {
 
   } catch (err) {
     console.error(err);
-
     try { await signOut(auth); } catch (e) {}
-
     currentUser = null;
     currentProfile = null;
-
     loginMsg.className = 'error-msg';
 
     if (
@@ -329,7 +326,6 @@ loginForm.addEventListener('submit', async (e) => {
     }
 
     showAuth();
-
   } finally {
     loginBtn.disabled = false;
     loginBtn.textContent = 'Log In';
@@ -584,12 +580,11 @@ async function renderProfile() {
     });
   });
 
-  // Load user's posts
   await renderUserPosts(currentUser.uid, 'myPostsGrid');
 }
 
 /* ============================================================
-   USER POSTS GRID (own or public)
+   USER POSTS GRID
    ============================================================ */
 async function renderUserPosts(uid, containerId) {
   const container = document.getElementById(containerId);
@@ -636,7 +631,6 @@ function makeGridItem(post) {
   const item = document.createElement('div');
   item.className = 'grid-item';
 
-  // Aspect ratio by type
   if (post.type === 'long') {
     item.style.aspectRatio = '16 / 9';
   } else {
@@ -649,8 +643,6 @@ function makeGridItem(post) {
   if (post.type === 'photo') {
     inner = `<img src="${post.url}" alt="">`;
   } else {
-    // Video — use Cloudinary generated thumbnail via /video/upload/so_0/ ... but we saved poster
-    // Simpler: use video element with poster
     inner = `
       <video src="${post.url}" muted playsinline preload="metadata"
              ${thumbUrl ? `poster="${thumbUrl}"` : ''}></video>
@@ -674,7 +666,6 @@ function makeGridItem(post) {
    UPLOAD MODAL
    ============================================================ */
 function openUploadModal() {
-  // Reset
   selectedFile = null;
   selectedFileDuration = 0;
   currentUploadType = 'short';
@@ -693,7 +684,6 @@ function openUploadModal() {
   uploadProgressBar.style.width = '0%';
   uploadProgressText.textContent = '0%';
 
-  // Set short as active
   document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
   document.querySelector('.upload-tab[data-type="short"]').classList.add('active');
 
@@ -728,14 +718,12 @@ uploadModal.addEventListener('click', (e) => {
   if (e.target === uploadModal) uploadModal.classList.remove('show');
 });
 
-// Tab switching
 document.querySelectorAll('.upload-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     currentUploadType = tab.dataset.type;
 
-    // Reset selection
     selectedFile = null;
     selectedFileDuration = 0;
     uploadFileInput.value = '';
@@ -762,7 +750,6 @@ uploadFileInput.addEventListener('change', async (e) => {
   uploadMsg.textContent = '';
 
   if (currentUploadType === 'photo') {
-    // PHOTO
     if (!file.type.startsWith('image/')) {
       uploadMsg.textContent = 'Please choose an image file.';
       return;
@@ -780,7 +767,6 @@ uploadFileInput.addEventListener('change', async (e) => {
     return;
   }
 
-  // VIDEO
   if (!file.type.startsWith('video/')) {
     uploadMsg.textContent = 'Please choose a video file.';
     return;
@@ -790,7 +776,6 @@ uploadFileInput.addEventListener('change', async (e) => {
     return;
   }
 
-  // Read duration
   const url = URL.createObjectURL(file);
   const tempVideo = document.createElement('video');
   tempVideo.preload = 'metadata';
@@ -807,7 +792,6 @@ uploadFileInput.addEventListener('change', async (e) => {
     selectedFile = file;
     selectedFileDuration = duration;
 
-    // Auto-correct type if needed
     if (currentUploadType === 'short' && duration > 30.5) {
       uploadMsg.textContent = `⚠️ Video is ${Math.round(duration)}s. It's a Long video. Switching to Long tab...`;
       setTimeout(() => {
@@ -837,7 +821,6 @@ uploadFileInput.addEventListener('change', async (e) => {
       return;
     }
 
-    // Show preview
     uploadPreview.src = url;
     uploadPreviewWrap.style.display = 'block';
     uploadPickerWrap.style.display = 'none';
@@ -893,7 +876,6 @@ uploadSubmitBtn.addEventListener('click', async () => {
       uploadProgressText.textContent = percent + '%';
     });
 
-    // Save to Firestore
     const postData = {
       userId: currentUser.uid,
       userName: currentProfile.name,
@@ -913,7 +895,6 @@ uploadSubmitBtn.addEventListener('click', async () => {
 
     await addDoc(collection(db, 'posts'), postData);
 
-    // Increment video count on user
     await updateDoc(doc(db, 'users', currentUser.uid), {
       videoCount: (currentProfile.videoCount || 0) + 1
     });
@@ -939,7 +920,7 @@ uploadSubmitBtn.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   CLOUDINARY UPLOAD (with account fallback)
+   CLOUDINARY UPLOAD (with debug alerts)
    ============================================================ */
 function uploadToCloudinary(file, onProgress) {
   return new Promise((resolve, reject) => {
@@ -957,6 +938,9 @@ function uploadToCloudinary(file, onProgress) {
       const acc = CLOUDINARY_ACCOUNTS[idx];
       const url = `https://api.cloudinary.com/v1_1/${acc.cloudName}/${resourceType}/upload`;
 
+      console.log(`Trying Account ${idx+1}:`, url);
+      console.log(`Preset: ${acc.preset}, API Key: ${acc.apiKey.substring(0,8)}...`);
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', acc.preset);
@@ -973,20 +957,39 @@ function uploadToCloudinary(file, onProgress) {
       };
 
       xhr.onload = () => {
+        console.log(`Account ${idx+1} response status:`, xhr.status);
+        console.log(`Account ${idx+1} response:`, xhr.responseText);
+
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const res = JSON.parse(xhr.responseText);
+            if (!res.secure_url) {
+              alert(
+                '❌ Account ' + (idx+1) + ': No URL returned\n\n' +
+                JSON.stringify(res).substring(0, 400)
+              );
+              reject(new Error('No URL in response'));
+              return;
+            }
             resolve(res);
           } catch (e) {
-            reject(new Error('Invalid response from Cloudinary.'));
+            alert('❌ Account ' + (idx+1) + ' Parse error:\n\n' + xhr.responseText.substring(0, 400));
+            tryAccount(idx + 1);
           }
         } else {
+          alert(
+            '❌ Account ' + (idx+1) + ' FAILED\n\n' +
+            'Status: ' + xhr.status + '\n\n' +
+            'URL: ' + url + '\n\n' +
+            'Response: ' + xhr.responseText.substring(0, 400)
+          );
           console.warn(`Account ${idx+1} failed (status ${xhr.status}). Trying next...`);
           tryAccount(idx + 1);
         }
       };
 
       xhr.onerror = () => {
+        alert('❌ Account ' + (idx+1) + ' Network error');
         console.warn(`Account ${idx+1} network error. Trying next...`);
         tryAccount(idx + 1);
       };
@@ -997,12 +1000,9 @@ function uploadToCloudinary(file, onProgress) {
 }
 
 function buildThumbnailUrl(videoUrl, type) {
-  // Cloudinary auto-thumbnail from video
   if (!videoUrl) return '';
   if (type === 'photo') return videoUrl;
 
-  // Replace /video/upload/ with /video/upload/so_0/ for first-frame thumbnail
-  // Also add transformations for smaller size
   try {
     if (videoUrl.includes('/video/upload/')) {
       return videoUrl.replace(
@@ -1022,9 +1022,7 @@ function openPlayer(post) {
   playerTitle.textContent = post.caption || (post.type === 'photo' ? 'Photo' : 'Video');
 
   if (post.type === 'photo') {
-    playerContent.innerHTML = `
-      <img src="${post.url}" alt="">
-    `;
+    playerContent.innerHTML = `<img src="${post.url}" alt="">`;
   } else {
     const aspectClass = post.type === 'long' ? 'aspect-16-9' : 'aspect-9-16';
     playerContent.innerHTML = `
