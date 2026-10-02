@@ -10,8 +10,42 @@
 
 <body>
 
+  <!-- ================= LOADING SCREEN ================= -->
+  <div id="loadingScreen" style="
+    position: fixed;
+    inset: 0;
+    background: #0a0a0a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    gap: 16px;
+  ">
+    <div style="
+      font-size: 36px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #ff2e63, #ff8a00);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    ">ReelHub</div>
+    <div style="
+      width: 36px;
+      height: 36px;
+      border: 3px solid #1e1e28;
+      border-top-color: #ff2e63;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    "></div>
+  </div>
+
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+
   <!-- ================= AUTH ================= -->
-  <div id="auth">
+  <div id="auth" style="display:none;">
     <div class="auth-wrap">
       <div class="auth-logo">ReelHub</div>
       <div class="auth-tagline">Short videos. Big vibes. 🎬</div>
@@ -93,7 +127,6 @@
     <div class="header">
       <div class="logo">ReelHub</div>
       <div class="header-actions">
-        <!-- 🔍 Search Button -->
         <button class="icon-btn" id="searchBtn" title="Search">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/>
@@ -101,7 +134,6 @@
           </svg>
         </button>
 
-        <!-- 🔔 Notification Bell -->
         <button class="icon-btn" id="notifBtn" title="Notifications" style="position:relative;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -110,7 +142,6 @@
           <span id="notifDot" class="notif-dot" style="display:none;"></span>
         </button>
 
-        <!-- 🚪 Logout -->
         <button class="icon-btn" id="logoutBtn" title="Logout">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
