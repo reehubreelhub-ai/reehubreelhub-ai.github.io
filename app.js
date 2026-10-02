@@ -94,7 +94,6 @@ const notifDot = document.getElementById('notifDot');
 const searchBtn = document.getElementById('searchBtn');
 
 const uploadModal        = document.getElementById('uploadModal');
-const uploadTabs         = document.querySelectorAll('.upload-tab');
 const uploadFileInput    = document.getElementById('uploadFileInput');
 const uploadCaption      = document.getElementById('uploadCaption');
 const uploadSubmitBtn    = document.getElementById('uploadSubmitBtn');
@@ -130,6 +129,9 @@ let currentUploadType = 'short';
 let selectedFile = null;
 let selectedFileDuration = 0;
 
+// Track video playback for shorts
+let shortsObserver = null;
+
 /* ============================================================
    SCREEN SWITCHING
    ============================================================ */
@@ -138,6 +140,7 @@ function showAuth() {
   authScreen.style.display = 'block';
   appScreen.classList.remove('show');
   stopNotifWatcher();
+  stopShortsObserver();
 }
 
 function showApp() {
@@ -389,6 +392,7 @@ sendResetBtn.addEventListener('click', async () => {
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   if (confirm('Log out of ReelHub?')) {
     stopNotifWatcher();
+    stopShortsObserver();
     currentUser = null;
     currentProfile = null;
     viewingUserId = null;
@@ -430,6 +434,7 @@ onAuthStateChanged(auth, async (user) => {
     currentUser = null;
     currentProfile = null;
     stopNotifWatcher();
+    stopShortsObserver();
     loginForm.reset();
     signupForm.reset();
     document.getElementById('goLogin').click();
@@ -471,6 +476,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => {
     const page = item.dataset.page;
     viewingUserId = null;
+    stopShortsObserver();
     setActiveNav(page);
     renderPage(page);
   });
@@ -484,15 +490,440 @@ document.querySelector('.upload-btn').addEventListener('click', () => {
 function renderPage(page) {
   if (page === 'profile') {
     renderProfile();
+  } else if (page === 'home') {
+    renderHomeFeed();
+  } else if (page === 'shorts') {
+    renderShortsFeed();
   } else if (page === 'notifications') {
     renderNotifications();
   } else if (page === 'search') {
     renderSearch();
-  } else if (page === 'home' || page === 'shorts' || page === 'upload' || page === 'messages') {
+  } else if (page === 'upload' || page === 'messages') {
     content.innerHTML = `
       <div class="page-placeholder">
         <div class="page-title">${pages[page]}</div>
       </div>`;
+  }
+}
+
+/* ============================================================
+   HOME FEED
+   ============================================================ */
+async function renderHomeFeed() {
+  content.innerHTML = `
+    <div class="home-feed">
+      <div class="feed-empty" id="homeLoading">
+        <div class="page-title">Loading feed...</div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const postsRef = collection(db, 'posts');
+    const q = query(postsRef, limit(50));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      content.innerHTML = `
+        <div class="feed-empty">
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="4"/>
+            <circle cx="9" cy="9" r="2"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+          <h3>No posts yet</h3>
+          <p>Be the first to upload a video!</p>
+        </div>`;
+      return;
+    }
+
+    // Manual sort (latest first)
+    const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    posts.sort((a, b) => {
+      const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+      const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+      return tb - ta;
+    });
+
+    const wrap = document.createElement('div');
+    wrap.className = 'home-feed';
+
+    posts.forEach(post => {
+      wrap.appendChild(makeFeedPost(post));
+    });
+
+    content.innerHTML = '';
+    content.appendChild(wrap);
+
+    // Auto-play visible videos
+    setupFeedAutoplay();
+
+  } catch (e) {
+    console.error('Home feed error:', e);
+    content.innerHTML = `
+      <div class="feed-empty">
+        <h3>Could not load feed</h3>
+        <p>Please try again later</p>
+      </div>`;
+  }
+}
+
+function makeFeedPost(post) {
+  const postEl = document.createElement('div');
+  postEl.className = 'feed-post';
+  postEl.dataset.postId = post.id;
+
+  const avatar = post.userPhoto || defaultAvatar(post.userName);
+  const isLiked = (post.likes || []).includes(currentUser.uid);
+  const likesCount = (post.likes || []).length;
+  const commentsCount = (post.comments || []).length;
+
+  let mediaHtml = '';
+  if (post.type === 'photo') {
+    mediaHtml = `<img src="${post.url}" alt="" loading="lazy">`;
+  } else {
+    const aspectClass = post.type === 'long' ? 'aspect-16-9' : 'aspect-9-16';
+    mediaHtml = `
+      <video src="${post.url}"
+             class="${aspectClass}"
+             controls
+             muted
+             playsinline
+             preload="metadata"
+             loop
+             style="width:100%;max-height:600px;background:#000;"></video>
+    `;
+  }
+
+  postEl.innerHTML = `
+    <div class="feed-post-header">
+      <img src="${avatar}" alt="" data-uid="${post.userId}">
+      <div class="info" data-uid="${post.userId}">
+        <b>${escapeHtml(post.userName || 'User')}</b>
+        <span>@${escapeHtml(post.userHandle || '')}</span>
+      </div>
+    </div>
+
+    <div class="feed-post-media">
+      ${mediaHtml}
+      <div class="type-badge-feed">${post.type === 'photo' ? 'PHOTO' : (post.type === 'long' ? 'LONG' : 'SHORT')}</div>
+    </div>
+
+    <div class="feed-actions">
+      <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${post.id}">
+        <svg viewBox="0 0 24 24">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+        <span>${likesCount}</span>
+      </button>
+
+      <button class="comment-btn" data-post="${post.id}">
+        <svg viewBox="0 0 24 24">
+          <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </svg>
+        <span>${commentsCount}</span>
+      </button>
+
+      <button class="share-btn-feed" data-post="${post.id}">
+        <svg viewBox="0 0 24 24">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+      </button>
+    </div>
+
+    ${post.caption ? `
+      <div class="feed-caption">
+        <b>${escapeHtml(post.userHandle || '')}</b>${escapeHtml(post.caption)}
+      </div>
+    ` : ''}
+  `;
+
+  // Click on user → open profile
+  postEl.querySelector('.feed-post-header img').addEventListener('click', () => {
+    openUserProfile(post.userId);
+  });
+  postEl.querySelector('.feed-post-header .info').addEventListener('click', () => {
+    openUserProfile(post.userId);
+  });
+
+  // Like button
+  postEl.querySelector('.like-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await toggleLike(post.id, e.currentTarget);
+  });
+
+  // Comment (coming soon)
+  postEl.querySelector('.comment-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    showToast('💬 Comments coming soon');
+  });
+
+  // Share
+  postEl.querySelector('.share-btn-feed').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await sharePost(post);
+  });
+
+  return postEl;
+}
+
+/* ============================================================
+   FEED AUTOPLAY
+   ============================================================ */
+function setupFeedAutoplay() {
+  const videos = document.querySelectorAll('.feed-post-media video');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const video = entry.target;
+      if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+        // Play muted
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    });
+  }, { threshold: [0, 0.6, 1] });
+
+  videos.forEach(v => observer.observe(v));
+}
+
+/* ============================================================
+   SHORTS FEED
+   ============================================================ */
+async function renderShortsFeed() {
+  content.innerHTML = `
+    <div class="shorts-wrap" id="shortsWrap">
+      <div class="shorts-empty">
+        <div class="page-title">Loading shorts...</div>
+      </div>
+    </div>
+  `;
+
+  const wrap = document.getElementById('shortsWrap');
+  if (!wrap) return;
+
+  try {
+    const postsRef = collection(db, 'posts');
+    // Only short videos
+    const q = query(postsRef, where('type', '==', 'short'), limit(30));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      wrap.innerHTML = `
+        <div class="shorts-empty">
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="5"/>
+            <path d="M3 8h6M15 8h6"/>
+            <path d="M10 12l5 3-5 3z" fill="currentColor" stroke="none"/>
+          </svg>
+          <h3>No shorts yet</h3>
+          <p>Upload a short video to see it here</p>
+        </div>`;
+      return;
+    }
+
+    // Manual sort (latest first)
+    const shorts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    shorts.sort((a, b) => {
+      const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+      const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+      return tb - ta;
+    });
+
+    wrap.innerHTML = '';
+    shorts.forEach(short => {
+      wrap.appendChild(makeShortItem(short));
+    });
+
+    // Setup auto-play on scroll
+    setupShortsAutoplay(wrap);
+
+  } catch (e) {
+    console.error('Shorts error:', e);
+    wrap.innerHTML = `
+      <div class="shorts-empty">
+        <h3>Could not load shorts</h3>
+        <p>Please try again later</p>
+      </div>`;
+  }
+}
+
+function makeShortItem(short) {
+  const item = document.createElement('div');
+  item.className = 'short-item';
+  item.dataset.postId = short.id;
+
+  const avatar = short.userPhoto || defaultAvatar(short.userName);
+  const isLiked = (short.likes || []).includes(currentUser.uid);
+  const likesCount = (short.likes || []).length;
+  const commentsCount = (short.comments || []).length;
+
+  item.innerHTML = `
+    <video src="${short.url}"
+           loop
+           muted
+           playsinline
+           preload="metadata"
+           style="width:100%;height:100%;object-fit:contain;background:#000;"></video>
+
+    <div class="short-overlay">
+      <div class="short-bottom-info">
+        <div class="short-user-block">
+          <div class="short-user-row">
+            <img src="${avatar}" alt="" data-uid="${short.userId}">
+            <div>
+              <b>${escapeHtml(short.userName || 'User')}</b>
+              <span>@${escapeHtml(short.userHandle || '')}</span>
+            </div>
+          </div>
+          ${short.caption ? `<div class="short-caption">${escapeHtml(short.caption)}</div>` : ''}
+        </div>
+
+        <div class="short-side-actions">
+          <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${short.id}">
+            <svg viewBox="0 0 24 24">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            <span>${likesCount}</span>
+          </button>
+
+          <button class="comment-btn" data-post="${short.id}">
+            <svg viewBox="0 0 24 24">
+              <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+            <span>${commentsCount}</span>
+          </button>
+
+          <button class="share-btn-short" data-post="${short.id}">
+            <svg viewBox="0 0 24 24">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // User avatar click
+  const userImg = item.querySelector('.short-user-row img');
+  if (userImg) {
+    userImg.addEventListener('click', () => openUserProfile(short.userId));
+  }
+
+  // Like
+  item.querySelector('.like-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await toggleLike(short.id, e.currentTarget);
+  });
+
+  // Comment
+  item.querySelector('.comment-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    showToast('💬 Comments coming soon');
+  });
+
+  // Share
+  item.querySelector('.share-btn-short').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await sharePost(short);
+  });
+
+  return item;
+}
+
+function setupShortsAutoplay(wrap) {
+  stopShortsObserver();
+
+  const videos = wrap.querySelectorAll('.short-item video');
+
+  shortsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const video = entry.target;
+      if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    });
+  }, { threshold: [0, 0.6, 1] });
+
+  videos.forEach(v => shortsObserver.observe(v));
+}
+
+function stopShortsObserver() {
+  if (shortsObserver) {
+    shortsObserver.disconnect();
+    shortsObserver = null;
+  }
+  // Pause all videos
+  document.querySelectorAll('.short-item video').forEach(v => {
+    try { v.pause(); } catch (e) {}
+  });
+}
+
+/* ============================================================
+   LIKE SYSTEM
+   ============================================================ */
+async function toggleLike(postId, btnEl) {
+  if (!currentUser) return;
+
+  try {
+    const postRef = doc(db, 'posts', postId);
+    const postSnap = await getDoc(postRef);
+
+    if (!postSnap.exists()) return;
+
+    const postData = postSnap.data();
+    const likes = postData.likes || [];
+    const isLiked = likes.includes(currentUser.uid);
+
+    if (isLiked) {
+      await updateDoc(postRef, { likes: arrayRemove(currentUser.uid) });
+    } else {
+      await updateDoc(postRef, { likes: arrayUnion(currentUser.uid) });
+    }
+
+    // Update UI
+    const newCount = isLiked ? likes.length - 1 : likes.length + 1;
+    const countSpan = btnEl.querySelector('span');
+    if (countSpan) countSpan.textContent = newCount;
+
+    btnEl.classList.toggle('liked', !isLiked);
+
+    // Animate
+    btnEl.style.transform = 'scale(1.3)';
+    setTimeout(() => { btnEl.style.transform = ''; }, 200);
+
+  } catch (e) {
+    console.error('Like error:', e);
+  }
+}
+
+/* ============================================================
+   SHARE POST
+   ============================================================ */
+async function sharePost(post) {
+  const appUrl = window.location.origin;
+  const shareText = `🎬 Check out this post on ReelHub!\n\n@${post.userHandle}\n\n${appUrl}`;
+  const shareTitle = `ReelHub Post`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: shareTitle, text: shareText, url: appUrl });
+      return;
+    } catch (err) { if (err.name === 'AbortError') return; }
+  }
+
+  try {
+    await navigator.clipboard.writeText(shareText);
+    showToast('✅ Link copied!');
+  } catch (err) {
+    showToast('❌ Could not share');
   }
 }
 
@@ -576,7 +1007,7 @@ async function renderProfile() {
 }
 
 /* ============================================================
-   USER POSTS GRID — with manual sorting (no index needed)
+   USER POSTS GRID
    ============================================================ */
 async function renderUserPosts(uid, containerId) {
   const container = document.getElementById(containerId);
@@ -584,7 +1015,6 @@ async function renderUserPosts(uid, containerId) {
 
   try {
     const postsRef = collection(db, 'posts');
-    // ⚠️ No orderBy → no index needed
     const q = query(
       postsRef,
       where('userId', '==', uid),
@@ -607,7 +1037,6 @@ async function renderUserPosts(uid, containerId) {
       return;
     }
 
-    // Manually sort by createdAt (latest first)
     const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     posts.sort((a, b) => {
       const ta = a.createdAt?.toDate?.()?.getTime() || 0;
@@ -792,7 +1221,7 @@ uploadFileInput.addEventListener('change', async (e) => {
     selectedFileDuration = duration;
 
     if (currentUploadType === 'short' && duration > 30.5) {
-      uploadMsg.textContent = `⚠️ Video is ${Math.round(duration)}s. It's a Long video. Switching to Long tab...`;
+      uploadMsg.textContent = `⚠️ Video is ${Math.round(duration)}s. Switching to Long tab...`;
       setTimeout(() => {
         switchUploadType('long');
         uploadFileInput.value = '';
@@ -804,7 +1233,7 @@ uploadFileInput.addEventListener('change', async (e) => {
     }
 
     if (currentUploadType === 'long' && duration <= 30.5) {
-      uploadMsg.textContent = `⚠️ Video is ${Math.round(duration)}s. It's a Short video. Switching to Short tab...`;
+      uploadMsg.textContent = `⚠️ Video is ${Math.round(duration)}s. Switching to Short tab...`;
       setTimeout(() => {
         switchUploadType('short');
         uploadFileInput.value = '';
@@ -928,9 +1357,6 @@ function uploadToCloudinary(file, onProgress) {
 
     const url = `https://api.cloudinary.com/v1_1/${acc.cloudName}/${resourceType}/upload`;
 
-    console.log('Uploading to:', url);
-    console.log('Preset:', acc.preset);
-
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', acc.preset);
@@ -948,9 +1374,6 @@ function uploadToCloudinary(file, onProgress) {
     };
 
     xhr.onload = () => {
-      console.log('Response status:', xhr.status);
-      console.log('Response:', xhr.responseText);
-
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const res = JSON.parse(xhr.responseText);
@@ -976,13 +1399,8 @@ function uploadToCloudinary(file, onProgress) {
       }
     };
 
-    xhr.onerror = () => {
-      reject(new Error('Network error. Check internet connection.'));
-    };
-
-    xhr.ontimeout = () => {
-      reject(new Error('Upload timed out. Try a smaller video.'));
-    };
+    xhr.onerror = () => reject(new Error('Network error. Check internet.'));
+    xhr.ontimeout = () => reject(new Error('Upload timed out. Try smaller video.'));
 
     xhr.send(formData);
   });
@@ -1121,7 +1539,7 @@ async function openUserProfile(userId) {
     document.getElementById('backFromProfileBtn').addEventListener('click', () => {
       viewingUserId = null;
       setActiveNav(null);
-      renderPage('search');
+      renderPage('home');
     });
 
     const followBtn = document.getElementById('pubFollowBtn');
@@ -1383,7 +1801,6 @@ async function renderNotifications() {
     const snap = await getDocs(q);
     const notifications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // Manual sort by createdAt desc
     notifications.sort((a, b) => {
       const ta = a.createdAt?.toDate?.()?.getTime() || 0;
       const tb = b.createdAt?.toDate?.()?.getTime() || 0;
