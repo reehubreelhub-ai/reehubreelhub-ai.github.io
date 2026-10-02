@@ -48,17 +48,12 @@ const auth = getAuth(firebaseApp);
 const db   = getFirestore(firebaseApp);
 
 /* ============================================================
-   CLOUDINARY ACCOUNTS
+   CLOUDINARY — SINGLE ACCOUNT
    ============================================================ */
 const CLOUDINARY_ACCOUNTS = [
   {
     cloudName: "fepzqr9t",
     apiKey:    "287332161532267",
-    preset:    "reelhub_video"
-  },
-  {
-    cloudName: "s3eresx6",
-    apiKey:    "349223397331644",
     preset:    "reelhub_video"
   }
 ];
@@ -99,7 +94,6 @@ const notifBtn = document.getElementById('notifBtn');
 const notifDot = document.getElementById('notifDot');
 const searchBtn = document.getElementById('searchBtn');
 
-// Upload
 const uploadModal        = document.getElementById('uploadModal');
 const uploadTabs         = document.querySelectorAll('.upload-tab');
 const uploadFileInput    = document.getElementById('uploadFileInput');
@@ -119,7 +113,6 @@ const uploadProgressWrap = document.getElementById('uploadProgressWrap');
 const uploadProgressBar  = document.getElementById('uploadProgressBar');
 const uploadProgressText = document.getElementById('uploadProgressText');
 
-// Player
 const playerModal   = document.getElementById('playerModal');
 const playerTitle   = document.getElementById('playerTitle');
 const playerContent = document.getElementById('playerContent');
@@ -920,82 +913,72 @@ uploadSubmitBtn.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   CLOUDINARY UPLOAD (with debug alerts)
+   CLOUDINARY UPLOAD (single account)
    ============================================================ */
 function uploadToCloudinary(file, onProgress) {
   return new Promise((resolve, reject) => {
     const resourceType = currentUploadType === 'photo' ? 'image' : 'video';
-    const accountIndex = 0;
+    const acc = CLOUDINARY_ACCOUNTS[0];
 
-    tryAccount(accountIndex);
+    const url = `https://api.cloudinary.com/v1_1/${acc.cloudName}/${resourceType}/upload`;
 
-    function tryAccount(idx) {
-      if (idx >= CLOUDINARY_ACCOUNTS.length) {
-        reject(new Error('All Cloudinary accounts failed. Please try again later.'));
-        return;
+    console.log('Uploading to:', url);
+    console.log('Preset:', acc.preset);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', acc.preset);
+    formData.append('api_key', acc.apiKey);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.timeout = 120000; // 2 minutes
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        onProgress(percent);
       }
+    };
 
-      const acc = CLOUDINARY_ACCOUNTS[idx];
-      const url = `https://api.cloudinary.com/v1_1/${acc.cloudName}/${resourceType}/upload`;
+    xhr.onload = () => {
+      console.log('Response status:', xhr.status);
+      console.log('Response:', xhr.responseText);
 
-      console.log(`Trying Account ${idx+1}:`, url);
-      console.log(`Preset: ${acc.preset}, API Key: ${acc.apiKey.substring(0,8)}...`);
-
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', acc.preset);
-      formData.append('api_key', acc.apiKey);
-
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', url, true);
-
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable && onProgress) {
-          const percent = Math.round((e.loaded / e.total) * 100);
-          onProgress(percent);
-        }
-      };
-
-      xhr.onload = () => {
-        console.log(`Account ${idx+1} response status:`, xhr.status);
-        console.log(`Account ${idx+1} response:`, xhr.responseText);
-
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const res = JSON.parse(xhr.responseText);
-            if (!res.secure_url) {
-              alert(
-                '❌ Account ' + (idx+1) + ': No URL returned\n\n' +
-                JSON.stringify(res).substring(0, 400)
-              );
-              reject(new Error('No URL in response'));
-              return;
-            }
-            resolve(res);
-          } catch (e) {
-            alert('❌ Account ' + (idx+1) + ' Parse error:\n\n' + xhr.responseText.substring(0, 400));
-            tryAccount(idx + 1);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const res = JSON.parse(xhr.responseText);
+          if (!res.secure_url) {
+            reject(new Error('Cloudinary did not return a URL. Response: ' + xhr.responseText.substring(0, 200)));
+            return;
           }
-        } else {
-          alert(
-            '❌ Account ' + (idx+1) + ' FAILED\n\n' +
-            'Status: ' + xhr.status + '\n\n' +
-            'URL: ' + url + '\n\n' +
-            'Response: ' + xhr.responseText.substring(0, 400)
-          );
-          console.warn(`Account ${idx+1} failed (status ${xhr.status}). Trying next...`);
-          tryAccount(idx + 1);
+          resolve(res);
+        } catch (e) {
+          reject(new Error('Invalid response from Cloudinary: ' + xhr.responseText.substring(0, 200)));
         }
-      };
+      } else {
+        let errMsg = 'Upload failed';
+        try {
+          const errData = JSON.parse(xhr.responseText);
+          if (errData.error && errData.error.message) {
+            errMsg = errData.error.message;
+          }
+        } catch (e) {
+          errMsg = 'HTTP ' + xhr.status;
+        }
+        reject(new Error(errMsg));
+      }
+    };
 
-      xhr.onerror = () => {
-        alert('❌ Account ' + (idx+1) + ' Network error');
-        console.warn(`Account ${idx+1} network error. Trying next...`);
-        tryAccount(idx + 1);
-      };
+    xhr.onerror = () => {
+      reject(new Error('Network error. Check internet connection.'));
+    };
 
-      xhr.send(formData);
-    }
+    xhr.ontimeout = () => {
+      reject(new Error('Upload timed out. Try a smaller video.'));
+    };
+
+    xhr.send(formData);
   });
 }
 
