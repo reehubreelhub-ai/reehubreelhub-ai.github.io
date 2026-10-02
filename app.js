@@ -17,10 +17,12 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  deleteDoc,
   collection,
   query,
   where,
   getDocs,
+  addDoc,
   serverTimestamp,
   arrayUnion,
   arrayRemove,
@@ -46,18 +48,34 @@ const auth = getAuth(firebaseApp);
 const db   = getFirestore(firebaseApp);
 
 /* ============================================================
+   CLOUDINARY ACCOUNTS
+   ============================================================ */
+const CLOUDINARY_ACCOUNTS = [
+  {
+    cloudName: "fepzqr9t",
+    apiKey:    "287332161532267",
+    preset:    "reelhub_video"
+  },
+  {
+    cloudName: "s3eresx6",
+    apiKey:    "349223397331644",
+    preset:    "reelhub_video"
+  }
+];
+
+/* ============================================================
    DOM SHORTCUTS
    ============================================================ */
-const authScreen = document.getElementById('auth');
-const loadingScreen = document.getElementById('loadingScreen');
-const appScreen  = document.getElementById('app');
-const loginForm  = document.getElementById('loginForm');
-const signupForm = document.getElementById('signupForm');
-const loginMsg   = document.getElementById('loginMsg');
-const signupMsg  = document.getElementById('signupMsg');
-const loginBtn   = document.getElementById('loginBtn');
-const signupBtn  = document.getElementById('signupBtn');
-const content    = document.getElementById('content');
+const authScreen     = document.getElementById('auth');
+const loadingScreen  = document.getElementById('loadingScreen');
+const appScreen      = document.getElementById('app');
+const loginForm      = document.getElementById('loginForm');
+const signupForm     = document.getElementById('signupForm');
+const loginMsg       = document.getElementById('loginMsg');
+const signupMsg      = document.getElementById('signupMsg');
+const loginBtn       = document.getElementById('loginBtn');
+const signupBtn      = document.getElementById('signupBtn');
+const content        = document.getElementById('content');
 
 const editModal      = document.getElementById('editModal');
 const editPreviewImg = document.getElementById('editPreviewImg');
@@ -81,6 +99,31 @@ const notifBtn = document.getElementById('notifBtn');
 const notifDot = document.getElementById('notifDot');
 const searchBtn = document.getElementById('searchBtn');
 
+// Upload
+const uploadModal        = document.getElementById('uploadModal');
+const uploadTabs         = document.querySelectorAll('.upload-tab');
+const uploadFileInput    = document.getElementById('uploadFileInput');
+const uploadCaption      = document.getElementById('uploadCaption');
+const uploadSubmitBtn    = document.getElementById('uploadSubmitBtn');
+const uploadMsg          = document.getElementById('uploadMsg');
+const uploadPreview      = document.getElementById('uploadPreview');
+const uploadPreviewWrap  = document.getElementById('uploadPreviewWrap');
+const uploadPreviewInfo  = document.getElementById('uploadPreviewInfo');
+const uploadPhotoPreview = document.getElementById('uploadPhotoPreview');
+const uploadPhotoPreviewWrap = document.getElementById('uploadPhotoPreviewWrap');
+const uploadPickerWrap   = document.getElementById('uploadPickerWrap');
+const pickerTitle        = document.getElementById('pickerTitle');
+const pickerSubtitle     = document.getElementById('pickerSubtitle');
+const pickerLabel        = document.getElementById('pickerLabel');
+const uploadProgressWrap = document.getElementById('uploadProgressWrap');
+const uploadProgressBar  = document.getElementById('uploadProgressBar');
+const uploadProgressText = document.getElementById('uploadProgressText');
+
+// Player
+const playerModal   = document.getElementById('playerModal');
+const playerTitle   = document.getElementById('playerTitle');
+const playerContent = document.getElementById('playerContent');
+
 /* ============================================================
    STATE
    ============================================================ */
@@ -89,7 +132,11 @@ let currentProfile = null;
 let selectedPhotoBase64 = null;
 let isLoggingIn    = false;
 let notifIntervalId = null;
-let viewingUserId  = null;   // जिस user की profile खुली है
+let viewingUserId  = null;
+
+let currentUploadType = 'short';   // short | long | photo
+let selectedFile = null;
+let selectedFileDuration = 0;      // seconds (videos)
 
 /* ============================================================
    SCREEN SWITCHING
@@ -126,7 +173,7 @@ document.querySelectorAll('.eye').forEach(eye => {
 });
 
 /* ============================================================
-   LOGIN <-> SIGNUP SWITCH
+   LOGIN <-> SIGNUP
    ============================================================ */
 document.getElementById('goSignup').addEventListener('click', () => {
   loginForm.style.display = 'none';
@@ -247,9 +294,7 @@ loginForm.addEventListener('submit', async (e) => {
   try {
     const result = await signInWithEmailAndPassword(auth, email, pass);
 
-    if (!result || !result.user) {
-      throw new Error('Login failed');
-    }
+    if (!result || !result.user) throw new Error('Login failed');
 
     currentUser = result.user;
     await loadProfile(result.user.uid);
@@ -317,34 +362,24 @@ sendResetBtn.addEventListener('click', async () => {
   forgotMsg.className = 'error-msg';
   forgotMsg.textContent = '';
 
-  if (!email) {
-    forgotMsg.textContent = 'Please enter your email address.';
-    return;
-  }
-  if (!/^\S+@\S+\.\S+$/.test(email)) {
-    forgotMsg.textContent = 'Please enter a valid email.';
-    return;
-  }
+  if (!email) { forgotMsg.textContent = 'Please enter your email address.'; return; }
+  if (!/^\S+@\S+\.\S+$/.test(email)) { forgotMsg.textContent = 'Please enter a valid email.'; return; }
 
   sendResetBtn.disabled = true;
   sendResetBtn.textContent = 'Sending...';
 
   try {
     await sendPasswordResetEmail(auth, email);
-
     forgotMsg.className = 'success-msg';
     forgotMsg.textContent = 'Reset link sent! Check your inbox (and spam folder).';
-
     setTimeout(() => {
       forgotModal.classList.remove('show');
       forgotEmail.value = '';
       forgotMsg.textContent = '';
     }, 3500);
-
   } catch (err) {
     console.error(err);
     forgotMsg.className = 'error-msg';
-
     if (err.code === 'auth/user-not-found') {
       forgotMsg.textContent = 'No account found with this email.';
     } else if (err.code === 'auth/invalid-email') {
@@ -370,11 +405,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
     currentProfile = null;
     viewingUserId = null;
 
-    try {
-      await signOut(auth);
-    } catch (e) {
-      console.warn('Signout error:', e);
-    }
+    try { await signOut(auth); } catch (e) {}
 
     loginForm.reset();
     signupForm.reset();
@@ -384,7 +415,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
 });
 
 /* ============================================================
-   BELL + SEARCH BUTTONS
+   HEADER BUTTONS
    ============================================================ */
 notifBtn.addEventListener('click', () => {
   setActiveNav(null);
@@ -400,34 +431,20 @@ searchBtn.addEventListener('click', () => {
    AUTH STATE LISTENER
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
-  if (isLoggingIn) {
-    console.log('Login in progress — skipping auto redirect');
-    return;
-  }
+  if (isLoggingIn) return;
 
   if (user) {
-    console.log('Auto-login: user found', user.email);
     currentUser = user;
-
-    try {
-      await loadProfile(user.uid);
-    } catch (e) {
-      console.warn('Profile load failed:', e);
-    }
-
+    try { await loadProfile(user.uid); } catch (e) {}
     showApp();
     startNotifWatcher();
-
   } else {
-    console.log('No user — showing login');
     currentUser = null;
     currentProfile = null;
     stopNotifWatcher();
-
     loginForm.reset();
     signupForm.reset();
     document.getElementById('goLogin').click();
-
     showAuth();
   }
 });
@@ -465,7 +482,7 @@ const pages = {
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => {
     const page = item.dataset.page;
-    viewingUserId = null;   // reset when navigating tabs
+    viewingUserId = null;
     setActiveNav(page);
     renderPage(page);
   });
@@ -473,7 +490,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
 
 document.querySelector('.upload-btn').addEventListener('click', () => {
   setActiveNav(null);
-  renderPage('upload');
+  openUploadModal();
 });
 
 function renderPage(page) {
@@ -494,7 +511,7 @@ function renderPage(page) {
 /* ============================================================
    OWN PROFILE PAGE
    ============================================================ */
-function renderProfile() {
+async function renderProfile() {
   if (!currentProfile) {
     content.innerHTML = `<div class="page-placeholder"><div class="page-title">Loading...</div></div>`;
     return;
@@ -505,7 +522,6 @@ function renderProfile() {
 
   content.innerHTML = `
     <div class="profile-page">
-
       <div class="profile-top">
         <div class="profile-avatar-wrap" id="avatarWrap">
           <img class="profile-avatar" src="${avatarSrc}" alt="${p.name}">
@@ -514,13 +530,13 @@ function renderProfile() {
 
         <div class="profile-stats">
           <div class="profile-stat" data-action="videos">
-            <b>${p.videoCount || 0}</b><span>Videos</span>
+            <b id="myVideoCount">${p.videoCount || 0}</b><span>Videos</span>
           </div>
           <div class="profile-stat" data-action="followers">
-            <b id="followersCount">${p.followers.length}</b><span>Followers</span>
+            <b>${p.followers.length}</b><span>Followers</span>
           </div>
           <div class="profile-stat" data-action="following">
-            <b id="followingCount">${p.following.length}</b><span>Following</span>
+            <b>${p.following.length}</b><span>Following</span>
           </div>
         </div>
       </div>
@@ -535,9 +551,7 @@ function renderProfile() {
         <button class="btn-outline" id="editProfileBtn">Edit Profile</button>
         <button class="btn-outline share-btn" id="shareProfileBtn">
           <svg viewBox="0 0 24 24">
-            <circle cx="18" cy="5" r="3"/>
-            <circle cx="6" cy="12" r="3"/>
-            <circle cx="18" cy="19" r="3"/>
+            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
             <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
             <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
           </svg>
@@ -546,13 +560,12 @@ function renderProfile() {
       </div>
 
       <div class="profile-tabs">
-        <button class="profile-tab active">Videos</button>
+        <button class="profile-tab active">Posts</button>
       </div>
 
-      <div class="profile-grid" id="profileGrid">
-        ${renderEmptyGrid()}
+      <div class="profile-grid" id="myPostsGrid">
+        <div class="grid-empty">Loading posts...</div>
       </div>
-
     </div>
   `;
 
@@ -560,9 +573,7 @@ function renderProfile() {
   document.getElementById('avatarWrap').addEventListener('click', openEditModal);
 
   const shareBtn = document.getElementById('shareProfileBtn');
-  if (shareBtn) {
-    shareBtn.addEventListener('click', () => shareProfile());
-  }
+  if (shareBtn) shareBtn.addEventListener('click', () => shareProfile());
 
   document.querySelectorAll('.profile-stat').forEach(el => {
     el.addEventListener('click', () => {
@@ -572,28 +583,477 @@ function renderProfile() {
       if (action === 'following') openListModal('following');
     });
   });
+
+  // Load user's posts
+  await renderUserPosts(currentUser.uid, 'myPostsGrid');
 }
 
-function renderEmptyGrid() {
-  return `
-    <div class="grid-empty">
-      <svg viewBox="0 0 24 24">
-        <rect x="3" y="3" width="18" height="18" rx="4"/>
-        <circle cx="9" cy="9" r="2"/>
-        <path d="M21 15l-5-5L5 21"/>
-      </svg>
-      <div>No videos yet</div>
-      <div style="font-size:12px;color:#444;margin-top:6px;">Upload your first video to get started</div>
-    </div>`;
+/* ============================================================
+   USER POSTS GRID (own or public)
+   ============================================================ */
+async function renderUserPosts(uid, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  try {
+    const postsRef = collection(db, 'posts');
+    const q = query(
+      postsRef,
+      where('userId', '==', uid),
+      orderBy('createdAt', 'desc'),
+      limit(60)
+    );
+
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      container.innerHTML = `
+        <div class="grid-empty">
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="4"/>
+            <circle cx="9" cy="9" r="2"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+          <div>No posts yet</div>
+          <div style="font-size:12px;color:#444;margin-top:6px;">Tap + to add your first post</div>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = '';
+    snap.forEach(docSnap => {
+      const post = { id: docSnap.id, ...docSnap.data() };
+      container.appendChild(makeGridItem(post));
+    });
+
+  } catch (e) {
+    console.error('Could not load posts:', e);
+    container.innerHTML = `<div class="grid-empty">Could not load posts.</div>`;
+  }
 }
+
+function makeGridItem(post) {
+  const item = document.createElement('div');
+  item.className = 'grid-item';
+
+  // Aspect ratio by type
+  if (post.type === 'long') {
+    item.style.aspectRatio = '16 / 9';
+  } else {
+    item.style.aspectRatio = '9 / 16';
+  }
+
+  const thumbUrl = post.thumbnail || (post.type === 'photo' ? post.url : '');
+
+  let inner = '';
+  if (post.type === 'photo') {
+    inner = `<img src="${post.url}" alt="">`;
+  } else {
+    // Video — use Cloudinary generated thumbnail via /video/upload/so_0/ ... but we saved poster
+    // Simpler: use video element with poster
+    inner = `
+      <video src="${post.url}" muted playsinline preload="metadata"
+             ${thumbUrl ? `poster="${thumbUrl}"` : ''}></video>
+    `;
+  }
+
+  const badgeText = post.type === 'photo' ? 'PHOTO' : (post.type === 'long' ? 'LONG' : 'SHORT');
+
+  item.innerHTML = `
+    ${inner}
+    <div class="type-badge">${badgeText}</div>
+    ${post.type !== 'photo' ? `<div class="play-icon">▶</div>` : ''}
+  `;
+
+  item.addEventListener('click', () => openPlayer(post));
+
+  return item;
+}
+
+/* ============================================================
+   UPLOAD MODAL
+   ============================================================ */
+function openUploadModal() {
+  // Reset
+  selectedFile = null;
+  selectedFileDuration = 0;
+  currentUploadType = 'short';
+
+  uploadFileInput.value = '';
+  uploadCaption.value = '';
+  uploadMsg.textContent = '';
+  uploadMsg.className = 'error-msg';
+  uploadPreview.src = '';
+  uploadPhotoPreview.src = '';
+  uploadPreviewWrap.style.display = 'none';
+  uploadPhotoPreviewWrap.style.display = 'none';
+  uploadPickerWrap.style.display = 'flex';
+  uploadSubmitBtn.disabled = true;
+  uploadProgressWrap.style.display = 'none';
+  uploadProgressBar.style.width = '0%';
+  uploadProgressText.textContent = '0%';
+
+  // Set short as active
+  document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.upload-tab[data-type="short"]').classList.add('active');
+
+  updatePickerText();
+  uploadModal.classList.add('show');
+}
+
+function updatePickerText() {
+  if (currentUploadType === 'short') {
+    pickerTitle.textContent = 'Choose a short video';
+    pickerSubtitle.textContent = 'Max 30 sec • 9:16 vertical';
+    pickerLabel.textContent = 'Select video';
+    uploadFileInput.accept = 'video/*';
+  } else if (currentUploadType === 'long') {
+    pickerTitle.textContent = 'Choose a long video';
+    pickerSubtitle.textContent = 'Max 1 minute • 16:9 horizontal';
+    pickerLabel.textContent = 'Select video';
+    uploadFileInput.accept = 'video/*';
+  } else {
+    pickerTitle.textContent = 'Choose a photo';
+    pickerSubtitle.textContent = 'Max 5 MB • JPG / PNG';
+    pickerLabel.textContent = 'Select photo';
+    uploadFileInput.accept = 'image/*';
+  }
+}
+
+document.getElementById('closeUpload').addEventListener('click', () => {
+  uploadModal.classList.remove('show');
+});
+
+uploadModal.addEventListener('click', (e) => {
+  if (e.target === uploadModal) uploadModal.classList.remove('show');
+});
+
+// Tab switching
+document.querySelectorAll('.upload-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentUploadType = tab.dataset.type;
+
+    // Reset selection
+    selectedFile = null;
+    selectedFileDuration = 0;
+    uploadFileInput.value = '';
+    uploadPreview.src = '';
+    uploadPhotoPreview.src = '';
+    uploadPreviewWrap.style.display = 'none';
+    uploadPhotoPreviewWrap.style.display = 'none';
+    uploadPickerWrap.style.display = 'flex';
+    uploadSubmitBtn.disabled = true;
+    uploadMsg.textContent = '';
+
+    updatePickerText();
+  });
+});
+
+/* ============================================================
+   FILE SELECT
+   ============================================================ */
+uploadFileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  uploadMsg.className = 'error-msg';
+  uploadMsg.textContent = '';
+
+  if (currentUploadType === 'photo') {
+    // PHOTO
+    if (!file.type.startsWith('image/')) {
+      uploadMsg.textContent = 'Please choose an image file.';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      uploadMsg.textContent = 'Photo too large. Max 5 MB.';
+      return;
+    }
+    selectedFile = file;
+    const url = URL.createObjectURL(file);
+    uploadPhotoPreview.src = url;
+    uploadPhotoPreviewWrap.style.display = 'block';
+    uploadPickerWrap.style.display = 'none';
+    uploadSubmitBtn.disabled = false;
+    return;
+  }
+
+  // VIDEO
+  if (!file.type.startsWith('video/')) {
+    uploadMsg.textContent = 'Please choose a video file.';
+    return;
+  }
+  if (file.size > 100 * 1024 * 1024) {
+    uploadMsg.textContent = 'Video too large. Max 100 MB.';
+    return;
+  }
+
+  // Read duration
+  const url = URL.createObjectURL(file);
+  const tempVideo = document.createElement('video');
+  tempVideo.preload = 'metadata';
+  tempVideo.src = url;
+
+  tempVideo.onloadedmetadata = () => {
+    const duration = tempVideo.duration;
+
+    if (!isFinite(duration) || duration <= 0) {
+      uploadMsg.textContent = 'Could not read video duration.';
+      return;
+    }
+
+    selectedFile = file;
+    selectedFileDuration = duration;
+
+    // Auto-correct type if needed
+    if (currentUploadType === 'short' && duration > 30.5) {
+      uploadMsg.textContent = `⚠️ Video is ${Math.round(duration)}s. It's a Long video. Switching to Long tab...`;
+      setTimeout(() => {
+        switchUploadType('long');
+        uploadFileInput.value = '';
+        selectedFile = null;
+        selectedFileDuration = 0;
+        uploadMsg.textContent = 'Please select the video again to upload as Long.';
+      }, 1500);
+      return;
+    }
+
+    if (currentUploadType === 'long' && duration <= 30.5) {
+      uploadMsg.textContent = `⚠️ Video is ${Math.round(duration)}s. It's a Short video. Switching to Short tab...`;
+      setTimeout(() => {
+        switchUploadType('short');
+        uploadFileInput.value = '';
+        selectedFile = null;
+        selectedFileDuration = 0;
+        uploadMsg.textContent = 'Please select the video again to upload as Short.';
+      }, 1500);
+      return;
+    }
+
+    if (currentUploadType === 'long' && duration > 60.5) {
+      uploadMsg.textContent = `⚠️ Long video must be max 1 minute. Yours is ${Math.round(duration)}s.`;
+      return;
+    }
+
+    // Show preview
+    uploadPreview.src = url;
+    uploadPreviewWrap.style.display = 'block';
+    uploadPickerWrap.style.display = 'none';
+    uploadPreviewInfo.textContent = `Duration: ${Math.round(duration)}s • Size: ${(file.size/1024/1024).toFixed(2)} MB`;
+    uploadSubmitBtn.disabled = false;
+  };
+
+  tempVideo.onerror = () => {
+    uploadMsg.textContent = 'Could not load video. Try a different file.';
+  };
+});
+
+function switchUploadType(type) {
+  document.querySelectorAll('.upload-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.type === type);
+  });
+  currentUploadType = type;
+  updatePickerText();
+  uploadPreview.src = '';
+  uploadPhotoPreview.src = '';
+  uploadPreviewWrap.style.display = 'none';
+  uploadPhotoPreviewWrap.style.display = 'none';
+  uploadPickerWrap.style.display = 'flex';
+  uploadSubmitBtn.disabled = true;
+}
+
+/* ============================================================
+   UPLOAD SUBMIT
+   ============================================================ */
+uploadSubmitBtn.addEventListener('click', async () => {
+  if (!currentUser || !currentProfile) {
+    uploadMsg.textContent = 'You must be logged in.';
+    return;
+  }
+  if (!selectedFile) {
+    uploadMsg.textContent = 'Please select a file first.';
+    return;
+  }
+
+  const caption = uploadCaption.value.trim();
+
+  uploadSubmitBtn.disabled = true;
+  uploadSubmitBtn.textContent = 'Uploading...';
+  uploadMsg.textContent = '';
+  uploadMsg.className = 'error-msg';
+  uploadProgressWrap.style.display = 'block';
+  uploadProgressBar.style.width = '0%';
+  uploadProgressText.textContent = '0%';
+
+  try {
+    const result = await uploadToCloudinary(selectedFile, (percent) => {
+      uploadProgressBar.style.width = percent + '%';
+      uploadProgressText.textContent = percent + '%';
+    });
+
+    // Save to Firestore
+    const postData = {
+      userId: currentUser.uid,
+      userName: currentProfile.name,
+      userHandle: currentProfile.user,
+      userPhoto: currentProfile.photo || '',
+      type: currentUploadType,
+      url: result.secure_url,
+      thumbnail: buildThumbnailUrl(result.secure_url, currentUploadType),
+      caption: caption,
+      duration: selectedFileDuration || 0,
+      aspectRatio: currentUploadType === 'long' ? '16:9' : (currentUploadType === 'short' ? '9:16' : '1:1'),
+      likes: [],
+      comments: [],
+      views: 0,
+      createdAt: serverTimestamp()
+    };
+
+    await addDoc(collection(db, 'posts'), postData);
+
+    // Increment video count on user
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      videoCount: (currentProfile.videoCount || 0) + 1
+    });
+    currentProfile.videoCount = (currentProfile.videoCount || 0) + 1;
+
+    uploadMsg.className = 'success-msg';
+    uploadMsg.textContent = '✅ Uploaded successfully!';
+
+    setTimeout(() => {
+      uploadModal.classList.remove('show');
+      if (document.querySelector('.nav-item[data-page="profile"]').classList.contains('active')) {
+        renderProfile();
+      }
+    }, 1500);
+
+  } catch (err) {
+    console.error('Upload failed:', err);
+    uploadMsg.className = 'error-msg';
+    uploadMsg.textContent = err.message || 'Upload failed. Please try again.';
+    uploadSubmitBtn.disabled = false;
+    uploadSubmitBtn.textContent = 'Upload';
+  }
+});
+
+/* ============================================================
+   CLOUDINARY UPLOAD (with account fallback)
+   ============================================================ */
+function uploadToCloudinary(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const resourceType = currentUploadType === 'photo' ? 'image' : 'video';
+    const accountIndex = 0;
+
+    tryAccount(accountIndex);
+
+    function tryAccount(idx) {
+      if (idx >= CLOUDINARY_ACCOUNTS.length) {
+        reject(new Error('All Cloudinary accounts failed. Please try again later.'));
+        return;
+      }
+
+      const acc = CLOUDINARY_ACCOUNTS[idx];
+      const url = `https://api.cloudinary.com/v1_1/${acc.cloudName}/${resourceType}/upload`;
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', acc.preset);
+      formData.append('api_key', acc.apiKey);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && onProgress) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(percent);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const res = JSON.parse(xhr.responseText);
+            resolve(res);
+          } catch (e) {
+            reject(new Error('Invalid response from Cloudinary.'));
+          }
+        } else {
+          console.warn(`Account ${idx+1} failed (status ${xhr.status}). Trying next...`);
+          tryAccount(idx + 1);
+        }
+      };
+
+      xhr.onerror = () => {
+        console.warn(`Account ${idx+1} network error. Trying next...`);
+        tryAccount(idx + 1);
+      };
+
+      xhr.send(formData);
+    }
+  });
+}
+
+function buildThumbnailUrl(videoUrl, type) {
+  // Cloudinary auto-thumbnail from video
+  if (!videoUrl) return '';
+  if (type === 'photo') return videoUrl;
+
+  // Replace /video/upload/ with /video/upload/so_0/ for first-frame thumbnail
+  // Also add transformations for smaller size
+  try {
+    if (videoUrl.includes('/video/upload/')) {
+      return videoUrl.replace(
+        '/video/upload/',
+        '/video/upload/so_0,w_400,c_fill,q_auto/'
+      );
+    }
+  } catch (e) {}
+
+  return '';
+}
+
+/* ============================================================
+   VIDEO PLAYER MODAL
+   ============================================================ */
+function openPlayer(post) {
+  playerTitle.textContent = post.caption || (post.type === 'photo' ? 'Photo' : 'Video');
+
+  if (post.type === 'photo') {
+    playerContent.innerHTML = `
+      <img src="${post.url}" alt="">
+    `;
+  } else {
+    const aspectClass = post.type === 'long' ? 'aspect-16-9' : 'aspect-9-16';
+    playerContent.innerHTML = `
+      <video src="${post.url}" controls playsinline autoplay
+             class="${aspectClass}"
+             style="background:#000;"></video>
+    `;
+  }
+
+  playerModal.classList.add('show');
+}
+
+document.getElementById('closePlayer').addEventListener('click', () => {
+  playerModal.classList.remove('show');
+  playerContent.innerHTML = '';
+});
+
+playerModal.addEventListener('click', (e) => {
+  if (e.target === playerModal) {
+    playerModal.classList.remove('show');
+    playerContent.innerHTML = '';
+  }
+});
 
 /* ============================================================
    PUBLIC USER PROFILE
    ============================================================ */
 async function openUserProfile(userId) {
   if (!userId) return;
-
-  // अगर अपनी profile है → normal profile tab
   if (userId === currentUser.uid) {
     setActiveNav('profile');
     renderPage('profile');
@@ -613,31 +1073,16 @@ async function openUserProfile(userId) {
     }
 
     const user = snap.data();
-
     const followers = Array.isArray(user.followers) ? user.followers : [];
     const following = Array.isArray(user.following) ? user.following : [];
     const videoCount = typeof user.videoCount === 'number' ? user.videoCount : 0;
     const avatarSrc = user.photo || defaultAvatar(user.name);
-
     const isFollowing = currentProfile?.following?.includes(userId) || false;
 
     content.innerHTML = `
       <div style="padding: 12px 16px;">
-        <button id="backFromProfileBtn" style="
-          background: none;
-          border: none;
-          color: #888;
-          font-size: 14px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-family: inherit;
-          padding: 0;
-        ">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
+        <button id="backFromProfileBtn">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
           Back
         </button>
       </div>
@@ -649,15 +1094,9 @@ async function openUserProfile(userId) {
           </div>
 
           <div class="profile-stats">
-            <div class="profile-stat">
-              <b>${videoCount}</b><span>Videos</span>
-            </div>
-            <div class="profile-stat" data-action="followers">
-              <b>${followers.length}</b><span>Followers</span>
-            </div>
-            <div class="profile-stat" data-action="following">
-              <b>${following.length}</b><span>Following</span>
-            </div>
+            <div class="profile-stat"><b>${videoCount}</b><span>Videos</span></div>
+            <div class="profile-stat"><b>${followers.length}</b><span>Followers</span></div>
+            <div class="profile-stat"><b>${following.length}</b><span>Following</span></div>
           </div>
         </div>
 
@@ -673,10 +1112,8 @@ async function openUserProfile(userId) {
             ${isFollowing ? 'Following' : 'Follow'}
           </button>
           <button class="btn-outline" id="pubShareBtn">
-            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;">
-              <circle cx="18" cy="5" r="3"/>
-              <circle cx="6" cy="12" r="3"/>
-              <circle cx="18" cy="19" r="3"/>
+            <svg viewBox="0 0 24 24">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
               <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
               <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
             </svg>
@@ -685,29 +1122,25 @@ async function openUserProfile(userId) {
         </div>
 
         <div class="profile-tabs">
-          <button class="profile-tab active">Videos</button>
+          <button class="profile-tab active">Posts</button>
         </div>
 
-        <div class="profile-grid">
-          ${renderEmptyGrid()}
+        <div class="profile-grid" id="pubPostsGrid">
+          <div class="grid-empty">Loading posts...</div>
         </div>
       </div>
     `;
 
-    // Back button
     document.getElementById('backFromProfileBtn').addEventListener('click', () => {
       viewingUserId = null;
       setActiveNav(null);
       renderPage('search');
     });
 
-    // Follow / Unfollow
     const followBtn = document.getElementById('pubFollowBtn');
     followBtn.addEventListener('click', async () => {
       const wasFollowing = currentProfile.following.includes(userId);
       await toggleFollow(userId, null);
-
-      // Update UI
       if (wasFollowing) {
         followBtn.textContent = 'Follow';
         followBtn.style.cssText = 'background: linear-gradient(90deg, #ff2e63, #ff8a00); border: none;';
@@ -717,13 +1150,9 @@ async function openUserProfile(userId) {
       }
     });
 
-    // Share button
-    document.getElementById('pubShareBtn').addEventListener('click', () => {
-      shareUser(user);
-    });
+    document.getElementById('pubShareBtn').addEventListener('click', () => shareUser(user));
 
-    // Followers / Following count clicks (view lists)
-    // (optional - skipping for simplicity)
+    await renderUserPosts(userId, 'pubPostsGrid');
 
   } catch (e) {
     console.error('Could not open user profile:', e);
@@ -731,23 +1160,16 @@ async function openUserProfile(userId) {
   }
 }
 
-/* ============================================================
-   SHARE ANY USER'S PROFILE
-   ============================================================ */
 async function shareUser(user) {
   const appUrl = window.location.origin;
   const shareText = `🎬 Check out ${user.name}'s profile on ReelHub!\n\n@${user.user}\n\n${appUrl}`;
   const shareTitle = `${user.name} on ReelHub`;
-
   if (navigator.share) {
     try {
       await navigator.share({ title: shareTitle, text: shareText, url: appUrl });
       return;
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-    }
+    } catch (err) { if (err.name === 'AbortError') return; }
   }
-
   try {
     await navigator.clipboard.writeText(shareText);
     showToast('✅ Link copied to clipboard!');
@@ -786,7 +1208,7 @@ editPhotoInput.addEventListener('change', async (e) => {
 
   if (file.size > 500 * 1024) {
     editMsg.className = 'error-msg';
-    editMsg.textContent = 'Image too large. Please choose a smaller photo (< 500 KB).';
+    editMsg.textContent = 'Image too large. Max 500 KB.';
     return;
   }
 
@@ -806,10 +1228,7 @@ saveProfileBtn.addEventListener('click', async () => {
   editMsg.className = 'error-msg';
   editMsg.textContent = '';
 
-  if (!newName) {
-    editMsg.textContent = 'Name cannot be empty.';
-    return;
-  }
+  if (!newName) { editMsg.textContent = 'Name cannot be empty.'; return; }
   if (!/^[a-z0-9._]{3,20}$/.test(newUser)) {
     editMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
     return;
@@ -891,8 +1310,8 @@ function openListModal(type) {
       const row = document.createElement('div');
       row.className = 'user-row';
       row.innerHTML = `
-        <img src="${u.photo || defaultAvatar(u.name)}" alt="${escapeHtml(u.name)}" style="cursor:pointer;">
-        <div class="meta" style="cursor:pointer;">
+        <img src="${u.photo || defaultAvatar(u.name)}" alt="${escapeHtml(u.name)}">
+        <div class="meta">
           <b>${escapeHtml(u.name)}</b>
           <span>@${escapeHtml(u.user)}</span>
         </div>
@@ -901,7 +1320,6 @@ function openListModal(type) {
           ${currentProfile.following.includes(u.uid) ? 'Following' : 'Follow'}
         </button>
       `;
-
       row.querySelector('img').addEventListener('click', () => {
         listModal.classList.remove('show');
         openUserProfile(u.uid);
@@ -914,7 +1332,6 @@ function openListModal(type) {
         e.stopPropagation();
         await toggleFollow(u.uid, e.target);
       });
-
       userList.appendChild(row);
     });
   });
@@ -944,22 +1361,16 @@ async function toggleFollow(targetUid, btnEl) {
       await updateDoc(myRef, { following: arrayRemove(targetUid) });
       await updateDoc(targetRef, { followers: arrayRemove(currentUser.uid) });
       currentProfile.following = currentProfile.following.filter(id => id !== targetUid);
-      if (btnEl) {
-        btnEl.textContent = 'Follow';
-        btnEl.className = 'follow';
-      }
+      if (btnEl) { btnEl.textContent = 'Follow'; btnEl.className = 'follow'; }
     } else {
       await updateDoc(myRef, { following: arrayUnion(targetUid) });
       await updateDoc(targetRef, { followers: arrayUnion(currentUser.uid) });
       currentProfile.following.push(targetUid);
-      if (btnEl) {
-        btnEl.textContent = 'Following';
-        btnEl.className = 'unfollow';
-      }
+      if (btnEl) { btnEl.textContent = 'Following'; btnEl.className = 'unfollow'; }
     }
   } catch (err) {
     console.error('Follow error:', err);
-    showToast('Could not update follow. Please try again.');
+    showToast('Could not update follow. Try again.');
   }
 }
 
@@ -972,9 +1383,7 @@ async function renderNotifications() {
   content.innerHTML = `
     <div class="notif-page">
       <div class="page-title" style="margin-bottom:16px;text-align:left;padding:0 4px;">Notifications</div>
-      <div id="notifList">
-        <div class="empty-notif">Loading...</div>
-      </div>
+      <div id="notifList"><div class="empty-notif">Loading...</div></div>
     </div>
   `;
 
@@ -985,7 +1394,6 @@ async function renderNotifications() {
       orderBy('createdAt', 'desc'),
       limit(50)
     );
-
     const snap = await getDocs(q);
     const notifications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
@@ -993,9 +1401,7 @@ async function renderNotifications() {
 
     for (const n of notifications) {
       if (!n.read) {
-        try {
-          await updateDoc(doc(db, 'notifications', n.id), { read: true });
-        } catch (e) {}
+        try { await updateDoc(doc(db, 'notifications', n.id), { read: true }); } catch (e) {}
       }
     }
     updateNotifDot(0);
@@ -1149,14 +1555,10 @@ async function renderSearch() {
 
   const input = document.getElementById('searchInput');
   let debounceTimer = null;
-
   input.addEventListener('input', (e) => {
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      performSearch(e.target.value.trim());
-    }, 300);
+    debounceTimer = setTimeout(() => performSearch(e.target.value.trim()), 300);
   });
-
   input.focus();
 }
 
@@ -1194,7 +1596,6 @@ async function performSearch(searchTerm) {
     matches.forEach(u => {
       const row = document.createElement('div');
       row.className = 'search-user';
-
       const isFollowing = currentProfile?.following?.includes(u.id);
       row.innerHTML = `
         <img src="${u.photo || defaultAvatar(u.name)}" alt="">
@@ -1206,8 +1607,6 @@ async function performSearch(searchTerm) {
           ${isFollowing ? 'Following' : 'Follow'}
         </button>
       `;
-
-      // Click on image or info → open profile
       row.querySelector('img').addEventListener('click', (e) => {
         e.stopPropagation();
         openUserProfile(u.id);
@@ -1216,19 +1615,16 @@ async function performSearch(searchTerm) {
         e.stopPropagation();
         openUserProfile(u.id);
       });
-
-      // Follow / Unfollow button
       row.querySelector('button').addEventListener('click', async (e) => {
         e.stopPropagation();
         await toggleFollow(u.id, e.target);
       });
-
       results.appendChild(row);
     });
 
   } catch (e) {
     console.error(e);
-    results.innerHTML = `<div class="search-empty">Search failed. Please try again.</div>`;
+    results.innerHTML = `<div class="search-empty">Search failed. Try again.</div>`;
   }
 }
 
@@ -1237,20 +1633,15 @@ async function performSearch(searchTerm) {
    ============================================================ */
 async function shareProfile() {
   if (!currentProfile) return;
-
   const appUrl = window.location.origin;
   const shareText = `🎬 Check out ${currentProfile.name}'s profile on ReelHub!\n\n@${currentProfile.user}\n\n${appUrl}`;
   const shareTitle = `${currentProfile.name} on ReelHub`;
-
   if (navigator.share) {
     try {
       await navigator.share({ title: shareTitle, text: shareText, url: appUrl });
       return;
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-    }
+    } catch (err) { if (err.name === 'AbortError') return; }
   }
-
   try {
     await navigator.clipboard.writeText(shareText);
     showToast('✅ Link copied to clipboard!');
@@ -1272,7 +1663,7 @@ async function shareProfile() {
 }
 
 /* ============================================================
-   TOAST NOTIFICATION
+   TOAST
    ============================================================ */
 function showToast(message) {
   const existing = document.getElementById('toast');
@@ -1347,9 +1738,7 @@ async function loadUsersByIds(uids) {
     try {
       const snap = await getDoc(doc(db, 'users', uid));
       if (snap.exists()) results.push(snap.data());
-    } catch (e) {
-      console.warn('load user failed:', uid, e);
-    }
+    } catch (e) {}
   }
   return results;
 }
