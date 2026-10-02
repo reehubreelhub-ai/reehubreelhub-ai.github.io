@@ -262,6 +262,7 @@ html, body {
   background: none;
   border: none;
   color: #fff;
+  position: relative;
 }
 .header .icon-btn:hover { background: #1a1a1a; }
 
@@ -681,7 +682,8 @@ html, body {
   stroke-width: 2.6;
   stroke-linecap: round;
   fill: none;
-}.
+}
+
 /* ============================================================
    SHARE BUTTON
    ============================================================ */
@@ -723,4 +725,232 @@ html, body {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+}
+
+/* ============================================================
+   NOTIFICATION DOT
+   ============================================================ */
+.notif-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: #ff2e63;
+  border-radius: 50%;
+  border: 2px solid #0a0a0a;
+  animation: pulseDot 1.5s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.3); opacity: 0.7; }
+}
+
+/* ============================================================
+   NOTIFICATIONS PAGE
+   ============================================================ */
+.notif-page { padding: 12px 16px; }
+
+.notif-item {
+  background: #121212;
+  border: 1px solid #1e1e28;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  transition: background 0.2s;
+}
+
+.notif-item.unread {
+  background: #1a1520;
+  border-color: #ff2e63;
+}
+
+.notif-item .notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.notif-item .notif-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.notif-item .notif-time {
+  font-size: 11px;
+  color: #666;
+}
+
+.notif-item .notif-message {
+  font-size: 13px;
+  color: #ccc;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.notif-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.notif-actions button {
+  flex: 1;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.notif-actions .accept {
+  background: #16a34a;
+  color: #fff;
+}
+
+.notif-actions .reject {
+  background: #1e1e1e;
+  color: #ccc;
+  border: 1px solid #333;
+}
+
+.empty-notif {
+  text-align: center;
+  padding: 60px 20px;
+  color: #555;
+  font-size: 14px;
+}
+
+.empty-notif svg {
+  width: 60px;
+  height: 60px;
+  stroke: #444;
+  fill: none;
+  stroke-width: 1.5;
+  margin-bottom: 12px;
+}
+
+/* ============================================================
+   SEARCH PAGE
+   ============================================================ */
+.search-page { padding: 16px; }
+
+.search-bar-wrap {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.search-bar-wrap svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  stroke: #666;
+  fill: none;
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.search-bar {
+  width: 100%;
+  height: 46px;
+  padding: 0 16px 0 44px;
+  background: #121212;
+  border: 1px solid #262626;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+
+.search-bar:focus {
+  border-color: #ff2e63;
+}
+
+.search-bar::placeholder { color: #666; }
+
+.search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: #121212;
+  border: 1px solid #1e1e28;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.search-user:hover {
+  background: #1a1a24;
+}
+
+.search-user img {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.search-user .info {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-user .info b {
+  display: block;
+  font-size: 14px;
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-user .info span {
+  font-size: 12px;
+  color: #888;
+}
+
+.search-user button {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.search-user button.follow {
+  background: linear-gradient(90deg, #ff2e63, #ff8a00);
+  color: #fff;
+}
+
+.search-user button.unfollow {
+  background: #1e1e1e;
+  color: #ccc;
+  border: 1px solid #333;
+}
+
+.search-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #555;
+  font-size: 14px;
 }
