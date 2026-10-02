@@ -49,6 +49,7 @@ const db   = getFirestore(firebaseApp);
    DOM SHORTCUTS
    ============================================================ */
 const authScreen = document.getElementById('auth');
+const loadingScreen = document.getElementById('loadingScreen');
 const appScreen  = document.getElementById('app');
 const loginForm  = document.getElementById('loginForm');
 const signupForm = document.getElementById('signupForm');
@@ -93,12 +94,14 @@ let notifIntervalId = null;
    SCREEN SWITCHING
    ============================================================ */
 function showAuth() {
+  if (loadingScreen) loadingScreen.style.display = 'none';
   authScreen.style.display = 'block';
   appScreen.classList.remove('show');
   stopNotifWatcher();
 }
 
 function showApp() {
+  if (loadingScreen) loadingScreen.style.display = 'none';
   authScreen.style.display = 'none';
   appScreen.classList.add('show');
   setActiveNav('home');
@@ -362,7 +365,19 @@ sendResetBtn.addEventListener('click', async () => {
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   if (confirm('Log out of ReelHub?')) {
     stopNotifWatcher();
-    await signOut(auth);
+    currentUser = null;
+    currentProfile = null;
+
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.warn('Signout error:', e);
+    }
+
+    loginForm.reset();
+    signupForm.reset();
+    document.getElementById('goLogin').click();
+    showAuth();
   }
 });
 
@@ -380,23 +395,40 @@ searchBtn.addEventListener('click', () => {
 });
 
 /* ============================================================
-   AUTH STATE LISTENER
+   AUTH STATE LISTENER (Auto-login)
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
-  if (isLoggingIn) return;
+  // 🔒 Login process chal raha hai → skip
+  if (isLoggingIn) {
+    console.log('Login in progress — skipping auto redirect');
+    return;
+  }
 
   if (user) {
+    // ✅ User logged-in hai → Home page
+    console.log('Auto-login: user found', user.email);
     currentUser = user;
-    await loadProfile(user.uid);
+
+    try {
+      await loadProfile(user.uid);
+    } catch (e) {
+      console.warn('Profile load failed:', e);
+    }
+
     showApp();
     startNotifWatcher();
+
   } else {
+    // ❌ User logged-out → Login page
+    console.log('No user — showing login');
     currentUser = null;
     currentProfile = null;
     stopNotifWatcher();
+
     loginForm.reset();
     signupForm.reset();
     document.getElementById('goLogin').click();
+
     showAuth();
   }
 });
