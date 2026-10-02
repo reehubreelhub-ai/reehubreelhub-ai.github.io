@@ -472,6 +472,16 @@ function renderProfile() {
 
       <div class="profile-actions">
         <button class="btn-outline" id="editProfileBtn">Edit Profile</button>
+        <button class="btn-outline share-btn" id="shareProfileBtn">
+          <svg viewBox="0 0 24 24">
+            <circle cx="18" cy="5" r="3"/>
+            <circle cx="6" cy="12" r="3"/>
+            <circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
+          Share Profile
+        </button>
       </div>
 
       <div class="profile-tabs">
@@ -487,6 +497,11 @@ function renderProfile() {
 
   document.getElementById('editProfileBtn').addEventListener('click', openEditModal);
   document.getElementById('avatarWrap').addEventListener('click', openEditModal);
+
+  const shareBtn = document.getElementById('shareProfileBtn');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', () => shareProfile());
+  }
 
   document.querySelectorAll('.profile-stat').forEach(el => {
     el.addEventListener('click', () => {
@@ -770,17 +785,17 @@ async function loadUsersByIds(uids) {
   }
   return results;
 }
+
 /* ============================================================
    SHARE PROFILE
    ============================================================ */
 async function shareProfile() {
   if (!currentProfile) return;
 
-  const appUrl = window.location.origin; // https://reehubreelhub-ai.github.io
+  const appUrl = window.location.origin;
   const shareText = `🎬 Check out ${currentProfile.name}'s profile on ReelHub!\n\n@${currentProfile.user}\n\n${appUrl}`;
   const shareTitle = `${currentProfile.name} on ReelHub`;
 
-  // Check if Web Share API is available (mobile)
   if (navigator.share) {
     try {
       await navigator.share({
@@ -790,18 +805,15 @@ async function shareProfile() {
       });
       return;
     } catch (err) {
-      // User ne cancel kar diya ya error aaya — fall through to copy
       if (err.name === 'AbortError') return;
       console.warn('Share failed:', err);
     }
   }
 
-  // Fallback: Copy to clipboard
   try {
     await navigator.clipboard.writeText(shareText);
     showToast('✅ Link copied to clipboard!');
   } catch (err) {
-    // Fallback for older browsers
     const textarea = document.createElement('textarea');
     textarea.value = shareText;
     textarea.style.position = 'fixed';
@@ -822,7 +834,6 @@ async function shareProfile() {
    TOAST NOTIFICATION
    ============================================================ */
 function showToast(message) {
-  // Remove existing toast
   const existing = document.getElementById('toast');
   if (existing) existing.remove();
 
