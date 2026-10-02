@@ -26,7 +26,6 @@ import {
   serverTimestamp,
   arrayUnion,
   arrayRemove,
-  orderBy,
   limit
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
@@ -48,7 +47,7 @@ const auth = getAuth(firebaseApp);
 const db   = getFirestore(firebaseApp);
 
 /* ============================================================
-   CLOUDINARY — SINGLE ACCOUNT
+   CLOUDINARY
    ============================================================ */
 const CLOUDINARY_ACCOUNTS = [
   {
@@ -577,7 +576,7 @@ async function renderProfile() {
 }
 
 /* ============================================================
-   USER POSTS GRID
+   USER POSTS GRID — with manual sorting (no index needed)
    ============================================================ */
 async function renderUserPosts(uid, containerId) {
   const container = document.getElementById(containerId);
@@ -585,10 +584,10 @@ async function renderUserPosts(uid, containerId) {
 
   try {
     const postsRef = collection(db, 'posts');
+    // ⚠️ No orderBy → no index needed
     const q = query(
       postsRef,
       where('userId', '==', uid),
-      orderBy('createdAt', 'desc'),
       limit(60)
     );
 
@@ -608,9 +607,16 @@ async function renderUserPosts(uid, containerId) {
       return;
     }
 
+    // Manually sort by createdAt (latest first)
+    const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    posts.sort((a, b) => {
+      const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+      const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+      return tb - ta;
+    });
+
     container.innerHTML = '';
-    snap.forEach(docSnap => {
-      const post = { id: docSnap.id, ...docSnap.data() };
+    posts.forEach(post => {
       container.appendChild(makeGridItem(post));
     });
 
@@ -913,7 +919,7 @@ uploadSubmitBtn.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   CLOUDINARY UPLOAD (single account)
+   CLOUDINARY UPLOAD
    ============================================================ */
 function uploadToCloudinary(file, onProgress) {
   return new Promise((resolve, reject) => {
@@ -932,7 +938,7 @@ function uploadToCloudinary(file, onProgress) {
 
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
-    xhr.timeout = 120000; // 2 minutes
+    xhr.timeout = 120000;
 
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable && onProgress) {
@@ -949,12 +955,12 @@ function uploadToCloudinary(file, onProgress) {
         try {
           const res = JSON.parse(xhr.responseText);
           if (!res.secure_url) {
-            reject(new Error('Cloudinary did not return a URL. Response: ' + xhr.responseText.substring(0, 200)));
+            reject(new Error('Cloudinary did not return a URL.'));
             return;
           }
           resolve(res);
         } catch (e) {
-          reject(new Error('Invalid response from Cloudinary: ' + xhr.responseText.substring(0, 200)));
+          reject(new Error('Invalid response from Cloudinary.'));
         }
       } else {
         let errMsg = 'Upload failed';
@@ -1372,11 +1378,17 @@ async function renderNotifications() {
     const q = query(
       collection(db, 'notifications'),
       where('userId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc'),
       limit(50)
     );
     const snap = await getDocs(q);
     const notifications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Manual sort by createdAt desc
+    notifications.sort((a, b) => {
+      const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+      const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+      return tb - ta;
+    });
 
     paintNotifications(notifications);
 
