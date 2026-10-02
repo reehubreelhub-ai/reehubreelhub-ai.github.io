@@ -954,3 +954,117 @@ html, body {
   color: #555;
   font-size: 14px;
 }
+/* ============================================================
+   PUBLIC USER PROFILE
+   ============================================================ */
+
+/* Back button */
+#backFromProfileBtn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+#backFromProfileBtn:hover {
+  color: #fff;
+}
+
+#backFromProfileBtn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Search user rows - clickable */
+.search-user img,
+.search-user .info {
+  cursor: pointer;
+}
+
+.search-user img:hover {
+  opacity: 0.85;
+}
+
+.search-user .info:hover b {
+  color: #ff2e63;
+}
+
+.search-user .info b {
+  transition: color 0.2s;
+}
+
+/* Public profile action buttons */
+#pubFollowBtn,
+#pubShareBtn {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+#pubShareBtn {
+  background: transparent;
+  border: 1px solid #333;
+  color: #fff;
+  flex: 0 0 auto;
+  padding: 0 18px;
+}
+
+#pubShareBtn:hover {
+  background: #1a1a1a;
+}
+
+#pubShareBtn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Public profile - fix grid margin */
+.profile-page > .profile-grid {
+  margin-left: -20px;
+  margin-right: -20px;
+}
+
+/* Profile stats cursor on public */
+.profile-stat[data-action] {
+  cursor: pointer;
+}
+
+/* Followers/Following list - clickable */
+.user-row img,
+.user-row .meta {
+  cursor: pointer;
+}
+
+.user-row img:hover {
+  opacity: 0.85;
+}
+
+.user-row .meta:hover b {
+  color: #ff2e63;
+}
