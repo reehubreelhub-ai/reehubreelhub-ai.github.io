@@ -458,6 +458,341 @@ html, body {
   margin-bottom: 12px;
 }
 
+/* ============================================================
+   HOME FEED
+   ============================================================ */
+.home-feed {
+  padding: 0 0 80px 0;
+}
+
+.feed-post {
+  background: #0a0a0a;
+  border-bottom: 8px solid #050505;
+  padding: 0 0 12px 0;
+}
+
+.feed-post-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+}
+
+.feed-post-header img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #1a1a1a;
+  cursor: pointer;
+}
+
+.feed-post-header .info {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.feed-post-header .info b {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.feed-post-header .info span {
+  font-size: 11px;
+  color: #888;
+}
+
+.feed-post-media {
+  width: 100%;
+  background: #000;
+  position: relative;
+  cursor: pointer;
+}
+
+.feed-post-media video,
+.feed-post-media img {
+  width: 100%;
+  display: block;
+  max-height: 600px;
+  object-fit: contain;
+  background: #000;
+}
+
+.feed-post-media .type-badge-feed {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.feed-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px 6px;
+}
+
+.feed-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  transition: transform 0.15s;
+}
+
+.feed-actions button:active { transform: scale(0.9); }
+
+.feed-actions button svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.feed-actions button.liked svg {
+  fill: #ff2e63;
+  stroke: #ff2e63;
+}
+
+.feed-caption {
+  padding: 6px 16px 4px;
+  font-size: 13px;
+  color: #ddd;
+  line-height: 1.5;
+}
+
+.feed-caption b {
+  color: #fff;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.feed-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 40px 20px;
+  text-align: center;
+  color: #555;
+}
+
+.feed-empty svg {
+  width: 64px;
+  height: 64px;
+  stroke: #333;
+  fill: none;
+  stroke-width: 1.5;
+  margin-bottom: 16px;
+}
+
+.feed-empty h3 {
+  font-size: 16px;
+  color: #888;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.feed-empty p {
+  font-size: 13px;
+  color: #555;
+}
+
+/* ============================================================
+   SHORTS PLAYER
+   ============================================================ */
+.shorts-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  background: #000;
+}
+.shorts-wrap::-webkit-scrollbar { display: none; }
+
+.short-item {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.short-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  display: block;
+}
+
+.short-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 20px;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.75) 0%,
+    rgba(0,0,0,0) 40%
+  );
+}
+
+.short-bottom-info {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.short-user-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.short-user-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.short-user-row img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  background: #1a1a1a;
+}
+
+.short-user-row b {
+  font-size: 14px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.short-user-row span {
+  font-size: 12px;
+  color: #ddd;
+  margin-left: 4px;
+}
+
+.short-caption {
+  font-size: 13px;
+  color: #fff;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+.short-side-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.short-side-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  transition: transform 0.15s;
+}
+
+.short-side-actions button:active { transform: scale(0.9); }
+
+.short-side-actions button svg {
+  width: 28px;
+  height: 28px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+}
+
+.short-side-actions button.liked svg {
+  fill: #ff2e63;
+  stroke: #ff2e63;
+}
+
+.shorts-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px 20px;
+  text-align: center;
+  color: #555;
+}
+
+.shorts-empty svg {
+  width: 64px;
+  height: 64px;
+  stroke: #333;
+  fill: none;
+  stroke-width: 1.5;
+  margin-bottom: 16px;
+}
+
+.shorts-empty h3 {
+  font-size: 16px;
+  color: #888;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.shorts-empty p {
+  font-size: 13px;
+  color: #555;
+}
+
 /* ================= MODAL ================= */
 .modal-overlay {
   position: fixed;
@@ -552,7 +887,7 @@ html, body {
   color: #fff;
 }
 
-/* ============ PHOTO PREVIEW (picker) ============ */
+/* ============ PHOTO PREVIEW ============ */
 .photo-preview {
   display: flex;
   align-items: center;
