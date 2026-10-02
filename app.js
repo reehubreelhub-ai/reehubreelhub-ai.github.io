@@ -89,6 +89,7 @@ let currentProfile = null;
 let selectedPhotoBase64 = null;
 let isLoggingIn    = false;
 let notifIntervalId = null;
+let viewingUserId  = null;   // जिस user की profile खुली है
 
 /* ============================================================
    SCREEN SWITCHING
@@ -367,6 +368,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
     stopNotifWatcher();
     currentUser = null;
     currentProfile = null;
+    viewingUserId = null;
 
     try {
       await signOut(auth);
@@ -395,17 +397,15 @@ searchBtn.addEventListener('click', () => {
 });
 
 /* ============================================================
-   AUTH STATE LISTENER (Auto-login)
+   AUTH STATE LISTENER
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
-  // 🔒 Login process chal raha hai → skip
   if (isLoggingIn) {
     console.log('Login in progress — skipping auto redirect');
     return;
   }
 
   if (user) {
-    // ✅ User logged-in hai → Home page
     console.log('Auto-login: user found', user.email);
     currentUser = user;
 
@@ -419,7 +419,6 @@ onAuthStateChanged(auth, async (user) => {
     startNotifWatcher();
 
   } else {
-    // ❌ User logged-out → Login page
     console.log('No user — showing login');
     currentUser = null;
     currentProfile = null;
@@ -466,6 +465,7 @@ const pages = {
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => {
     const page = item.dataset.page;
+    viewingUserId = null;   // reset when navigating tabs
     setActiveNav(page);
     renderPage(page);
   });
@@ -492,7 +492,7 @@ function renderPage(page) {
 }
 
 /* ============================================================
-   PROFILE PAGE
+   OWN PROFILE PAGE
    ============================================================ */
 function renderProfile() {
   if (!currentProfile) {
@@ -588,6 +588,175 @@ function renderEmptyGrid() {
 }
 
 /* ============================================================
+   PUBLIC USER PROFILE
+   ============================================================ */
+async function openUserProfile(userId) {
+  if (!userId) return;
+
+  // अगर अपनी profile है → normal profile tab
+  if (userId === currentUser.uid) {
+    setActiveNav('profile');
+    renderPage('profile');
+    return;
+  }
+
+  viewingUserId = userId;
+  setActiveNav(null);
+
+  content.innerHTML = `<div class="page-placeholder"><div class="page-title">Loading...</div></div>`;
+
+  try {
+    const snap = await getDoc(doc(db, 'users', userId));
+    if (!snap.exists()) {
+      content.innerHTML = `<div class="page-placeholder"><div class="page-title">User not found</div></div>`;
+      return;
+    }
+
+    const user = snap.data();
+
+    const followers = Array.isArray(user.followers) ? user.followers : [];
+    const following = Array.isArray(user.following) ? user.following : [];
+    const videoCount = typeof user.videoCount === 'number' ? user.videoCount : 0;
+    const avatarSrc = user.photo || defaultAvatar(user.name);
+
+    const isFollowing = currentProfile?.following?.includes(userId) || false;
+
+    content.innerHTML = `
+      <div style="padding: 12px 16px;">
+        <button id="backFromProfileBtn" style="
+          background: none;
+          border: none;
+          color: #888;
+          font-size: 14px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-family: inherit;
+          padding: 0;
+        ">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back
+        </button>
+      </div>
+
+      <div class="profile-page" style="padding-top:0;">
+        <div class="profile-top">
+          <div class="profile-avatar-wrap">
+            <img class="profile-avatar" src="${avatarSrc}" alt="${escapeHtml(user.name)}">
+          </div>
+
+          <div class="profile-stats">
+            <div class="profile-stat">
+              <b>${videoCount}</b><span>Videos</span>
+            </div>
+            <div class="profile-stat" data-action="followers">
+              <b>${followers.length}</b><span>Followers</span>
+            </div>
+            <div class="profile-stat" data-action="following">
+              <b>${following.length}</b><span>Following</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-info">
+          <div class="profile-name">${escapeHtml(user.name)}</div>
+          <div class="profile-username">@${escapeHtml(user.user)}</div>
+          <div class="profile-bio">${user.bio ? escapeHtml(user.bio) : '<span style="color:#555">No bio yet.</span>'}</div>
+        </div>
+
+        <div class="profile-actions">
+          <button class="btn-outline" id="pubFollowBtn"
+            style="${isFollowing ? '' : 'background: linear-gradient(90deg, #ff2e63, #ff8a00); border: none;'}">
+            ${isFollowing ? 'Following' : 'Follow'}
+          </button>
+          <button class="btn-outline" id="pubShareBtn">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;">
+              <circle cx="18" cy="5" r="3"/>
+              <circle cx="6" cy="12" r="3"/>
+              <circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            Share
+          </button>
+        </div>
+
+        <div class="profile-tabs">
+          <button class="profile-tab active">Videos</button>
+        </div>
+
+        <div class="profile-grid">
+          ${renderEmptyGrid()}
+        </div>
+      </div>
+    `;
+
+    // Back button
+    document.getElementById('backFromProfileBtn').addEventListener('click', () => {
+      viewingUserId = null;
+      setActiveNav(null);
+      renderPage('search');
+    });
+
+    // Follow / Unfollow
+    const followBtn = document.getElementById('pubFollowBtn');
+    followBtn.addEventListener('click', async () => {
+      const wasFollowing = currentProfile.following.includes(userId);
+      await toggleFollow(userId, null);
+
+      // Update UI
+      if (wasFollowing) {
+        followBtn.textContent = 'Follow';
+        followBtn.style.cssText = 'background: linear-gradient(90deg, #ff2e63, #ff8a00); border: none;';
+      } else {
+        followBtn.textContent = 'Following';
+        followBtn.style.cssText = '';
+      }
+    });
+
+    // Share button
+    document.getElementById('pubShareBtn').addEventListener('click', () => {
+      shareUser(user);
+    });
+
+    // Followers / Following count clicks (view lists)
+    // (optional - skipping for simplicity)
+
+  } catch (e) {
+    console.error('Could not open user profile:', e);
+    content.innerHTML = `<div class="page-placeholder"><div class="page-title">Could not load profile</div></div>`;
+  }
+}
+
+/* ============================================================
+   SHARE ANY USER'S PROFILE
+   ============================================================ */
+async function shareUser(user) {
+  const appUrl = window.location.origin;
+  const shareText = `🎬 Check out ${user.name}'s profile on ReelHub!\n\n@${user.user}\n\n${appUrl}`;
+  const shareTitle = `${user.name} on ReelHub`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: shareTitle, text: shareText, url: appUrl });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
+  }
+
+  try {
+    await navigator.clipboard.writeText(shareText);
+    showToast('✅ Link copied to clipboard!');
+  } catch (err) {
+    showToast('❌ Could not share');
+  }
+}
+
+/* ============================================================
    EDIT PROFILE MODAL
    ============================================================ */
 function openEditModal() {
@@ -666,15 +835,8 @@ saveProfileBtn.addEventListener('click', async () => {
       }
     }
 
-    const updateData = {
-      name: newName,
-      user: newUser,
-      bio:  newBio
-    };
-
-    if (selectedPhotoBase64) {
-      updateData.photo = selectedPhotoBase64;
-    }
+    const updateData = { name: newName, user: newUser, bio: newBio };
+    if (selectedPhotoBase64) updateData.photo = selectedPhotoBase64;
 
     await updateDoc(doc(db, 'users', currentUser.uid), updateData);
 
@@ -729,8 +891,8 @@ function openListModal(type) {
       const row = document.createElement('div');
       row.className = 'user-row';
       row.innerHTML = `
-        <img src="${u.photo || defaultAvatar(u.name)}" alt="${escapeHtml(u.name)}">
-        <div class="meta">
+        <img src="${u.photo || defaultAvatar(u.name)}" alt="${escapeHtml(u.name)}" style="cursor:pointer;">
+        <div class="meta" style="cursor:pointer;">
           <b>${escapeHtml(u.name)}</b>
           <span>@${escapeHtml(u.user)}</span>
         </div>
@@ -739,10 +901,20 @@ function openListModal(type) {
           ${currentProfile.following.includes(u.uid) ? 'Following' : 'Follow'}
         </button>
       `;
+
+      row.querySelector('img').addEventListener('click', () => {
+        listModal.classList.remove('show');
+        openUserProfile(u.uid);
+      });
+      row.querySelector('.meta').addEventListener('click', () => {
+        listModal.classList.remove('show');
+        openUserProfile(u.uid);
+      });
       row.querySelector('button').addEventListener('click', async (e) => {
         e.stopPropagation();
         await toggleFollow(u.uid, e.target);
       });
+
       userList.appendChild(row);
     });
   });
@@ -769,24 +941,16 @@ async function toggleFollow(targetUid, btnEl) {
     const targetRef = doc(db, 'users', targetUid);
 
     if (isFollowing) {
-      await updateDoc(myRef, {
-        following: arrayRemove(targetUid)
-      });
-      await updateDoc(targetRef, {
-        followers: arrayRemove(currentUser.uid)
-      });
+      await updateDoc(myRef, { following: arrayRemove(targetUid) });
+      await updateDoc(targetRef, { followers: arrayRemove(currentUser.uid) });
       currentProfile.following = currentProfile.following.filter(id => id !== targetUid);
       if (btnEl) {
         btnEl.textContent = 'Follow';
         btnEl.className = 'follow';
       }
     } else {
-      await updateDoc(myRef, {
-        following: arrayUnion(targetUid)
-      });
-      await updateDoc(targetRef, {
-        followers: arrayUnion(currentUser.uid)
-      });
+      await updateDoc(myRef, { following: arrayUnion(targetUid) });
+      await updateDoc(targetRef, { followers: arrayUnion(currentUser.uid) });
       currentProfile.following.push(targetUid);
       if (btnEl) {
         btnEl.textContent = 'Following';
@@ -906,9 +1070,7 @@ async function handleInviteAccept(inviteId) {
       status: 'accepted',
       respondedAt: serverTimestamp()
     });
-    await updateDoc(doc(db, 'users', currentUser.uid), {
-      role: 'admin'
-    });
+    await updateDoc(doc(db, 'users', currentUser.uid), { role: 'admin' });
     showToast('🎉 You are now an admin!');
   } catch (e) {
     console.error(e);
@@ -958,9 +1120,7 @@ async function checkUnreadNotifications() {
     );
     const snap = await getDocs(q);
     updateNotifDot(snap.size);
-  } catch (e) {
-    // Silent
-  }
+  } catch (e) {}
 }
 
 function updateNotifDot(count) {
@@ -1047,6 +1207,17 @@ async function performSearch(searchTerm) {
         </button>
       `;
 
+      // Click on image or info → open profile
+      row.querySelector('img').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openUserProfile(u.id);
+      });
+      row.querySelector('.info').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openUserProfile(u.id);
+      });
+
+      // Follow / Unfollow button
       row.querySelector('button').addEventListener('click', async (e) => {
         e.stopPropagation();
         await toggleFollow(u.id, e.target);
@@ -1062,7 +1233,7 @@ async function performSearch(searchTerm) {
 }
 
 /* ============================================================
-   SHARE PROFILE
+   SHARE OWN PROFILE
    ============================================================ */
 async function shareProfile() {
   if (!currentProfile) return;
@@ -1073,15 +1244,10 @@ async function shareProfile() {
 
   if (navigator.share) {
     try {
-      await navigator.share({
-        title: shareTitle,
-        text: shareText,
-        url: appUrl
-      });
+      await navigator.share({ title: shareTitle, text: shareText, url: appUrl });
       return;
     } catch (err) {
       if (err.name === 'AbortError') return;
-      console.warn('Share failed:', err);
     }
   }
 
