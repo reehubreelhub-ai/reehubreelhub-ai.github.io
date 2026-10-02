@@ -50,14 +50,11 @@
       <div class="auth-logo">ReelHub</div>
       <div class="auth-tagline">Short videos. Big vibes. 🎬</div>
 
-      <!-- LOGIN -->
       <form id="loginForm">
         <div class="auth-title">Log in</div>
-
         <div class="input-group">
           <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
         </div>
-
         <div class="input-group">
           <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
           <div class="eye" data-target="loginPass">
@@ -67,35 +64,24 @@
             </svg>
           </div>
         </div>
-
         <a class="forgot" id="forgotLink">Forgot password?</a>
-
         <button type="submit" class="btn-primary" id="loginBtn">Log In</button>
         <div class="error-msg" id="loginMsg"></div>
-
         <div class="divider">OR</div>
-
-        <div class="link-row">
-          Don't have an account? <a id="goSignup">Sign up</a>
-        </div>
+        <div class="link-row">Don't have an account? <a id="goSignup">Sign up</a></div>
       </form>
 
-      <!-- SIGNUP -->
       <form id="signupForm" style="display:none;">
         <div class="auth-title">Create account</div>
-
         <div class="input-group">
           <input type="text" id="signupName" placeholder="Full name" autocomplete="name">
         </div>
-
         <div class="input-group">
           <input type="text" id="signupUser" placeholder="Username (a-z, 0-9, ., _)" autocomplete="username">
         </div>
-
         <div class="input-group">
           <input type="email" id="signupEmail" placeholder="Email" autocomplete="email">
         </div>
-
         <div class="input-group">
           <input type="password" id="signupPass" placeholder="Password (min 6 characters)" autocomplete="new-password">
           <div class="eye" data-target="signupPass">
@@ -105,20 +91,13 @@
             </svg>
           </div>
         </div>
-
         <button type="submit" class="btn-primary" id="signupBtn">Sign Up</button>
         <div class="error-msg" id="signupMsg"></div>
-
         <div class="divider">OR</div>
-
-        <div class="link-row">
-          Already have an account? <a id="goLogin">Log in</a>
-        </div>
+        <div class="link-row">Already have an account? <a id="goLogin">Log in</a></div>
       </form>
 
-      <div class="auth-footer">
-        By continuing, you agree to our Terms & Privacy Policy.
-      </div>
+      <div class="auth-footer">By continuing, you agree to our Terms & Privacy Policy.</div>
     </div>
   </div>
 
@@ -129,11 +108,9 @@
       <div class="header-actions">
         <button class="icon-btn" id="searchBtn" title="Search">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </button>
-
         <button class="icon-btn" id="notifBtn" title="Notifications" style="position:relative;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -141,7 +118,6 @@
           </svg>
           <span id="notifDot" class="notif-dot" style="display:none;"></span>
         </button>
-
         <button class="icon-btn" id="logoutBtn" title="Logout">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -160,7 +136,6 @@
           <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"/></svg>
           <span>Home</span>
         </button>
-
         <button class="nav-item" data-page="shorts">
           <svg viewBox="0 0 24 24">
             <rect x="3" y="3" width="18" height="18" rx="5"/>
@@ -169,7 +144,6 @@
           </svg>
           <span>Shorts</span>
         </button>
-
         <div class="nav-upload">
           <button class="upload-btn" data-page="upload" title="Upload">
             <svg viewBox="0 0 24 24">
@@ -178,17 +152,107 @@
             </svg>
           </button>
         </div>
-
         <button class="nav-item" data-page="messages">
           <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
           <span>Messages</span>
         </button>
-
         <button class="nav-item" data-page="profile">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
           <span>Profile</span>
         </button>
       </nav>
+    </div>
+  </div>
+
+  <!-- ================= UPLOAD MODAL ================= -->
+  <div class="modal-overlay" id="uploadModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Create Post</h3>
+        <button class="modal-close" id="closeUpload">&times;</button>
+      </div>
+
+      <!-- Upload Type Tabs -->
+      <div class="upload-tabs" id="uploadTabs">
+        <button class="upload-tab active" data-type="short">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;">
+            <rect x="7" y="2" width="10" height="20" rx="2"/>
+          </svg>
+          Short
+          <span style="font-size:9px;color:#666;font-weight:500;">≤30s</span>
+        </button>
+        <button class="upload-tab" data-type="long">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;">
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+          </svg>
+          Long
+          <span style="font-size:9px;color:#666;font-weight:500;">≤1 min</span>
+        </button>
+        <button class="upload-tab" data-type="photo">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          Photo
+        </button>
+      </div>
+
+      <!-- File Picker -->
+      <div class="photo-preview" id="uploadPickerWrap">
+        <div class="info">
+          <div id="pickerTitle" style="font-size:13px;font-weight:600;color:#fff;margin-bottom:4px;">
+            Choose a video
+          </div>
+          <div id="pickerSubtitle" style="font-size:11px;color:#666;">
+            Short video — max 30 sec, 9:16
+          </div>
+          <label for="uploadFileInput" id="pickerLabel">Select video</label>
+          <input type="file" id="uploadFileInput" accept="video/*" style="display:none;">
+        </div>
+      </div>
+
+      <!-- Video Preview -->
+      <div id="uploadPreviewWrap" style="display:none;margin-bottom:14px;">
+        <video id="uploadPreview" controls playsinline muted
+               style="width:100%;border-radius:12px;background:#000;max-height:280px;"></video>
+        <div id="uploadPreviewInfo" style="font-size:12px;color:#888;margin-top:8px;text-align:center;"></div>
+      </div>
+
+      <!-- Photo Preview -->
+      <div id="uploadPhotoPreviewWrap" style="display:none;margin-bottom:14px;">
+        <img id="uploadPhotoPreview" src="" alt=""
+             style="width:100%;border-radius:12px;background:#000;max-height:280px;object-fit:contain;">
+      </div>
+
+      <!-- Caption -->
+      <div class="input-group">
+        <label>Caption</label>
+        <textarea id="uploadCaption" placeholder="Write a caption..." maxlength="200"></textarea>
+      </div>
+
+      <button class="btn-primary" id="uploadSubmitBtn" disabled>Upload</button>
+      <div class="error-msg" id="uploadMsg"></div>
+
+      <!-- Progress Bar -->
+      <div id="uploadProgressWrap" style="display:none;margin-top:14px;">
+        <div style="height:6px;background:#1a1a1a;border-radius:3px;overflow:hidden;">
+          <div id="uploadProgressBar"
+               style="height:100%;width:0%;background:linear-gradient(90deg,#ff2e63,#ff8a00);transition:width 0.3s;"></div>
+        </div>
+        <div id="uploadProgressText" style="font-size:12px;color:#888;text-align:center;margin-top:6px;">0%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= VIDEO PLAYER MODAL ================= -->
+  <div class="modal-overlay" id="playerModal" style="align-items:center;">
+    <div class="modal" style="background:#000;padding:0;border-radius:16px;overflow:hidden;">
+      <div class="modal-header" style="padding:14px 16px;background:#0a0a0a;margin:0;">
+        <h3 id="playerTitle">Post</h3>
+        <button class="modal-close" id="closePlayer">&times;</button>
+      </div>
+      <div id="playerContent" style="background:#000;"></div>
     </div>
   </div>
 
@@ -199,7 +263,6 @@
         <h3>Edit Profile</h3>
         <button class="modal-close" id="closeEdit">&times;</button>
       </div>
-
       <div class="photo-preview">
         <img id="editPreviewImg" src="" alt="Preview">
         <div class="info">
@@ -208,22 +271,18 @@
           <input type="file" id="editPhoto" accept="image/*" style="display:none;">
         </div>
       </div>
-
       <div class="input-group">
         <label>Full Name</label>
         <input type="text" id="editName" placeholder="Your name" maxlength="40">
       </div>
-
       <div class="input-group">
         <label>Username</label>
         <input type="text" id="editUser" placeholder="username" maxlength="20">
       </div>
-
       <div class="input-group">
         <label>Bio</label>
         <textarea id="editBio" placeholder="Tell us about yourself..." maxlength="150"></textarea>
       </div>
-
       <button class="btn-primary" id="saveProfileBtn">Save Changes</button>
       <div class="error-msg" id="editMsg"></div>
     </div>
@@ -247,19 +306,16 @@
         <h3>Reset Password</h3>
         <button class="modal-close" id="closeForgot">&times;</button>
       </div>
-
       <p style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.5;">
         Enter your email address and we'll send you a link to reset your password.
       </p>
       <p style="font-size:12px;color:#ff8a00;margin-bottom:16px;line-height:1.5;">
         ⚠️ अगर inbox में न मिले, तो <b>Spam folder</b> ज़रूर check करें।
       </p>
-
       <div class="input-group">
         <label>Email</label>
         <input type="email" id="forgotEmail" placeholder="your@email.com" autocomplete="email">
       </div>
-
       <button class="btn-primary" id="sendResetBtn">Send Reset Link</button>
       <div class="error-msg" id="forgotMsg"></div>
     </div>
