@@ -23,7 +23,9 @@ import {
   getDocs,
   serverTimestamp,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
+  orderBy,
+  limit
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 /* ============================================================
@@ -74,6 +76,10 @@ const forgotEmail  = document.getElementById('forgotEmail');
 const forgotMsg    = document.getElementById('forgotMsg');
 const sendResetBtn = document.getElementById('sendResetBtn');
 
+const notifBtn = document.getElementById('notifBtn');
+const notifDot = document.getElementById('notifDot');
+const searchBtn = document.getElementById('searchBtn');
+
 /* ============================================================
    STATE
    ============================================================ */
@@ -81,6 +87,7 @@ let currentUser    = null;
 let currentProfile = null;
 let selectedPhotoBase64 = null;
 let isLoggingIn    = false;
+let notifIntervalId = null;
 
 /* ============================================================
    SCREEN SWITCHING
@@ -88,6 +95,7 @@ let isLoggingIn    = false;
 function showAuth() {
   authScreen.style.display = 'block';
   appScreen.classList.remove('show');
+  stopNotifWatcher();
 }
 
 function showApp() {
@@ -244,6 +252,7 @@ loginForm.addEventListener('submit', async (e) => {
 
     loginMsg.textContent = '';
     showApp();
+    startNotifWatcher();
 
   } catch (err) {
     console.error(err);
@@ -352,8 +361,22 @@ sendResetBtn.addEventListener('click', async () => {
    ============================================================ */
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   if (confirm('Log out of ReelHub?')) {
+    stopNotifWatcher();
     await signOut(auth);
   }
+});
+
+/* ============================================================
+   BELL + SEARCH BUTTONS
+   ============================================================ */
+notifBtn.addEventListener('click', () => {
+  setActiveNav(null);
+  renderPage('notifications');
+});
+
+searchBtn.addEventListener('click', () => {
+  setActiveNav(null);
+  renderPage('search');
 });
 
 /* ============================================================
@@ -366,9 +389,11 @@ onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     await loadProfile(user.uid);
     showApp();
+    startNotifWatcher();
   } else {
     currentUser = null;
     currentProfile = null;
+    stopNotifWatcher();
     loginForm.reset();
     signupForm.reset();
     document.getElementById('goLogin').click();
@@ -422,6 +447,10 @@ document.querySelector('.upload-btn').addEventListener('click', () => {
 function renderPage(page) {
   if (page === 'profile') {
     renderProfile();
+  } else if (page === 'notifications') {
+    renderNotifications();
+  } else if (page === 'search') {
+    renderSearch();
   } else if (page === 'home' || page === 'shorts' || page === 'upload' || page === 'messages') {
     content.innerHTML = `
       <div class="page-placeholder">
@@ -734,56 +763,270 @@ async function toggleFollow(targetUid, btnEl) {
     }
   } catch (err) {
     console.error('Follow error:', err);
-    alert('Could not update follow. Please try again.');
+    showToast('Could not update follow. Please try again.');
   }
 }
 
 /* ============================================================
-   HELPERS
+   NOTIFICATIONS
    ============================================================ */
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+async function renderNotifications() {
+  if (!currentUser) return;
+
+  content.innerHTML = `
+    <div class="notif-page">
+      <div class="page-title" style="margin-bottom:16px;text-align:left;padding:0 4px;">Notifications</div>
+      <div id="notifList">
+        <div class="empty-notif">Loading...</div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', currentUser.uid),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
+
+    const snap = await getDocs(q);
+    const notifications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    paintNotifications(notifications);
+
+    for (const n of notifications) {
+      if (!n.read) {
+        try {
+          await updateDoc(doc(db, 'notifications', n.id), { read: true });
+        } catch (e) {}
+      }
+    }
+    updateNotifDot(0);
+
+  } catch (e) {
+    console.error(e);
+    const el = document.getElementById('notifList');
+    if (el) el.innerHTML = `<div class="empty-notif">Could not load notifications.</div>`;
+  }
+}
+
+function paintNotifications(list) {
+  const wrap = document.getElementById('notifList');
+  if (!wrap) return;
+
+  if (list.length === 0) {
+    wrap.innerHTML = `
+      <div class="empty-notif">
+        <svg viewBox="0 0 24 24">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <div>No notifications yet</div>
+      </div>`;
+    return;
+  }
+
+  wrap.innerHTML = '';
+  list.forEach(n => {
+    const item = document.createElement('div');
+    item.className = 'notif-item' + (n.read ? '' : ' unread');
+
+    const time = n.createdAt?.toDate?.();
+    const timeStr = time ? timeAgo(time) : 'just now';
+
+    let actionsHtml = '';
+    if (n.type === 'admin_invite' && n.actions && n.actions.includes('accept')) {
+      actionsHtml = `
+        <div class="notif-actions">
+          <button class="accept" data-action="accept" data-invite="${n.inviteId || ''}">✅ Accept</button>
+          <button class="reject" data-action="reject" data-invite="${n.inviteId || ''}">❌ Reject</button>
+        </div>
+      `;
+    }
+
+    item.innerHTML = `
+      <div class="notif-header">
+        <div class="notif-title">${escapeHtml(n.title || 'Notification')}</div>
+        <div class="notif-time">${timeStr}</div>
+      </div>
+      <div class="notif-message">${escapeHtml(n.message || '')}</div>
+      ${actionsHtml}
+    `;
+    wrap.appendChild(item);
+  });
+
+  wrap.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const action = btn.dataset.action;
+      const inviteId = btn.dataset.invite;
+      if (action === 'accept') await handleInviteAccept(inviteId);
+      if (action === 'reject') await handleInviteReject(inviteId);
+      await renderNotifications();
+    });
   });
 }
 
-function defaultAvatar(name) {
-  const letter = (name || '?').trim().charAt(0).toUpperCase() || '?';
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-      <rect width="100" height="100" fill="#1e1e28"/>
-      <text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700"
-            fill="#fff" text-anchor="middle" dominant-baseline="central">
-        ${letter}
-      </text>
-    </svg>`;
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-async function loadUsersByIds(uids) {
-  const results = [];
-  for (const uid of uids) {
-    try {
-      const snap = await getDoc(doc(db, 'users', uid));
-      if (snap.exists()) results.push(snap.data());
-    } catch (e) {
-      console.warn('load user failed:', uid, e);
-    }
+async function handleInviteAccept(inviteId) {
+  if (!inviteId || !currentUser) return;
+  try {
+    await updateDoc(doc(db, 'admin_invites', inviteId), {
+      status: 'accepted',
+      respondedAt: serverTimestamp()
+    });
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      role: 'admin'
+    });
+    showToast('🎉 You are now an admin!');
+  } catch (e) {
+    console.error(e);
+    showToast('❌ Could not accept invite');
   }
-  return results;
+}
+
+async function handleInviteReject(inviteId) {
+  if (!inviteId || !currentUser) return;
+  try {
+    await updateDoc(doc(db, 'admin_invites', inviteId), {
+      status: 'rejected',
+      respondedAt: serverTimestamp()
+    });
+    showToast('Invitation declined');
+  } catch (e) {
+    console.error(e);
+    showToast('❌ Could not reject invite');
+  }
+}
+
+/* ============================================================
+   NOTIFICATION WATCHER
+   ============================================================ */
+function startNotifWatcher() {
+  stopNotifWatcher();
+  checkUnreadNotifications();
+  notifIntervalId = setInterval(checkUnreadNotifications, 30000);
+}
+
+function stopNotifWatcher() {
+  if (notifIntervalId) {
+    clearInterval(notifIntervalId);
+    notifIntervalId = null;
+  }
+  updateNotifDot(0);
+}
+
+async function checkUnreadNotifications() {
+  if (!currentUser) return;
+  try {
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', currentUser.uid),
+      where('read', '==', false),
+      limit(20)
+    );
+    const snap = await getDocs(q);
+    updateNotifDot(snap.size);
+  } catch (e) {
+    // Silent
+  }
+}
+
+function updateNotifDot(count) {
+  if (!notifDot) return;
+  notifDot.style.display = count > 0 ? 'block' : 'none';
+}
+
+/* ============================================================
+   SEARCH
+   ============================================================ */
+async function renderSearch() {
+  content.innerHTML = `
+    <div class="search-page">
+      <div class="search-bar-wrap">
+        <svg viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" class="search-bar" id="searchInput" placeholder="Search users by name or username...">
+      </div>
+      <div class="search-results" id="searchResults">
+        <div class="search-empty">Start typing to search users...</div>
+      </div>
+    </div>
+  `;
+
+  const input = document.getElementById('searchInput');
+  let debounceTimer = null;
+
+  input.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      performSearch(e.target.value.trim());
+    }, 300);
+  });
+
+  input.focus();
+}
+
+async function performSearch(searchTerm) {
+  const results = document.getElementById('searchResults');
+  if (!results) return;
+
+  if (!searchTerm) {
+    results.innerHTML = `<div class="search-empty">Start typing to search users...</div>`;
+    return;
+  }
+
+  results.innerHTML = `<div class="search-empty">Searching...</div>`;
+
+  try {
+    const usersRef = collection(db, 'users');
+    const snap = await getDocs(usersRef);
+
+    const term = searchTerm.toLowerCase();
+    const matches = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(u => u.id !== currentUser.uid)
+      .filter(u =>
+        (u.name || '').toLowerCase().includes(term) ||
+        (u.user || '').toLowerCase().includes(term)
+      )
+      .slice(0, 30);
+
+    if (matches.length === 0) {
+      results.innerHTML = `<div class="search-empty">No users found for "${escapeHtml(searchTerm)}"</div>`;
+      return;
+    }
+
+    results.innerHTML = '';
+    matches.forEach(u => {
+      const row = document.createElement('div');
+      row.className = 'search-user';
+
+      const isFollowing = currentProfile?.following?.includes(u.id);
+      row.innerHTML = `
+        <img src="${u.photo || defaultAvatar(u.name)}" alt="">
+        <div class="info">
+          <b>${escapeHtml(u.name)}</b>
+          <span>@${escapeHtml(u.user)}</span>
+        </div>
+        <button class="${isFollowing ? 'unfollow' : 'follow'}" data-uid="${u.id}">
+          ${isFollowing ? 'Following' : 'Follow'}
+        </button>
+      `;
+
+      row.querySelector('button').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await toggleFollow(u.id, e.target);
+      });
+
+      results.appendChild(row);
+    });
+
+  } catch (e) {
+    console.error(e);
+    results.innerHTML = `<div class="search-empty">Search failed. Please try again.</div>`;
+  }
 }
 
 /* ============================================================
@@ -863,4 +1106,63 @@ function showToast(message) {
     toast.style.transition = 'opacity 0.3s';
     setTimeout(() => toast.remove(), 300);
   }, 2500);
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function defaultAvatar(name) {
+  const letter = (name || '?').trim().charAt(0).toUpperCase() || '?';
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="#1e1e28"/>
+      <text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700"
+            fill="#fff" text-anchor="middle" dominant-baseline="central">
+        ${letter}
+      </text>
+    </svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+async function loadUsersByIds(uids) {
+  const results = [];
+  for (const uid of uids) {
+    try {
+      const snap = await getDoc(doc(db, 'users', uid));
+      if (snap.exists()) results.push(snap.data());
+    } catch (e) {
+      console.warn('load user failed:', uid, e);
+    }
+  }
+  return results;
+}
+
+function timeAgo(date) {
+  const seconds = Math.floor((new Date() - date) / 1000);
+  if (seconds < 60) return 'just now';
+  const mins = Math.floor(seconds / 60);
+  if (mins < 60) return mins + ' min ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + ' hr ago';
+  const days = Math.floor(hrs / 24);
+  return days + ' day' + (days > 1 ? 's' : '') + ' ago';
 }
