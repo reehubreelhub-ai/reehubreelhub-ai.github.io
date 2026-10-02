@@ -18,7 +18,7 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* ================= AUTH SCREEN ================= */
+/* ================= AUTH ================= */
 #auth {
   display: block;
   width: 100%;
@@ -42,7 +42,6 @@ html, body {
   text-align: center;
   font-size: 42px;
   font-weight: 800;
-  letter-spacing: 0.5px;
   background: linear-gradient(90deg, #ff2e63, #ff8a00);
   -webkit-background-clip: text;
   background-clip: text;
@@ -81,7 +80,7 @@ html, body {
   font-size: 15px;
   font-family: inherit;
   outline: none;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s;
 }
 
 .input-group textarea {
@@ -116,7 +115,6 @@ html, body {
 }
 .input-group .eye:hover { color: #fff; }
 
-/* ---------- Buttons ---------- */
 .btn-primary {
   width: 100%;
   height: 50px;
@@ -129,10 +127,9 @@ html, body {
   font-family: inherit;
   cursor: pointer;
   margin-top: 8px;
-  transition: opacity 0.2s, transform 0.1s;
+  transition: opacity 0.2s;
 }
 .btn-primary:hover { opacity: 0.9; }
-.btn-primary:active { transform: scale(0.98); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-outline {
@@ -150,7 +147,6 @@ html, body {
 }
 .btn-outline:hover { background: #1a1a1a; }
 
-/* ---------- Divider ---------- */
 .divider {
   display: flex;
   align-items: center;
@@ -160,12 +156,8 @@ html, body {
   font-size: 12px;
   font-weight: 600;
 }
-.divider::before,
-.divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #262626;
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: #262626;
 }
 
 .link-row {
@@ -180,7 +172,6 @@ html, body {
   font-weight: 600;
   cursor: pointer;
 }
-.link-row a:hover { text-decoration: underline; }
 
 .forgot {
   display: block;
@@ -243,7 +234,6 @@ html, body {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  letter-spacing: 0.5px;
 }
 .header-actions {
   display: flex;
@@ -258,7 +248,6 @@ html, body {
   justify-content: center;
   border-radius: 50%;
   cursor: pointer;
-  transition: background 0.2s;
   background: none;
   border: none;
   color: #fff;
@@ -399,24 +388,58 @@ html, body {
   border-bottom-color: #ff2e63;
 }
 
+/* ================= POSTS GRID ================= */
 .profile-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 3px;
   margin: 0 -20px;
 }
+
 .grid-item {
   aspect-ratio: 9/16;
   background: #121212;
   border-radius: 2px;
   position: relative;
   overflow: hidden;
+  cursor: pointer;
 }
+
 .grid-item video,
 .grid-item img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+}
+
+.grid-item .type-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 8px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.grid-item .play-icon {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 10px;
 }
 
 .grid-empty {
@@ -484,6 +507,7 @@ html, body {
   font-size: 22px;
   padding: 4px 8px;
   border-radius: 6px;
+  line-height: 1;
 }
 .modal-close:hover { color: #fff; background: #1e1e1e; }
 
@@ -494,17 +518,49 @@ html, body {
   color: #888;
   margin-bottom: 6px;
   font-weight: 600;
-  letter-spacing: 0.3px;
 }
 
+/* ============ UPLOAD TABS ============ */
+.upload-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.upload-tab {
+  flex: 1;
+  height: 64px;
+  background: #0a0a0a;
+  border: 1px solid #262626;
+  border-radius: 10px;
+  color: #888;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transition: all 0.2s;
+}
+.upload-tab:hover { border-color: #444; }
+.upload-tab.active {
+  background: #1a1520;
+  border-color: #ff2e63;
+  color: #fff;
+}
+
+/* ============ PHOTO PREVIEW (picker) ============ */
 .photo-preview {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px;
+  padding: 14px;
   background: #0a0a0a;
   border-radius: 10px;
-  border: 1px solid #262626;
+  border: 1px dashed #333;
   margin-bottom: 14px;
 }
 .photo-preview img {
@@ -529,11 +585,12 @@ html, body {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 4px;
+  margin-top: 6px;
   margin-bottom: 0;
 }
 .photo-preview label:hover { background: #2a2a2a; }
 
+/* ============ USER LIST ============ */
 .user-list {
   display: flex;
   flex-direction: column;
@@ -553,10 +610,12 @@ html, body {
   border-radius: 50%;
   object-fit: cover;
   background: #1a1a1a;
+  cursor: pointer;
 }
 .user-row .meta {
   flex: 1;
   min-width: 0;
+  cursor: pointer;
 }
 .user-row .meta b {
   display: block;
@@ -717,14 +776,8 @@ html, body {
 }
 
 @keyframes toastSlide {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 /* ============================================================
@@ -758,7 +811,6 @@ html, body {
   border-radius: 12px;
   padding: 14px;
   margin-bottom: 10px;
-  transition: background 0.2s;
 }
 
 .notif-item.unread {
@@ -772,23 +824,19 @@ html, body {
   justify-content: space-between;
   margin-bottom: 6px;
 }
-
 .notif-item .notif-title {
   font-size: 14px;
   font-weight: 700;
   color: #fff;
 }
-
 .notif-item .notif-time {
   font-size: 11px;
   color: #666;
 }
-
 .notif-item .notif-message {
   font-size: 13px;
   color: #ccc;
   line-height: 1.5;
-  margin-bottom: 4px;
 }
 
 .notif-actions {
@@ -796,7 +844,6 @@ html, body {
   gap: 8px;
   margin-top: 10px;
 }
-
 .notif-actions button {
   flex: 1;
   height: 36px;
@@ -807,12 +854,10 @@ html, body {
   cursor: pointer;
   font-family: inherit;
 }
-
 .notif-actions .accept {
   background: #16a34a;
   color: #fff;
 }
-
 .notif-actions .reject {
   background: #1e1e1e;
   color: #ccc;
@@ -825,7 +870,6 @@ html, body {
   color: #555;
   font-size: 14px;
 }
-
 .empty-notif svg {
   width: 60px;
   height: 60px;
@@ -844,7 +888,6 @@ html, body {
   position: relative;
   margin-bottom: 16px;
 }
-
 .search-bar-wrap svg {
   position: absolute;
   left: 14px;
@@ -870,11 +913,7 @@ html, body {
   font-family: inherit;
   outline: none;
 }
-
-.search-bar:focus {
-  border-color: #ff2e63;
-}
-
+.search-bar:focus { border-color: #ff2e63; }
 .search-bar::placeholder { color: #666; }
 
 .search-results {
@@ -891,27 +930,20 @@ html, body {
   background: #121212;
   border: 1px solid #1e1e28;
   border-radius: 12px;
-  cursor: pointer;
-  transition: background 0.2s;
 }
-
-.search-user:hover {
-  background: #1a1a24;
-}
-
 .search-user img {
   width: 46px;
   height: 46px;
   border-radius: 50%;
   object-fit: cover;
+  cursor: pointer;
   flex-shrink: 0;
 }
-
 .search-user .info {
   flex: 1;
   min-width: 0;
+  cursor: pointer;
 }
-
 .search-user .info b {
   display: block;
   font-size: 14px;
@@ -920,13 +952,13 @@ html, body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color 0.2s;
 }
-
 .search-user .info span {
   font-size: 12px;
   color: #888;
 }
-
+.search-user .info:hover b { color: #ff2e63; }
 .search-user button {
   padding: 6px 14px;
   font-size: 12px;
@@ -936,29 +968,25 @@ html, body {
   cursor: pointer;
   font-family: inherit;
 }
-
 .search-user button.follow {
   background: linear-gradient(90deg, #ff2e63, #ff8a00);
   color: #fff;
 }
-
 .search-user button.unfollow {
   background: #1e1e1e;
   color: #ccc;
   border: 1px solid #333;
 }
-
 .search-empty {
   text-align: center;
   padding: 60px 20px;
   color: #555;
   font-size: 14px;
 }
+
 /* ============================================================
    PUBLIC USER PROFILE
    ============================================================ */
-
-/* Back button */
 #backFromProfileBtn {
   background: none;
   border: none;
@@ -972,40 +1000,15 @@ html, body {
   padding: 0;
   transition: color 0.2s;
 }
-
-#backFromProfileBtn:hover {
-  color: #fff;
-}
-
+#backFromProfileBtn:hover { color: #fff; }
 #backFromProfileBtn svg {
   width: 18px;
   height: 18px;
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
-/* Search user rows - clickable */
-.search-user img,
-.search-user .info {
-  cursor: pointer;
-}
-
-.search-user img:hover {
-  opacity: 0.85;
-}
-
-.search-user .info:hover b {
-  color: #ff2e63;
-}
-
-.search-user .info b {
-  transition: color 0.2s;
-}
-
-/* Public profile action buttons */
 #pubFollowBtn,
 #pubShareBtn {
   flex: 1;
@@ -1029,42 +1032,77 @@ html, body {
   flex: 0 0 auto;
   padding: 0 18px;
 }
-
-#pubShareBtn:hover {
-  background: #1a1a1a;
-}
-
+#pubShareBtn:hover { background: #1a1a1a; }
 #pubShareBtn svg {
   width: 16px;
   height: 16px;
   stroke: currentColor;
   fill: none;
   stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
-/* Public profile - fix grid margin */
 .profile-page > .profile-grid {
   margin-left: -20px;
   margin-right: -20px;
 }
 
-/* Profile stats cursor on public */
-.profile-stat[data-action] {
-  cursor: pointer;
+/* ============================================================
+   VIDEO PLAYER MODAL
+   ============================================================ */
+#playerModal {
+  align-items: center;
+  padding: 16px;
 }
 
-/* Followers/Following list - clickable */
-.user-row img,
-.user-row .meta {
-  cursor: pointer;
+#playerModal .modal {
+  border-radius: 16px;
+  padding: 0;
+  overflow: hidden;
+  background: #0a0a0a;
+  max-width: 500px;
 }
 
-.user-row img:hover {
-  opacity: 0.85;
+#playerModal .modal-header {
+  padding: 14px 16px;
+  background: #0a0a0a;
+  border-bottom: 1px solid #1a1a1a;
+  margin: 0;
 }
 
-.user-row .meta:hover b {
-  color: #ff2e63;
+#playerModal .modal-header h3 {
+  font-size: 15px;
+}
+
+#playerContent {
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+#playerContent video {
+  width: 100%;
+  max-height: 70vh;
+  background: #000;
+  display: block;
+}
+
+#playerContent img {
+  width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  background: #000;
+  display: block;
+}
+
+#playerContent .aspect-9-16 {
+  aspect-ratio: 9 / 16;
+  max-height: 70vh;
+  margin: 0 auto;
+}
+
+#playerContent .aspect-16-9 {
+  aspect-ratio: 16 / 9;
+  width: 100%;
 }
