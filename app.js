@@ -1,5 +1,5 @@
 /* ============================================================
-   ReelHub — app.js (Complete with Batch 1)
+   ReelHub — app.js (Complete with 3-Dot Chat System)
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -193,6 +193,7 @@ let activeChatId = null;
 let activeChatUser = null;
 let chatMessagesUnsub = null;
 let chatListInterval = null;
+let pinnedMessage = null;
 
 let mediaRecorder = null;
 let audioChunks = [];
@@ -212,7 +213,6 @@ let storyProgressInterval = null;
 let storyAutoAdvanceTimeout = null;
 let currentStoryMediaEl = null;
 
-// Batch 1: View tracking session
 let viewedPostsSession = new Set();
 
 /* ============================================================
@@ -629,7 +629,7 @@ async function renderSavedPosts(containerId) {
     }
 
     if (posts.length === 0) {
-      container.innerHTML = `<div class="saved-empty"><h3>No saved posts available</h3><p>Saved posts may have been deleted</p></div>`;
+      container.innerHTML = `<div class="saved-empty"><h3>No saved posts available</h3></div>`;
       return;
     }
 
@@ -818,7 +818,6 @@ function makeFeedPost(post) {
   const likesCount = (post.likes || []).length;
   const commentsCount = (post.comments || []).length;
   const viewsCount = post.views || 0;
-  const isSaved = isPostSaved(post.id);
 
   let mediaHtml = '';
   if (post.type === 'photo') {
@@ -886,7 +885,6 @@ function makeFeedPost(post) {
     ` : ''}
   `;
 
-  // User click
   postEl.querySelector('.feed-post-header img').addEventListener('click', () => {
     openUserProfile(post.userId);
   });
@@ -894,25 +892,21 @@ function makeFeedPost(post) {
     openUserProfile(post.userId);
   });
 
-  // Like
   postEl.querySelector('.like-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     await toggleLike(post.id, e.currentTarget);
   });
 
-  // Comment
   postEl.querySelector('.comment-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     openComments(post.id, post.caption || 'Comments');
   });
 
-  // Share
   postEl.querySelector('.share-btn-feed').addEventListener('click', async (e) => {
     e.stopPropagation();
     await sharePost(post);
   });
 
-  // Save
   const saveBtn = postEl.querySelector('.save-btn');
   if (saveBtn) {
     saveBtn.addEventListener('click', async (e) => {
@@ -921,7 +915,6 @@ function makeFeedPost(post) {
     });
   }
 
-  // Track view (once per session per post)
   trackPostView(post.id);
 
   return postEl;
@@ -1213,7 +1206,7 @@ function uploadToCloudinaryStory(file, onProgress) {
 }
 
 /* ============================================================
-   STORY VIEWER (with Viewers button)
+   STORY VIEWER
    ============================================================ */
 function openStoryViewer(userId) {
   const userIndex = storiesByUser.findIndex(u => u.userId === userId);
@@ -1244,11 +1237,9 @@ function renderCurrentStory() {
   const time = story.createdAt?.toDate?.();
   storyTime.textContent = time ? timeAgo(time) : 'just now';
 
-  // Show delete button + viewers button (own story only)
   const isOwnStory = userGroup.userId === currentUser.uid;
   storyDeleteBtn.style.display = isOwnStory ? 'block' : 'none';
 
-  // Viewers button
   const viewersBtn = document.getElementById('storyViewersBtn');
   const viewersCountEl = document.getElementById('storyViewersCount');
   if (viewersBtn) {
@@ -1384,7 +1375,6 @@ storyCloseBtn.addEventListener('click', closeStoryViewer);
 storyTapLeft.addEventListener('click', prevStory);
 storyTapRight.addEventListener('click', nextStory);
 
-// Viewers button click
 document.getElementById('storyViewersBtn')?.addEventListener('click', (e) => {
   e.stopPropagation();
   const userGroup = storiesByUser[currentStoryUserIndex];
@@ -1417,7 +1407,7 @@ storyDeleteBtn.addEventListener('click', async () => {
   } catch (e) { showToast('❌ Could not delete'); }
 });
 /* ============================================================
-   SHORTS FEED (with Views tracking)
+   SHORTS FEED
    ============================================================ */
 async function renderShortsFeed() {
   content.innerHTML = `
@@ -1454,14 +1444,12 @@ async function renderShortsFeed() {
       return tb - ta;
     });
 
-    // Track views for each short (once per session)
     shorts.forEach(short => trackPostView(short.id));
 
     wrap.innerHTML = '';
     shorts.forEach(short => wrap.appendChild(makeShortItem(short)));
     setupShortsAutoplay(wrap);
   } catch (e) {
-    console.error('Shorts error:', e);
     wrap.innerHTML = `<div class="shorts-empty"><h3>Could not load shorts</h3></div>`;
   }
 }
@@ -1475,7 +1463,6 @@ function makeShortItem(short) {
   const isLiked = (short.likes || []).includes(currentUser.uid);
   const likesCount = (short.likes || []).length;
   const commentsCount = (short.comments || []).length;
-  const viewsCount = short.views || 0;
   const isSaved = isPostSaved(short.id);
 
   item.innerHTML = `
@@ -1864,9 +1851,8 @@ async function deleteComment(commentId) {
     await loadComments();
   } catch (e) { showToast('❌ Could not delete'); }
 }
-
 /* ============================================================
-   CHATS
+   CHATS PAGE
    ============================================================ */
 async function renderChatsPage() {
   content.innerHTML = `
@@ -2030,14 +2016,38 @@ async function openChatWindow(otherUser) {
 function closeChatWindow() {
   chatWindowModal.classList.remove('show');
   if (chatMessagesUnsub) { clearInterval(chatMessagesUnsub); chatMessagesUnsub = null; }
+  removePinnedBanner();
+  document.querySelectorAll('.msg-actions-menu, .edit-msg-modal').forEach(el => el.remove());
   activeChatId = null;
   activeChatUser = null;
+  pinnedMessage = null;
   stopVoicePlayback();
 }
 
 document.getElementById('closeChatWindow').addEventListener('click', closeChatWindow);
 
+/* ============================================================
+   LOAD MESSAGES (polling-based real-time)
+   ============================================================ */
 async function loadChatMessages() {
+  if (!activeChatId) return;
+
+  try {
+    await fetchAndPaintMessages();
+    await loadPinnedMessage();
+
+    if (chatMessagesUnsub) clearInterval(chatMessagesUnsub);
+    chatMessagesUnsub = setInterval(async () => {
+      if (!activeChatId) return;
+      await fetchAndPaintMessages();
+    }, 1500);
+
+  } catch (e) {
+    chatMessages.innerHTML = `<div class="chat-empty">Could not load</div>`;
+  }
+}
+
+async function fetchAndPaintMessages() {
   if (!activeChatId) return;
   try {
     const msgsRef = collection(db, 'chats', activeChatId, 'messages');
@@ -2049,28 +2059,24 @@ async function loadChatMessages() {
       return ta - tb;
     });
     paintChatMessages(messages);
-
-    if (chatMessagesUnsub) clearInterval(chatMessagesUnsub);
-    chatMessagesUnsub = setInterval(async () => {
-      if (!activeChatId) return;
-      try {
-        const s = await getDocs(collection(db, 'chats', activeChatId, 'messages'));
-        const msgs = s.docs.map(d => ({ id: d.id, ...d.data() }));
-        msgs.sort((a, b) => {
-          const ta = a.time?.toDate?.()?.getTime() || 0;
-          const tb = b.time?.toDate?.()?.getTime() || 0;
-          return ta - tb;
-        });
-        paintChatMessages(msgs);
-      } catch (e) {}
-    }, 3000);
-  } catch (e) { chatMessages.innerHTML = `<div class="chat-empty">Could not load</div>`; }
+    await markMessagesAsRead(messages);
+  } catch (e) {}
 }
 
+/* ============================================================
+   PAINT MESSAGES
+   ============================================================ */
 function paintChatMessages(messages) {
-  if (messages.length === 0) { chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`; return; }
+  if (messages.length === 0) {
+    chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
+    return;
+  }
+
+  const wasAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 150;
+
   chatMessages.innerHTML = '';
   let lastDateStr = '';
+
   messages.forEach(msg => {
     const msgDate = msg.time?.toDate?.();
     const dateStr = msgDate ? formatDate(msgDate) : '';
@@ -2083,21 +2089,46 @@ function paintChatMessages(messages) {
     }
     chatMessages.appendChild(makeMessageBubble(msg));
   });
-  setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
+
+  if (wasAtBottom || messages.length > 0) {
+    setTimeout(() => {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, 50);
+  }
 }
 
+/* ============================================================
+   MESSAGE BUBBLE (with 3-dot button)
+   ============================================================ */
 function makeMessageBubble(msg) {
   const row = document.createElement('div');
   const isMe = msg.from === currentUser.uid;
   row.className = 'msg-row ' + (isMe ? 'me' : 'other');
+  row.dataset.msgId = msg.id;
+
   const time = msg.time?.toDate?.();
   const timeStr = time ? formatTime(time) : '';
 
+  // ----- Deleted message -----
+  if (msg.deleted) {
+    row.innerHTML = `
+      <div class="msg-bubble deleted">
+        <div class="deleted-text">🚫 This message was deleted</div>
+      </div>
+      ${isMe ? buildDotsButton(msg) : ''}
+    `;
+    if (isMe) attachDotsButton(row, msg);
+    return row;
+  }
+
+  // ----- Voice message -----
   if (msg.type === 'voice') {
     const duration = msg.voiceDuration || 0;
     const bars = [];
     for (let i = 0; i < 22; i++) bars.push(30 + Math.floor(Math.random() * 70));
+
     row.innerHTML = `
+      ${isMe ? buildDotsButton(msg) : ''}
       <div class="msg-bubble voice-bubble" data-msg="${msg.id}">
         <button class="voice-play-btn" data-play="${msg.id}">
           <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>
@@ -2106,32 +2137,441 @@ function makeMessageBubble(msg) {
           ${bars.map(h => `<div class="bar" style="height:${h}%"></div>`).join('')}
         </div>
         <div class="voice-duration">${formatVoiceDuration(duration)}</div>
-        <div class="msg-time" style="position:absolute;bottom:-14px;right:0;">${timeStr}</div>
+        <div class="msg-time" style="position:absolute;bottom:-14px;right:0;">${timeStr}${isMe ? buildTicksHTML(msg) : ''}</div>
       </div>
+      ${!isMe ? buildDotsButton(msg) : ''}
     `;
-    row.querySelector('.voice-play-btn').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      await playVoiceMessage(msg, row.querySelector('.voice-waveform'), row.querySelector('.voice-play-btn'));
-    });
+
+    const playBtn = row.querySelector('.voice-play-btn');
+    if (playBtn) {
+      playBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await playVoiceMessage(msg, row.querySelector('.voice-waveform'), playBtn);
+      });
+    }
+
   } else {
-    row.innerHTML = `<div class="msg-bubble">${escapeHtml(msg.text || '')}<div class="msg-time">${timeStr}</div></div>`;
+    // ----- Text message -----
+    const editedLabel = msg.edited ? '<span class="edited-label">(edited)</span>' : '';
+
+    row.innerHTML = `
+      ${isMe ? buildDotsButton(msg) : ''}
+      <div class="msg-bubble" data-msg="${msg.id}">
+        ${escapeHtml(msg.text || '')}${editedLabel}
+        <div class="msg-time">${timeStr}${isMe ? buildTicksHTML(msg) : ''}</div>
+      </div>
+      ${!isMe ? buildDotsButton(msg) : ''}
+    `;
   }
+
+  if (isMe) attachDotsButton(row, msg);
   return row;
 }
 
-function formatVoiceDuration(seconds) { const s = Math.round(seconds); return `0:${s < 10 ? '0' + s : s}`; }
-function formatTime(date) {
-  let h = date.getHours(); const m = date.getMinutes(); const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12 || 12; return `${h}:${m < 10 ? '0' + m : m} ${ampm}`;
-}
-function formatDate(date) {
-  const today = new Date(); const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
-  if (date.toDateString() === today.toDateString()) return 'Today';
-  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${date.getDate()} ${months[date.getMonth()]}`;
+/* ============================================================
+   3-DOT BUTTON
+   ============================================================ */
+function buildDotsButton(msg) {
+  return `
+    <button class="msg-dots-btn" data-msg="${msg.id}" title="Options">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+  `;
 }
 
+function attachDotsButton(row, msg) {
+  const dotsBtn = row.querySelector('.msg-dots-btn');
+  if (!dotsBtn) return;
+  dotsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showMessageActionsMenu(dotsBtn, msg);
+  });
+}
+
+/* ============================================================
+   3-DOT DROPDOWN MENU
+   ============================================================ */
+function showMessageActionsMenu(anchorEl, msg) {
+  document.querySelectorAll('.msg-actions-menu').forEach(el => el.remove());
+
+  const menu = document.createElement('div');
+  menu.className = 'msg-actions-menu';
+
+  const isPinned = pinnedMessage?.id === msg.id;
+  let menuHTML = '';
+
+  // Edit (only text, not deleted)
+  if (msg.type === 'text' && !msg.deleted) {
+    menuHTML += `
+      <button data-action="edit">
+        <svg viewBox="0 0 24 24">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        Edit
+      </button>
+    `;
+  }
+
+  // Copy (text only)
+  if (msg.type === 'text' && !msg.deleted && msg.text) {
+    menuHTML += `
+      <button data-action="copy">
+        <svg viewBox="0 0 24 24">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        Copy
+      </button>
+    `;
+  }
+
+  // Pin (not deleted)
+  if (!msg.deleted) {
+    menuHTML += `
+      <button data-action="pin">
+        <svg viewBox="0 0 24 24">
+          <line x1="12" y1="17" x2="12" y2="22"/>
+          <path d="M5 17h14l-1.5-7.5L19 5l-7 1-7-1 1.5 4.5z"/>
+        </svg>
+        ${isPinned ? 'Unpin' : 'Pin'}
+      </button>
+    `;
+  }
+
+  // Delete
+  menuHTML += `
+    <div class="menu-divider"></div>
+    <button data-action="delete" class="danger">
+      <svg viewBox="0 0 24 24">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        <path d="M10 11v6M14 11v6"/>
+      </svg>
+      Delete
+    </button>
+  `;
+
+  menu.innerHTML = menuHTML;
+  document.body.appendChild(menu);
+
+  const rect = anchorEl.getBoundingClientRect();
+  const menuRect = menu.getBoundingClientRect();
+
+  let top = rect.bottom + 5;
+  let left = rect.left - menuRect.width + rect.width;
+
+  if (left < 10) left = 10;
+  if (left + menuRect.width > window.innerWidth - 10) left = window.innerWidth - menuRect.width - 10;
+  if (top + menuRect.height > window.innerHeight - 10) top = rect.top - menuRect.height - 5;
+
+  menu.style.top = top + 'px';
+  menu.style.left = left + 'px';
+
+  menu.querySelectorAll('button[data-action]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const action = btn.dataset.action;
+      menu.remove();
+
+      if (action === 'edit') await openEditMessageModal(msg);
+      else if (action === 'copy') await copyMessageText(msg);
+      else if (action === 'pin') await togglePinMessage(msg);
+      else if (action === 'delete') {
+        if (confirm('Delete this message?')) await deleteMessage(msg.id);
+      }
+    });
+  });
+
+  setTimeout(() => {
+    const closeMenu = (ev) => {
+      if (!menu.contains(ev.target) && ev.target !== anchorEl) {
+        menu.remove();
+        document.removeEventListener('click', closeMenu);
+        document.removeEventListener('touchstart', closeMenu);
+      }
+    };
+    document.addEventListener('click', closeMenu);
+    document.addEventListener('touchstart', closeMenu);
+  }, 100);
+}
+
+/* ============================================================
+   EDIT MESSAGE
+   ============================================================ */
+async function openEditMessageModal(msg) {
+  document.querySelectorAll('.edit-msg-modal').forEach(el => el.remove());
+
+  const modal = document.createElement('div');
+  modal.className = 'edit-msg-modal';
+  modal.innerHTML = `
+    <div class="edit-msg-box">
+      <h3>✏️ Edit Message</h3>
+      <textarea id="editMsgText" maxlength="1000">${escapeHtml(msg.text || '')}</textarea>
+      <div class="edit-msg-actions">
+        <button class="cancel-btn" id="cancelEditBtn">Cancel</button>
+        <button class="save-btn" id="saveEditBtn">Save</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const textarea = modal.querySelector('#editMsgText');
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+  modal.querySelector('#cancelEditBtn').addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
+  modal.querySelector('#saveEditBtn').addEventListener('click', async () => {
+    const newText = textarea.value.trim();
+    if (!newText) { showToast('❌ Cannot be empty'); return; }
+    if (newText === msg.text) { modal.remove(); return; }
+    await editMessage(msg.id, newText);
+    modal.remove();
+  });
+}
+
+async function editMessage(msgId, newText) {
+  if (!activeChatId || !currentUser) return;
+  try {
+    await updateDoc(doc(db, 'chats', activeChatId, 'messages', msgId), {
+      text: newText,
+      edited: true,
+      editedAt: serverTimestamp()
+    });
+    showToast('✏️ Message edited');
+    await fetchAndPaintMessages();
+  } catch (e) { showToast('❌ Could not edit'); }
+}
+
+async function copyMessageText(msg) {
+  if (!msg.text) return;
+  try {
+    await navigator.clipboard.writeText(msg.text);
+    showToast('📋 Copied');
+  } catch (e) {
+    const textarea = document.createElement('textarea');
+    textarea.value = msg.text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try { document.execCommand('copy'); showToast('📋 Copied'); }
+    catch (err) { showToast('❌ Could not copy'); }
+    document.body.removeChild(textarea);
+  }
+}
+
+/* ============================================================
+   TICKS
+   ============================================================ */
+function buildTicksHTML(msg) {
+  if (msg.from !== currentUser.uid) return '';
+  if (msg.read) {
+    return `<span class="msg-ticks read">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+    </span>`;
+  } else if (msg.delivered) {
+    return `<span class="msg-ticks delivered">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+    </span>`;
+  } else {
+    return `<span class="msg-ticks sent">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+    </span>`;
+  }
+}
+
+async function markMessagesAsRead(messages) {
+  if (!currentUser || !activeChatId) return;
+  try {
+    for (const msg of messages) {
+      if (msg.to === currentUser.uid && !msg.read) {
+        await updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), {
+          read: true,
+          readAt: serverTimestamp()
+        });
+      }
+      if (msg.from === currentUser.uid && !msg.delivered) {
+        await updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), {
+          delivered: true
+        });
+      }
+    }
+  } catch (e) {}
+}
+
+/* ============================================================
+   DELETE MESSAGE
+   ============================================================ */
+async function deleteMessage(msgId) {
+  if (!activeChatId || !currentUser) return;
+  try {
+    await updateDoc(doc(db, 'chats', activeChatId, 'messages', msgId), {
+      deleted: true,
+      deletedAt: serverTimestamp(),
+      text: null,
+      voiceData: null
+    });
+    showToast('🗑️ Message deleted');
+    await fetchAndPaintMessages();
+  } catch (e) { showToast('❌ Could not delete'); }
+}
+
+/* ============================================================
+   PIN MESSAGE
+   ============================================================ */
+async function togglePinMessage(msg) {
+  if (!activeChatId || !currentUser) return;
+  try {
+    const chatRef = doc(db, 'chats', activeChatId);
+    const chatSnap = await getDoc(chatRef);
+    if (!chatSnap.exists()) return;
+
+    const currentPin = chatSnap.data().pinnedMessage || null;
+
+    if (currentPin === msg.id) {
+      await updateDoc(chatRef, { pinnedMessage: null });
+      pinnedMessage = null;
+      showToast('Unpinned');
+    } else {
+      await updateDoc(chatRef, { pinnedMessage: msg.id });
+      pinnedMessage = msg;
+      showToast('📌 Pinned');
+    }
+    await loadPinnedMessage();
+  } catch (e) { showToast('❌ Could not pin'); }
+}
+
+async function loadPinnedMessage() {
+  if (!activeChatId) return;
+  try {
+    const chatRef = doc(db, 'chats', activeChatId);
+    const chatSnap = await getDoc(chatRef);
+    if (!chatSnap.exists()) { pinnedMessage = null; removePinnedBanner(); return; }
+
+    const pinId = chatSnap.data().pinnedMessage;
+    if (!pinId) { pinnedMessage = null; removePinnedBanner(); return; }
+
+    const msgSnap = await getDoc(doc(db, 'chats', activeChatId, 'messages', pinId));
+    if (!msgSnap.exists()) { pinnedMessage = null; removePinnedBanner(); return; }
+
+    pinnedMessage = { id: pinId, ...msgSnap.data() };
+    renderPinnedBanner(pinnedMessage);
+  } catch (e) {}
+}
+
+function renderPinnedBanner(msg) {
+  removePinnedBanner();
+  const chatWindow = document.getElementById('chatWindow');
+  if (!chatWindow) return;
+
+  const banner = document.createElement('div');
+  banner.className = 'pinned-banner';
+  banner.id = 'pinnedBanner';
+
+  const previewText = msg.deleted
+    ? '🚫 Deleted message'
+    : (msg.type === 'voice' ? '🎤 Voice message' : (msg.text || ''));
+
+  banner.innerHTML = `
+    <svg viewBox="0 0 24 24">
+      <line x1="12" y1="17" x2="12" y2="22"/>
+      <path d="M5 17h14l-1.5-7.5L19 5l-7 1-7-1 1.5 4.5z"/>
+    </svg>
+    <div class="pin-text">
+      <b>📌 Pinned</b>
+      ${escapeHtml(previewText).substring(0, 60)}${previewText.length > 60 ? '...' : ''}
+    </div>
+    <button class="pin-close" id="unpinBtn">✕</button>
+  `;
+
+  const chatHeader = chatWindow.querySelector('.chat-header');
+  if (chatHeader) chatHeader.insertAdjacentElement('afterend', banner);
+  chatMessages.classList.add('has-pinned');
+
+  banner.querySelector('#unpinBtn').addEventListener('click', async () => {
+    if (!activeChatId) return;
+    try {
+      await updateDoc(doc(db, 'chats', activeChatId), { pinnedMessage: null });
+      pinnedMessage = null;
+      removePinnedBanner();
+      showToast('Unpinned');
+    } catch (e) {}
+  });
+}
+
+function removePinnedBanner() {
+  document.getElementById('pinnedBanner')?.remove();
+  chatMessages.classList.remove('has-pinned');
+}
+
+/* ============================================================
+   SEND MESSAGE
+   ============================================================ */
+async function sendMessage(msgData) {
+  if (!activeChatId || !activeChatUser) return;
+
+  const message = {
+    from: currentUser.uid,
+    to: activeChatUser.uid,
+    type: msgData.type || 'text',
+    text: msgData.text || null,
+    voiceData: msgData.voiceData || null,
+    voiceDuration: msgData.voiceDuration || null,
+    delivered: false,
+    read: false,
+    deleted: false,
+    edited: false,
+    time: serverTimestamp()
+  };
+
+  try {
+    await addDoc(collection(db, 'chats', activeChatId, 'messages'), message);
+
+    const chatRef = doc(db, 'chats', activeChatId);
+    const chatSnap = await getDoc(chatRef);
+
+    const chatData = {
+      members: [currentUser.uid, activeChatUser.uid],
+      lastMessage: msgData.type === 'voice' ? '🎤 Voice message' : (msgData.text || ''),
+      lastMessageType: msgData.type || 'text',
+      lastMessageTime: serverTimestamp(),
+      lastMessageBy: currentUser.uid,
+      unreadBy: [activeChatUser.uid]
+    };
+
+    if (!chatSnap.exists()) {
+      chatData.createdAt = serverTimestamp();
+      await setDoc(chatRef, chatData);
+    } else {
+      await updateDoc(chatRef, chatData);
+    }
+
+    await fetchAndPaintMessages();
+  } catch (e) {
+    showToast('❌ Could not send');
+  }
+}
+
+async function markChatRead() {
+  if (!activeChatId) return;
+  try {
+    await updateDoc(doc(db, 'chats', activeChatId), { unreadBy: arrayRemove(currentUser.uid) });
+    checkChatsUnread();
+  } catch (e) {}
+}
+
+/* ============================================================
+   SEND TEXT
+   ============================================================ */
 function updateSendTextBtn() {
   const hasText = chatMessageInput.value.trim().length > 0;
   sendTextBtn.style.display = hasText ? 'flex' : 'none';
@@ -2150,44 +2590,6 @@ sendTextBtn.addEventListener('click', async () => {
 chatMessageInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTextBtn.click(); }
 });
-
-async function sendMessage(msgData) {
-  if (!activeChatId || !activeChatUser) return;
-  const message = {
-    from: currentUser.uid,
-    to: activeChatUser.uid,
-    type: msgData.type || 'text',
-    text: msgData.text || null,
-    voiceData: msgData.voiceData || null,
-    voiceDuration: msgData.voiceDuration || null,
-    time: serverTimestamp(),
-    read: false
-  };
-  try {
-    await addDoc(collection(db, 'chats', activeChatId, 'messages'), message);
-    const chatRef = doc(db, 'chats', activeChatId);
-    const chatSnap = await getDoc(chatRef);
-    const chatData = {
-      members: [currentUser.uid, activeChatUser.uid],
-      lastMessage: msgData.type === 'voice' ? '🎤 Voice message' : (msgData.text || ''),
-      lastMessageType: msgData.type || 'text',
-      lastMessageTime: serverTimestamp(),
-      lastMessageBy: currentUser.uid,
-      unreadBy: [activeChatUser.uid]
-    };
-    if (!chatSnap.exists()) { chatData.createdAt = serverTimestamp(); await setDoc(chatRef, chatData); }
-    else await updateDoc(chatRef, chatData);
-    await loadChatMessages();
-  } catch (e) { showToast('❌ Could not send'); }
-}
-
-async function markChatRead() {
-  if (!activeChatId) return;
-  try {
-    await updateDoc(doc(db, 'chats', activeChatId), { unreadBy: arrayRemove(currentUser.uid) });
-    checkChatsUnread();
-  } catch (e) {}
-}
 
 /* ============================================================
    VOICE RECORDING
@@ -2326,7 +2728,7 @@ async function checkChatsUnread() {
 }
 
 /* ============================================================
-   PROFILE (OWN) — with Saved Tab
+   PROFILE (OWN)
    ============================================================ */
 async function renderProfile() {
   if (!currentProfile) {
@@ -2394,17 +2796,14 @@ async function renderProfile() {
     });
   });
 
-  // Tab switching
   const profileTabs = document.querySelectorAll('.profile-tabs .profile-tab');
   profileTabs.forEach(tab => {
     tab.addEventListener('click', async () => {
       profileTabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-
       const tabName = tab.dataset.tab;
       const grid = document.getElementById('myPostsGrid');
       if (!grid) return;
-
       if (tabName === 'saved') {
         await renderSavedPosts('myPostsGrid');
       } else {
@@ -2472,7 +2871,7 @@ function makeGridItem(post) {
 }
 
 /* ============================================================
-   PUBLIC USER PROFILE — Follow + Messages + Share
+   PUBLIC USER PROFILE
    ============================================================ */
 async function openUserProfile(userId) {
   if (!userId) return;
@@ -2505,7 +2904,6 @@ async function openUserProfile(userId) {
           Back
         </button>
       </div>
-
       <div class="profile-page" style="padding-top:0;">
         <div class="profile-top">
           <div class="profile-avatar-wrap">
@@ -2517,13 +2915,11 @@ async function openUserProfile(userId) {
             <div class="profile-stat"><b>${following.length}</b><span>Following</span></div>
           </div>
         </div>
-
         <div class="profile-info">
           <div class="profile-name">${escapeHtml(user.name)}</div>
           <div class="profile-username">@${escapeHtml(user.user)}</div>
           <div class="profile-bio">${user.bio ? escapeHtml(user.bio) : '<span style="color:#555">No bio yet.</span>'}</div>
         </div>
-
         <div class="profile-actions">
           <button id="pubFollowBtn" class="${isFollowing ? 'following' : ''}">
             <svg viewBox="0 0 24 24">
@@ -2550,7 +2946,6 @@ async function openUserProfile(userId) {
             Share
           </button>
         </div>
-
         <div class="profile-tabs"><button class="profile-tab active">Posts</button></div>
         <div class="profile-grid" id="pubPostsGrid"><div class="grid-empty">Loading posts...</div></div>
       </div>
@@ -3315,4 +3710,4 @@ function timeAgoShort(date) {
   return Math.floor(days / 7) + 'w';
 }
 
-console.log('✅ app.js loaded — Batch 1 complete (Save + Views + Story Viewers)');
+console.log('✅ app.js loaded — Complete with 3-Dot Chat System');
