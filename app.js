@@ -539,7 +539,8 @@ function renderPage(page) {
   else if (page === 'upload') {
     content.innerHTML = `<div class="page-placeholder"><div class="page-title">${pages[page]}</div></div>`;
   }
-}/* ============================================================
+}
+/* ============================================================
    ReelHub — app.js (PART 2/4)
    Helpers, Home Feed, Stories, Report/Block
    ============================================================ */
@@ -1408,7 +1409,7 @@ function uploadToCloudinaryStory(file, onProgress) {
 }
 /* ============================================================
    ReelHub — app.js (PART 3/4)
-   Story Viewer, Shorts (with sound), Like, Share, Comments
+   Story Viewer, Shorts (Auto Sound), Like, Share, Comments
    ============================================================ */
 
 /* ============================================================
@@ -1614,8 +1615,12 @@ storyDeleteBtn.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   SHORTS FEED
+   SHORTS FEED — AUTO SOUND SYSTEM
    ============================================================ */
+
+// 🔥 Sound state — localStorage mein save hoga
+let shortsSoundEnabled = localStorage.getItem('shortsSound') === 'true';
+
 async function renderShortsFeed() {
   content.innerHTML = `
     <div class="shorts-wrap" id="shortsWrap">
@@ -1660,9 +1665,82 @@ async function renderShortsFeed() {
     wrap.innerHTML = '';
     shorts.forEach(short => wrap.appendChild(makeShortItem(short)));
     setupShortsAutoplay(wrap);
+
+    // 🔥 Pehli baar sound ke saath play karo (agar enabled hai)
+    if (shortsSoundEnabled) {
+      setTimeout(() => {
+        const firstVideo = wrap.querySelector('.short-item video');
+        if (firstVideo) {
+          firstVideo.muted = false;
+          firstVideo.play().catch(() => {
+            // Agar browser ne block kiya, toh muted kar do
+            firstVideo.muted = true;
+            firstVideo.play().catch(() => {});
+          });
+        }
+      }, 300);
+    }
+
+    // 🔥 Agar sound disabled hai, toh ek overlay tap-to-unmute dikhao
+    if (!shortsSoundEnabled) {
+      showTapToUnmuteOverlay(wrap);
+    }
+
   } catch (e) {
     wrap.innerHTML = `<div class="shorts-empty"><h3>Could not load shorts</h3></div>`;
   }
+}
+
+function showTapToUnmuteOverlay(wrap) {
+  // Agar overlay already hai toh hata do
+  wrap.querySelector('.tap-to-unmute-overlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'tap-to-unmute-overlay';
+  overlay.innerHTML = `
+    <div class="unmute-content">
+      <div class="unmute-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/>
+          <line x1="23" y1="9" x2="17" y2="15"/>
+          <line x1="17" y1="9" x2="23" y2="15"/>
+        </svg>
+      </div>
+      <div class="unmute-text">Tap to Unmute</div>
+    </div>
+  `;
+
+  wrap.appendChild(overlay);
+
+  overlay.addEventListener('click', () => {
+    // Sound enable karo
+    shortsSoundEnabled = true;
+    localStorage.setItem('shortsSound', 'true');
+
+    // Sabhi videos ko unmute karo
+    wrap.querySelectorAll('.short-item video').forEach(v => {
+      v.muted = false;
+    });
+
+    // Overlay hatao
+    overlay.remove();
+
+    // Current video play karo
+    const currentVideo = getCurrentVisibleVideo(wrap);
+    if (currentVideo) currentVideo.play().catch(() => {});
+
+    showToast('🔊 Sound ON');
+  });
+}
+
+function getCurrentVisibleVideo(wrap) {
+  const videos = wrap.querySelectorAll('.short-item video');
+  for (let v of videos) {
+    const rect = v.getBoundingClientRect();
+    if (rect.top >= 0 && rect.bottom <= window.innerHeight) return v;
+    if (rect.top < window.innerHeight / 2 && rect.bottom > window.innerHeight / 2) return v;
+  }
+  return videos[0];
 }
 
 function makeShortItem(short) {
@@ -1676,21 +1754,12 @@ function makeShortItem(short) {
   const commentsCount = (short.comments || []).length;
   const isSaved = isPostSaved(short.id);
 
-  item.innerHTML = `
-    <video src="${short.url}" loop muted playsinline preload="metadata"
-           style="width:100%;height:100%;object-fit:contain;background:#000;"></video>
+  // 🔥 Sound state ke hisaab se muted attr
+  const mutedAttr = shortsSoundEnabled ? '' : 'muted';
 
-    <button class="short-sound-btn" title="Toggle sound">
-      <svg class="sound-off-icon" viewBox="0 0 24 24" fill="currentColor" style="width:22px;height:22px;">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-        <line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      <svg class="sound-on-icon" viewBox="0 0 24 24" fill="currentColor" style="display:none;width:22px;height:22px;">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </button>
+  item.innerHTML = `
+    <video src="${short.url}" loop ${mutedAttr} playsinline preload="metadata"
+           style="width:100%;height:100%;object-fit:contain;background:#000;"></video>
 
     <div class="short-overlay">
       <div class="short-bottom-info">
@@ -1735,6 +1804,7 @@ function makeShortItem(short) {
     </div>
   `;
 
+  const videoEl = item.querySelector('video');
   const userImg = item.querySelector('.short-user-row img');
   if (userImg) userImg.addEventListener('click', () => openUserProfile(short.userId));
   item.querySelector('.like-btn').addEventListener('click', async (e) => {
@@ -1757,31 +1827,13 @@ function makeShortItem(short) {
     await sharePost(short);
   });
 
-  /* ✅ SOUND TOGGLE */
-  const videoEl = item.querySelector('video');
-  const soundBtn = item.querySelector('.short-sound-btn');
-  const offIcon = soundBtn.querySelector('.sound-off-icon');
-  const onIcon = soundBtn.querySelector('.sound-on-icon');
-
-  soundBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    videoEl.muted = !videoEl.muted;
-    if (videoEl.muted) {
-      offIcon.style.display = 'block';
-      onIcon.style.display = 'none';
-    } else {
-      offIcon.style.display = 'none';
-      onIcon.style.display = 'block';
-      videoEl.play().catch(() => {});
-    }
-  });
-
+  // 🔥 Video par tap karne se sound ON/OFF toggle
   videoEl.addEventListener('click', () => {
-    if (videoEl.muted) {
-      videoEl.muted = false;
-      offIcon.style.display = 'none';
-      onIcon.style.display = 'block';
-    }
+    videoEl.muted = !videoEl.muted;
+    shortsSoundEnabled = !videoEl.muted;
+    localStorage.setItem('shortsSound', shortsSoundEnabled ? 'true' : 'false');
+    showToast(videoEl.muted ? '🔇 Sound OFF' : '🔊 Sound ON');
+    if (!videoEl.muted) videoEl.play().catch(() => {});
   });
 
   return item;
@@ -1793,8 +1845,17 @@ function setupShortsAutoplay(wrap) {
   shortsObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const video = entry.target;
-      if (entry.isIntersecting && entry.intersectionRatio > 0.6) video.play().catch(() => {});
-      else video.pause();
+      if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+        // 🔥 Agar sound enabled hai toh unmuted play
+        video.muted = !shortsSoundEnabled;
+        video.play().catch(() => {
+          // Browser ne block kiya toh muted kar do
+          video.muted = true;
+          video.play().catch(() => {});
+        });
+      } else {
+        video.pause();
+      }
     });
   }, { threshold: [0, 0.6, 1] });
   videos.forEach(v => shortsObserver.observe(v));
@@ -1807,7 +1868,6 @@ function stopShortsObserver() {
 
 /* ============================================================
    LIKE SYSTEM
-   ✅ Ek user ek hi baar like kar sakta hai
    ============================================================ */
 async function toggleLike(postId, btnEl) {
   if (!currentUser) return;
