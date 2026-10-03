@@ -115,6 +115,17 @@ const playerModal   = document.getElementById('playerModal');
 const playerTitle   = document.getElementById('playerTitle');
 const playerContent = document.getElementById('playerContent');
 
+// Comments
+const commentsModal      = document.getElementById('commentsModal');
+const commentsTitle      = document.getElementById('commentsTitle');
+const commentsList       = document.getElementById('commentsList');
+const commentInput       = document.getElementById('commentInput');
+const postCommentBtn     = document.getElementById('postCommentBtn');
+const myAvatarForComment = document.getElementById('myAvatarForComment');
+const replyIndicator     = document.getElementById('replyIndicator');
+const replyIndicatorText = document.getElementById('replyIndicatorText');
+const cancelReplyBtn     = document.getElementById('cancelReplyBtn');
+
 /* ============================================================
    STATE
    ============================================================ */
@@ -129,8 +140,12 @@ let currentUploadType = 'short';
 let selectedFile = null;
 let selectedFileDuration = 0;
 
-// Track video playback for shorts
 let shortsObserver = null;
+
+// Comments state
+let activeCommentPostId = null;
+let activeReplyTo = null;    // { commentId, userName, userHandle }
+let allCommentsForPost = [];
 
 /* ============================================================
    SCREEN SWITCHING
@@ -512,7 +527,7 @@ function renderPage(page) {
 async function renderHomeFeed() {
   content.innerHTML = `
     <div class="home-feed">
-      <div class="feed-empty" id="homeLoading">
+      <div class="feed-empty">
         <div class="page-title">Loading feed...</div>
       </div>
     </div>
@@ -537,7 +552,6 @@ async function renderHomeFeed() {
       return;
     }
 
-    // Manual sort (latest first)
     const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     posts.sort((a, b) => {
       const ta = a.createdAt?.toDate?.()?.getTime() || 0;
@@ -555,7 +569,6 @@ async function renderHomeFeed() {
     content.innerHTML = '';
     content.appendChild(wrap);
 
-    // Auto-play visible videos
     setupFeedAutoplay();
 
   } catch (e) {
@@ -640,7 +653,6 @@ function makeFeedPost(post) {
     ` : ''}
   `;
 
-  // Click on user → open profile
   postEl.querySelector('.feed-post-header img').addEventListener('click', () => {
     openUserProfile(post.userId);
   });
@@ -648,19 +660,16 @@ function makeFeedPost(post) {
     openUserProfile(post.userId);
   });
 
-  // Like button
   postEl.querySelector('.like-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     await toggleLike(post.id, e.currentTarget);
   });
 
-  // Comment (coming soon)
   postEl.querySelector('.comment-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    showToast('💬 Comments coming soon');
+    openComments(post.id, post.caption || 'Comments');
   });
 
-  // Share
   postEl.querySelector('.share-btn-feed').addEventListener('click', async (e) => {
     e.stopPropagation();
     await sharePost(post);
@@ -679,7 +688,6 @@ function setupFeedAutoplay() {
     entries.forEach(entry => {
       const video = entry.target;
       if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
-        // Play muted
         video.play().catch(() => {});
       } else {
         video.pause();
@@ -707,7 +715,6 @@ async function renderShortsFeed() {
 
   try {
     const postsRef = collection(db, 'posts');
-    // Only short videos
     const q = query(postsRef, where('type', '==', 'short'), limit(30));
     const snap = await getDocs(q);
 
@@ -725,7 +732,6 @@ async function renderShortsFeed() {
       return;
     }
 
-    // Manual sort (latest first)
     const shorts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     shorts.sort((a, b) => {
       const ta = a.createdAt?.toDate?.()?.getTime() || 0;
@@ -738,7 +744,6 @@ async function renderShortsFeed() {
       wrap.appendChild(makeShortItem(short));
     });
 
-    // Setup auto-play on scroll
     setupShortsAutoplay(wrap);
 
   } catch (e) {
@@ -809,25 +814,21 @@ function makeShortItem(short) {
     </div>
   `;
 
-  // User avatar click
   const userImg = item.querySelector('.short-user-row img');
   if (userImg) {
     userImg.addEventListener('click', () => openUserProfile(short.userId));
   }
 
-  // Like
   item.querySelector('.like-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     await toggleLike(short.id, e.currentTarget);
   });
 
-  // Comment
   item.querySelector('.comment-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    showToast('💬 Comments coming soon');
+    openComments(short.id, short.caption || 'Comments');
   });
 
-  // Share
   item.querySelector('.share-btn-short').addEventListener('click', async (e) => {
     e.stopPropagation();
     await sharePost(short);
@@ -860,14 +861,13 @@ function stopShortsObserver() {
     shortsObserver.disconnect();
     shortsObserver = null;
   }
-  // Pause all videos
   document.querySelectorAll('.short-item video').forEach(v => {
     try { v.pause(); } catch (e) {}
   });
 }
 
 /* ============================================================
-   LIKE SYSTEM
+   LIKE SYSTEM (posts)
    ============================================================ */
 async function toggleLike(postId, btnEl) {
   if (!currentUser) return;
@@ -888,14 +888,12 @@ async function toggleLike(postId, btnEl) {
       await updateDoc(postRef, { likes: arrayUnion(currentUser.uid) });
     }
 
-    // Update UI
     const newCount = isLiked ? likes.length - 1 : likes.length + 1;
     const countSpan = btnEl.querySelector('span');
     if (countSpan) countSpan.textContent = newCount;
 
     btnEl.classList.toggle('liked', !isLiked);
 
-    // Animate
     btnEl.style.transform = 'scale(1.3)';
     setTimeout(() => { btnEl.style.transform = ''; }, 200);
 
@@ -924,6 +922,384 @@ async function sharePost(post) {
     showToast('✅ Link copied!');
   } catch (err) {
     showToast('❌ Could not share');
+  }
+}
+
+/* ============================================================
+   COMMENTS SYSTEM
+   ============================================================ */
+async function openComments(postId, title) {
+  if (!currentUser) return;
+
+  activeCommentPostId = postId;
+  activeReplyTo = null;
+  allCommentsForPost = [];
+
+  commentsTitle.textContent = title || 'Comments';
+
+  // Set my avatar
+  const myAvatar = currentProfile?.photo || defaultAvatar(currentProfile?.name || '?');
+  myAvatarForComment.src = myAvatar;
+
+  // Reset input
+  commentInput.value = '';
+  postCommentBtn.disabled = true;
+
+  hideReplyIndicator();
+
+  commentsList.innerHTML = `<div class="empty-msg">Loading comments...</div>`;
+
+  commentsModal.classList.add('show');
+
+  await loadComments();
+}
+
+document.getElementById('closeComments').addEventListener('click', () => {
+  commentsModal.classList.remove('show');
+  activeCommentPostId = null;
+  activeReplyTo = null;
+});
+
+commentsModal.addEventListener('click', (e) => {
+  if (e.target === commentsModal) {
+    commentsModal.classList.remove('show');
+    activeCommentPostId = null;
+    activeReplyTo = null;
+  }
+});
+
+async function loadComments() {
+  if (!activeCommentPostId) return;
+
+  try {
+    const commentsRef = collection(db, 'comments');
+    const q = query(commentsRef, where('postId', '==', activeCommentPostId));
+    const snap = await getDocs(q);
+
+    const allComments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Separate top-level and replies
+    const topLevel = allComments.filter(c => !c.parentId);
+    const replies = allComments.filter(c => c.parentId);
+
+    // Sort top-level by time (oldest first, like Instagram)
+    topLevel.sort((a, b) => {
+      const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+      const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+      return ta - tb;
+    });
+
+    // Attach replies to parents
+    topLevel.forEach(c => {
+      c.replies = replies
+        .filter(r => r.parentId === c.id)
+        .sort((a, b) => {
+          const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+          const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+          return ta - tb;
+        });
+    });
+
+    allCommentsForPost = topLevel;
+
+    paintComments(topLevel);
+
+  } catch (e) {
+    console.error('Load comments error:', e);
+    commentsList.innerHTML = `<div class="comments-empty">Could not load comments</div>`;
+  }
+}
+
+function paintComments(comments) {
+  if (comments.length === 0) {
+    commentsList.innerHTML = `
+      <div class="comments-empty">
+        <svg viewBox="0 0 24 24">
+          <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </svg>
+        <div>No comments yet</div>
+        <div style="font-size:12px;color:#444;margin-top:6px;">Be the first to comment!</div>
+      </div>`;
+    return;
+  }
+
+  commentsList.innerHTML = '';
+  comments.forEach(comment => {
+    commentsList.appendChild(makeCommentItem(comment, false));
+  });
+}
+
+function makeCommentItem(comment, isReply) {
+  const item = document.createElement('div');
+  item.className = isReply ? 'comment-item reply-item' : 'comment-item';
+  item.dataset.commentId = comment.id;
+
+  const avatar = comment.userPhoto || defaultAvatar(comment.userName);
+  const isLiked = (comment.likes || []).includes(currentUser.uid);
+  const likesCount = (comment.likes || []).length;
+  const isOwner = comment.userId === currentUser.uid;
+
+  const time = comment.createdAt?.toDate?.();
+  const timeStr = time ? timeAgo(time) : 'just now';
+
+  // replyTo mention
+  let replyToHtml = '';
+  if (comment.replyToHandle) {
+    replyToHtml = `<span class="mention">@${escapeHtml(comment.replyToHandle)}</span> `;
+  }
+
+  // replies section
+  let repliesHtml = '';
+  if (!isReply && comment.replies && comment.replies.length > 0) {
+    repliesHtml = `
+      <div class="replies-wrap">
+        <button class="replies-toggle" data-toggle="${comment.id}">
+          <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          <span>View ${comment.replies.length} ${comment.replies.length === 1 ? 'reply' : 'replies'}</span>
+        </button>
+        <div class="replies-list replies-hidden" data-replies="${comment.id}"></div>
+      </div>
+    `;
+  }
+
+  item.innerHTML = `
+    <div class="comment-main">
+      <img class="comment-avatar" src="${avatar}" alt="" data-uid="${comment.userId}">
+      <div class="comment-content">
+        <div class="comment-top">
+          <span class="comment-name" data-uid="${comment.userId}">${escapeHtml(comment.userName || 'User')}</span>
+          <span class="comment-time">${timeStr}</span>
+        </div>
+        <div class="comment-text">${replyToHtml}${escapeHtml(comment.text || '')}</div>
+        <div class="comment-actions-row">
+          <button class="comment-action-btn like-btn ${isLiked ? 'liked' : ''}" data-comment="${comment.id}">
+            <svg viewBox="0 0 24 24">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            <span class="comment-like-count">${likesCount > 0 ? likesCount : ''}</span>
+          </button>
+
+          ${!isReply ? `
+            <button class="comment-action-btn reply-btn" data-comment="${comment.id}" data-user="${escapeHtml(comment.userName)}" data-handle="${escapeHtml(comment.userHandle)}">
+              <svg viewBox="0 0 24 24">
+                <polyline points="9 17 4 12 9 7"/>
+                <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+              </svg>
+              Reply
+            </button>
+          ` : ''}
+
+          ${isOwner ? `
+            <button class="comment-delete-btn" data-comment="${comment.id}" title="Delete">🗑️</button>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+    ${repliesHtml}
+  `;
+
+  // Avatar click → profile
+  item.querySelector('.comment-avatar')?.addEventListener('click', () => {
+    openUserProfile(comment.userId);
+  });
+  item.querySelector('.comment-name')?.addEventListener('click', () => {
+    openUserProfile(comment.userId);
+  });
+
+  // Like button
+  item.querySelector('.like-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await toggleCommentLike(comment.id, e.currentTarget);
+  });
+
+  // Reply button (only top-level)
+  const replyBtn = item.querySelector('.reply-btn');
+  if (replyBtn) {
+    replyBtn.addEventListener('click', () => {
+      showReplyIndicator(comment.id, comment.userName, comment.userHandle);
+    });
+  }
+
+  // Delete button
+  const deleteBtn = item.querySelector('.comment-delete-btn');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm('Delete this comment?')) return;
+      await deleteComment(comment.id);
+    });
+  }
+
+  // Replies toggle
+  const toggleBtn = item.querySelector('.replies-toggle');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const repliesList = item.querySelector('.replies-list');
+      const isHidden = repliesList.classList.contains('replies-hidden');
+
+      if (isHidden) {
+        // Build replies
+        repliesList.innerHTML = '';
+        (comment.replies || []).forEach(reply => {
+          repliesList.appendChild(makeCommentItem(reply, true));
+        });
+        repliesList.classList.remove('replies-hidden');
+        toggleBtn.innerHTML = `
+          <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+          <span>Hide ${comment.replies.length} ${comment.replies.length === 1 ? 'reply' : 'replies'}</span>
+        `;
+      } else {
+        repliesList.classList.add('replies-hidden');
+        toggleBtn.innerHTML = `
+          <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          <span>View ${comment.replies.length} ${comment.replies.length === 1 ? 'reply' : 'replies'}</span>
+        `;
+      }
+    });
+  }
+
+  return item;
+}
+
+/* ============================================================
+   COMMENT INPUT
+   ============================================================ */
+commentInput.addEventListener('input', () => {
+  postCommentBtn.disabled = !commentInput.value.trim();
+});
+
+postCommentBtn.addEventListener('click', async () => {
+  const text = commentInput.value.trim();
+  if (!text || !activeCommentPostId || !currentUser) return;
+
+  postCommentBtn.disabled = true;
+  postCommentBtn.textContent = '...';
+
+  try {
+    const commentData = {
+      postId: activeCommentPostId,
+      userId: currentUser.uid,
+      userName: currentProfile?.name || 'User',
+      userHandle: currentProfile?.user || '',
+      userPhoto: currentProfile?.photo || '',
+      text: text,
+      likes: [],
+      parentId: activeReplyTo ? activeReplyTo.commentId : null,
+      replyToUser: activeReplyTo ? activeReplyTo.userName : null,
+      replyToHandle: activeReplyTo ? activeReplyTo.userHandle : null,
+      createdAt: serverTimestamp()
+    };
+
+    await addDoc(collection(db, 'comments'), commentData);
+
+    // Update post comment count
+    try {
+      const postRef = doc(db, 'posts', activeCommentPostId);
+      const postSnap = await getDoc(postRef);
+      if (postSnap.exists()) {
+        const comments = postSnap.data().comments || [];
+        await updateDoc(postRef, { comments: [...comments, 'new'] });
+      }
+    } catch (e) {}
+
+    commentInput.value = '';
+    hideReplyIndicator();
+    postCommentBtn.textContent = 'Post';
+    postCommentBtn.disabled = true;
+
+    await loadComments();
+
+  } catch (e) {
+    console.error('Post comment error:', e);
+    showToast('❌ Could not post comment');
+    postCommentBtn.textContent = 'Post';
+    postCommentBtn.disabled = false;
+  }
+});
+
+/* ============================================================
+   REPLY INDICATOR
+   ============================================================ */
+function showReplyIndicator(commentId, userName, userHandle) {
+  activeReplyTo = { commentId, userName, userHandle };
+  replyIndicatorText.textContent = `Replying to @${userHandle}`;
+  replyIndicator.classList.add('show');
+  replyIndicator.style.display = 'flex';
+  commentInput.focus();
+  commentInput.placeholder = `Reply to @${userHandle}...`;
+}
+
+function hideReplyIndicator() {
+  activeReplyTo = null;
+  replyIndicator.classList.remove('show');
+  replyIndicator.style.display = 'none';
+  commentInput.placeholder = 'Add a comment...';
+}
+
+cancelReplyBtn.addEventListener('click', () => {
+  hideReplyIndicator();
+});
+
+/* ============================================================
+   COMMENT LIKE
+   ============================================================ */
+async function toggleCommentLike(commentId, btnEl) {
+  if (!currentUser) return;
+
+  try {
+    const ref = doc(db, 'comments', commentId);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) return;
+
+    const data = snap.data();
+    const likes = data.likes || [];
+    const isLiked = likes.includes(currentUser.uid);
+
+    if (isLiked) {
+      await updateDoc(ref, { likes: arrayRemove(currentUser.uid) });
+    } else {
+      await updateDoc(ref, { likes: arrayUnion(currentUser.uid) });
+    }
+
+    const newCount = isLiked ? likes.length - 1 : likes.length + 1;
+    const countEl = btnEl.querySelector('.comment-like-count');
+    if (countEl) countEl.textContent = newCount > 0 ? newCount : '';
+
+    btnEl.classList.toggle('liked', !isLiked);
+
+    btnEl.style.transform = 'scale(1.2)';
+    setTimeout(() => { btnEl.style.transform = ''; }, 180);
+
+  } catch (e) {
+    console.error('Comment like error:', e);
+  }
+}
+
+/* ============================================================
+   DELETE COMMENT
+   ============================================================ */
+async function deleteComment(commentId) {
+  try {
+    // Delete comment
+    await deleteDoc(doc(db, 'comments', commentId));
+
+    // Also delete its replies
+    const repliesQ = query(
+      collection(db, 'comments'),
+      where('parentId', '==', commentId)
+    );
+    const repliesSnap = await getDocs(repliesQ);
+
+    for (const replyDoc of repliesSnap.docs) {
+      await deleteDoc(doc(db, 'comments', replyDoc.id));
+    }
+
+    showToast('Comment deleted');
+    await loadComments();
+
+  } catch (e) {
+    console.error('Delete comment error:', e);
+    showToast('❌ Could not delete comment');
   }
 }
 
