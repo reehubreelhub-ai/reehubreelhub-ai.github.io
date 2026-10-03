@@ -30,9 +30,6 @@ import {
   limit
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-/* ============================================================
-   FIREBASE CONFIG
-   ============================================================ */
 const firebaseConfig = {
   apiKey: "AIzaSyC6421R1kr0jYwUJFbjB2YzIerlJw_cdLc",
   authDomain: "reelhub-24616.firebaseapp.com",
@@ -47,9 +44,6 @@ const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db   = getFirestore(firebaseApp);
 
-/* ============================================================
-   CLOUDINARY
-   ============================================================ */
 const CLOUDINARY_ACCOUNTS = [
   {
     cloudName: "s3eresx6",
@@ -58,9 +52,6 @@ const CLOUDINARY_ACCOUNTS = [
   }
 ];
 
-/* ============================================================
-   DOM SHORTCUTS
-   ============================================================ */
 const authScreen     = document.getElementById('auth');
 const loadingScreen  = document.getElementById('loadingScreen');
 const appScreen      = document.getElementById('app');
@@ -94,6 +85,7 @@ const notifBtn = document.getElementById('notifBtn');
 const notifDot = document.getElementById('notifDot');
 const searchBtn = document.getElementById('searchBtn');
 const chatsDot = document.getElementById('chatsDot');
+const settingsBtn = document.getElementById('settingsBtn');
 
 const uploadModal        = document.getElementById('uploadModal');
 const uploadFileInput    = document.getElementById('uploadFileInput');
@@ -171,9 +163,6 @@ const storyMedia = document.getElementById('storyMedia');
 const storyTapLeft = document.getElementById('storyTapLeft');
 const storyTapRight = document.getElementById('storyTapRight');
 
-/* ============================================================
-   STATE
-   ============================================================ */
 let currentUser    = null;
 let currentProfile = null;
 let selectedPhotoBase64 = null;
@@ -215,10 +204,8 @@ let storyAutoAdvanceTimeout = null;
 let currentStoryMediaEl = null;
 
 let viewedPostsSession = new Set();
+let shortsSoundEnabled = localStorage.getItem('shortsSound') === 'true';
 
-/* ============================================================
-   SCREEN SWITCHING
-   ============================================================ */
 function showAuth() {
   if (loadingScreen) loadingScreen.style.display = 'none';
   authScreen.classList.add('show');
@@ -243,9 +230,6 @@ function setActiveNav(page) {
   });
 }
 
-/* ============================================================
-   PASSWORD EYE TOGGLE
-   ============================================================ */
 document.querySelectorAll('.eye').forEach(eye => {
   eye.addEventListener('click', () => {
     const inp = document.getElementById(eye.dataset.target);
@@ -253,9 +237,6 @@ document.querySelectorAll('.eye').forEach(eye => {
   });
 });
 
-/* ============================================================
-   LOGIN <-> SIGNUP
-   ============================================================ */
 document.getElementById('goSignup').addEventListener('click', () => {
   loginForm.style.display = 'none';
   signupForm.style.display = 'block';
@@ -269,9 +250,6 @@ document.getElementById('goLogin').addEventListener('click', () => {
   signupMsg.textContent = '';
 });
 
-/* ============================================================
-   SIGNUP
-   ============================================================ */
 signupForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const name  = document.getElementById('signupName').value.trim();
@@ -334,9 +312,6 @@ signupForm.addEventListener('submit', async (e) => {
   }
 });
 
-/* ============================================================
-   LOGIN
-   ============================================================ */
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('loginEmail').value.trim().toLowerCase();
@@ -383,9 +358,6 @@ loginForm.addEventListener('submit', async (e) => {
   }
 });
 
-/* ============================================================
-   FORGOT PASSWORD
-   ============================================================ */
 document.getElementById('forgotLink').addEventListener('click', () => {
   const loginEmailVal = document.getElementById('loginEmail').value.trim();
   forgotEmail.value = loginEmailVal;
@@ -434,9 +406,6 @@ sendResetBtn.addEventListener('click', async () => {
   }
 });
 
-/* ============================================================
-   LOGOUT
-   ============================================================ */
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   if (confirm('Log out of ReelHub?')) {
     stopNotifWatcher();
@@ -455,15 +424,9 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   }
 });
 
-/* ============================================================
-   HEADER BUTTONS
-   ============================================================ */
 notifBtn.addEventListener('click', () => { setActiveNav(null); renderPage('notifications'); });
 searchBtn.addEventListener('click', () => { setActiveNav(null); renderPage('search'); });
 
-/* ============================================================
-   AUTH STATE LISTENER
-   ============================================================ */
 onAuthStateChanged(auth, async (user) => {
   if (isLoggingIn) return;
   if (user) {
@@ -484,9 +447,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-/* ============================================================
-   LOAD PROFILE
-   ============================================================ */
 async function loadProfile(uid) {
   try {
     const snap = await getDoc(doc(db, 'users', uid));
@@ -503,9 +463,6 @@ async function loadProfile(uid) {
   } catch (e) {}
 }
 
-/* ============================================================
-   PAGE ROUTER
-   ============================================================ */
 const pages = {
   home:     'Home Feed',
   shorts:   'Shorts',
@@ -545,9 +502,6 @@ function renderPage(page) {
    Helpers, Home Feed, Stories, Report/Block
    ============================================================ */
 
-/* ============================================================
-   BATCH 1 HELPERS — Save + Views
-   ============================================================ */
 function isPostSaved(postId) {
   if (!currentProfile) return false;
   return (currentProfile.savedPosts || []).includes(postId);
@@ -653,7 +607,6 @@ async function renderSavedPosts(containerId) {
   }
 }
 
-/* ✅ UPDATED: Permanent view tracking — ek user ek video ko ek hi baar dekhe */
 async function trackPostView(postId) {
   if (!currentUser || !postId) return;
   if (viewedPostsSession.has(postId)) return;
@@ -753,9 +706,6 @@ async function loadStoryViewersList(uids, containerId) {
   });
 }
 
-/* ============================================================
-   HOME FEED
-   ============================================================ */
 async function renderHomeFeed() {
   content.innerHTML = `
     <div class="home-feed">
@@ -960,9 +910,6 @@ function makeFeedPost(post) {
   return postEl;
 }
 
-/* ============================================================
-   POST MENU
-   ============================================================ */
 async function showPostMenu(anchorEl, post) {
   document.querySelectorAll('.post-menu-dropdown').forEach(el => el.remove());
 
@@ -1124,10 +1071,10 @@ async function blockUser(userId, userHandle) {
   }
 }
 
-/* ============================================================
-   FEED AUTOPLAY
-   ============================================================ */
 function setupFeedAutoplay() {
+  const settings = getSettings();
+  if (!settings.autoPlay) return;
+
   const videos = document.querySelectorAll('.feed-post-media video');
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -1139,9 +1086,6 @@ function setupFeedAutoplay() {
   videos.forEach(v => observer.observe(v));
 }
 
-/* ============================================================
-   STORY BAR LOAD
-   ============================================================ */
 async function loadStoriesBar() {
   const bar = document.getElementById('storiesBar');
   if (!bar) return;
@@ -1215,9 +1159,6 @@ async function loadStoriesBar() {
   } catch (e) {}
 }
 
-/* ============================================================
-   STORY UPLOAD MODAL
-   ============================================================ */
 function openStoryUploadModal() {
   currentStoryType = 'photo';
   currentStoryFile = null;
@@ -1412,9 +1353,6 @@ function uploadToCloudinaryStory(file, onProgress) {
    Story Viewer, Shorts (Auto Sound), Like, Share, Comments
    ============================================================ */
 
-/* ============================================================
-   STORY VIEWER
-   ============================================================ */
 function openStoryViewer(userId) {
   const userIndex = storiesByUser.findIndex(u => u.userId === userId);
   if (userIndex === -1) return;
@@ -1614,13 +1552,6 @@ storyDeleteBtn.addEventListener('click', async () => {
   } catch (e) { showToast('❌ Could not delete'); }
 });
 
-/* ============================================================
-   SHORTS FEED — AUTO SOUND SYSTEM
-   ============================================================ */
-
-// 🔥 Sound state — localStorage mein save hoga
-let shortsSoundEnabled = localStorage.getItem('shortsSound') === 'true';
-
 async function renderShortsFeed() {
   content.innerHTML = `
     <div class="shorts-wrap" id="shortsWrap">
@@ -1666,14 +1597,12 @@ async function renderShortsFeed() {
     shorts.forEach(short => wrap.appendChild(makeShortItem(short)));
     setupShortsAutoplay(wrap);
 
-    // 🔥 Pehli baar sound ke saath play karo (agar enabled hai)
     if (shortsSoundEnabled) {
       setTimeout(() => {
         const firstVideo = wrap.querySelector('.short-item video');
         if (firstVideo) {
           firstVideo.muted = false;
           firstVideo.play().catch(() => {
-            // Agar browser ne block kiya, toh muted kar do
             firstVideo.muted = true;
             firstVideo.play().catch(() => {});
           });
@@ -1681,7 +1610,6 @@ async function renderShortsFeed() {
       }, 300);
     }
 
-    // 🔥 Agar sound disabled hai, toh ek overlay tap-to-unmute dikhao
     if (!shortsSoundEnabled) {
       showTapToUnmuteOverlay(wrap);
     }
@@ -1692,7 +1620,6 @@ async function renderShortsFeed() {
 }
 
 function showTapToUnmuteOverlay(wrap) {
-  // Agar overlay already hai toh hata do
   wrap.querySelector('.tap-to-unmute-overlay')?.remove();
 
   const overlay = document.createElement('div');
@@ -1713,19 +1640,15 @@ function showTapToUnmuteOverlay(wrap) {
   wrap.appendChild(overlay);
 
   overlay.addEventListener('click', () => {
-    // Sound enable karo
     shortsSoundEnabled = true;
     localStorage.setItem('shortsSound', 'true');
 
-    // Sabhi videos ko unmute karo
     wrap.querySelectorAll('.short-item video').forEach(v => {
       v.muted = false;
     });
 
-    // Overlay hatao
     overlay.remove();
 
-    // Current video play karo
     const currentVideo = getCurrentVisibleVideo(wrap);
     if (currentVideo) currentVideo.play().catch(() => {});
 
@@ -1754,7 +1677,6 @@ function makeShortItem(short) {
   const commentsCount = (short.comments || []).length;
   const isSaved = isPostSaved(short.id);
 
-  // 🔥 Sound state ke hisaab se muted attr
   const mutedAttr = shortsSoundEnabled ? '' : 'muted';
 
   item.innerHTML = `
@@ -1827,7 +1749,6 @@ function makeShortItem(short) {
     await sharePost(short);
   });
 
-  // 🔥 Video par tap karne se sound ON/OFF toggle
   videoEl.addEventListener('click', () => {
     videoEl.muted = !videoEl.muted;
     shortsSoundEnabled = !videoEl.muted;
@@ -1840,19 +1761,20 @@ function makeShortItem(short) {
 }
 
 function setupShortsAutoplay(wrap) {
+  const settings = getSettings();
   stopShortsObserver();
   const videos = wrap.querySelectorAll('.short-item video');
   shortsObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const video = entry.target;
       if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
-        // 🔥 Agar sound enabled hai toh unmuted play
-        video.muted = !shortsSoundEnabled;
-        video.play().catch(() => {
-          // Browser ne block kiya toh muted kar do
-          video.muted = true;
-          video.play().catch(() => {});
-        });
+        if (settings.autoPlay) {
+          video.muted = !shortsSoundEnabled;
+          video.play().catch(() => {
+            video.muted = true;
+            video.play().catch(() => {});
+          });
+        }
       } else {
         video.pause();
       }
@@ -1866,9 +1788,6 @@ function stopShortsObserver() {
   document.querySelectorAll('.short-item video').forEach(v => { try { v.pause(); } catch (e) {} });
 }
 
-/* ============================================================
-   LIKE SYSTEM
-   ============================================================ */
 async function toggleLike(postId, btnEl) {
   if (!currentUser) return;
   try {
@@ -1897,9 +1816,6 @@ async function toggleLike(postId, btnEl) {
   }
 }
 
-/* ============================================================
-   SHARE POST
-   ============================================================ */
 async function sharePost(post) {
   const appUrl = window.location.origin;
   const shareText = `🎬 Check out this post on ReelHub!\n\n@${post.userHandle}\n\n${appUrl}`;
@@ -1911,9 +1827,6 @@ async function sharePost(post) {
   catch (err) { showToast('❌ Could not share'); }
 }
 
-/* ============================================================
-   COMMENTS
-   ============================================================ */
 async function openComments(postId, title) {
   if (!currentUser) return;
   activeCommentPostId = postId;
@@ -2171,7 +2084,7 @@ async function deleteComment(commentId) {
 }
 /* ============================================================
    ReelHub — app.js (PART 4/4)
-   Chat, Profile, Upload, Notifications, Search, Helpers
+   Chat, Profile, Upload, Notifications, Search, Settings, Helpers
    ============================================================ */
 
 /* ============================================================
@@ -2350,9 +2263,6 @@ function closeChatWindow() {
 
 document.getElementById('closeChatWindow').addEventListener('click', closeChatWindow);
 
-/* ============================================================
-   LOAD MESSAGES (polling-based real-time)
-   ============================================================ */
 async function loadChatMessages() {
   if (!activeChatId) return;
 
@@ -2394,9 +2304,6 @@ async function fetchAndPaintMessages() {
   }
 }
 
-/* ============================================================
-   PAINT MESSAGES (with repaint skip)
-   ============================================================ */
 function paintChatMessages(messages) {
   if (messages.length === 0) {
     chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
@@ -2433,9 +2340,6 @@ function paintChatMessages(messages) {
   }
 }
 
-/* ============================================================
-   MESSAGE BUBBLE (with 3-dot button)
-   ============================================================ */
 function makeMessageBubble(msg) {
   const row = document.createElement('div');
   const isMe = msg.from === currentUser.uid;
@@ -2445,7 +2349,6 @@ function makeMessageBubble(msg) {
   const time = msg.time?.toDate?.();
   const timeStr = time ? formatTime(time) : '';
 
-  // ----- Deleted message -----
   if (msg.deleted) {
     row.innerHTML = `
       <div class="msg-bubble deleted">
@@ -2457,7 +2360,6 @@ function makeMessageBubble(msg) {
     return row;
   }
 
-  // ----- Voice message -----
   if (msg.type === 'voice') {
     const duration = msg.voiceDuration || 0;
     const bars = [];
@@ -2487,7 +2389,6 @@ function makeMessageBubble(msg) {
     }
 
   } else {
-    // ----- Text message -----
     const editedLabel = msg.edited ? '<span class="edited-label">(edited)</span>' : '';
 
     row.innerHTML = `
@@ -2504,9 +2405,6 @@ function makeMessageBubble(msg) {
   return row;
 }
 
-/* ============================================================
-   3-DOT BUTTON
-   ============================================================ */
 function buildDotsButton(msg) {
   return `
     <button class="msg-dots-btn" data-msg="${msg.id}" title="Options">
@@ -2528,9 +2426,6 @@ function attachDotsButton(row, msg) {
   });
 }
 
-/* ============================================================
-   3-DOT DROPDOWN MENU
-   ============================================================ */
 function showMessageActionsMenu(anchorEl, msg) {
   document.querySelectorAll('.msg-actions-menu').forEach(el => el.remove());
 
@@ -2632,9 +2527,6 @@ function showMessageActionsMenu(anchorEl, msg) {
   }, 100);
 }
 
-/* ============================================================
-   EDIT MESSAGE
-   ============================================================ */
 async function openEditMessageModal(msg) {
   document.querySelectorAll('.edit-msg-modal').forEach(el => el.remove());
 
@@ -2699,9 +2591,6 @@ async function copyMessageText(msg) {
   }
 }
 
-/* ============================================================
-   TICKS
-   ============================================================ */
 function buildTicksHTML(msg) {
   if (msg.from !== currentUser.uid) return '';
   if (msg.read) {
@@ -2740,9 +2629,6 @@ async function markMessagesAsRead(messages) {
   } catch (e) {}
 }
 
-/* ============================================================
-   DELETE MESSAGE
-   ============================================================ */
 async function deleteMessage(msgId) {
   if (!activeChatId || !currentUser) return;
   try {
@@ -2757,9 +2643,6 @@ async function deleteMessage(msgId) {
   } catch (e) { showToast('❌ Could not delete'); }
 }
 
-/* ============================================================
-   PIN MESSAGE
-   ============================================================ */
 async function togglePinMessage(msg) {
   if (!activeChatId || !currentUser) return;
   try {
@@ -2845,9 +2728,6 @@ function removePinnedBanner() {
   chatMessages.classList.remove('has-pinned');
 }
 
-/* ============================================================
-   SEND MESSAGE (with optimistic UI)
-   ============================================================ */
 async function sendMessage(msgData) {
   if (!activeChatId || !activeChatUser) return;
 
@@ -2866,7 +2746,6 @@ async function sendMessage(msgData) {
   };
 
   try {
-    // Optimistic UI — turant screen par dikhao
     const tempId = 'temp_' + Date.now();
     const tempMsg = {
       id: tempId,
@@ -2899,7 +2778,6 @@ async function sendMessage(msgData) {
       await updateDoc(chatRef, chatData);
     }
 
-    // 800ms baad fetch karo, tab tak server timestamp resolve ho jayega
     setTimeout(() => fetchAndPaintMessages(), 800);
 
   } catch (e) {
@@ -2917,9 +2795,6 @@ async function markChatRead() {
   } catch (e) {}
 }
 
-/* ============================================================
-   SEND TEXT
-   ============================================================ */
 function updateSendTextBtn() {
   const hasText = chatMessageInput.value.trim().length > 0;
   sendTextBtn.style.display = hasText ? 'flex' : 'none';
@@ -2939,9 +2814,6 @@ chatMessageInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTextBtn.click(); }
 });
 
-/* ============================================================
-   VOICE RECORDING
-   ============================================================ */
 micBtn.addEventListener('mousedown', startVoiceRecording);
 micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startVoiceRecording(); }, { passive: false });
 micBtn.addEventListener('mouseup', stopVoiceRecordingAndSend);
@@ -3046,9 +2918,6 @@ function stopVoicePlayback() {
   document.querySelectorAll('.voice-waveform.playing').forEach(el => el.classList.remove('playing'));
 }
 
-/* ============================================================
-   CHAT UNREAD WATCHER
-   ============================================================ */
 function startChatListWatcher() {
   stopChatListWatcher();
   checkChatsUnread();
@@ -3218,9 +3087,6 @@ function makeGridItem(post) {
   return item;
 }
 
-/* ============================================================
-   PUBLIC USER PROFILE
-   ============================================================ */
 async function openUserProfile(userId) {
   if (!userId) return;
   if (userId === currentUser.uid) {
@@ -3229,7 +3095,6 @@ async function openUserProfile(userId) {
     return;
   }
 
-  // Check if blocked
   const blocked = currentProfile?.blockedUsers || [];
   if (blocked.includes(userId)) {
     showToast('🚫 You blocked this user');
@@ -3358,9 +3223,6 @@ async function shareUser(user) {
   catch (err) { showToast('❌ Could not share'); }
 }
 
-/* ============================================================
-   UPLOAD MODAL
-   ============================================================ */
 function openUploadModal() {
   selectedFile = null;
   selectedFileDuration = 0;
@@ -3591,9 +3453,6 @@ function buildThumbnailUrl(videoUrl, type) {
   return '';
 }
 
-/* ============================================================
-   VIDEO PLAYER MODAL
-   ============================================================ */
 function openPlayer(post) {
   playerTitle.textContent = post.caption || (post.type === 'photo' ? 'Photo' : 'Video');
   if (post.type === 'photo') {
@@ -3616,9 +3475,6 @@ playerModal.addEventListener('click', (e) => {
   }
 });
 
-/* ============================================================
-   EDIT PROFILE MODAL
-   ============================================================ */
 function openEditModal() {
   if (!currentProfile) return;
   selectedPhotoBase64 = null;
@@ -3688,9 +3544,6 @@ saveProfileBtn.addEventListener('click', async () => {
   }
 });
 
-/* ============================================================
-   FOLLOWERS / FOLLOWING LIST
-   ============================================================ */
 function openListModal(type) {
   if (!currentProfile) return;
   const isFollowers = type === 'followers';
@@ -3729,9 +3582,6 @@ function openListModal(type) {
 document.getElementById('closeList').addEventListener('click', () => listModal.classList.remove('show'));
 listModal.addEventListener('click', (e) => { if (e.target === listModal) listModal.classList.remove('show'); });
 
-/* ============================================================
-   TOGGLE FOLLOW
-   ============================================================ */
 async function toggleFollow(targetUid, btnEl) {
   if (!currentUser || !currentProfile) return;
   if (targetUid === currentUser.uid) return;
@@ -3753,9 +3603,6 @@ async function toggleFollow(targetUid, btnEl) {
   } catch (err) { showToast('Could not update follow.'); }
 }
 
-/* ============================================================
-   NOTIFICATIONS
-   ============================================================ */
 async function renderNotifications() {
   if (!currentUser) return;
   content.innerHTML = `
@@ -3876,9 +3723,6 @@ function updateNotifDot(count) {
   notifDot.style.display = count > 0 ? 'block' : 'none';
 }
 
-/* ============================================================
-   SEARCH
-   ============================================================ */
 async function renderSearch() {
   content.innerHTML = `
     <div class="search-page">
@@ -3949,9 +3793,6 @@ async function performSearch(searchTerm) {
   } catch (e) { results.innerHTML = `<div class="search-empty">Search failed</div>`; }
 }
 
-/* ============================================================
-   SHARE OWN PROFILE
-   ============================================================ */
 async function shareProfile() {
   if (!currentProfile) return;
   const appUrl = window.location.origin;
@@ -3973,9 +3814,6 @@ async function shareProfile() {
   }
 }
 
-/* ============================================================
-   TOAST
-   ============================================================ */
 function showToast(message) {
   const existing = document.getElementById('toast');
   if (existing) existing.remove();
@@ -4001,9 +3839,6 @@ function showToast(message) {
   }, 2500);
 }
 
-/* ============================================================
-   HELPERS
-   ============================================================ */
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -4092,4 +3927,153 @@ function formatVoiceDuration(seconds) {
   return `${m}:${s < 10 ? '0' + s : s}`;
 }
 
-console.log('✅ app.js loaded — Complete with 3-Dot Chat System');
+/* ============================================================
+   SETTINGS — localStorage based
+   ============================================================ */
+
+const DEFAULT_SETTINGS = {
+  darkMode: true,
+  autoPlay: true,
+  dataSaver: false,
+  videoQuality: 'auto',
+  language: 'en',
+  pushNotif: true,
+  notifLikes: true,
+  notifComments: true,
+  notifFollows: true,
+  notifMessages: true
+};
+
+function getSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('reelhubSettings') || '{}');
+    return { ...DEFAULT_SETTINGS, ...saved };
+  } catch (e) {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+function saveSetting(key, value) {
+  const current = getSettings();
+  current[key] = value;
+  localStorage.setItem('reelhubSettings', JSON.stringify(current));
+  applySetting(key, value);
+}
+
+function applySetting(key, value) {
+  switch (key) {
+    case 'darkMode':
+      document.body.classList.toggle('light-mode', !value);
+      break;
+    case 'pushNotif': {
+      const subIds = ['settingNotifLikes', 'settingNotifComments', 'settingNotifFollows', 'settingNotifMessages'];
+      subIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !value;
+      });
+      break;
+    }
+  }
+}
+
+function loadSettingsToUI() {
+  const s = getSettings();
+
+  const checkboxes = {
+    settingDarkMode: s.darkMode,
+    settingAutoPlay: s.autoPlay,
+    settingDataSaver: s.dataSaver,
+    settingPushNotif: s.pushNotif,
+    settingNotifLikes: s.notifLikes,
+    settingNotifComments: s.notifComments,
+    settingNotifFollows: s.notifFollows,
+    settingNotifMessages: s.notifMessages
+  };
+
+  Object.keys(checkboxes).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.checked = checkboxes[id];
+  });
+
+  const elVQ = document.getElementById('settingVideoQuality');
+  const elLang = document.getElementById('settingLanguage');
+  if (elVQ) elVQ.value = s.videoQuality;
+  if (elLang) elLang.value = s.language;
+
+  const subIds = ['settingNotifLikes', 'settingNotifComments', 'settingNotifFollows', 'settingNotifMessages'];
+  subIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !s.pushNotif;
+  });
+}
+
+function openSettingsModal() {
+  loadSettingsToUI();
+  document.getElementById('settingsModal')?.classList.add('show');
+}
+
+function initSettingsListeners() {
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', () => {
+      setActiveNav(null);
+      openSettingsModal();
+    });
+  }
+
+  document.getElementById('closeSettings')?.addEventListener('click', () => {
+    document.getElementById('settingsModal').classList.remove('show');
+  });
+  document.getElementById('settingsModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'settingsModal') {
+      e.target.classList.remove('show');
+    }
+  });
+
+  document.getElementById('settingDarkMode')?.addEventListener('change', (e) => {
+    saveSetting('darkMode', e.target.checked);
+    showToast(e.target.checked ? '🌙 Dark mode ON' : '☀️ Light mode ON');
+  });
+
+  document.getElementById('settingAutoPlay')?.addEventListener('change', (e) => {
+    saveSetting('autoPlay', e.target.checked);
+    showToast(e.target.checked ? '▶️ Auto play ON' : '⏸️ Auto play OFF');
+  });
+
+  document.getElementById('settingDataSaver')?.addEventListener('change', (e) => {
+    saveSetting('dataSaver', e.target.checked);
+    showToast(e.target.checked ? '📉 Data saver ON' : '📈 Data saver OFF');
+  });
+
+  document.getElementById('settingPushNotif')?.addEventListener('change', (e) => {
+    saveSetting('pushNotif', e.target.checked);
+    showToast(e.target.checked ? '🔔 Notifications ON' : '🔕 Notifications OFF');
+  });
+
+  document.getElementById('settingNotifLikes')?.addEventListener('change', (e) => saveSetting('notifLikes', e.target.checked));
+  document.getElementById('settingNotifComments')?.addEventListener('change', (e) => saveSetting('notifComments', e.target.checked));
+  document.getElementById('settingNotifFollows')?.addEventListener('change', (e) => saveSetting('notifFollows', e.target.checked));
+  document.getElementById('settingNotifMessages')?.addEventListener('change', (e) => saveSetting('notifMessages', e.target.checked));
+
+  document.getElementById('settingVideoQuality')?.addEventListener('change', (e) => {
+    saveSetting('videoQuality', e.target.value);
+    showToast('🎬 Quality: ' + e.target.value);
+  });
+
+  document.getElementById('settingLanguage')?.addEventListener('change', (e) => {
+    saveSetting('language', e.target.value);
+    showToast('🌐 Language: ' + (e.target.value === 'hi' ? 'हिंदी' : 'English'));
+  });
+
+  document.getElementById('settingAboutBtn')?.addEventListener('click', () => {
+    showToast('📱 ReelHub v1.0.0 — Made with ❤️');
+  });
+}
+
+initSettingsListeners();
+
+(function applyInitialSettings() {
+  const s = getSettings();
+  applySetting('darkMode', s.darkMode);
+})();
+
+console.log('✅ app.js loaded — Complete with Settings');
