@@ -1,5 +1,5 @@
 /* ============================================================
-   ReelHub — style.css
+   ReelHub — style.css (Updated)
    ============================================================ */
 
 * {
@@ -20,12 +20,13 @@ html, body {
 
 /* ================= AUTH ================= */
 #auth {
-  display: block;
+  display: none;
   width: 100%;
   height: 100%;
   overflow-y: auto;
   background: #000;
 }
+#auth.show { display: block; }
 #auth::-webkit-scrollbar { display: none; }
 
 .auth-wrap {
@@ -560,6 +561,7 @@ html, body {
 }
 
 .feed-actions button:active { transform: scale(0.9); }
+.feed-actions button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .feed-actions button svg {
   width: 22px;
@@ -653,6 +655,7 @@ html, body {
   object-fit: contain;
   background: #000;
   display: block;
+  cursor: pointer;
 }
 
 .short-overlay {
@@ -737,6 +740,7 @@ html, body {
 }
 
 .short-side-actions button:active { transform: scale(0.9); }
+.short-side-actions button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .short-side-actions button svg {
   width: 28px;
@@ -784,6 +788,64 @@ html, body {
 .shorts-empty p {
   font-size: 13px;
   color: #555;
+}
+
+/* ============================================================
+   TAP TO UNMUTE OVERLAY
+   ============================================================ */
+.tap-to-unmute-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.unmute-content {
+  text-align: center;
+  color: #fff;
+  animation: pulseUnmute 2s infinite;
+}
+
+@keyframes pulseUnmute {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+
+.unmute-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 46, 99, 0.2);
+  border: 2px solid #ff2e63;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.unmute-icon svg {
+  width: 40px;
+  height: 40px;
+  color: #ff2e63;
+}
+
+.unmute-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
 /* ============================================================
@@ -1079,6 +1141,7 @@ html, body {
 
 #chatMessages::-webkit-scrollbar { width: 4px; }
 #chatMessages::-webkit-scrollbar-thumb { background: #262626; border-radius: 2px; }
+
 /* ============================================================
    COMMENTS MODAL
    ============================================================ */
@@ -1235,7 +1298,7 @@ html, body {
   inset: 0;
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(4px);
-  z-index: 1000;
+  z-index: 5000;
   display: none;
   align-items: flex-end;
   justify-content: center;
@@ -1958,7 +2021,7 @@ html, body {
 /* ============================================================
    STORY VIEWER
    ============================================================ */
-#storyViewer { animation: storyFadeIn 0.2s ease; }
+#storyViewer { animation: storyFadeIn 0.2s ease; z-index: 9000; }
 
 @keyframes storyFadeIn {
   from { opacity: 0; }
@@ -2006,7 +2069,6 @@ html, body {
    BATCH 1 — SAVE POSTS + VIEWS + STORY VIEWERS
    ============================================================ */
 
-/* ---------- Save (Bookmark) Button ---------- */
 .save-btn {
   background: none;
   border: none;
@@ -2039,7 +2101,6 @@ html, body {
   stroke: #ff8a00;
 }
 
-/* ---------- Views Count ---------- */
 .feed-views {
   display: flex;
   align-items: center;
@@ -2060,7 +2121,6 @@ html, body {
   stroke-linejoin: round;
 }
 
-/* ---------- Saved Posts Grid ---------- */
 .saved-empty {
   text-align: center;
   padding: 60px 20px;
@@ -2090,10 +2150,8 @@ html, body {
   color: #555;
 }
 
-/* ---------- Profile Tabs with Saved ---------- */
 .profile-tabs.two-tabs .profile-tab { flex: 1; }
 
-/* ---------- Story Viewers Sheet ---------- */
 .story-viewers-sheet {
   position: fixed;
   bottom: 0;
@@ -2212,7 +2270,6 @@ html, body {
   font-size: 14px;
 }
 
-/* ---------- Viewers button on own story ---------- */
 .story-viewers-btn {
   display: inline-flex;
   align-items: center;
@@ -2254,333 +2311,4 @@ html, body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-/* ============================================================
-   CHAT — 3-DOT MENU SYSTEM
-   ============================================================ */
-
-/* ---------- 3-Dot Button on each message ---------- */
-.msg-dots-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  color: rgba(255, 255, 255, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  transition: background 0.2s, color 0.2s;
-  flex-shrink: 0;
-  align-self: center;
-}
-
-.msg-dots-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-}
-
-.msg-dots-btn:active {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.msg-dots-btn svg {
-  width: 18px;
-  height: 18px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* Adjust msg-row to accommodate 3-dot button */
-.msg-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-}
-
-.msg-row.me {
-  justify-content: flex-end;
-}
-
-.msg-row.me .msg-dots-btn {
-  order: -1;
-}
-
-.msg-row.other .msg-dots-btn {
-  order: 1;
-}
-
-/* ---------- 3-Dot Dropdown Menu ---------- */
-.msg-actions-menu {
-  position: fixed;
-  background: #1e1e28;
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 6px;
-  z-index: 10001;
-  min-width: 150px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
-  animation: menuPop 0.15s ease;
-}
-
-@keyframes menuPop {
-  from { opacity: 0; transform: scale(0.9); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-.msg-actions-menu button {
-  width: 100%;
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 10px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-family: inherit;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-align: left;
-  transition: background 0.15s;
-}
-
-.msg-actions-menu button:hover {
-  background: #2a2a35;
-}
-
-.msg-actions-menu button.danger {
-  color: #ff4d4d;
-}
-
-.msg-actions-menu button.danger:hover {
-  background: rgba(255, 77, 77, 0.15);
-}
-
-.msg-actions-menu button svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  flex-shrink: 0;
-}
-
-/* Divider between menu items */
-.msg-actions-menu .menu-divider {
-  height: 1px;
-  background: #2a2a35;
-  margin: 4px 8px;
-}
-
-/* ---------- Message Ticks (✓✓) ---------- */
-.msg-ticks {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 5px;
-  vertical-align: middle;
-}
-
-.msg-ticks svg {
-  width: 15px;
-  height: 15px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  margin-left: -6px;
-}
-
-.msg-ticks svg:first-child {
-  margin-left: 0;
-}
-
-.msg-ticks.sent {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.msg-ticks.delivered {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.msg-ticks.read {
-  color: #4ea8ff;
-}
-
-/* ---------- Deleted Message ---------- */
-.msg-bubble.deleted {
-  opacity: 0.6;
-  font-style: italic;
-}
-
-.msg-bubble.deleted .deleted-text {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 12px;
-}
-
-/* ---------- Edited label ---------- */
-.edited-label {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.5);
-  margin-left: 4px;
-  font-style: italic;
-}
-
-/* ---------- Pin Banner ---------- */
-.pinned-banner {
-  position: absolute;
-  top: 56px;
-  left: 0;
-  right: 0;
-  background: #1a1a1a;
-  border-bottom: 1px solid #1e1e28;
-  padding: 8px 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  z-index: 5;
-  animation: pinSlideDown 0.25s ease;
-}
-
-@keyframes pinSlideDown {
-  from { transform: translateY(-100%); opacity: 0; }
-  to   { transform: translateY(0); opacity: 1; }
-}
-
-.pinned-banner svg {
-  width: 16px;
-  height: 16px;
-  stroke: #ff8a00;
-  fill: none;
-  stroke-width: 2;
-  flex-shrink: 0;
-}
-
-.pinned-banner .pin-text {
-  flex: 1;
-  min-width: 0;
-  font-size: 12px;
-  color: #ccc;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.pinned-banner .pin-text b {
-  color: #ff8a00;
-  margin-right: 5px;
-}
-
-.pinned-banner .pin-close {
-  background: none;
-  border: none;
-  color: #666;
-  font-size: 16px;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.pinned-banner .pin-close:hover {
-  color: #fff;
-  background: #1e1e1e;
-}
-
-#chatMessages.has-pinned {
-  padding-top: 50px !important;
-}
-
-/* ---------- Edit Modal ---------- */
-.edit-msg-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 10002;
-  animation: fadeInModal 0.2s ease;
-}
-
-@keyframes fadeInModal {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.edit-msg-box {
-  width: 100%;
-  max-width: 400px;
-  background: #121212;
-  border: 1px solid #1e1e28;
-  border-radius: 16px;
-  padding: 20px;
-  animation: scaleInModal 0.2s ease;
-}
-
-@keyframes scaleInModal {
-  from { transform: scale(0.9); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
-}
-
-.edit-msg-box h3 {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 14px;
-}
-
-.edit-msg-box textarea {
-  width: 100%;
-  min-height: 80px;
-  padding: 12px 14px;
-  background: #0a0a0a;
-  border: 1px solid #262626;
-  border-radius: 10px;
-  color: #fff;
-  font-size: 14px;
-  font-family: inherit;
-  resize: none;
-  outline: none;
-  margin-bottom: 14px;
-}
-
-.edit-msg-box textarea:focus {
-  border-color: #ff2e63;
-}
-
-.edit-msg-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.edit-msg-actions button {
-  flex: 1;
-  height: 44px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  border: none;
-}
-
-.edit-msg-actions .cancel-btn {
-  background: #1a1a1a;
-  color: #ccc;
-  border: 1px solid #333;
-}
-
-.edit-msg-actions .save-btn {
-  background: linear-gradient(90deg, #ff2e63, #ff8a00);
-  color: #fff;
 }
