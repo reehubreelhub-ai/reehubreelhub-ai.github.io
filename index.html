@@ -106,6 +106,12 @@
           </svg>
           <span id="notifDot" class="notif-dot" style="display:none;"></span>
         </button>
+        <button class="icon-btn" id="settingsBtn" title="Settings">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
         <button class="icon-btn" id="logoutBtn" title="Logout">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -565,7 +571,6 @@
     z-index:10000;
     overflow:hidden;
   ">
-    <!-- Progress bar -->
     <div id="storyProgressBars" style="
       position:absolute;
       top:10px;
@@ -577,7 +582,6 @@
       padding-top:env(safe-area-inset-top);
     "></div>
 
-    <!-- Header (user info) -->
     <div id="storyHeader" style="
       position:absolute;
       top:24px;
@@ -622,8 +626,8 @@
       ">✕</button>
     </div>
 
-    <!-- Story media -->
-    <div id="storyMedia" style="      position:absolute;
+    <div id="storyMedia" style="
+      position:absolute;
       inset:0;
       display:flex;
       align-items:center;
@@ -631,7 +635,6 @@
       background:#000;
     "></div>
 
-    <!-- Tap zones -->
     <div id="storyTapLeft" style="
       position:absolute;
       top:80px;
@@ -650,6 +653,150 @@
       z-index:15;
       cursor:pointer;
     "></div>
+  </div>
+
+  <!-- ================= SETTINGS MODAL ================= -->
+  <div class="modal-overlay" id="settingsModal" style="align-items:flex-end;">
+    <div class="modal settings-modal">
+      <div class="modal-header">
+        <h3>⚙️ Settings</h3>
+        <button class="modal-close" id="closeSettings">&times;</button>
+      </div>
+
+      <div class="settings-content">
+
+        <!-- ⚙️ APP PREFERENCES -->
+        <div class="settings-section">
+          <div class="settings-section-title">⚙️ App Preferences</div>
+
+          <div class="settings-item">
+            <div class="settings-item-info">
+              <div class="settings-item-label">🌙 Dark Mode</div>
+              <div class="settings-item-desc">Dark theme use karein</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settingDarkMode">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-item">
+            <div class="settings-item-info">
+              <div class="settings-item-label">▶️ Auto Play Videos</div>
+              <div class="settings-item-desc">Feed mein videos auto play</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settingAutoPlay">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-item">
+            <div class="settings-item-info">
+              <div class="settings-item-label">📉 Data Saver</div>
+              <div class="settings-item-desc">Low quality videos (kam data)</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settingDataSaver">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-item">
+            <div class="settings-item-info">
+              <div class="settings-item-label">🎬 Video Quality</div>
+              <div class="settings-item-desc">Default quality</div>
+            </div>
+            <select class="settings-select" id="settingVideoQuality">
+              <option value="auto">Auto</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+
+          <div class="settings-item">
+            <div class="settings-item-info">
+              <div class="settings-item-label">🌐 Language</div>
+              <div class="settings-item-desc">App ki bhasha</div>
+            </div>
+            <select class="settings-select" id="settingLanguage">
+              <option value="en">English</option>
+              <option value="hi">हिंदी</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 🔔 NOTIFICATIONS -->
+        <div class="settings-section">
+          <div class="settings-section-title">🔔 Notifications</div>
+
+          <div class="settings-item">
+            <div class="settings-item-info">
+              <div class="settings-item-label">📢 Push Notifications</div>
+              <div class="settings-item-desc">Sabhi notifications on/off</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settingPushNotif">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-item sub-setting">
+            <div class="settings-item-info">
+              <div class="settings-item-label">❤️ Likes</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settingNotifLikes">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-item sub-setting">
+            <div class="settings-item-info">
+              <div class="settings-item-label">💬 Comments</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settingNotifComments">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-item sub-setting">
+            <div class="settings-item-info">
+              <div class="settings-item-label">👥 New Followers</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settingNotifFollows">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="settings-item sub-setting">
+            <div class="settings-item-info">
+              <div class="settings-item-label">💌 Messages</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="settingNotifMessages">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- ℹ️ ABOUT -->
+        <div class="settings-section">
+          <div class="settings-section-title">ℹ️ About</div>
+          <div class="settings-item" id="settingAboutBtn" style="cursor:pointer;">
+            <div class="settings-item-info">
+              <div class="settings-item-label">📱 ReelHub</div>
+              <div class="settings-item-desc">Version 1.0.0</div>
+            </div>
+            <span style="color:#666;font-size:20px;">›</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </div>
 
   <script type="module" src="app.js"></script>
