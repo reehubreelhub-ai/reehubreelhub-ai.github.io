@@ -653,18 +653,34 @@ async function renderSavedPosts(containerId) {
   }
 }
 
+/* ✅ UPDATED: Permanent view tracking — ek user ek video ko ek hi baar dekhe */
 async function trackPostView(postId) {
   if (!currentUser || !postId) return;
   if (viewedPostsSession.has(postId)) return;
   viewedPostsSession.add(postId);
 
   try {
-    const postRef = doc(db, 'posts', postId);
-    const snap = await getDoc(postRef);
-    if (!snap.exists()) return;
-    const currentViews = snap.data().views || 0;
-    await updateDoc(postRef, { views: currentViews + 1 });
-  } catch (e) {}
+    const viewDocId = `${currentUser.uid}_${postId}`;
+    const viewRef = doc(db, 'postViews', viewDocId);
+    const viewSnap = await getDoc(viewRef);
+
+    if (!viewSnap.exists()) {
+      await setDoc(viewRef, {
+        userId: currentUser.uid,
+        postId: postId,
+        viewedAt: serverTimestamp()
+      });
+
+      const postRef = doc(db, 'posts', postId);
+      const postSnap = await getDoc(postRef);
+      if (postSnap.exists()) {
+        const currentViews = postSnap.data().views || 0;
+        await updateDoc(postRef, { views: currentViews + 1 });
+      }
+    }
+  } catch (e) {
+    console.error('Track view error:', e);
+  }
 }
 
 async function showStoryViewers(story) {
@@ -738,7 +754,7 @@ async function loadStoryViewersList(uids, containerId) {
 }
 
 /* ============================================================
-   HOME FEED (with Stories Bar + Save + Views)
+   HOME FEED
    ============================================================ */
 async function renderHomeFeed() {
   content.innerHTML = `
@@ -795,7 +811,6 @@ async function loadHomeFeedPosts() {
 
     let posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // Filter blocked users
     const blocked = currentProfile?.blockedUsers || [];
     posts = posts.filter(p => !blocked.includes(p.userId));
 
@@ -871,7 +886,7 @@ function makeFeedPost(post) {
     </div>
 
     <div class="feed-actions">
-      <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${post.id}">
+      <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${post.id}" ${isLiked ? 'disabled' : ''}>
         <svg viewBox="0 0 24 24">
           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
         </svg>
@@ -946,7 +961,7 @@ function makeFeedPost(post) {
 }
 
 /* ============================================================
-   POST MENU (for Report/Block)
+   POST MENU
    ============================================================ */
 async function showPostMenu(anchorEl, post) {
   document.querySelectorAll('.post-menu-dropdown').forEach(el => el.remove());
@@ -1027,9 +1042,6 @@ async function showPostMenu(anchorEl, post) {
   }, 100);
 }
 
-/* ============================================================
-   REPORT POST
-   ============================================================ */
 async function reportPost(post) {
   const reasons = [
     'Spam or misleading',
@@ -1070,9 +1082,6 @@ async function reportPost(post) {
   }
 }
 
-/* ============================================================
-   DELETE POST
-   ============================================================ */
 async function deletePost(postId) {
   if (!confirm('Delete this post permanently?')) return;
   try {
@@ -1089,9 +1098,6 @@ async function deletePost(postId) {
   }
 }
 
-/* ============================================================
-   BLOCK USER
-   ============================================================ */
 async function blockUser(userId, userHandle) {
   if (userId === currentUser.uid) {
     showToast('❌ Cannot block yourself');
@@ -1106,7 +1112,6 @@ async function blockUser(userId, userHandle) {
     if (!currentProfile.blockedUsers) currentProfile.blockedUsers = [];
     if (!currentProfile.blockedUsers.includes(userId)) currentProfile.blockedUsers.push(userId);
 
-    // Also unfollow if following
     if (currentProfile.following.includes(userId)) {
       await toggleFollow(userId, null);
     }
@@ -1364,9 +1369,6 @@ storySubmitBtn.addEventListener('click', async () => {
   }
 });
 
-/* ============================================================
-   CLOUDINARY — STORY UPLOAD
-   ============================================================ */
 function uploadToCloudinaryStory(file, onProgress) {
   return new Promise((resolve, reject) => {
     const resourceType = currentStoryType === 'photo' ? 'image' : 'video';
@@ -1645,7 +1647,6 @@ async function renderShortsFeed() {
 
     let shorts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // Filter blocked users
     const blocked = currentProfile?.blockedUsers || [];
     shorts = shorts.filter(s => !blocked.includes(s.userId));
 
@@ -1694,7 +1695,7 @@ function makeShortItem(short) {
         </div>
 
         <div class="short-side-actions">
-          <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${short.id}">
+          <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${short.id}" ${isLiked ? 'disabled' : ''}>
             <svg viewBox="0 0 24 24">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
@@ -1767,6 +1768,7 @@ function stopShortsObserver() {
 
 /* ============================================================
    LIKE SYSTEM
+   ✅ UPDATED: Ek user ek hi baar like kar sakta hai
    ============================================================ */
 async function toggleLike(postId, btnEl) {
   if (!currentUser) return;
@@ -1778,16 +1780,22 @@ async function toggleLike(postId, btnEl) {
     const likes = postData.likes || [];
     const isLiked = likes.includes(currentUser.uid);
 
-    if (isLiked) await updateDoc(postRef, { likes: arrayRemove(currentUser.uid) });
-    else await updateDoc(postRef, { likes: arrayUnion(currentUser.uid) });
+    if (isLiked) {
+      showToast('❤️ Already liked');
+      return;
+    }
 
-    const newCount = isLiked ? likes.length - 1 : likes.length + 1;
+    await updateDoc(postRef, { likes: arrayUnion(currentUser.uid) });
     const countSpan = btnEl.querySelector('span');
-    if (countSpan) countSpan.textContent = newCount;
-    btnEl.classList.toggle('liked', !isLiked);
+    if (countSpan) countSpan.textContent = likes.length + 1;
+    btnEl.classList.add('liked');
+    btnEl.disabled = true;
+    showToast('❤️ Liked');
     btnEl.style.transform = 'scale(1.3)';
     setTimeout(() => { btnEl.style.transform = ''; }, 200);
-  } catch (e) {}
+  } catch (e) {
+    console.error('Like error:', e);
+  }
 }
 
 /* ============================================================
