@@ -12,37 +12,25 @@
 
   <!-- ================= LOADING SCREEN ================= -->
   <div id="loadingScreen" style="
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background: #0a0a0a;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    gap: 16px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999; gap: 16px;
   ">
     <div style="
-      font-size: 36px;
-      font-weight: 800;
+      font-size: 36px; font-weight: 800;
       background: linear-gradient(90deg, #ff2e63, #ff8a00);
       -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
+      background-clip: text; -webkit-text-fill-color: transparent;
     ">ReelHub</div>
     <div style="
-      width: 36px;
-      height: 36px;
-      border: 3px solid #1e1e28;
-      border-top-color: #ff2e63;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      width: 36px; height: 36px;
+      border: 3px solid #1e1e28; border-top-color: #ff2e63;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
     "></div>
   </div>
-
-  <style>
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
+  <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
 
   <!-- ================= AUTH ================= -->
   <div id="auth" style="display:none;">
@@ -256,107 +244,59 @@
   <!-- ================= COMMENTS MODAL ================= -->
   <div class="modal-overlay" id="commentsModal" style="align-items:flex-end;">
     <div class="modal comments-modal" style="
-      background:#121212;
-      padding:0;
-      height:80vh;
-      max-height:80vh;
-      display:flex;
-      flex-direction:column;
-      overflow:hidden;
-      border-top-left-radius:20px;
-      border-top-right-radius:20px;
+      background:#121212; padding:0;
+      height:80vh; max-height:80vh;
+      display:flex; flex-direction:column; overflow:hidden;
+      border-top-left-radius:20px; border-top-right-radius:20px;
     ">
       <div class="modal-header" style="
-        padding:16px 18px;
-        border-bottom:1px solid #1e1e28;
-        margin:0;
-        flex-shrink:0;
+        padding:16px 18px; border-bottom:1px solid #1e1e28;
+        margin:0; flex-shrink:0;
       ">
         <h3 id="commentsTitle" style="font-size:16px;">Comments</h3>
         <button class="modal-close" id="closeComments">&times;</button>
       </div>
 
       <div id="commentsList" style="
-        flex:1;
-        overflow-y:auto;
-        padding:12px 16px;
-        padding-bottom:100px;
+        flex:1; overflow-y:auto; padding:12px 16px; padding-bottom:100px;
       ">
         <div class="empty-msg">Loading comments...</div>
       </div>
 
       <div class="comment-input-wrap" id="commentInputWrap" style="
-        position:absolute;
-        bottom:0;
-        left:0;
-        right:0;
-        padding:10px 12px;
-        background:#0a0a0a;
+        position:absolute; bottom:0; left:0; right:0;
+        padding:10px 12px; background:#0a0a0a;
         border-top:1px solid #1e1e28;
-        display:flex;
-        align-items:center;
-        gap:10px;
+        display:flex; align-items:center; gap:10px;
       ">
         <img id="myAvatarForComment" src="" alt="" style="
-          width:34px;
-          height:34px;
-          border-radius:50%;
-          object-fit:cover;
-          flex-shrink:0;
+          width:34px; height:34px; border-radius:50%;
+          object-fit:cover; flex-shrink:0;
         ">
-        <input
-          type="text"
-          id="commentInput"
-          placeholder="Add a comment..."
-          maxlength="300"
-          style="
-            flex:1;
-            height:40px;
-            padding:0 14px;
-            background:#1a1a1a;
-            border:1px solid #262626;
-            border-radius:20px;
-            color:#fff;
-            font-size:14px;
-            font-family:inherit;
-            outline:none;
-          "
-        >
+        <input type="text" id="commentInput" placeholder="Add a comment..." maxlength="300" style="
+          flex:1; height:40px; padding:0 14px;
+          background:#1a1a1a; border:1px solid #262626;
+          border-radius:20px; color:#fff; font-size:14px;
+          font-family:inherit; outline:none;
+        ">
         <button id="postCommentBtn" style="
-          background:none;
-          border:none;
-          color:#ff2e63;
-          font-size:14px;
-          font-weight:700;
-          cursor:pointer;
-          padding:8px 4px;
-          font-family:inherit;
+          background:none; border:none; color:#ff2e63;
+          font-size:14px; font-weight:700; cursor:pointer;
+          padding:8px 4px; font-family:inherit;
         " disabled>Post</button>
       </div>
 
       <div id="replyIndicator" style="
-        display:none;
-        position:absolute;
-        bottom:60px;
-        left:0;
-        right:0;
-        padding:8px 16px;
-        background:#1a1520;
-        border-top:1px solid #ff2e63;
-        font-size:12px;
-        color:#ff2e63;
-        display:none;
-        align-items:center;
-        justify-content:space-between;
+        display:none; position:absolute; bottom:60px;
+        left:0; right:0; padding:8px 16px;
+        background:#1a1520; border-top:1px solid #ff2e63;
+        font-size:12px; color:#ff2e63;
+        align-items:center; justify-content:space-between;
       ">
         <span id="replyIndicatorText">Replying to @user</span>
         <button id="cancelReplyBtn" style="
-          background:none;
-          border:none;
-          color:#fff;
-          font-size:16px;
-          cursor:pointer;
-          padding:0 8px;
+          background:none; border:none; color:#fff;
+          font-size:16px; cursor:pointer; padding:0 8px;
         ">✕</button>
       </div>
     </div>
@@ -450,39 +390,23 @@
   <!-- ================= CHAT WINDOW MODAL ================= -->
   <div class="modal-overlay" id="chatWindowModal" style="align-items:stretch;padding:0;">
     <div class="chat-window" id="chatWindow" style="
-      width:100%;
-      max-width:500px;
-      height:100%;
+      width:100%; max-width:500px; height:100%;
       background:#0a0a0a;
-      display:flex;
-      flex-direction:column;
-      overflow:hidden;
-      position:relative;
+      display:flex; flex-direction:column;
+      overflow:hidden; position:relative;
     ">
-      <!-- Chat header -->
       <div class="chat-header" id="chatHeader" style="
-        height:56px;
-        flex-shrink:0;
-        display:flex;
-        align-items:center;
-        gap:10px;
-        padding:0 14px;
-        background:#0a0a0a;
+        height:56px; flex-shrink:0;
+        display:flex; align-items:center; gap:10px;
+        padding:0 14px; background:#0a0a0a;
         border-bottom:1px solid #1a1a1a;
       ">
         <button id="closeChatWindow" style="
-          background:none;
-          border:none;
-          color:#fff;
-          font-size:22px;
-          cursor:pointer;
-          padding:4px 8px;
+          background:none; border:none; color:#fff;
+          font-size:22px; cursor:pointer; padding:4px 8px;
         ">←</button>
         <img id="chatHeaderAvatar" src="" alt="" style="
-          width:36px;
-          height:36px;
-          border-radius:50%;
-          object-fit:cover;
+          width:36px; height:36px; border-radius:50%; object-fit:cover;
         ">
         <div style="flex:1;min-width:0;cursor:pointer;" id="chatHeaderInfo">
           <div style="font-size:14px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="chatHeaderName">User</div>
@@ -490,72 +414,40 @@
         </div>
       </div>
 
-      <!-- Messages list -->
       <div id="chatMessages" style="
-        flex:1;
-        overflow-y:auto;
-        padding:14px 12px 80px;
-        display:flex;
-        flex-direction:column;
-        gap:6px;
+        flex:1; overflow-y:auto; padding:14px 12px 80px;
+        display:flex; flex-direction:column; gap:6px;
       ">
         <div class="empty-msg">Loading messages...</div>
       </div>
 
-      <!-- Recording indicator -->
       <div id="recordingIndicator" style="
-        display:none;
-        position:absolute;
-        bottom:70px;
-        left:12px;
-        right:12px;
-        padding:10px 14px;
-        background:#1a1520;
-        border:1px solid #ff2e63;
-        border-radius:12px;
-        display:none;
-        align-items:center;
-        gap:10px;
-        z-index:100;
+        display:none; position:absolute;
+        bottom:70px; left:12px; right:12px;
+        padding:10px 14px; background:#1a1520;
+        border:1px solid #ff2e63; border-radius:12px;
+        align-items:center; gap:10px; z-index:100;
       ">
         <span style="width:10px;height:10px;background:#ff2e63;border-radius:50%;animation:pulseDot 1s infinite;"></span>
         <span id="recordingTimer" style="font-size:13px;color:#fff;font-weight:600;">0:00</span>
         <span style="font-size:12px;color:#888;flex:1;">Recording... (release to send)</span>
         <button id="cancelRecordingBtn" style="
-          background:none;
-          border:none;
-          color:#ff4d4d;
-          font-size:13px;
-          cursor:pointer;
-          font-weight:600;
+          background:none; border:none; color:#ff4d4d;
+          font-size:13px; cursor:pointer; font-weight:600;
         ">Cancel</button>
       </div>
 
-      <!-- Input bar -->
       <div id="chatInputBar" style="
-        position:absolute;
-        bottom:0;
-        left:0;
-        right:0;
-        padding:10px 12px;
-        background:#0a0a0a;
+        position:absolute; bottom:0; left:0; right:0;
+        padding:10px 12px; background:#0a0a0a;
         border-top:1px solid #1a1a1a;
-        display:flex;
-        align-items:center;
-        gap:8px;
+        display:flex; align-items:center; gap:8px;
       ">
         <button class="chat-attach-btn" data-type="photo" title="Photo (coming soon)" style="
-          width:38px;
-          height:38px;
-          border-radius:50%;
-          background:#1a1a1a;
-          border:none;
-          color:#888;
-          cursor:pointer;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          flex-shrink:0;
+          width:38px; height:38px; border-radius:50%;
+          background:#1a1a1a; border:none; color:#888;
+          cursor:pointer; display:flex;
+          align-items:center; justify-content:center; flex-shrink:0;
         ">
           <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;">
             <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -564,38 +456,19 @@
           </svg>
         </button>
 
-        <input
-          type="text"
-          id="chatMessageInput"
-          placeholder="Message..."
-          maxlength="1000"
-          style="
-            flex:1;
-            height:42px;
-            padding:0 16px;
-            background:#1a1a1a;
-            border:1px solid #262626;
-            border-radius:21px;
-            color:#fff;
-            font-size:14px;
-            font-family:inherit;
-            outline:none;
-            min-width:0;
-          "
-        >
+        <input type="text" id="chatMessageInput" placeholder="Message..." maxlength="1000" style="
+          flex:1; height:42px; padding:0 16px;
+          background:#1a1a1a; border:1px solid #262626;
+          border-radius:21px; color:#fff;
+          font-size:14px; font-family:inherit;
+          outline:none; min-width:0;
+        ">
 
         <button id="sendTextBtn" style="
-          width:38px;
-          height:38px;
-          border-radius:50%;
+          width:38px; height:38px; border-radius:50%;
           background:linear-gradient(90deg,#ff2e63,#ff8a00);
-          border:none;
-          color:#fff;
-          cursor:pointer;
-          display:none;
-          align-items:center;
-          justify-content:center;
-          flex-shrink:0;
+          border:none; color:#fff; cursor:pointer;
+          display:none; align-items:center; justify-content:center; flex-shrink:0;
         ">
           <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;">
             <line x1="22" y1="2" x2="11" y2="13"/>
@@ -604,20 +477,11 @@
         </button>
 
         <button id="micBtn" style="
-          width:38px;
-          height:38px;
-          border-radius:50%;
+          width:38px; height:38px; border-radius:50%;
           background:linear-gradient(90deg,#ff2e63,#ff8a00);
-          border:none;
-          color:#fff;
-          cursor:pointer;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          flex-shrink:0;
-          user-select:none;
-          -webkit-user-select:none;
-          touch-action:none;
+          border:none; color:#fff; cursor:pointer;
+          display:flex; align-items:center; justify-content:center; flex-shrink:0;
+          user-select:none; -webkit-user-select:none; touch-action:none;
         ">
           <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;">
             <rect x="9" y="2" width="6" height="12" rx="3"/>
@@ -627,6 +491,165 @@
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- ================= STORY UPLOAD MODAL ================= -->
+  <div class="modal-overlay" id="storyUploadModal" style="align-items:flex-end;">
+    <div class="modal" style="padding:20px;">
+      <div class="modal-header">
+        <h3>Add Story</h3>
+        <button class="modal-close" id="closeStoryUpload">&times;</button>
+      </div>
+
+      <div class="story-upload-tabs" id="storyUploadTabs">
+        <button class="story-upload-tab active" data-type="photo">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          Photo
+        </button>
+        <button class="story-upload-tab" data-type="video">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;">
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <polygon points="10 9 15 12 10 15" fill="currentColor" stroke="none"/>
+          </svg>
+          Video
+        </button>
+      </div>
+
+      <div class="photo-preview" id="storyPickerWrap" style="border-color:#ff2e63;">
+        <div class="info">
+          <div id="storyPickerTitle" style="font-size:13px;font-weight:600;color:#fff;margin-bottom:4px;">
+            Choose a photo
+          </div>
+          <div id="storyPickerSubtitle" style="font-size:11px;color:#666;">
+            JPG / PNG · Max 5 MB
+          </div>
+          <label for="storyFileInput" id="storyPickerLabel">Select photo</label>
+          <input type="file" id="storyFileInput" accept="image/*" style="display:none;">
+        </div>
+      </div>
+
+      <div id="storyPreviewWrap" style="display:none;margin-bottom:14px;">
+        <img id="storyPreviewImg" src="" alt=""
+             style="width:100%;border-radius:12px;background:#000;max-height:300px;object-fit:contain;">
+      </div>
+
+      <div id="storyVideoPreviewWrap" style="display:none;margin-bottom:14px;">
+        <video id="storyPreviewVideo" controls playsinline muted
+               style="width:100%;border-radius:12px;background:#000;max-height:300px;"></video>
+        <div id="storyPreviewInfo" style="font-size:12px;color:#888;margin-top:8px;text-align:center;"></div>
+      </div>
+
+      <button class="btn-primary" id="storySubmitBtn" disabled>Share to Story</button>
+      <div class="error-msg" id="storyUploadMsg"></div>
+
+      <div id="storyProgressWrap" style="display:none;margin-top:14px;">
+        <div style="height:6px;background:#1a1a1a;border-radius:3px;overflow:hidden;">
+          <div id="storyProgressBar"
+               style="height:100%;width:0%;background:linear-gradient(90deg,#ff2e63,#ff8a00);transition:width 0.3s;"></div>
+        </div>
+        <div id="storyProgressText" style="font-size:12px;color:#888;text-align:center;margin-top:6px;">0%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= STORY VIEWER ================= -->
+  <div id="storyViewer" style="
+    display:none;
+    position:fixed;
+    inset:0;
+    background:#000;
+    z-index:10000;
+    overflow:hidden;
+  ">
+    <!-- Progress bar -->
+    <div id="storyProgressBars" style="
+      position:absolute;
+      top:10px;
+      left:8px;
+      right:8px;
+      display:flex;
+      gap:4px;
+      z-index:20;
+      padding-top:env(safe-area-inset-top);
+    "></div>
+
+    <!-- Header (user info) -->
+    <div id="storyHeader" style="
+      position:absolute;
+      top:24px;
+      left:12px;
+      right:12px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      z-index:20;
+      padding-top:env(safe-area-inset-top);
+    ">
+      <img id="storyUserAvatar" src="" alt="" style="
+        width:36px;height:36px;border-radius:50%;
+        object-fit:cover;border:2px solid #fff;
+      ">
+      <div style="flex:1;min-width:0;">
+        <div id="storyUserName" style="font-size:14px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.8);">User</div>
+        <div id="storyTime" style="font-size:11px;color:#ccc;text-shadow:0 1px 3px rgba(0,0,0,0.8);">2h ago</div>
+      </div>
+      <button id="storyDeleteBtn" style="
+        display:none;
+        background:rgba(0,0,0,0.5);
+        border:none;
+        color:#fff;
+        font-size:14px;
+        cursor:pointer;
+        padding:8px 12px;
+        border-radius:20px;
+        font-weight:600;
+      ">Delete</button>
+      <button id="storyCloseBtn" style="
+        background:rgba(0,0,0,0.5);
+        border:none;
+        color:#fff;
+        font-size:20px;
+        cursor:pointer;
+        width:36px;height:36px;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      ">✕</button>
+    </div>
+
+    <!-- Story media -->
+    <div id="storyMedia" style="      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#000;
+    "></div>
+
+    <!-- Tap zones -->
+    <div id="storyTapLeft" style="
+      position:absolute;
+      top:80px;
+      bottom:0;
+      left:0;
+      width:50%;
+      z-index:15;
+      cursor:pointer;
+    "></div>
+    <div id="storyTapRight" style="
+      position:absolute;
+      top:80px;
+      bottom:0;
+      right:0;
+      width:50%;
+      z-index:15;
+      cursor:pointer;
+    "></div>
   </div>
 
   <script type="module" src="app.js"></script>
