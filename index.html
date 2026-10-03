@@ -153,8 +153,11 @@
           </button>
         </div>
         <button class="nav-item" data-page="messages">
-          <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-          <span>Messages</span>
+          <svg viewBox="0 0 24 24">
+            <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
+          <span>Chats</span>
+          <span id="chatsDot" class="notif-dot" style="display:none;top:4px;right:calc(50% - 18px);"></span>
         </button>
         <button class="nav-item" data-page="profile">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
@@ -263,7 +266,6 @@
       border-top-left-radius:20px;
       border-top-right-radius:20px;
     ">
-      <!-- Header -->
       <div class="modal-header" style="
         padding:16px 18px;
         border-bottom:1px solid #1e1e28;
@@ -274,7 +276,6 @@
         <button class="modal-close" id="closeComments">&times;</button>
       </div>
 
-      <!-- Comments list (scrollable) -->
       <div id="commentsList" style="
         flex:1;
         overflow-y:auto;
@@ -284,7 +285,6 @@
         <div class="empty-msg">Loading comments...</div>
       </div>
 
-      <!-- Add comment input (fixed at bottom) -->
       <div class="comment-input-wrap" id="commentInputWrap" style="
         position:absolute;
         bottom:0;
@@ -334,7 +334,6 @@
         " disabled>Post</button>
       </div>
 
-      <!-- Reply indicator (shows when replying) -->
       <div id="replyIndicator" style="
         display:none;
         position:absolute;
@@ -425,6 +424,208 @@
       </div>
       <button class="btn-primary" id="sendResetBtn">Send Reset Link</button>
       <div class="error-msg" id="forgotMsg"></div>
+    </div>
+  </div>
+
+  <!-- ================= NEW CHAT MODAL ================= -->
+  <div class="modal-overlay" id="newChatModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>New Chat</h3>
+        <button class="modal-close" id="closeNewChat">&times;</button>
+      </div>
+      <div class="search-bar-wrap" style="margin-bottom:14px;">
+        <svg viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" class="search-bar" id="newChatSearch" placeholder="Search users...">
+      </div>
+      <div class="search-results" id="newChatResults">
+        <div class="search-empty">Start typing to search users...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CHAT WINDOW MODAL ================= -->
+  <div class="modal-overlay" id="chatWindowModal" style="align-items:stretch;padding:0;">
+    <div class="chat-window" id="chatWindow" style="
+      width:100%;
+      max-width:500px;
+      height:100%;
+      background:#0a0a0a;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      position:relative;
+    ">
+      <!-- Chat header -->
+      <div class="chat-header" id="chatHeader" style="
+        height:56px;
+        flex-shrink:0;
+        display:flex;
+        align-items:center;
+        gap:10px;
+        padding:0 14px;
+        background:#0a0a0a;
+        border-bottom:1px solid #1a1a1a;
+      ">
+        <button id="closeChatWindow" style="
+          background:none;
+          border:none;
+          color:#fff;
+          font-size:22px;
+          cursor:pointer;
+          padding:4px 8px;
+        ">←</button>
+        <img id="chatHeaderAvatar" src="" alt="" style="
+          width:36px;
+          height:36px;
+          border-radius:50%;
+          object-fit:cover;
+        ">
+        <div style="flex:1;min-width:0;cursor:pointer;" id="chatHeaderInfo">
+          <div style="font-size:14px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="chatHeaderName">User</div>
+          <div style="font-size:11px;color:#888;" id="chatHeaderHandle">@user</div>
+        </div>
+      </div>
+
+      <!-- Messages list -->
+      <div id="chatMessages" style="
+        flex:1;
+        overflow-y:auto;
+        padding:14px 12px 80px;
+        display:flex;
+        flex-direction:column;
+        gap:6px;
+      ">
+        <div class="empty-msg">Loading messages...</div>
+      </div>
+
+      <!-- Recording indicator -->
+      <div id="recordingIndicator" style="
+        display:none;
+        position:absolute;
+        bottom:70px;
+        left:12px;
+        right:12px;
+        padding:10px 14px;
+        background:#1a1520;
+        border:1px solid #ff2e63;
+        border-radius:12px;
+        display:none;
+        align-items:center;
+        gap:10px;
+        z-index:100;
+      ">
+        <span style="width:10px;height:10px;background:#ff2e63;border-radius:50%;animation:pulseDot 1s infinite;"></span>
+        <span id="recordingTimer" style="font-size:13px;color:#fff;font-weight:600;">0:00</span>
+        <span style="font-size:12px;color:#888;flex:1;">Recording... (release to send)</span>
+        <button id="cancelRecordingBtn" style="
+          background:none;
+          border:none;
+          color:#ff4d4d;
+          font-size:13px;
+          cursor:pointer;
+          font-weight:600;
+        ">Cancel</button>
+      </div>
+
+      <!-- Input bar -->
+      <div id="chatInputBar" style="
+        position:absolute;
+        bottom:0;
+        left:0;
+        right:0;
+        padding:10px 12px;
+        background:#0a0a0a;
+        border-top:1px solid #1a1a1a;
+        display:flex;
+        align-items:center;
+        gap:8px;
+      ">
+        <button class="chat-attach-btn" data-type="photo" title="Photo (coming soon)" style="
+          width:38px;
+          height:38px;
+          border-radius:50%;
+          background:#1a1a1a;
+          border:none;
+          color:#888;
+          cursor:pointer;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          flex-shrink:0;
+        ">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+        </button>
+
+        <input
+          type="text"
+          id="chatMessageInput"
+          placeholder="Message..."
+          maxlength="1000"
+          style="
+            flex:1;
+            height:42px;
+            padding:0 16px;
+            background:#1a1a1a;
+            border:1px solid #262626;
+            border-radius:21px;
+            color:#fff;
+            font-size:14px;
+            font-family:inherit;
+            outline:none;
+            min-width:0;
+          "
+        >
+
+        <button id="sendTextBtn" style="
+          width:38px;
+          height:38px;
+          border-radius:50%;
+          background:linear-gradient(90deg,#ff2e63,#ff8a00);
+          border:none;
+          color:#fff;
+          cursor:pointer;
+          display:none;
+          align-items:center;
+          justify-content:center;
+          flex-shrink:0;
+        ">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+
+        <button id="micBtn" style="
+          width:38px;
+          height:38px;
+          border-radius:50%;
+          background:linear-gradient(90deg,#ff2e63,#ff8a00);
+          border:none;
+          color:#fff;
+          cursor:pointer;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          flex-shrink:0;
+          user-select:none;
+          -webkit-user-select:none;
+          touch-action:none;
+        ">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;">
+            <rect x="9" y="2" width="6" height="12" rx="3"/>
+            <path d="M5 10v2a7 7 0 0 0 14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 
