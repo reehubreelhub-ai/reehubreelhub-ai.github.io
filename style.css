@@ -1960,3 +1960,431 @@ html, body {
   .msg-bubble { max-width: 82%; }
   .short-side-actions { gap: 14px; }
 }
+/* ============================================================
+   STORY BAR (Home Page के ऊपर)
+   ============================================================ */
+.stories-bar {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  background: #0a0a0a;
+  border-bottom: 1px solid #1a1a1a;
+  scrollbar-width: none;
+}
+
+.stories-bar::-webkit-scrollbar { display: none; }
+
+.story-item {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  width: 70px;
+  position: relative;
+}
+
+.story-ring {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(45deg, #ff2e63, #ff8a00, #ff2e63);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+
+.story-item:active .story-ring {
+  transform: scale(0.94);
+}
+
+.story-ring.viewed {
+  background: #333;
+}
+
+.story-ring.add {
+  background: #1e1e28;
+  border: 2px dashed #4ea8ff;
+}
+
+.story-ring img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #0a0a0a;
+  background: #1a1a1a;
+  display: block;
+}
+
+.story-ring.add .plus-icon {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #1e1e28;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #0a0a0a;
+}
+
+.story-ring.add .plus-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: #4ea8ff;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.story-name {
+  font-size: 11px;
+  color: #ccc;
+  font-weight: 500;
+  max-width: 70px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.story-name.you {
+  color: #4ea8ff;
+  font-weight: 600;
+}
+
+/* ============================================================
+   STORY UPLOAD MODAL
+   ============================================================ */
+.story-upload-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.story-upload-tab {
+  flex: 1;
+  height: 52px;
+  background: #0a0a0a;
+  border: 1px solid #262626;
+  border-radius: 10px;
+  color: #888;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.story-upload-tab:hover {
+  border-color: #444;
+}
+
+.story-upload-tab.active {
+  background: #1a1520;
+  border-color: #ff2e63;
+  color: #fff;
+}
+
+/* ============================================================
+   STORY VIEWER (Full-screen)
+   ============================================================ */
+#storyViewer {
+  animation: storyFadeIn 0.2s ease;
+}
+
+@keyframes storyFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+#storyProgressBars {
+  display: flex;
+  gap: 3px;
+}
+
+.story-progress-segment {
+  flex: 1;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.story-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #fff;
+  border-radius: 2px;
+  transition: width 0.05s linear;
+}
+
+.story-progress-fill.completed {
+  width: 100%;
+  transition: none;
+}
+
+#storyMedia {
+  overflow: hidden;
+}
+
+#storyMedia img,
+#storyMedia video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  display: block;
+}
+
+/* Story media animation */
+#storyMedia .story-content {
+  animation: storyZoomIn 0.3s ease;
+}
+
+@keyframes storyZoomIn {
+  from { transform: scale(1.05); opacity: 0.8; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* Story viewer hint arrows */
+.story-hint {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 28px;
+  pointer-events: none;
+  z-index: 16;
+}
+
+.story-hint-left { left: 20px; }
+.story-hint-right { right: 20px; }
+
+/* Story viewer loading */
+.story-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+  z-index: 10;
+}
+
+.story-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #1e1e28;
+  border-top-color: #ff2e63;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+
+/* ============================================================
+   STORY MENU (for own story)
+   ============================================================ */
+.story-menu {
+  position: absolute;
+  top: 70px;
+  right: 12px;
+  background: #1e1e28;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 6px;
+  z-index: 30;
+  min-width: 130px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+  animation: menuFadeIn 0.15s ease;
+}
+
+@keyframes menuFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.story-menu button {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #fff;
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.story-menu button:hover {
+  background: #2a2a30;
+}
+
+.story-menu button.danger {
+  color: #ff4d4d;
+}
+
+/* ============================================================
+   STORY VIEWERS LIST (Own story)
+   ============================================================ */
+.story-viewers-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #121212;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 20px;
+  max-height: 50vh;
+  overflow-y: auto;
+  z-index: 30;
+  animation: slideUp 0.3s ease;
+}
+
+.story-viewers-sheet h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: #fff;
+}
+
+.story-viewer-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.story-viewer-row img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #1a1a1a;
+}
+
+.story-viewer-row .info b {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.story-viewer-row .info span {
+  font-size: 12px;
+  color: #888;
+}
+
+/* ============================================================
+   HOME FEED HEADER — जब story bar न दिखे
+   ============================================================ */
+.home-feed .stories-bar + .feed-post {
+  border-top: 8px solid #050505;
+}
+
+/* ============================================================
+   STORY HIGHLIGHTS — Profile में (optional)
+   ============================================================ */
+.story-highlights {
+  display: flex;
+  gap: 12px;
+  padding: 14px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.story-highlights::-webkit-scrollbar { display: none; }
+
+.story-highlight {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  width: 66px;
+}
+
+.story-highlight .ring {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  padding: 2px;
+  background: linear-gradient(45deg, #ff2e63, #ff8a00);
+}
+
+.story-highlight .ring.viewed {
+  background: #333;
+}
+
+.story-highlight .ring img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #0a0a0a;
+  display: block;
+}
+
+.story-highlight span {
+  font-size: 11px;
+  color: #ccc;
+  font-weight: 500;
+  max-width: 66px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================
+   MOBILE RESPONSIVE
+   ============================================================ */
+@media (max-width: 480px) {
+  .story-ring { width: 62px; height: 62px; }
+  .story-ring img { border-width: 2px; }
+  .story-item { width: 66px; }
+  .story-name { font-size: 10px; max-width: 66px; }
+}
+
+/* ============================================================
+   STORY PROGRESS ANIMATION HELPERS
+   ============================================================ */
+.story-pause-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 24px;
+  z-index: 25;
+  pointer-events: none;
+  animation: storyPausePop 0.3s ease;
+}
+
+@keyframes storyPausePop {
+  from { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
+  to   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
