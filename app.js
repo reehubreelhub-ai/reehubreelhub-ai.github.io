@@ -1,5 +1,5 @@
 /* ============================================================
-   ReelHub — app.js
+   ReelHub — app.js (Complete with Batch 1)
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -47,7 +47,7 @@ const auth = getAuth(firebaseApp);
 const db   = getFirestore(firebaseApp);
 
 /* ============================================================
-   CLOUDINARY — s3eresx6
+   CLOUDINARY
    ============================================================ */
 const CLOUDINARY_ACCOUNTS = [
   {
@@ -212,6 +212,9 @@ let storyProgressInterval = null;
 let storyAutoAdvanceTimeout = null;
 let currentStoryMediaEl = null;
 
+// Batch 1: View tracking session
+let viewedPostsSession = new Set();
+
 /* ============================================================
    SCREEN SWITCHING
    ============================================================ */
@@ -310,6 +313,7 @@ signupForm.addEventListener('submit', async (e) => {
       followers: [],
       following: [],
       videoCount: 0,
+      savedPosts: [],
       createdAt: serverTimestamp()
     });
 
@@ -437,6 +441,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
     stopShortsObserver();
     stopChatListWatcher();
     closeChatWindow();
+    viewedPostsSession.clear();
     currentUser = null;
     currentProfile = null;
     viewingUserId = null;
@@ -487,6 +492,7 @@ async function loadProfile(uid) {
       currentProfile = snap.data();
       if (!Array.isArray(currentProfile.followers)) currentProfile.followers = [];
       if (!Array.isArray(currentProfile.following)) currentProfile.following = [];
+      if (!Array.isArray(currentProfile.savedPosts)) currentProfile.savedPosts = [];
       if (typeof currentProfile.videoCount !== 'number') currentProfile.videoCount = 0;
     } else {
       currentProfile = null;
@@ -531,8 +537,200 @@ function renderPage(page) {
     content.innerHTML = `<div class="page-placeholder"><div class="page-title">${pages[page]}</div></div>`;
   }
 }
+
 /* ============================================================
-   HOME FEED (with Stories Bar)
+   BATCH 1 HELPERS — Save + Views
+   ============================================================ */
+function isPostSaved(postId) {
+  if (!currentProfile) return false;
+  return (currentProfile.savedPosts || []).includes(postId);
+}
+
+function buildSaveButtonHTML(postId) {
+  const isSaved = isPostSaved(postId);
+  return `
+    <button class="save-btn ${isSaved ? 'saved' : ''}" data-post="${postId}" title="Save">
+      <svg viewBox="0 0 24 24">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+      </svg>
+    </button>
+  `;
+}
+
+function buildViewsHTML(viewsCount) {
+  return `
+    <div class="feed-views" title="Views">
+      <svg viewBox="0 0 24 24">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span>${viewsCount || 0}</span>
+    </div>
+  `;
+}
+
+async function toggleSavePost(postId, btnEl) {
+  if (!currentUser || !currentProfile) return;
+  try {
+    const userRef = doc(db, 'users', currentUser.uid);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) return;
+    const savedPosts = snap.data().savedPosts || [];
+    const isSaved = savedPosts.includes(postId);
+
+    if (isSaved) {
+      await updateDoc(userRef, { savedPosts: arrayRemove(postId) });
+      if (btnEl) btnEl.classList.remove('saved');
+      showToast('Removed from saved');
+    } else {
+      await updateDoc(userRef, { savedPosts: arrayUnion(postId) });
+      if (btnEl) btnEl.classList.add('saved');
+      showToast('🔖 Saved to profile');
+    }
+
+    if (currentProfile) {
+      currentProfile.savedPosts = isSaved
+        ? (currentProfile.savedPosts || []).filter(id => id !== postId)
+        : [...(currentProfile.savedPosts || []), postId];
+    }
+  } catch (err) {
+    console.error('Save post error:', err);
+    showToast('❌ Could not save');
+  }
+}
+
+async function renderSavedPosts(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const savedIds = currentProfile?.savedPosts || [];
+
+  if (savedIds.length === 0) {
+    container.innerHTML = `
+      <div class="saved-empty">
+        <svg viewBox="0 0 24 24">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+        </svg>
+        <h3>No saved posts yet</h3>
+        <p>Tap 🔖 on any post to save it here</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="grid-empty">Loading saved...</div>`;
+
+  try {
+    const posts = [];
+    for (const id of savedIds) {
+      try {
+        const snap = await getDoc(doc(db, 'posts', id));
+        if (snap.exists()) posts.push({ id: snap.id, ...snap.data() });
+      } catch (e) {}
+    }
+
+    if (posts.length === 0) {
+      container.innerHTML = `<div class="saved-empty"><h3>No saved posts available</h3><p>Saved posts may have been deleted</p></div>`;
+      return;
+    }
+
+    posts.sort((a, b) => {
+      const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+      const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+      return tb - ta;
+    });
+
+    container.innerHTML = '';
+    posts.forEach(post => container.appendChild(makeGridItem(post)));
+  } catch (e) {
+    container.innerHTML = `<div class="grid-empty">Could not load saved posts.</div>`;
+  }
+}
+
+async function trackPostView(postId) {
+  if (!currentUser || !postId) return;
+  if (viewedPostsSession.has(postId)) return;
+  viewedPostsSession.add(postId);
+
+  try {
+    const postRef = doc(db, 'posts', postId);
+    const snap = await getDoc(postRef);
+    if (!snap.exists()) return;
+    const currentViews = snap.data().views || 0;
+    await updateDoc(postRef, { views: currentViews + 1 });
+  } catch (e) {}
+}
+
+async function showStoryViewers(story) {
+  if (!story) return;
+  const viewers = story.viewers || [];
+
+  document.getElementById('storyViewersSheet')?.remove();
+
+  const sheet = document.createElement('div');
+  sheet.id = 'storyViewersSheet';
+  sheet.className = 'story-viewers-sheet';
+
+  sheet.innerHTML = `
+    <div class="story-viewers-header">
+      <h3>
+        <svg viewBox="0 0 24 24">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+        ${viewers.length} ${viewers.length === 1 ? 'view' : 'views'}
+      </h3>
+      <button class="story-viewers-close">✕</button>
+    </div>
+    <div class="story-viewers-list" id="storyViewersList">
+      ${viewers.length === 0 ? '<div class="story-viewers-empty">No views yet</div>' : '<div class="story-viewers-empty">Loading...</div>'}
+    </div>
+  `;
+
+  document.body.appendChild(sheet);
+
+  sheet.querySelector('.story-viewers-close').addEventListener('click', () => sheet.remove());
+  sheet.addEventListener('click', (e) => { if (e.target === sheet) sheet.remove(); });
+
+  if (viewers.length > 0) await loadStoryViewersList(viewers, 'storyViewersList');
+}
+
+async function loadStoryViewersList(uids, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const users = [];
+  for (const uid of uids) {
+    try {
+      const snap = await getDoc(doc(db, 'users', uid));
+      if (snap.exists()) users.push({ uid, ...snap.data() });
+    } catch (e) {}
+  }
+
+  if (users.length === 0) {
+    container.innerHTML = `<div class="story-viewers-empty">Users not found</div>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  users.forEach(u => {
+    const row = document.createElement('div');
+    row.className = 'story-viewer-row';
+    row.innerHTML = `
+      <img src="${u.photo || defaultAvatar(u.name)}" alt="">
+      <div class="info">
+        <b>${escapeHtml(u.name || 'User')}</b>
+        <span>@${escapeHtml(u.user || '')}</span>
+      </div>
+    `;
+    row.addEventListener('click', () => {
+      document.getElementById('storyViewersSheet')?.remove();
+      openUserProfile(u.uid);
+    });
+    container.appendChild(row);
+  });
+}
+/* ============================================================
+   HOME FEED (with Stories Bar + Save + Views)
    ============================================================ */
 async function renderHomeFeed() {
   content.innerHTML = `
@@ -619,6 +817,8 @@ function makeFeedPost(post) {
   const isLiked = (post.likes || []).includes(currentUser.uid);
   const likesCount = (post.likes || []).length;
   const commentsCount = (post.comments || []).length;
+  const viewsCount = post.views || 0;
+  const isSaved = isPostSaved(post.id);
 
   let mediaHtml = '';
   if (post.type === 'photo') {
@@ -673,6 +873,10 @@ function makeFeedPost(post) {
           <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
         </svg>
       </button>
+
+      ${buildViewsHTML(viewsCount)}
+
+      ${buildSaveButtonHTML(post.id)}
     </div>
 
     ${post.caption ? `
@@ -682,24 +886,43 @@ function makeFeedPost(post) {
     ` : ''}
   `;
 
+  // User click
   postEl.querySelector('.feed-post-header img').addEventListener('click', () => {
     openUserProfile(post.userId);
   });
   postEl.querySelector('.feed-post-header .info').addEventListener('click', () => {
     openUserProfile(post.userId);
   });
+
+  // Like
   postEl.querySelector('.like-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     await toggleLike(post.id, e.currentTarget);
   });
+
+  // Comment
   postEl.querySelector('.comment-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     openComments(post.id, post.caption || 'Comments');
   });
+
+  // Share
   postEl.querySelector('.share-btn-feed').addEventListener('click', async (e) => {
     e.stopPropagation();
     await sharePost(post);
   });
+
+  // Save
+  const saveBtn = postEl.querySelector('.save-btn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await toggleSavePost(post.id, e.currentTarget);
+    });
+  }
+
+  // Track view (once per session per post)
+  trackPostView(post.id);
 
   return postEl;
 }
@@ -990,7 +1213,7 @@ function uploadToCloudinaryStory(file, onProgress) {
 }
 
 /* ============================================================
-   STORY VIEWER
+   STORY VIEWER (with Viewers button)
    ============================================================ */
 function openStoryViewer(userId) {
   const userIndex = storiesByUser.findIndex(u => u.userId === userId);
@@ -1020,7 +1243,22 @@ function renderCurrentStory() {
   storyUserName.textContent = userGroup.userName || 'User';
   const time = story.createdAt?.toDate?.();
   storyTime.textContent = time ? timeAgo(time) : 'just now';
-  storyDeleteBtn.style.display = userGroup.userId === currentUser.uid ? 'block' : 'none';
+
+  // Show delete button + viewers button (own story only)
+  const isOwnStory = userGroup.userId === currentUser.uid;
+  storyDeleteBtn.style.display = isOwnStory ? 'block' : 'none';
+
+  // Viewers button
+  const viewersBtn = document.getElementById('storyViewersBtn');
+  const viewersCountEl = document.getElementById('storyViewersCount');
+  if (viewersBtn) {
+    if (isOwnStory) {
+      viewersBtn.style.display = 'inline-flex';
+      if (viewersCountEl) viewersCountEl.textContent = (story.viewers || []).length;
+    } else {
+      viewersBtn.style.display = 'none';
+    }
+  }
 
   storyProgressBars.innerHTML = '';
   userGroup.stories.forEach((s, idx) => {
@@ -1126,6 +1364,7 @@ function closeStoryViewer() {
   storyMedia.innerHTML = '';
   document.body.style.overflow = '';
   currentStoryMediaEl = null;
+  document.getElementById('storyViewersSheet')?.remove();
 }
 
 async function markStoryViewed(storyId) {
@@ -1144,6 +1383,16 @@ async function markStoryViewed(storyId) {
 storyCloseBtn.addEventListener('click', closeStoryViewer);
 storyTapLeft.addEventListener('click', prevStory);
 storyTapRight.addEventListener('click', nextStory);
+
+// Viewers button click
+document.getElementById('storyViewersBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const userGroup = storiesByUser[currentStoryUserIndex];
+  if (!userGroup) return;
+  const story = userGroup.stories[currentStoryIndex];
+  if (!story) return;
+  showStoryViewers(story);
+});
 
 storyDeleteBtn.addEventListener('click', async () => {
   if (!confirm('Delete this story?')) return;
@@ -1168,7 +1417,7 @@ storyDeleteBtn.addEventListener('click', async () => {
   } catch (e) { showToast('❌ Could not delete'); }
 });
 /* ============================================================
-   SHORTS FEED
+   SHORTS FEED (with Views tracking)
    ============================================================ */
 async function renderShortsFeed() {
   content.innerHTML = `
@@ -1205,6 +1454,9 @@ async function renderShortsFeed() {
       return tb - ta;
     });
 
+    // Track views for each short (once per session)
+    shorts.forEach(short => trackPostView(short.id));
+
     wrap.innerHTML = '';
     shorts.forEach(short => wrap.appendChild(makeShortItem(short)));
     setupShortsAutoplay(wrap);
@@ -1223,6 +1475,8 @@ function makeShortItem(short) {
   const isLiked = (short.likes || []).includes(currentUser.uid);
   const likesCount = (short.likes || []).length;
   const commentsCount = (short.comments || []).length;
+  const viewsCount = short.views || 0;
+  const isSaved = isPostSaved(short.id);
 
   item.innerHTML = `
     <video src="${short.url}" loop muted playsinline preload="metadata"
@@ -1254,6 +1508,11 @@ function makeShortItem(short) {
             </svg>
             <span>${commentsCount}</span>
           </button>
+          <button class="save-btn ${isSaved ? 'saved' : ''}" data-post="${short.id}" title="Save">
+            <svg viewBox="0 0 24 24">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+          </button>
           <button class="share-btn-short" data-post="${short.id}">
             <svg viewBox="0 0 24 24">
               <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
@@ -1276,6 +1535,13 @@ function makeShortItem(short) {
     e.stopPropagation();
     openComments(short.id, short.caption || 'Comments');
   });
+  const saveBtn = item.querySelector('.save-btn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await toggleSavePost(short.id, e.currentTarget);
+    });
+  }
   item.querySelector('.share-btn-short').addEventListener('click', async (e) => {
     e.stopPropagation();
     await sharePost(short);
@@ -1363,7 +1629,6 @@ document.getElementById('closeComments').addEventListener('click', () => {
   activeCommentPostId = null;
   activeReplyTo = null;
 });
-
 commentsModal.addEventListener('click', (e) => {
   if (e.target === commentsModal) {
     commentsModal.classList.remove('show');
@@ -1534,7 +1799,6 @@ postCommentBtn.addEventListener('click', async () => {
       createdAt: serverTimestamp()
     };
     await addDoc(collection(db, 'comments'), commentData);
-
     try {
       const postRef = doc(db, 'posts', activeCommentPostId);
       const postSnap = await getDoc(postRef);
@@ -1543,7 +1807,6 @@ postCommentBtn.addEventListener('click', async () => {
         await updateDoc(postRef, { comments: [...comments, 'new'] });
       }
     } catch (e) {}
-
     commentInput.value = '';
     hideReplyIndicator();
     postCommentBtn.textContent = 'Post';
@@ -1631,7 +1894,6 @@ async function loadChatsList() {
     const chatsRef = collection(db, 'chats');
     const q = query(chatsRef, where('members', 'array-contains', currentUser.uid));
     const snap = await getDocs(q);
-
     if (snap.empty) {
       wrap.innerHTML = `
         <div class="chats-empty">
@@ -1665,7 +1927,6 @@ async function loadChatsList() {
 
     const validChats = enriched.filter(c => c);
     if (validChats.length === 0) { wrap.innerHTML = `<div class="empty-msg">No valid chats</div>`; return; }
-
     wrap.innerHTML = '';
     validChats.forEach(chat => wrap.appendChild(makeChatItem(chat)));
   } catch (e) { wrap.innerHTML = `<div class="empty-msg">Could not load</div>`; }
@@ -1679,7 +1940,6 @@ function makeChatItem(chat) {
   const time = chat.lastMessageTime?.toDate?.();
   const timeStr = time ? timeAgoShort(time) : '';
   const hasUnread = chat.lastMessageBy !== currentUser.uid && (chat.unreadBy || []).includes(currentUser.uid);
-
   let lastMsgHtml = '';
   if (chat.lastMessageType === 'voice') {
     lastMsgHtml = `<div class="last-msg voice ${hasUnread ? 'unread' : ''}">🎤 Voice message</div>`;
@@ -1687,7 +1947,6 @@ function makeChatItem(chat) {
     const preview = (chat.lastMessage || '').substring(0, 40);
     lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">${escapeHtml(preview)}${chat.lastMessage && chat.lastMessage.length > 40 ? '...' : ''}</div>`;
   }
-
   item.innerHTML = `
     <img src="${avatar}" alt="">
     <div class="meta">
@@ -1710,13 +1969,8 @@ function openNewChatModal() {
   newChatSearch.focus();
 }
 
-document.getElementById('closeNewChat').addEventListener('click', () => {
-  newChatModal.classList.remove('show');
-});
-
-newChatModal.addEventListener('click', (e) => {
-  if (e.target === newChatModal) newChatModal.classList.remove('show');
-});
+document.getElementById('closeNewChat').addEventListener('click', () => newChatModal.classList.remove('show'));
+newChatModal.addEventListener('click', (e) => { if (e.target === newChatModal) newChatModal.classList.remove('show'); });
 
 let newChatDebounce = null;
 newChatSearch.addEventListener('input', (e) => {
@@ -1885,7 +2139,6 @@ function updateSendTextBtn() {
 }
 
 chatMessageInput.addEventListener('input', updateSendTextBtn);
-
 sendTextBtn.addEventListener('click', async () => {
   const text = chatMessageInput.value.trim();
   if (!text || !activeChatId) return;
@@ -2073,7 +2326,7 @@ async function checkChatsUnread() {
 }
 
 /* ============================================================
-   PROFILE (OWN)
+   PROFILE (OWN) — with Saved Tab
    ============================================================ */
 async function renderProfile() {
   if (!currentProfile) {
@@ -2118,7 +2371,11 @@ async function renderProfile() {
           Share Profile
         </button>
       </div>
-      <div class="profile-tabs"><button class="profile-tab active">Posts</button></div>
+
+      <div class="profile-tabs two-tabs">
+        <button class="profile-tab active" data-tab="posts">Posts</button>
+        <button class="profile-tab" data-tab="saved">🔖 Saved</button>
+      </div>
       <div class="profile-grid" id="myPostsGrid"><div class="grid-empty">Loading posts...</div></div>
     </div>
   `;
@@ -2134,6 +2391,26 @@ async function renderProfile() {
       if (action === 'videos') return;
       if (action === 'followers') openListModal('followers');
       if (action === 'following') openListModal('following');
+    });
+  });
+
+  // Tab switching
+  const profileTabs = document.querySelectorAll('.profile-tabs .profile-tab');
+  profileTabs.forEach(tab => {
+    tab.addEventListener('click', async () => {
+      profileTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      const tabName = tab.dataset.tab;
+      const grid = document.getElementById('myPostsGrid');
+      if (!grid) return;
+
+      if (tabName === 'saved') {
+        await renderSavedPosts('myPostsGrid');
+      } else {
+        grid.innerHTML = `<div class="grid-empty">Loading posts...</div>`;
+        await renderUserPosts(currentUser.uid, 'myPostsGrid');
+      }
     });
   });
 
@@ -2204,7 +2481,6 @@ async function openUserProfile(userId) {
     renderPage('profile');
     return;
   }
-
   viewingUserId = userId;
   setActiveNav(null);
   content.innerHTML = `<div class="page-placeholder"><div class="page-title">Loading...</div></div>`;
@@ -2215,7 +2491,6 @@ async function openUserProfile(userId) {
       content.innerHTML = `<div class="page-placeholder"><div class="page-title">User not found</div></div>`;
       return;
     }
-
     const user = snap.data();
     const followers = Array.isArray(user.followers) ? user.followers : [];
     const following = Array.isArray(user.following) ? user.following : [];
@@ -2287,18 +2562,14 @@ async function openUserProfile(userId) {
       renderPage('home');
     });
 
-    // Follow button
     const followBtn = document.getElementById('pubFollowBtn');
     followBtn.addEventListener('click', async () => {
       await toggleFollow(userId, null);
       const isNowFollowing = currentProfile.following.includes(userId);
-
       if (isNowFollowing) {
         followBtn.classList.add('following');
         followBtn.innerHTML = `
-          <svg viewBox="0 0 24 24">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
           Following
         `;
       } else {
@@ -2313,20 +2584,14 @@ async function openUserProfile(userId) {
       }
     });
 
-    // Messages button → opens chat
     const messageBtn = document.getElementById('pubMessageBtn');
     if (messageBtn) {
-      messageBtn.addEventListener('click', () => {
-        openChatWindow(user);
-      });
+      messageBtn.addEventListener('click', () => openChatWindow(user));
     }
 
-    // Share button
     document.getElementById('pubShareBtn').addEventListener('click', () => shareUser(user));
-
     await renderUserPosts(userId, 'pubPostsGrid');
   } catch (e) {
-    console.error(e);
     content.innerHTML = `<div class="page-placeholder"><div class="page-title">Could not load</div></div>`;
   }
 }
@@ -2387,12 +2652,8 @@ function updatePickerText() {
   }
 }
 
-document.getElementById('closeUpload').addEventListener('click', () => {
-  uploadModal.classList.remove('show');
-});
-uploadModal.addEventListener('click', (e) => {
-  if (e.target === uploadModal) uploadModal.classList.remove('show');
-});
+document.getElementById('closeUpload').addEventListener('click', () => uploadModal.classList.remove('show'));
+uploadModal.addEventListener('click', (e) => { if (e.target === uploadModal) uploadModal.classList.remove('show'); });
 
 document.querySelectorAll('.upload-tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -2618,12 +2879,8 @@ function openEditModal() {
   editModal.classList.add('show');
 }
 
-document.getElementById('closeEdit').addEventListener('click', () => {
-  editModal.classList.remove('show');
-});
-editModal.addEventListener('click', (e) => {
-  if (e.target === editModal) editModal.classList.remove('show');
-});
+document.getElementById('closeEdit').addEventListener('click', () => editModal.classList.remove('show'));
+editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.classList.remove('show'); });
 
 editPhotoInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -2742,9 +2999,7 @@ async function toggleFollow(targetUid, btnEl) {
       currentProfile.following.push(targetUid);
       if (btnEl) { btnEl.textContent = 'Following'; btnEl.className = 'unfollow'; }
     }
-  } catch (err) {
-    showToast('Could not update follow.');
-  }
+  } catch (err) { showToast('Could not update follow.'); }
 }
 
 /* ============================================================
@@ -3059,3 +3314,5 @@ function timeAgoShort(date) {
   if (days < 7) return days + 'd';
   return Math.floor(days / 7) + 'w';
 }
+
+console.log('✅ app.js loaded — Batch 1 complete (Save + Views + Story Viewers)');
