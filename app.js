@@ -92,6 +92,7 @@ const sendResetBtn = document.getElementById('sendResetBtn');
 const notifBtn = document.getElementById('notifBtn');
 const notifDot = document.getElementById('notifDot');
 const searchBtn = document.getElementById('searchBtn');
+const chatsDot = document.getElementById('chatsDot');
 
 const uploadModal        = document.getElementById('uploadModal');
 const uploadFileInput    = document.getElementById('uploadFileInput');
@@ -126,6 +127,23 @@ const replyIndicator     = document.getElementById('replyIndicator');
 const replyIndicatorText = document.getElementById('replyIndicatorText');
 const cancelReplyBtn     = document.getElementById('cancelReplyBtn');
 
+// Chats
+const newChatModal = document.getElementById('newChatModal');
+const newChatSearch = document.getElementById('newChatSearch');
+const newChatResults = document.getElementById('newChatResults');
+const chatWindowModal = document.getElementById('chatWindowModal');
+const chatHeaderAvatar = document.getElementById('chatHeaderAvatar');
+const chatHeaderName = document.getElementById('chatHeaderName');
+const chatHeaderHandle = document.getElementById('chatHeaderHandle');
+const chatHeaderInfo = document.getElementById('chatHeaderInfo');
+const chatMessages = document.getElementById('chatMessages');
+const chatMessageInput = document.getElementById('chatMessageInput');
+const sendTextBtn = document.getElementById('sendTextBtn');
+const micBtn = document.getElementById('micBtn');
+const recordingIndicator = document.getElementById('recordingIndicator');
+const recordingTimer = document.getElementById('recordingTimer');
+const cancelRecordingBtn = document.getElementById('cancelRecordingBtn');
+
 /* ============================================================
    STATE
    ============================================================ */
@@ -144,8 +162,23 @@ let shortsObserver = null;
 
 // Comments state
 let activeCommentPostId = null;
-let activeReplyTo = null;    // { commentId, userName, userHandle }
+let activeReplyTo = null;
 let allCommentsForPost = [];
+
+// Chat state
+let activeChatId = null;         // e.g. "uidA_uidB"
+let activeChatUser = null;       // other user's profile
+let chatMessagesUnsub = null;    // realtime unsubscribe
+let chatListInterval = null;     // interval to refresh chat list
+
+// Voice state
+let mediaRecorder = null;
+let audioChunks = [];
+let voiceTimerInterval = null;
+let voiceSeconds = 0;
+let isRecording = false;
+let currentPlayingAudio = null;
+let currentPlayingBtn = null;
 
 /* ============================================================
    SCREEN SWITCHING
@@ -156,6 +189,7 @@ function showAuth() {
   appScreen.classList.remove('show');
   stopNotifWatcher();
   stopShortsObserver();
+  stopChatListWatcher();
 }
 
 function showApp() {
@@ -164,6 +198,7 @@ function showApp() {
   appScreen.classList.add('show');
   setActiveNav('home');
   renderPage('home');
+  startChatListWatcher();
 }
 
 function setActiveNav(page) {
@@ -408,6 +443,8 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   if (confirm('Log out of ReelHub?')) {
     stopNotifWatcher();
     stopShortsObserver();
+    stopChatListWatcher();
+    closeChatWindow();
     currentUser = null;
     currentProfile = null;
     viewingUserId = null;
@@ -450,6 +487,7 @@ onAuthStateChanged(auth, async (user) => {
     currentProfile = null;
     stopNotifWatcher();
     stopShortsObserver();
+    stopChatListWatcher();
     loginForm.reset();
     signupForm.reset();
     document.getElementById('goLogin').click();
@@ -483,7 +521,7 @@ const pages = {
   home:     'Home Feed',
   shorts:   'Shorts',
   upload:   'Upload',
-  messages: 'Messages',
+  messages: 'Chats',
   profile:  'Profile'
 };
 
@@ -509,11 +547,13 @@ function renderPage(page) {
     renderHomeFeed();
   } else if (page === 'shorts') {
     renderShortsFeed();
+  } else if (page === 'messages') {
+    renderChatsPage();
   } else if (page === 'notifications') {
     renderNotifications();
   } else if (page === 'search') {
     renderSearch();
-  } else if (page === 'upload' || page === 'messages') {
+  } else if (page === 'upload') {
     content.innerHTML = `
       <div class="page-placeholder">
         <div class="page-title">${pages[page]}</div>
@@ -937,11 +977,9 @@ async function openComments(postId, title) {
 
   commentsTitle.textContent = title || 'Comments';
 
-  // Set my avatar
   const myAvatar = currentProfile?.photo || defaultAvatar(currentProfile?.name || '?');
   myAvatarForComment.src = myAvatar;
 
-  // Reset input
   commentInput.value = '';
   postCommentBtn.disabled = true;
 
@@ -978,18 +1016,15 @@ async function loadComments() {
 
     const allComments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // Separate top-level and replies
     const topLevel = allComments.filter(c => !c.parentId);
     const replies = allComments.filter(c => c.parentId);
 
-    // Sort top-level by time (oldest first, like Instagram)
     topLevel.sort((a, b) => {
       const ta = a.createdAt?.toDate?.()?.getTime() || 0;
       const tb = b.createdAt?.toDate?.()?.getTime() || 0;
       return ta - tb;
     });
 
-    // Attach replies to parents
     topLevel.forEach(c => {
       c.replies = replies
         .filter(r => r.parentId === c.id)
@@ -1042,13 +1077,11 @@ function makeCommentItem(comment, isReply) {
   const time = comment.createdAt?.toDate?.();
   const timeStr = time ? timeAgo(time) : 'just now';
 
-  // replyTo mention
   let replyToHtml = '';
   if (comment.replyToHandle) {
     replyToHtml = `<span class="mention">@${escapeHtml(comment.replyToHandle)}</span> `;
   }
 
-  // replies section
   let repliesHtml = '';
   if (!isReply && comment.replies && comment.replies.length > 0) {
     repliesHtml = `
@@ -1098,7 +1131,6 @@ function makeCommentItem(comment, isReply) {
     ${repliesHtml}
   `;
 
-  // Avatar click → profile
   item.querySelector('.comment-avatar')?.addEventListener('click', () => {
     openUserProfile(comment.userId);
   });
@@ -1106,13 +1138,11 @@ function makeCommentItem(comment, isReply) {
     openUserProfile(comment.userId);
   });
 
-  // Like button
   item.querySelector('.like-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     await toggleCommentLike(comment.id, e.currentTarget);
   });
 
-  // Reply button (only top-level)
   const replyBtn = item.querySelector('.reply-btn');
   if (replyBtn) {
     replyBtn.addEventListener('click', () => {
@@ -1120,7 +1150,6 @@ function makeCommentItem(comment, isReply) {
     });
   }
 
-  // Delete button
   const deleteBtn = item.querySelector('.comment-delete-btn');
   if (deleteBtn) {
     deleteBtn.addEventListener('click', async () => {
@@ -1129,7 +1158,6 @@ function makeCommentItem(comment, isReply) {
     });
   }
 
-  // Replies toggle
   const toggleBtn = item.querySelector('.replies-toggle');
   if (toggleBtn) {
     toggleBtn.addEventListener('click', () => {
@@ -1137,7 +1165,6 @@ function makeCommentItem(comment, isReply) {
       const isHidden = repliesList.classList.contains('replies-hidden');
 
       if (isHidden) {
-        // Build replies
         repliesList.innerHTML = '';
         (comment.replies || []).forEach(reply => {
           repliesList.appendChild(makeCommentItem(reply, true));
@@ -1191,7 +1218,6 @@ postCommentBtn.addEventListener('click', async () => {
 
     await addDoc(collection(db, 'comments'), commentData);
 
-    // Update post comment count
     try {
       const postRef = doc(db, 'posts', activeCommentPostId);
       const postSnap = await getDoc(postRef);
@@ -1280,10 +1306,8 @@ async function toggleCommentLike(commentId, btnEl) {
    ============================================================ */
 async function deleteComment(commentId) {
   try {
-    // Delete comment
     await deleteDoc(doc(db, 'comments', commentId));
 
-    // Also delete its replies
     const repliesQ = query(
       collection(db, 'comments'),
       where('parentId', '==', commentId)
@@ -1304,1238 +1328,759 @@ async function deleteComment(commentId) {
 }
 
 /* ============================================================
-   OWN PROFILE PAGE
+   CHATS LIST PAGE
    ============================================================ */
-async function renderProfile() {
-  if (!currentProfile) {
-    content.innerHTML = `<div class="page-placeholder"><div class="page-title">Loading...</div></div>`;
-    return;
-  }
-
-  const p = currentProfile;
-  const avatarSrc = p.photo || defaultAvatar(p.name);
-
+async function renderChatsPage() {
   content.innerHTML = `
-    <div class="profile-page">
-      <div class="profile-top">
-        <div class="profile-avatar-wrap" id="avatarWrap">
-          <img class="profile-avatar" src="${avatarSrc}" alt="${p.name}">
-          <div class="avatar-plus">+</div>
-        </div>
-
-        <div class="profile-stats">
-          <div class="profile-stat" data-action="videos">
-            <b id="myVideoCount">${p.videoCount || 0}</b><span>Videos</span>
-          </div>
-          <div class="profile-stat" data-action="followers">
-            <b>${p.followers.length}</b><span>Followers</span>
-          </div>
-          <div class="profile-stat" data-action="following">
-            <b>${p.following.length}</b><span>Following</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="profile-info">
-        <div class="profile-name">${escapeHtml(p.name)}</div>
-        <div class="profile-username">@${escapeHtml(p.user)}</div>
-        <div class="profile-bio">${p.bio ? escapeHtml(p.bio) : '<span style="color:#555">No bio yet.</span>'}</div>
-      </div>
-
-      <div class="profile-actions">
-        <button class="btn-outline" id="editProfileBtn">Edit Profile</button>
-        <button class="btn-outline share-btn" id="shareProfileBtn">
+    <div class="chats-page">
+      <div class="chats-header">
+        <div class="chats-title">Chats</div>
+        <button class="new-chat-btn" id="openNewChatBtn" title="New chat">
           <svg viewBox="0 0 24 24">
-            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          Share Profile
         </button>
       </div>
-
-      <div class="profile-tabs">
-        <button class="profile-tab active">Posts</button>
-      </div>
-
-      <div class="profile-grid" id="myPostsGrid">
-        <div class="grid-empty">Loading posts...</div>
+      <div class="chats-list" id="chatsList">
+        <div class="empty-msg">Loading chats...</div>
       </div>
     </div>
   `;
 
-  document.getElementById('editProfileBtn').addEventListener('click', openEditModal);
-  document.getElementById('avatarWrap').addEventListener('click', openEditModal);
+  document.getElementById('openNewChatBtn').addEventListener('click', openNewChatModal);
 
-  const shareBtn = document.getElementById('shareProfileBtn');
-  if (shareBtn) shareBtn.addEventListener('click', () => shareProfile());
-
-  document.querySelectorAll('.profile-stat').forEach(el => {
-    el.addEventListener('click', () => {
-      const action = el.dataset.action;
-      if (action === 'videos') return;
-      if (action === 'followers') openListModal('followers');
-      if (action === 'following') openListModal('following');
-    });
-  });
-
-  await renderUserPosts(currentUser.uid, 'myPostsGrid');
+  await loadChatsList();
 }
 
-/* ============================================================
-   USER POSTS GRID
-   ============================================================ */
-async function renderUserPosts(uid, containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
+async function loadChatsList() {
+  const wrap = document.getElementById('chatsList');
+  if (!wrap) return;
 
   try {
-    const postsRef = collection(db, 'posts');
-    const q = query(
-      postsRef,
-      where('userId', '==', uid),
-      limit(60)
-    );
-
+    const chatsRef = collection(db, 'chats');
+    const q = query(chatsRef, where('members', 'array-contains', currentUser.uid));
     const snap = await getDocs(q);
 
     if (snap.empty) {
-      container.innerHTML = `
-        <div class="grid-empty">
+      wrap.innerHTML = `
+        <div class="chats-empty">
           <svg viewBox="0 0 24 24">
-            <rect x="3" y="3" width="18" height="18" rx="4"/>
-            <circle cx="9" cy="9" r="2"/>
-            <path d="M21 15l-5-5L5 21"/>
+            <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
           </svg>
-          <div>No posts yet</div>
-          <div style="font-size:12px;color:#444;margin-top:6px;">Tap + to add your first post</div>
+          <h3>No chats yet</h3>
+          <p>Start a conversation with someone</p>
+          <button class="start-btn" id="emptyStartChatBtn">Start New Chat</button>
         </div>`;
+      document.getElementById('emptyStartChatBtn').addEventListener('click', openNewChatModal);
       return;
     }
 
-    const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    posts.sort((a, b) => {
-      const ta = a.createdAt?.toDate?.()?.getTime() || 0;
-      const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+    const chats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Sort by lastMessageTime desc
+    chats.sort((a, b) => {
+      const ta = a.lastMessageTime?.toDate?.()?.getTime() || 0;
+      const tb = b.lastMessageTime?.toDate?.()?.getTime() || 0;
       return tb - ta;
     });
 
-    container.innerHTML = '';
-    posts.forEach(post => {
-      container.appendChild(makeGridItem(post));
+    // Load other user info for each chat
+    const enriched = await Promise.all(chats.map(async (chat) => {
+      const otherUid = chat.members.find(m => m !== currentUser.uid);
+      if (!otherUid) return null;
+
+      try {
+        const userSnap = await getDoc(doc(db, 'users', otherUid));
+        if (!userSnap.exists()) return null;
+        return { ...chat, otherUser: { uid: otherUid, ...userSnap.data() } };
+      } catch (e) {
+        return null;
+      }
+    }));
+
+    const validChats = enriched.filter(c => c);
+
+    if (validChats.length === 0) {
+      wrap.innerHTML = `<div class="empty-msg">No valid chats</div>`;
+      return;
+    }
+
+    wrap.innerHTML = '';
+    validChats.forEach(chat => {
+      wrap.appendChild(makeChatItem(chat));
     });
 
   } catch (e) {
-    console.error('Could not load posts:', e);
-    container.innerHTML = `<div class="grid-empty">Could not load posts.</div>`;
+    console.error('Load chats error:', e);
+    wrap.innerHTML = `<div class="empty-msg">Could not load chats</div>`;
   }
 }
 
-function makeGridItem(post) {
+function makeChatItem(chat) {
   const item = document.createElement('div');
-  item.className = 'grid-item';
+  item.className = 'chat-item';
 
-  if (post.type === 'long') {
-    item.style.aspectRatio = '16 / 9';
-  } else {
-    item.style.aspectRatio = '9 / 16';
-  }
+  const otherUser = chat.otherUser;
+  const avatar = otherUser.photo || defaultAvatar(otherUser.name);
+  const time = chat.lastMessageTime?.toDate?.();
+  const timeStr = time ? timeAgoShort(time) : '';
 
-  const thumbUrl = post.thumbnail || (post.type === 'photo' ? post.url : '');
+  const hasUnread = chat.lastMessageBy !== currentUser.uid &&
+                    (chat.unreadBy || []).includes(currentUser.uid);
 
-  let inner = '';
-  if (post.type === 'photo') {
-    inner = `<img src="${post.url}" alt="">`;
-  } else {
-    inner = `
-      <video src="${post.url}" muted playsinline preload="metadata"
-             ${thumbUrl ? `poster="${thumbUrl}"` : ''}></video>
+  let lastMsgHtml = '';
+  if (chat.lastMessageType === 'voice') {
+    lastMsgHtml = `
+      <div class="last-msg voice ${hasUnread ? 'unread' : ''}">
+        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;">
+          <rect x="9" y="2" width="6" height="12" rx="3"/>
+          <path d="M5 10v2a7 7 0 0 0 14 0v-2"/>
+        </svg>
+        Voice message
+      </div>
     `;
+  } else if (chat.lastMessageType === 'photo') {
+    lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">📷 Photo (coming soon)</div>`;
+  } else if (chat.lastMessageType === 'pdf') {
+    lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">📄 PDF (coming soon)</div>`;
+  } else {
+    const preview = (chat.lastMessage || '').substring(0, 40);
+    lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">${escapeHtml(preview)}${chat.lastMessage && chat.lastMessage.length > 40 ? '...' : ''}</div>`;
   }
-
-  const badgeText = post.type === 'photo' ? 'PHOTO' : (post.type === 'long' ? 'LONG' : 'SHORT');
 
   item.innerHTML = `
-    ${inner}
-    <div class="type-badge">${badgeText}</div>
-    ${post.type !== 'photo' ? `<div class="play-icon">▶</div>` : ''}
+    <img src="${avatar}" alt="">
+    <div class="meta">
+      <b>${escapeHtml(otherUser.name || 'User')}</b>
+      ${lastMsgHtml}
+    </div>
+    <div class="info">
+      <div class="time">${timeStr}</div>
+      ${hasUnread ? `<div class="unread-badge">●</div>` : ''}
+    </div>
   `;
 
-  item.addEventListener('click', () => openPlayer(post));
+  item.addEventListener('click', () => {
+    openChatWindow(otherUser);
+  });
 
   return item;
 }
 
 /* ============================================================
-   UPLOAD MODAL
+   NEW CHAT MODAL
    ============================================================ */
-function openUploadModal() {
-  selectedFile = null;
-  selectedFileDuration = 0;
-  currentUploadType = 'short';
-
-  uploadFileInput.value = '';
-  uploadCaption.value = '';
-  uploadMsg.textContent = '';
-  uploadMsg.className = 'error-msg';
-  uploadPreview.src = '';
-  uploadPhotoPreview.src = '';
-  uploadPreviewWrap.style.display = 'none';
-  uploadPhotoPreviewWrap.style.display = 'none';
-  uploadPickerWrap.style.display = 'flex';
-  uploadSubmitBtn.disabled = true;
-  uploadProgressWrap.style.display = 'none';
-  uploadProgressBar.style.width = '0%';
-  uploadProgressText.textContent = '0%';
-
-  document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
-  document.querySelector('.upload-tab[data-type="short"]').classList.add('active');
-
-  updatePickerText();
-  uploadModal.classList.add('show');
+function openNewChatModal() {
+  newChatSearch.value = '';
+  newChatResults.innerHTML = `<div class="search-empty">Start typing to search users...</div>`;
+  newChatModal.classList.add('show');
+  newChatSearch.focus();
 }
 
-function updatePickerText() {
-  if (currentUploadType === 'short') {
-    pickerTitle.textContent = 'Choose a short video';
-    pickerSubtitle.textContent = 'Max 30 sec • 9:16 vertical';
-    pickerLabel.textContent = 'Select video';
-    uploadFileInput.accept = 'video/*';
-  } else if (currentUploadType === 'long') {
-    pickerTitle.textContent = 'Choose a long video';
-    pickerSubtitle.textContent = 'Max 1 minute • 16:9 horizontal';
-    pickerLabel.textContent = 'Select video';
-    uploadFileInput.accept = 'video/*';
-  } else {
-    pickerTitle.textContent = 'Choose a photo';
-    pickerSubtitle.textContent = 'Max 5 MB • JPG / PNG';
-    pickerLabel.textContent = 'Select photo';
-    uploadFileInput.accept = 'image/*';
-  }
-}
-
-document.getElementById('closeUpload').addEventListener('click', () => {
-  uploadModal.classList.remove('show');
+document.getElementById('closeNewChat').addEventListener('click', () => {
+  newChatModal.classList.remove('show');
 });
 
-uploadModal.addEventListener('click', (e) => {
-  if (e.target === uploadModal) uploadModal.classList.remove('show');
+newChatModal.addEventListener('click', (e) => {
+  if (e.target === newChatModal) newChatModal.classList.remove('show');
 });
 
-document.querySelectorAll('.upload-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    currentUploadType = tab.dataset.type;
-
-    selectedFile = null;
-    selectedFileDuration = 0;
-    uploadFileInput.value = '';
-    uploadPreview.src = '';
-    uploadPhotoPreview.src = '';
-    uploadPreviewWrap.style.display = 'none';
-    uploadPhotoPreviewWrap.style.display = 'none';
-    uploadPickerWrap.style.display = 'flex';
-    uploadSubmitBtn.disabled = true;
-    uploadMsg.textContent = '';
-
-    updatePickerText();
-  });
+let newChatDebounce = null;
+newChatSearch.addEventListener('input', (e) => {
+  clearTimeout(newChatDebounce);
+  newChatDebounce = setTimeout(() => searchUsersForChat(e.target.value.trim()), 300);
 });
 
-/* ============================================================
-   FILE SELECT
-   ============================================================ */
-uploadFileInput.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  uploadMsg.className = 'error-msg';
-  uploadMsg.textContent = '';
-
-  if (currentUploadType === 'photo') {
-    if (!file.type.startsWith('image/')) {
-      uploadMsg.textContent = 'Please choose an image file.';
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      uploadMsg.textContent = 'Photo too large. Max 5 MB.';
-      return;
-    }
-    selectedFile = file;
-    const url = URL.createObjectURL(file);
-    uploadPhotoPreview.src = url;
-    uploadPhotoPreviewWrap.style.display = 'block';
-    uploadPickerWrap.style.display = 'none';
-    uploadSubmitBtn.disabled = false;
+async function searchUsersForChat(term) {
+  if (!term) {
+    newChatResults.innerHTML = `<div class="search-empty">Start typing to search users...</div>`;
     return;
   }
 
-  if (!file.type.startsWith('video/')) {
-    uploadMsg.textContent = 'Please choose a video file.';
-    return;
-  }
-  if (file.size > 100 * 1024 * 1024) {
-    uploadMsg.textContent = 'Video too large. Max 100 MB.';
-    return;
-  }
-
-  const url = URL.createObjectURL(file);
-  const tempVideo = document.createElement('video');
-  tempVideo.preload = 'metadata';
-  tempVideo.src = url;
-
-  tempVideo.onloadedmetadata = () => {
-    const duration = tempVideo.duration;
-
-    if (!isFinite(duration) || duration <= 0) {
-      uploadMsg.textContent = 'Could not read video duration.';
-      return;
-    }
-
-    selectedFile = file;
-    selectedFileDuration = duration;
-
-    if (currentUploadType === 'short' && duration > 30.5) {
-      uploadMsg.textContent = `⚠️ Video is ${Math.round(duration)}s. Switching to Long tab...`;
-      setTimeout(() => {
-        switchUploadType('long');
-        uploadFileInput.value = '';
-        selectedFile = null;
-        selectedFileDuration = 0;
-        uploadMsg.textContent = 'Please select the video again to upload as Long.';
-      }, 1500);
-      return;
-    }
-
-    if (currentUploadType === 'long' && duration <= 30.5) {
-      uploadMsg.textContent = `⚠️ Video is ${Math.round(duration)}s. Switching to Short tab...`;
-      setTimeout(() => {
-        switchUploadType('short');
-        uploadFileInput.value = '';
-        selectedFile = null;
-        selectedFileDuration = 0;
-        uploadMsg.textContent = 'Please select the video again to upload as Short.';
-      }, 1500);
-      return;
-    }
-
-    if (currentUploadType === 'long' && duration > 60.5) {
-      uploadMsg.textContent = `⚠️ Long video must be max 1 minute. Yours is ${Math.round(duration)}s.`;
-      return;
-    }
-
-    uploadPreview.src = url;
-    uploadPreviewWrap.style.display = 'block';
-    uploadPickerWrap.style.display = 'none';
-    uploadPreviewInfo.textContent = `Duration: ${Math.round(duration)}s • Size: ${(file.size/1024/1024).toFixed(2)} MB`;
-    uploadSubmitBtn.disabled = false;
-  };
-
-  tempVideo.onerror = () => {
-    uploadMsg.textContent = 'Could not load video. Try a different file.';
-  };
-});
-
-function switchUploadType(type) {
-  document.querySelectorAll('.upload-tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.type === type);
-  });
-  currentUploadType = type;
-  updatePickerText();
-  uploadPreview.src = '';
-  uploadPhotoPreview.src = '';
-  uploadPreviewWrap.style.display = 'none';
-  uploadPhotoPreviewWrap.style.display = 'none';
-  uploadPickerWrap.style.display = 'flex';
-  uploadSubmitBtn.disabled = true;
-}
-
-/* ============================================================
-   UPLOAD SUBMIT
-   ============================================================ */
-uploadSubmitBtn.addEventListener('click', async () => {
-  if (!currentUser || !currentProfile) {
-    uploadMsg.textContent = 'You must be logged in.';
-    return;
-  }
-  if (!selectedFile) {
-    uploadMsg.textContent = 'Please select a file first.';
-    return;
-  }
-
-  const caption = uploadCaption.value.trim();
-
-  uploadSubmitBtn.disabled = true;
-  uploadSubmitBtn.textContent = 'Uploading...';
-  uploadMsg.textContent = '';
-  uploadMsg.className = 'error-msg';
-  uploadProgressWrap.style.display = 'block';
-  uploadProgressBar.style.width = '0%';
-  uploadProgressText.textContent = '0%';
-
-  try {
-    const result = await uploadToCloudinary(selectedFile, (percent) => {
-      uploadProgressBar.style.width = percent + '%';
-      uploadProgressText.textContent = percent + '%';
-    });
-
-    const postData = {
-      userId: currentUser.uid,
-      userName: currentProfile.name,
-      userHandle: currentProfile.user,
-      userPhoto: currentProfile.photo || '',
-      type: currentUploadType,
-      url: result.secure_url,
-      thumbnail: buildThumbnailUrl(result.secure_url, currentUploadType),
-      caption: caption,
-      duration: selectedFileDuration || 0,
-      aspectRatio: currentUploadType === 'long' ? '16:9' : (currentUploadType === 'short' ? '9:16' : '1:1'),
-      likes: [],
-      comments: [],
-      views: 0,
-      createdAt: serverTimestamp()
-    };
-
-    await addDoc(collection(db, 'posts'), postData);
-
-    await updateDoc(doc(db, 'users', currentUser.uid), {
-      videoCount: (currentProfile.videoCount || 0) + 1
-    });
-    currentProfile.videoCount = (currentProfile.videoCount || 0) + 1;
-
-    uploadMsg.className = 'success-msg';
-    uploadMsg.textContent = '✅ Uploaded successfully!';
-
-    setTimeout(() => {
-      uploadModal.classList.remove('show');
-      if (document.querySelector('.nav-item[data-page="profile"]').classList.contains('active')) {
-        renderProfile();
-      }
-    }, 1500);
-
-  } catch (err) {
-    console.error('Upload failed:', err);
-    uploadMsg.className = 'error-msg';
-    uploadMsg.textContent = err.message || 'Upload failed. Please try again.';
-    uploadSubmitBtn.disabled = false;
-    uploadSubmitBtn.textContent = 'Upload';
-  }
-});
-
-/* ============================================================
-   CLOUDINARY UPLOAD
-   ============================================================ */
-function uploadToCloudinary(file, onProgress) {
-  return new Promise((resolve, reject) => {
-    const resourceType = currentUploadType === 'photo' ? 'image' : 'video';
-    const acc = CLOUDINARY_ACCOUNTS[0];
-
-    const url = `https://api.cloudinary.com/v1_1/${acc.cloudName}/${resourceType}/upload`;
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', acc.preset);
-    formData.append('api_key', acc.apiKey);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', url, true);
-    xhr.timeout = 120000;
-
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) {
-        const percent = Math.round((e.loaded / e.total) * 100);
-        onProgress(percent);
-      }
-    };
-
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const res = JSON.parse(xhr.responseText);
-          if (!res.secure_url) {
-            reject(new Error('Cloudinary did not return a URL.'));
-            return;
-          }
-          resolve(res);
-        } catch (e) {
-          reject(new Error('Invalid response from Cloudinary.'));
-        }
-      } else {
-        let errMsg = 'Upload failed';
-        try {
-          const errData = JSON.parse(xhr.responseText);
-          if (errData.error && errData.error.message) {
-            errMsg = errData.error.message;
-          }
-        } catch (e) {
-          errMsg = 'HTTP ' + xhr.status;
-        }
-        reject(new Error(errMsg));
-      }
-    };
-
-    xhr.onerror = () => reject(new Error('Network error. Check internet.'));
-    xhr.ontimeout = () => reject(new Error('Upload timed out. Try smaller video.'));
-
-    xhr.send(formData);
-  });
-}
-
-function buildThumbnailUrl(videoUrl, type) {
-  if (!videoUrl) return '';
-  if (type === 'photo') return videoUrl;
-
-  try {
-    if (videoUrl.includes('/video/upload/')) {
-      return videoUrl.replace(
-        '/video/upload/',
-        '/video/upload/so_0,w_400,c_fill,q_auto/'
-      );
-    }
-  } catch (e) {}
-
-  return '';
-}
-
-/* ============================================================
-   VIDEO PLAYER MODAL
-   ============================================================ */
-function openPlayer(post) {
-  playerTitle.textContent = post.caption || (post.type === 'photo' ? 'Photo' : 'Video');
-
-  if (post.type === 'photo') {
-    playerContent.innerHTML = `<img src="${post.url}" alt="">`;
-  } else {
-    const aspectClass = post.type === 'long' ? 'aspect-16-9' : 'aspect-9-16';
-    playerContent.innerHTML = `
-      <video src="${post.url}" controls playsinline autoplay
-             class="${aspectClass}"
-             style="background:#000;"></video>
-    `;
-  }
-
-  playerModal.classList.add('show');
-}
-
-document.getElementById('closePlayer').addEventListener('click', () => {
-  playerModal.classList.remove('show');
-  playerContent.innerHTML = '';
-});
-
-playerModal.addEventListener('click', (e) => {
-  if (e.target === playerModal) {
-    playerModal.classList.remove('show');
-    playerContent.innerHTML = '';
-  }
-});
-
-/* ============================================================
-   PUBLIC USER PROFILE
-   ============================================================ */
-async function openUserProfile(userId) {
-  if (!userId) return;
-  if (userId === currentUser.uid) {
-    setActiveNav('profile');
-    renderPage('profile');
-    return;
-  }
-
-  viewingUserId = userId;
-  setActiveNav(null);
-
-  content.innerHTML = `<div class="page-placeholder"><div class="page-title">Loading...</div></div>`;
-
-  try {
-    const snap = await getDoc(doc(db, 'users', userId));
-    if (!snap.exists()) {
-      content.innerHTML = `<div class="page-placeholder"><div class="page-title">User not found</div></div>`;
-      return;
-    }
-
-    const user = snap.data();
-    const followers = Array.isArray(user.followers) ? user.followers : [];
-    const following = Array.isArray(user.following) ? user.following : [];
-    const videoCount = typeof user.videoCount === 'number' ? user.videoCount : 0;
-    const avatarSrc = user.photo || defaultAvatar(user.name);
-    const isFollowing = currentProfile?.following?.includes(userId) || false;
-
-    content.innerHTML = `
-      <div style="padding: 12px 16px;">
-        <button id="backFromProfileBtn">
-          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-          Back
-        </button>
-      </div>
-
-      <div class="profile-page" style="padding-top:0;">
-        <div class="profile-top">
-          <div class="profile-avatar-wrap">
-            <img class="profile-avatar" src="${avatarSrc}" alt="${escapeHtml(user.name)}">
-          </div>
-
-          <div class="profile-stats">
-            <div class="profile-stat"><b>${videoCount}</b><span>Videos</span></div>
-            <div class="profile-stat"><b>${followers.length}</b><span>Followers</span></div>
-            <div class="profile-stat"><b>${following.length}</b><span>Following</span></div>
-          </div>
-        </div>
-
-        <div class="profile-info">
-          <div class="profile-name">${escapeHtml(user.name)}</div>
-          <div class="profile-username">@${escapeHtml(user.user)}</div>
-          <div class="profile-bio">${user.bio ? escapeHtml(user.bio) : '<span style="color:#555">No bio yet.</span>'}</div>
-        </div>
-
-        <div class="profile-actions">
-          <button class="btn-outline" id="pubFollowBtn"
-            style="${isFollowing ? '' : 'background: linear-gradient(90deg, #ff2e63, #ff8a00); border: none;'}">
-            ${isFollowing ? 'Following' : 'Follow'}
-          </button>
-          <button class="btn-outline" id="pubShareBtn">
-            <svg viewBox="0 0 24 24">
-              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-            </svg>
-            Share
-          </button>
-        </div>
-
-        <div class="profile-tabs">
-          <button class="profile-tab active">Posts</button>
-        </div>
-
-        <div class="profile-grid" id="pubPostsGrid">
-          <div class="grid-empty">Loading posts...</div>
-        </div>
-      </div>
-    `;
-
-    document.getElementById('backFromProfileBtn').addEventListener('click', () => {
-      viewingUserId = null;
-      setActiveNav(null);
-      renderPage('home');
-    });
-
-    const followBtn = document.getElementById('pubFollowBtn');
-    followBtn.addEventListener('click', async () => {
-      const wasFollowing = currentProfile.following.includes(userId);
-      await toggleFollow(userId, null);
-      if (wasFollowing) {
-        followBtn.textContent = 'Follow';
-        followBtn.style.cssText = 'background: linear-gradient(90deg, #ff2e63, #ff8a00); border: none;';
-      } else {
-        followBtn.textContent = 'Following';
-        followBtn.style.cssText = '';
-      }
-    });
-
-    document.getElementById('pubShareBtn').addEventListener('click', () => shareUser(user));
-
-    await renderUserPosts(userId, 'pubPostsGrid');
-
-  } catch (e) {
-    console.error('Could not open user profile:', e);
-    content.innerHTML = `<div class="page-placeholder"><div class="page-title">Could not load profile</div></div>`;
-  }
-}
-
-async function shareUser(user) {
-  const appUrl = window.location.origin;
-  const shareText = `🎬 Check out ${user.name}'s profile on ReelHub!\n\n@${user.user}\n\n${appUrl}`;
-  const shareTitle = `${user.name} on ReelHub`;
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: shareTitle, text: shareText, url: appUrl });
-      return;
-    } catch (err) { if (err.name === 'AbortError') return; }
-  }
-  try {
-    await navigator.clipboard.writeText(shareText);
-    showToast('✅ Link copied to clipboard!');
-  } catch (err) {
-    showToast('❌ Could not share');
-  }
-}
-
-/* ============================================================
-   EDIT PROFILE MODAL
-   ============================================================ */
-function openEditModal() {
-  if (!currentProfile) return;
-  selectedPhotoBase64 = null;
-
-  editNameInput.value = currentProfile.name || '';
-  editUserInput.value = currentProfile.user || '';
-  editBioInput.value  = currentProfile.bio  || '';
-  editPreviewImg.src  = currentProfile.photo || defaultAvatar(currentProfile.name);
-  editMsg.textContent = '';
-
-  editModal.classList.add('show');
-}
-
-document.getElementById('closeEdit').addEventListener('click', () => {
-  editModal.classList.remove('show');
-});
-
-editModal.addEventListener('click', (e) => {
-  if (e.target === editModal) editModal.classList.remove('show');
-});
-
-editPhotoInput.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  if (file.size > 500 * 1024) {
-    editMsg.className = 'error-msg';
-    editMsg.textContent = 'Image too large. Max 500 KB.';
-    return;
-  }
-
-  const base64 = await fileToBase64(file);
-  selectedPhotoBase64 = base64;
-  editPreviewImg.src = base64;
-  editMsg.textContent = '';
-});
-
-saveProfileBtn.addEventListener('click', async () => {
-  if (!currentUser) return;
-
-  const newName = editNameInput.value.trim();
-  const newUser = editUserInput.value.trim().toLowerCase();
-  const newBio  = editBioInput.value.trim();
-
-  editMsg.className = 'error-msg';
-  editMsg.textContent = '';
-
-  if (!newName) { editMsg.textContent = 'Name cannot be empty.'; return; }
-  if (!/^[a-z0-9._]{3,20}$/.test(newUser)) {
-    editMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
-    return;
-  }
-  if (newBio.length > 150) {
-    editMsg.textContent = 'Bio too long (max 150).';
-    return;
-  }
-
-  saveProfileBtn.disabled = true;
-  saveProfileBtn.textContent = 'Saving...';
-
-  try {
-    if (newUser !== currentProfile.user) {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('user', '==', newUser));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        editMsg.textContent = 'Username already taken.';
-        saveProfileBtn.disabled = false;
-        saveProfileBtn.textContent = 'Save Changes';
-        return;
-      }
-    }
-
-    const updateData = { name: newName, user: newUser, bio: newBio };
-    if (selectedPhotoBase64) updateData.photo = selectedPhotoBase64;
-
-    await updateDoc(doc(db, 'users', currentUser.uid), updateData);
-
-    currentProfile.name = newName;
-    currentProfile.user = newUser;
-    currentProfile.bio  = newBio;
-    if (selectedPhotoBase64) currentProfile.photo = selectedPhotoBase64;
-
-    editMsg.className = 'success-msg';
-    editMsg.textContent = 'Profile updated!';
-
-    setTimeout(() => {
-      editModal.classList.remove('show');
-      renderProfile();
-    }, 500);
-
-  } catch (err) {
-    console.error(err);
-    editMsg.className = 'error-msg';
-    editMsg.textContent = err.message || 'Update failed.';
-  } finally {
-    saveProfileBtn.disabled = false;
-    saveProfileBtn.textContent = 'Save Changes';
-  }
-});
-
-/* ============================================================
-   FOLLOWERS / FOLLOWING LIST MODAL
-   ============================================================ */
-function openListModal(type) {
-  if (!currentProfile) return;
-
-  const isFollowers = type === 'followers';
-  listTitle.textContent = isFollowers ? 'Followers' : 'Following';
-  userList.innerHTML = '<div class="empty-msg">Loading...</div>';
-  listModal.classList.add('show');
-
-  const uids = isFollowers ? currentProfile.followers : currentProfile.following;
-
-  if (!uids || uids.length === 0) {
-    userList.innerHTML = `<div class="empty-msg">No ${isFollowers ? 'followers' : 'following'} yet.</div>`;
-    return;
-  }
-
-  loadUsersByIds(uids).then(users => {
-    if (users.length === 0) {
-      userList.innerHTML = `<div class="empty-msg">No users found.</div>`;
-      return;
-    }
-    userList.innerHTML = '';
-    users.forEach(u => {
-      const row = document.createElement('div');
-      row.className = 'user-row';
-      row.innerHTML = `
-        <img src="${u.photo || defaultAvatar(u.name)}" alt="${escapeHtml(u.name)}">
-        <div class="meta">
-          <b>${escapeHtml(u.name)}</b>
-          <span>@${escapeHtml(u.user)}</span>
-        </div>
-        <button class="${currentProfile.following.includes(u.uid) ? 'unfollow' : 'follow'}"
-                data-uid="${u.uid}">
-          ${currentProfile.following.includes(u.uid) ? 'Following' : 'Follow'}
-        </button>
-      `;
-      row.querySelector('img').addEventListener('click', () => {
-        listModal.classList.remove('show');
-        openUserProfile(u.uid);
-      });
-      row.querySelector('.meta').addEventListener('click', () => {
-        listModal.classList.remove('show');
-        openUserProfile(u.uid);
-      });
-      row.querySelector('button').addEventListener('click', async (e) => {
-        e.stopPropagation();
-        await toggleFollow(u.uid, e.target);
-      });
-      userList.appendChild(row);
-    });
-  });
-}
-
-document.getElementById('closeList').addEventListener('click', () => {
-  listModal.classList.remove('show');
-});
-listModal.addEventListener('click', (e) => {
-  if (e.target === listModal) listModal.classList.remove('show');
-});
-
-/* ============================================================
-   TOGGLE FOLLOW
-   ============================================================ */
-async function toggleFollow(targetUid, btnEl) {
-  if (!currentUser || !currentProfile) return;
-  if (targetUid === currentUser.uid) return;
-
-  const isFollowing = currentProfile.following.includes(targetUid);
-
-  try {
-    const myRef     = doc(db, 'users', currentUser.uid);
-    const targetRef = doc(db, 'users', targetUid);
-
-    if (isFollowing) {
-      await updateDoc(myRef, { following: arrayRemove(targetUid) });
-      await updateDoc(targetRef, { followers: arrayRemove(currentUser.uid) });
-      currentProfile.following = currentProfile.following.filter(id => id !== targetUid);
-      if (btnEl) { btnEl.textContent = 'Follow'; btnEl.className = 'follow'; }
-    } else {
-      await updateDoc(myRef, { following: arrayUnion(targetUid) });
-      await updateDoc(targetRef, { followers: arrayUnion(currentUser.uid) });
-      currentProfile.following.push(targetUid);
-      if (btnEl) { btnEl.textContent = 'Following'; btnEl.className = 'unfollow'; }
-    }
-  } catch (err) {
-    console.error('Follow error:', err);
-    showToast('Could not update follow. Try again.');
-  }
-}
-
-/* ============================================================
-   NOTIFICATIONS
-   ============================================================ */
-async function renderNotifications() {
-  if (!currentUser) return;
-
-  content.innerHTML = `
-    <div class="notif-page">
-      <div class="page-title" style="margin-bottom:16px;text-align:left;padding:0 4px;">Notifications</div>
-      <div id="notifList"><div class="empty-notif">Loading...</div></div>
-    </div>
-  `;
-
-  try {
-    const q = query(
-      collection(db, 'notifications'),
-      where('userId', '==', currentUser.uid),
-      limit(50)
-    );
-    const snap = await getDocs(q);
-    const notifications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    notifications.sort((a, b) => {
-      const ta = a.createdAt?.toDate?.()?.getTime() || 0;
-      const tb = b.createdAt?.toDate?.()?.getTime() || 0;
-      return tb - ta;
-    });
-
-    paintNotifications(notifications);
-
-    for (const n of notifications) {
-      if (!n.read) {
-        try { await updateDoc(doc(db, 'notifications', n.id), { read: true }); } catch (e) {}
-      }
-    }
-    updateNotifDot(0);
-
-  } catch (e) {
-    console.error(e);
-    const el = document.getElementById('notifList');
-    if (el) el.innerHTML = `<div class="empty-notif">Could not load notifications.</div>`;
-  }
-}
-
-function paintNotifications(list) {
-  const wrap = document.getElementById('notifList');
-  if (!wrap) return;
-
-  if (list.length === 0) {
-    wrap.innerHTML = `
-      <div class="empty-notif">
-        <svg viewBox="0 0 24 24">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
-        <div>No notifications yet</div>
-      </div>`;
-    return;
-  }
-
-  wrap.innerHTML = '';
-  list.forEach(n => {
-    const item = document.createElement('div');
-    item.className = 'notif-item' + (n.read ? '' : ' unread');
-
-    const time = n.createdAt?.toDate?.();
-    const timeStr = time ? timeAgo(time) : 'just now';
-
-    let actionsHtml = '';
-    if (n.type === 'admin_invite' && n.actions && n.actions.includes('accept')) {
-      actionsHtml = `
-        <div class="notif-actions">
-          <button class="accept" data-action="accept" data-invite="${n.inviteId || ''}">✅ Accept</button>
-          <button class="reject" data-action="reject" data-invite="${n.inviteId || ''}">❌ Reject</button>
-        </div>
-      `;
-    }
-
-    item.innerHTML = `
-      <div class="notif-header">
-        <div class="notif-title">${escapeHtml(n.title || 'Notification')}</div>
-        <div class="notif-time">${timeStr}</div>
-      </div>
-      <div class="notif-message">${escapeHtml(n.message || '')}</div>
-      ${actionsHtml}
-    `;
-    wrap.appendChild(item);
-  });
-
-  wrap.querySelectorAll('[data-action]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const action = btn.dataset.action;
-      const inviteId = btn.dataset.invite;
-      if (action === 'accept') await handleInviteAccept(inviteId);
-      if (action === 'reject') await handleInviteReject(inviteId);
-      await renderNotifications();
-    });
-  });
-}
-
-async function handleInviteAccept(inviteId) {
-  if (!inviteId || !currentUser) return;
-  try {
-    await updateDoc(doc(db, 'admin_invites', inviteId), {
-      status: 'accepted',
-      respondedAt: serverTimestamp()
-    });
-    await updateDoc(doc(db, 'users', currentUser.uid), { role: 'admin' });
-    showToast('🎉 You are now an admin!');
-  } catch (e) {
-    console.error(e);
-    showToast('❌ Could not accept invite');
-  }
-}
-
-async function handleInviteReject(inviteId) {
-  if (!inviteId || !currentUser) return;
-  try {
-    await updateDoc(doc(db, 'admin_invites', inviteId), {
-      status: 'rejected',
-      respondedAt: serverTimestamp()
-    });
-    showToast('Invitation declined');
-  } catch (e) {
-    console.error(e);
-    showToast('❌ Could not reject invite');
-  }
-}
-
-/* ============================================================
-   NOTIFICATION WATCHER
-   ============================================================ */
-function startNotifWatcher() {
-  stopNotifWatcher();
-  checkUnreadNotifications();
-  notifIntervalId = setInterval(checkUnreadNotifications, 30000);
-}
-
-function stopNotifWatcher() {
-  if (notifIntervalId) {
-    clearInterval(notifIntervalId);
-    notifIntervalId = null;
-  }
-  updateNotifDot(0);
-}
-
-async function checkUnreadNotifications() {
-  if (!currentUser) return;
-  try {
-    const q = query(
-      collection(db, 'notifications'),
-      where('userId', '==', currentUser.uid),
-      where('read', '==', false),
-      limit(20)
-    );
-    const snap = await getDocs(q);
-    updateNotifDot(snap.size);
-  } catch (e) {}
-}
-
-function updateNotifDot(count) {
-  if (!notifDot) return;
-  notifDot.style.display = count > 0 ? 'block' : 'none';
-}
-
-/* ============================================================
-   SEARCH
-   ============================================================ */
-async function renderSearch() {
-  content.innerHTML = `
-    <div class="search-page">
-      <div class="search-bar-wrap">
-        <svg viewBox="0 0 24 24">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input type="text" class="search-bar" id="searchInput" placeholder="Search users by name or username...">
-      </div>
-      <div class="search-results" id="searchResults">
-        <div class="search-empty">Start typing to search users...</div>
-      </div>
-    </div>
-  `;
-
-  const input = document.getElementById('searchInput');
-  let debounceTimer = null;
-  input.addEventListener('input', (e) => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => performSearch(e.target.value.trim()), 300);
-  });
-  input.focus();
-}
-
-async function performSearch(searchTerm) {
-  const results = document.getElementById('searchResults');
-  if (!results) return;
-
-  if (!searchTerm) {
-    results.innerHTML = `<div class="search-empty">Start typing to search users...</div>`;
-    return;
-  }
-
-  results.innerHTML = `<div class="search-empty">Searching...</div>`;
+  newChatResults.innerHTML = `<div class="search-empty">Searching...</div>`;
 
   try {
     const usersRef = collection(db, 'users');
     const snap = await getDocs(usersRef);
 
-    const term = searchTerm.toLowerCase();
+    const lowerTerm = term.toLowerCase();
     const matches = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .filter(u => u.id !== currentUser.uid)
       .filter(u =>
-        (u.name || '').toLowerCase().includes(term) ||
-        (u.user || '').toLowerCase().includes(term)
+        (u.name || '').toLowerCase().includes(lowerTerm) ||
+        (u.user || '').toLowerCase().includes(lowerTerm)
       )
-      .slice(0, 30);
+      .slice(0, 20);
 
     if (matches.length === 0) {
-      results.innerHTML = `<div class="search-empty">No users found for "${escapeHtml(searchTerm)}"</div>`;
+      newChatResults.innerHTML = `<div class="search-empty">No users found</div>`;
       return;
     }
 
-    results.innerHTML = '';
+    newChatResults.innerHTML = '';
     matches.forEach(u => {
       const row = document.createElement('div');
       row.className = 'search-user';
-      const isFollowing = currentProfile?.following?.includes(u.id);
       row.innerHTML = `
         <img src="${u.photo || defaultAvatar(u.name)}" alt="">
         <div class="info">
           <b>${escapeHtml(u.name)}</b>
           <span>@${escapeHtml(u.user)}</span>
         </div>
-        <button class="${isFollowing ? 'unfollow' : 'follow'}" data-uid="${u.id}">
-          ${isFollowing ? 'Following' : 'Follow'}
-        </button>
+        <button class="follow">Chat</button>
       `;
-      row.querySelector('img').addEventListener('click', (e) => {
-        e.stopPropagation();
-        openUserProfile(u.id);
+
+      row.addEventListener('click', () => {
+        newChatModal.classList.remove('show');
+        openChatWindow(u);
       });
-      row.querySelector('.info').addEventListener('click', (e) => {
-        e.stopPropagation();
-        openUserProfile(u.id);
-      });
-      row.querySelector('button').addEventListener('click', async (e) => {
-        e.stopPropagation();
-        await toggleFollow(u.id, e.target);
-      });
-      results.appendChild(row);
+
+      newChatResults.appendChild(row);
     });
 
   } catch (e) {
-    console.error(e);
-    results.innerHTML = `<div class="search-empty">Search failed. Try again.</div>`;
+    console.error('Search users error:', e);
+    newChatResults.innerHTML = `<div class="search-empty">Search failed</div>`;
   }
 }
 
 /* ============================================================
-   SHARE OWN PROFILE
+   CHAT WINDOW
    ============================================================ */
-async function shareProfile() {
-  if (!currentProfile) return;
-  const appUrl = window.location.origin;
-  const shareText = `🎬 Check out ${currentProfile.name}'s profile on ReelHub!\n\n@${currentProfile.user}\n\n${appUrl}`;
-  const shareTitle = `${currentProfile.name} on ReelHub`;
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: shareTitle, text: shareText, url: appUrl });
-      return;
-    } catch (err) { if (err.name === 'AbortError') return; }
+function getChatId(uid1, uid2) {
+  return [uid1, uid2].sort().join('_');
+}
+
+async function openChatWindow(otherUser) {
+  if (!otherUser || otherUser.uid === currentUser.uid) return;
+
+  activeChatId = getChatId(currentUser.uid, otherUser.uid);
+  activeChatUser = otherUser;
+
+  // Set header
+  chatHeaderAvatar.src = otherUser.photo || defaultAvatar(otherUser.name);
+  chatHeaderName.textContent = otherUser.name || 'User';
+  chatHeaderHandle.textContent = '@' + (otherUser.user || '');
+
+  chatHeaderInfo.addEventListener('click', () => {
+    closeChatWindow();
+    openUserProfile(otherUser.uid);
+  }, { once: false });
+
+  // Clear messages
+  chatMessages.innerHTML = `<div class="empty-msg">Loading messages...</div>`;
+
+  // Reset input
+  chatMessageInput.value = '';
+  updateSendTextBtn();
+
+  chatWindowModal.classList.add('show');
+
+  // Load messages + start realtime
+  await loadChatMessages();
+
+  // Mark as read
+  await markChatRead();
+}
+
+function closeChatWindow() {
+  chatWindowModal.classList.remove('show');
+  if (chatMessagesUnsub) {
+    chatMessagesUnsub();
+    chatMessagesUnsub = null;
   }
+  activeChatId = null;
+  activeChatUser = null;
+  stopVoicePlayback();
+}
+
+document.getElementById('closeChatWindow').addEventListener('click', () => {
+  closeChatWindow();
+});
+
+async function loadChatMessages() {
+  if (!activeChatId) return;
+
   try {
-    await navigator.clipboard.writeText(shareText);
-    showToast('✅ Link copied to clipboard!');
-  } catch (err) {
-    const textarea = document.createElement('textarea');
-    textarea.value = shareText;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    try {
-      document.execCommand('copy');
-      showToast('✅ Link copied to clipboard!');
-    } catch (e) {
-      showToast('❌ Could not copy link');
+    const msgsRef = collection(db, 'chats', activeChatId, 'messages');
+    const snap = await getDocs(msgsRef);
+
+    const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    messages.sort((a, b) => {
+      const ta = a.time?.toDate?.()?.getTime() || 0;
+      const tb = b.time?.toDate?.()?.getTime() || 0;
+      return ta - tb;
+    });
+
+    paintChatMessages(messages);
+
+    // Simple polling refresh (since onSnapshot import is not added)
+    if (chatMessagesUnsub) clearInterval(chatMessagesUnsub);
+    chatMessagesUnsub = setInterval(async () => {
+      if (!activeChatId) return;
+      try {
+        const s = await getDocs(collection(db, 'chats', activeChatId, 'messages'));
+        const msgs = s.docs.map(d => ({ id: d.id, ...d.data() }));
+        msgs.sort((a, b) => {
+          const ta = a.time?.toDate?.()?.getTime() || 0;
+          const tb = b.time?.toDate?.()?.getTime() || 0;
+          return ta - tb;
+        });
+        paintChatMessages(msgs);
+      } catch (e) {}
+    }, 3000);
+
+  } catch (e) {
+    console.error('Load chat messages error:', e);
+    chatMessages.innerHTML = `<div class="chat-empty">Could not load messages</div>`;
+  }
+}
+
+function paintChatMessages(messages) {
+  if (messages.length === 0) {
+    chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
+    return;
+  }
+
+  // Save scroll position check
+  const wasAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 100;
+
+  chatMessages.innerHTML = '';
+
+  let lastDateStr = '';
+  messages.forEach(msg => {
+    const msgDate = msg.time?.toDate?.();
+    const dateStr = msgDate ? formatDate(msgDate) : '';
+    if (dateStr && dateStr !== lastDateStr) {
+      const sep = document.createElement('div');
+      sep.className = 'msg-date-sep';
+      sep.textContent = dateStr;
+      chatMessages.appendChild(sep);
+      lastDateStr = dateStr;
     }
-    document.body.removeChild(textarea);
+    chatMessages.appendChild(makeMessageBubble(msg));
+  });
+
+  if (wasAtBottom || messages.length > 0) {
+    setTimeout(() => {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, 50);
+  }
+}
+
+function makeMessageBubble(msg) {
+  const row = document.createElement('div');
+  const isMe = msg.from === currentUser.uid;
+  row.className = 'msg-row ' + (isMe ? 'me' : 'other');
+
+  const time = msg.time?.toDate?.();
+  const timeStr = time ? formatTime(time) : '';
+
+  if (msg.type === 'voice') {
+    const duration = msg.voiceDuration || 0;
+    const bars = generateWaveformBars();
+
+    row.innerHTML = `
+      <div class="msg-bubble voice-bubble" data-msg="${msg.id}">
+        <button class="voice-play-btn" data-play="${msg.id}">
+          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <div class="voice-waveform">
+          ${bars.map(h => `<div class="bar" style="height:${h}%"></div>`).join('')}
+        </div>
+        <div class="voice-duration">${formatVoiceDuration(duration)}</div>
+        <div class="msg-time" style="position:absolute;bottom:-14px;right:0;">${timeStr}</div>
+      </div>
+    `;
+
+    row.querySelector('.voice-play-btn').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await playVoiceMessage(msg, row.querySelector('.voice-waveform'), row.querySelector('.voice-play-btn'));
+    });
+
+  } else {
+    row.innerHTML = `
+      <div class="msg-bubble">
+        ${escapeHtml(msg.text || '')}
+        <div class="msg-time">${timeStr}</div>
+      </div>
+    `;
+  }
+
+  return row;
+}
+
+function generateWaveformBars() {
+  // Random-looking bars but deterministic-ish
+  const bars = [];
+  for (let i = 0; i < 22; i++) {
+    bars.push(30 + Math.floor(Math.random() * 70));
+  }
+  return bars;
+}
+
+function formatVoiceDuration(seconds) {
+  const s = Math.round(seconds);
+  return `0:${s < 10 ? '0' + s : s}`;
+}
+
+function formatTime(date) {
+  let h = date.getHours();
+  const m = date.getMinutes();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${m < 10 ? '0' + m : m} ${ampm}`;
+}
+
+function formatDate(date) {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) return 'Today';
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${date.getDate()} ${months[date.getMonth()]}`;
+}
+
+/* ============================================================
+   SEND TEXT MESSAGE
+   ============================================================ */
+function updateSendTextBtn() {
+  const hasText = chatMessageInput.value.trim().length > 0;
+  sendTextBtn.style.display = hasText ? 'flex' : 'none';
+  micBtn.style.display = hasText ? 'none' : 'flex';
+}
+
+chatMessageInput.addEventListener('input', updateSendTextBtn);
+
+sendTextBtn.addEventListener('click', async () => {
+  const text = chatMessageInput.value.trim();
+  if (!text || !activeChatId) return;
+
+  chatMessageInput.value = '';
+  updateSendTextBtn();
+
+  await sendMessage({
+    type: 'text',
+    text: text
+  });
+});
+
+chatMessageInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendTextBtn.click();
+  }
+});
+
+async function sendMessage(msgData) {
+  if (!activeChatId || !activeChatUser) return;
+
+  const message = {
+    from: currentUser.uid,
+    to: activeChatUser.uid,
+    type: msgData.type || 'text',
+    text: msgData.text || null,
+    voiceData: msgData.voiceData || null,
+    voiceDuration: msgData.voiceDuration || null,
+    time: serverTimestamp(),
+    read: false
+  };
+
+  try {
+    await addDoc(collection(db, 'chats', activeChatId, 'messages'), message);
+
+    // Update chat metadata
+    const chatRef = doc(db, 'chats', activeChatId);
+    const chatSnap = await getDoc(chatRef);
+
+    const chatData = {
+      members: [currentUser.uid, activeChatUser.uid],
+      lastMessage: msgData.type === 'voice' ? '🎤 Voice message' : (msgData.text || ''),
+      lastMessageType: msgData.type || 'text',
+      lastMessageTime: serverTimestamp(),
+      lastMessageBy: currentUser.uid,
+      unreadBy: [activeChatUser.uid]
+    };
+
+    if (!chatSnap.exists()) {
+      chatData.createdAt = serverTimestamp();
+      await setDoc(chatRef, chatData);
+    } else {
+      await updateDoc(chatRef, chatData);
+    }
+
+    // Reload messages
+    await loadChatMessages();
+
+  } catch (e) {
+    console.error('Send message error:', e);
+    showToast('❌ Could not send message');
   }
 }
 
 /* ============================================================
-   TOAST
+   MARK CHAT READ
    ============================================================ */
-function showToast(message) {
-  const existing = document.getElementById('toast');
-  if (existing) existing.remove();
-
-  const toast = document.createElement('div');
-  toast.id = 'toast';
-  toast.textContent = message;
-  toast.style.cssText = `
-    position: fixed;
-    bottom: 90px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1e1e28;
-    color: #fff;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    z-index: 10000;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-    border: 1px solid #333;
-    animation: toastSlide 0.3s ease;
-  `;
-  document.body.appendChild(toast);
-
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transition = 'opacity 0.3s';
-    setTimeout(() => toast.remove(), 300);
-  }, 2500);
+async function markChatRead() {
+  if (!activeChatId) return;
+  try {
+    const chatRef = doc(db, 'chats', activeChatId);
+    await updateDoc(chatRef, { unreadBy: arrayRemove(currentUser.uid) });
+    // Update chat list dot
+    checkChatsUnread();
+  } catch (e) {}
 }
 
 /* ============================================================
-   HELPERS
+   VOICE RECORDING
    ============================================================ */
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+let isHoldingMic = false;
+
+micBtn.addEventListener('mousedown', startVoiceRecording);
+micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startVoiceRecording(); }, { passive: false });
+
+micBtn.addEventListener('mouseup', stopVoiceRecordingAndSend);
+micBtn.addEventListener('mouseleave', () => { if (isRecording) stopVoiceRecordingAndSend(); });
+micBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopVoiceRecordingAndSend(); }, { passive: false });
+
+cancelRecordingBtn.addEventListener('click', cancelVoiceRecording);
+
+async function startVoiceRecording() {
+  if (isRecording) return;
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    let mimeType = 'audio/webm';
+    if (!MediaRecorder.isTypeSupported('audio/webm')) {
+      mimeType = 'audio/mp4';
+    }
+
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.start();
+
+    isRecording = true;
+    voiceSeconds = 0;
+    recordingTimer.textContent = '0:00';
+    recordingIndicator.classList.add('show');
+    recordingIndicator.style.display = 'flex';
+    micBtn.style.background = '#ff2e63';
+
+    voiceTimerInterval = setInterval(() => {
+      voiceSeconds++;
+      recordingTimer.textContent = `0:${voiceSeconds < 10 ? '0' + voiceSeconds : voiceSeconds}`;
+
+      if (voiceSeconds >= 10) {
+        stopVoiceRecordingAndSend();
+      }
+    }, 1000);
+
+  } catch (e) {
+    console.error('Mic error:', e);
+    showToast('❌ Microphone permission needed');
+    isRecording = false;
+  }
+}
+
+async function stopVoiceRecordingAndSend() {
+  if (!isRecording || !mediaRecorder) return;
+
+  isRecording = false;
+  clearInterval(voiceTimerInterval);
+  recordingIndicator.classList.remove('show');
+  recordingIndicator.style.display = 'none';
+  micBtn.style.background = '';
+  micBtn.style.background = 'linear-gradient(90deg,#ff2e63,#ff8a00)';
+
+  const finalSeconds = voiceSeconds;
+
+  return new Promise((resolve) => {
+    mediaRecorder.onstop = async () => {
+      // Stop all tracks
+      mediaRecorder.stream.getTracks().forEach(t => t.stop());
+
+      if (finalSeconds < 1) {
+        showToast('Too short — hold longer');
+        resolve();
+        return;
+      }
+
+      const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+
+      // Check size — should be small for 10 sec
+      if (audioBlob.size > 500 * 1024) {
+        showToast('Voice too large');
+        resolve();
+        return;
+      }
+
+      // Convert to base64
+      const base64 = await blobToBase64(audioBlob);
+
+      await sendMessage({
+        type: 'voice',
+        voiceData: base64,
+        voiceDuration: finalSeconds
+      });
+
+      resolve();
+    };
+
+    try {
+      mediaRecorder.stop();
+    } catch (e) {
+      resolve();
+    }
   });
 }
 
-function defaultAvatar(name) {
-  const letter = (name || '?').trim().charAt(0).toUpperCase() || '?';
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-      <rect width="100" height="100" fill="#1e1e28"/>
-      <text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700"
-            fill="#fff" text-anchor="middle" dominant-baseline="central">
-        ${letter}
-      </text>
-    </svg>`;
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+function cancelVoiceRecording() {
+  if (!isRecording || !mediaRecorder) return;
+
+  isRecording = false;
+  clearInterval(voiceTimerInterval);
+  recordingIndicator.classList.remove('show');
+  recordingIndicator.style.display = 'none';
+  micBtn.style.background = 'linear-gradient(90deg,#ff2e63,#ff8a00)';
+
+  try {
+    mediaRecorder.onstop = () => {
+      mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    };
+    mediaRecorder.stop();
+  } catch (e) {}
+
+  audioChunks = [];
+  voiceSeconds = 0;
+  showToast('Recording cancelled');
 }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
-async function loadUsersByIds(uids) {
-  const results = [];
-  for (const uid of uids) {
-    try {
-      const snap = await getDoc(doc(db, 'users', uid));
-      if (snap.exists()) results.push(snap.data());
-    } catch (e) {}
+/* ============================================================
+   VOICE PLAYBACK
+   ============================================================ */
+async function playVoiceMessage(msg, waveformEl, btnEl) {
+  // If already playing this one → stop
+  if (currentPlayingAudio && currentPlayingBtn === btnEl) {
+    stopVoicePlayback();
+    return;
   }
-  return results;
+
+  stopVoicePlayback();
+
+  if (!msg.voiceData) return;
+
+  try {
+    const audio = new Audio(msg.voiceData);
+    currentPlayingAudio = audio;
+    currentPlayingBtn = btnEl;
+
+    waveformEl.classList.add('playing');
+
+    btnEl.innerHTML = `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" fill="currentColor" stroke="none"/><rect x="14" y="4" width="4" height="16" fill="currentColor" stroke="none"/></svg>`;
+
+    audio.onended = () => {
+      stopVoicePlayback();
+    };
+
+    audio.onerror = () => {
+      stopVoicePlayback();
+      showToast('❌ Could not play');
+    };
+
+    await audio.play();
+
+  } catch (e) {
+    console.error('Play error:', e);
+    stopVoicePlayback();
+  }
 }
 
-function timeAgo(date) {
+function stopVoicePlayback() {
+  if (currentPlayingAudio) {
+    try { currentPlayingAudio.pause(); } catch (e) {}
+    currentPlayingAudio = null;
+  }
+
+  if (currentPlayingBtn) {
+    currentPlayingBtn.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>`;
+    currentPlayingBtn = null;
+  }
+
+  document.querySelectorAll('.voice-waveform.playing').forEach(el => {
+    el.classList.remove('playing');
+  });
+}
+
+/* ============================================================
+   CHAT LIST WATCHER (unread badge)
+   ============================================================ */
+function startChatListWatcher() {
+  stopChatListWatcher();
+  checkChatsUnread();
+  chatListInterval = setInterval(checkChatsUnread, 15000);
+}
+
+function stopChatListWatcher() {
+  if (chatListInterval) {
+    clearInterval(chatListInterval);
+    chatListInterval = null;
+  }
+  if (chatsDot) chatsDot.style.display = 'none';
+}
+
+async function checkChatsUnread() {
+  if (!currentUser) return;
+  try {
+    const chatsRef = collection(db, 'chats');
+    const q = query(chatsRef, where('members', 'array-contains', currentUser.uid));
+    const snap = await getDocs(q);
+
+    let hasUnread = false;
+    snap.forEach(d => {
+      const data = d.data();
+      if (data.lastMessageBy !== currentUser.uid &&
+          (data.unreadBy || []).includes(currentUser.uid)) {
+        hasUnread = true;
+      }
+    });
+
+    if (chatsDot) chatsDot.style.display = hasUnread ? 'block' : 'none';
+
+  } catch (e) {}
+}
+
+/* ============================================================
+   TIME HELPERS
+   ============================================================ */
+function timeAgoShort(date) {
   const seconds = Math.floor((new Date() - date) / 1000);
-  if (seconds < 60) return 'just now';
+  if (seconds < 60) return 'now';
   const mins = Math.floor(seconds / 60);
-  if (mins < 60) return mins + ' min ago';
+  if (mins < 60) return mins + 'm';
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return hrs + ' hr ago';
+  if (hrs < 24) return hrs + 'h';
   const days = Math.floor(hrs / 24);
-  return days + ' day' + (days > 1 ? 's' : '') + ' ago';
+  if (days < 7) return days + 'd';
+  const weeks = Math.floor(days / 7);
+  return weeks + 'w';
 }
