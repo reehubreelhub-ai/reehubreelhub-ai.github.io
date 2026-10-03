@@ -2388,3 +2388,99 @@ html, body {
   from { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
   to   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
+/* ============================================================
+   PUBLIC PROFILE BUTTONS — BIG & ORANGE
+   ============================================================ */
+#pubFollowBtn,
+#pubMessageBtn,
+#pubShareBtn {
+  height: 56px;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.15s, opacity 0.2s;
+  letter-spacing: 0.3px;
+}
+
+#pubFollowBtn:active,
+#pubMessageBtn:active,
+#pubShareBtn:active {
+  transform: scale(0.96);
+}
+
+/* Follow + Messages — 2 side-by-side */
+#pubFollowBtn {
+  flex: 1;
+  background: linear-gradient(90deg, #ff2e63, #ff8a00);
+  border: none;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(255, 46, 99, 0.35);
+}
+
+#pubFollowBtn.following {
+  background: transparent;
+  border: 2px solid #333;
+  color: #fff;
+  box-shadow: none;
+}
+
+#pubMessageBtn {
+  flex: 1;
+  background: linear-gradient(90deg, #ff8a00, #ff2e63);
+  border: none;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(255, 138, 0, 0.35);
+}
+
+/* Share — full width row */
+#pubShareBtn {
+  width: 100%;
+  background: #1a1a1a;
+  border: 2px solid #ff8a00;
+  color: #ff8a00;
+  margin-top: 10px;
+  flex: none;
+}
+
+#pubShareBtn:hover {
+  background: #2a1a10;
+}
+
+/* Icons inside buttons */
+#pubFollowBtn svg,
+#pubMessageBtn svg,
+#pubShareBtn svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+/* Profile actions container — row + wrap */
+.profile-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+.profile-actions .btn-outline,
+.profile-actions .share-btn {
+  display: none;
+}
+
+/* Override old styles for public profile only */
+.profile-page .profile-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
