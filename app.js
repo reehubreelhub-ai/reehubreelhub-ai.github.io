@@ -1405,3 +1405,660 @@ function uploadToCloudinaryStory(file, onProgress) {
     xhr.send(formData);
   });
 }
+/* ============================================================
+   ReelHub — app.js (PART 3/4)
+   Story Viewer, Shorts, Like, Share, Comments
+   ============================================================ */
+
+/* ============================================================
+   STORY VIEWER
+   ============================================================ */
+function openStoryViewer(userId) {
+  const userIndex = storiesByUser.findIndex(u => u.userId === userId);
+  if (userIndex === -1) return;
+  currentStoryUserIndex = userIndex;
+  currentStoryIndex = 0;
+  storyViewer.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  renderCurrentStory();
+}
+
+function renderCurrentStory() {
+  clearStoryTimers();
+  const userGroup = storiesByUser[currentStoryUserIndex];
+  if (!userGroup) { closeStoryViewer(); return; }
+  const story = userGroup.stories[currentStoryIndex];
+  if (!story) {
+    if (currentStoryUserIndex < storiesByUser.length - 1) {
+      currentStoryUserIndex++;
+      currentStoryIndex = 0;
+      renderCurrentStory();
+    } else closeStoryViewer();
+    return;
+  }
+
+  storyUserAvatar.src = userGroup.userPhoto || defaultAvatar(userGroup.userName);
+  storyUserName.textContent = userGroup.userName || 'User';
+  const time = story.createdAt?.toDate?.();
+  storyTime.textContent = time ? timeAgo(time) : 'just now';
+
+  const isOwnStory = userGroup.userId === currentUser.uid;
+  storyDeleteBtn.style.display = isOwnStory ? 'block' : 'none';
+
+  const viewersBtn = document.getElementById('storyViewersBtn');
+  const viewersCountEl = document.getElementById('storyViewersCount');
+  if (viewersBtn) {
+    if (isOwnStory) {
+      viewersBtn.style.display = 'inline-flex';
+      if (viewersCountEl) viewersCountEl.textContent = (story.viewers || []).length;
+    } else {
+      viewersBtn.style.display = 'none';
+    }
+  }
+
+  storyProgressBars.innerHTML = '';
+  userGroup.stories.forEach((s, idx) => {
+    const seg = document.createElement('div');
+    seg.className = 'story-progress-segment';
+    const fill = document.createElement('div');
+    fill.className = 'story-progress-fill';
+    if (idx < currentStoryIndex) fill.style.width = '100%';
+    seg.appendChild(fill);
+    storyProgressBars.appendChild(seg);
+  });
+
+  storyMedia.innerHTML = '';
+  if (story.type === 'photo') {
+    const img = document.createElement('img');
+    img.src = story.url;
+    img.className = 'story-content';
+    img.alt = '';
+    storyMedia.appendChild(img);
+    currentStoryMediaEl = img;
+  } else {
+    const video = document.createElement('video');
+    video.src = story.url;
+    video.className = 'story-content';
+    video.autoplay = true;
+    video.playsInline = true;
+    video.loop = false;
+    storyMedia.appendChild(video);
+    currentStoryMediaEl = video;
+  }
+
+  markStoryViewed(story.id);
+
+  const duration = (story.type === 'photo' ? 5 : (story.duration || 5)) * 1000;
+  startStoryProgress(duration);
+}
+
+function startStoryProgress(duration) {
+  const fills = storyProgressBars.querySelectorAll('.story-progress-fill');
+  const currentFill = fills[currentStoryIndex];
+  if (!currentFill) return;
+  let startTime = Date.now();
+
+  storyProgressInterval = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+    const percent = Math.min((elapsed / duration) * 100, 100);
+    currentFill.style.width = percent + '%';
+    if (percent >= 100) {
+      clearInterval(storyProgressInterval);
+      storyProgressInterval = null;
+      nextStory();
+    }
+  }, 50);
+
+  storyAutoAdvanceTimeout = setTimeout(() => nextStory(), duration + 100);
+}
+
+function clearStoryTimers() {
+  if (storyProgressInterval) { clearInterval(storyProgressInterval); storyProgressInterval = null; }
+  if (storyAutoAdvanceTimeout) { clearTimeout(storyAutoAdvanceTimeout); storyAutoAdvanceTimeout = null; }
+  if (currentStoryMediaEl && currentStoryMediaEl.tagName === 'VIDEO') {
+    try { currentStoryMediaEl.pause(); } catch (e) {}
+  }
+}
+
+function nextStory() {
+  clearStoryTimers();
+  const userGroup = storiesByUser[currentStoryUserIndex];
+  if (!userGroup) { closeStoryViewer(); return; }
+  if (currentStoryIndex < userGroup.stories.length - 1) {
+    currentStoryIndex++;
+    renderCurrentStory();
+  } else {
+    if (currentStoryUserIndex < storiesByUser.length - 1) {
+      currentStoryUserIndex++;
+      currentStoryIndex = 0;
+      renderCurrentStory();
+    } else closeStoryViewer();
+  }
+}
+
+function prevStory() {
+  clearStoryTimers();
+  if (currentStoryIndex > 0) {
+    currentStoryIndex--;
+    renderCurrentStory();
+  } else {
+    if (currentStoryUserIndex > 0) {
+      currentStoryUserIndex--;
+      const prevUser = storiesByUser[currentStoryUserIndex];
+      currentStoryIndex = prevUser.stories.length - 1;
+      renderCurrentStory();
+    } else {
+      currentStoryIndex = 0;
+      renderCurrentStory();
+    }
+  }
+}
+
+function closeStoryViewer() {
+  clearStoryTimers();
+  storyViewer.style.display = 'none';
+  storyMedia.innerHTML = '';
+  document.body.style.overflow = '';
+  currentStoryMediaEl = null;
+  document.getElementById('storyViewersSheet')?.remove();
+}
+
+async function markStoryViewed(storyId) {
+  if (!currentUser) return;
+  try {
+    const storyRef = doc(db, 'stories', storyId);
+    const snap = await getDoc(storyRef);
+    if (!snap.exists()) return;
+    const viewers = snap.data().viewers || [];
+    if (!viewers.includes(currentUser.uid)) {
+      await updateDoc(storyRef, { viewers: arrayUnion(currentUser.uid) });
+    }
+  } catch (e) {}
+}
+
+storyCloseBtn.addEventListener('click', closeStoryViewer);
+storyTapLeft.addEventListener('click', prevStory);
+storyTapRight.addEventListener('click', nextStory);
+
+document.getElementById('storyViewersBtn')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const userGroup = storiesByUser[currentStoryUserIndex];
+  if (!userGroup) return;
+  const story = userGroup.stories[currentStoryIndex];
+  if (!story) return;
+  showStoryViewers(story);
+});
+
+storyDeleteBtn.addEventListener('click', async () => {
+  if (!confirm('Delete this story?')) return;
+  const userGroup = storiesByUser[currentStoryUserIndex];
+  if (!userGroup) return;
+  const story = userGroup.stories[currentStoryIndex];
+  if (!story) return;
+
+  try {
+    await deleteDoc(doc(db, 'stories', story.id));
+    showToast('Story deleted');
+    userGroup.stories.splice(currentStoryIndex, 1);
+    if (userGroup.stories.length === 0) {
+      storiesByUser.splice(currentStoryUserIndex, 1);
+      if (storiesByUser.length === 0) { closeStoryViewer(); renderHomeFeed(); return; }
+      if (currentStoryUserIndex >= storiesByUser.length) currentStoryUserIndex = storiesByUser.length - 1;
+      currentStoryIndex = 0;
+    } else if (currentStoryIndex >= userGroup.stories.length) {
+      currentStoryIndex = userGroup.stories.length - 1;
+    }
+    renderCurrentStory();
+  } catch (e) { showToast('❌ Could not delete'); }
+});
+
+/* ============================================================
+   SHORTS FEED
+   ============================================================ */
+async function renderShortsFeed() {
+  content.innerHTML = `
+    <div class="shorts-wrap" id="shortsWrap">
+      <div class="shorts-empty"><div class="page-title">Loading shorts...</div></div>
+    </div>
+  `;
+  const wrap = document.getElementById('shortsWrap');
+  if (!wrap) return;
+
+  try {
+    const postsRef = collection(db, 'posts');
+    const q = query(postsRef, where('type', '==', 'short'), limit(30));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      wrap.innerHTML = `
+        <div class="shorts-empty">
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="5"/>
+            <path d="M3 8h6M15 8h6"/>
+            <path d="M10 12l5 3-5 3z" fill="currentColor" stroke="none"/>
+          </svg>
+          <h3>No shorts yet</h3>
+          <p>Upload a short video to see it here</p>
+        </div>`;
+      return;
+    }
+
+    let shorts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Filter blocked users
+    const blocked = currentProfile?.blockedUsers || [];
+    shorts = shorts.filter(s => !blocked.includes(s.userId));
+
+    shorts.sort((a, b) => {
+      const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+      const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+      return tb - ta;
+    });
+
+    shorts.forEach(short => trackPostView(short.id));
+
+    wrap.innerHTML = '';
+    shorts.forEach(short => wrap.appendChild(makeShortItem(short)));
+    setupShortsAutoplay(wrap);
+  } catch (e) {
+    wrap.innerHTML = `<div class="shorts-empty"><h3>Could not load shorts</h3></div>`;
+  }
+}
+
+function makeShortItem(short) {
+  const item = document.createElement('div');
+  item.className = 'short-item';
+  item.dataset.postId = short.id;
+
+  const avatar = short.userPhoto || defaultAvatar(short.userName);
+  const isLiked = (short.likes || []).includes(currentUser.uid);
+  const likesCount = (short.likes || []).length;
+  const commentsCount = (short.comments || []).length;
+  const isSaved = isPostSaved(short.id);
+
+  item.innerHTML = `
+    <video src="${short.url}" loop muted playsinline preload="metadata"
+           style="width:100%;height:100%;object-fit:contain;background:#000;"></video>
+
+    <div class="short-overlay">
+      <div class="short-bottom-info">
+        <div class="short-user-block">
+          <div class="short-user-row">
+            <img src="${avatar}" alt="" data-uid="${short.userId}">
+            <div>
+              <b>${escapeHtml(short.userName || 'User')}</b>
+              <span>@${escapeHtml(short.userHandle || '')}</span>
+            </div>
+          </div>
+          ${short.caption ? `<div class="short-caption">${escapeHtml(short.caption)}</div>` : ''}
+        </div>
+
+        <div class="short-side-actions">
+          <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${short.id}">
+            <svg viewBox="0 0 24 24">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            <span>${likesCount}</span>
+          </button>
+          <button class="comment-btn" data-post="${short.id}">
+            <svg viewBox="0 0 24 24">
+              <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+            <span>${commentsCount}</span>
+          </button>
+          <button class="save-btn ${isSaved ? 'saved' : ''}" data-post="${short.id}" title="Save">
+            <svg viewBox="0 0 24 24">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+          </button>
+          <button class="share-btn-short" data-post="${short.id}">
+            <svg viewBox="0 0 24 24">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const userImg = item.querySelector('.short-user-row img');
+  if (userImg) userImg.addEventListener('click', () => openUserProfile(short.userId));
+  item.querySelector('.like-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await toggleLike(short.id, e.currentTarget);
+  });
+  item.querySelector('.comment-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    openComments(short.id, short.caption || 'Comments');
+  });
+  const saveBtn = item.querySelector('.save-btn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await toggleSavePost(short.id, e.currentTarget);
+    });
+  }
+  item.querySelector('.share-btn-short').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await sharePost(short);
+  });
+  return item;
+}
+
+function setupShortsAutoplay(wrap) {
+  stopShortsObserver();
+  const videos = wrap.querySelectorAll('.short-item video');
+  shortsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const video = entry.target;
+      if (entry.isIntersecting && entry.intersectionRatio > 0.6) video.play().catch(() => {});
+      else video.pause();
+    });
+  }, { threshold: [0, 0.6, 1] });
+  videos.forEach(v => shortsObserver.observe(v));
+}
+
+function stopShortsObserver() {
+  if (shortsObserver) { shortsObserver.disconnect(); shortsObserver = null; }
+  document.querySelectorAll('.short-item video').forEach(v => { try { v.pause(); } catch (e) {} });
+}
+
+/* ============================================================
+   LIKE SYSTEM
+   ============================================================ */
+async function toggleLike(postId, btnEl) {
+  if (!currentUser) return;
+  try {
+    const postRef = doc(db, 'posts', postId);
+    const postSnap = await getDoc(postRef);
+    if (!postSnap.exists()) return;
+    const postData = postSnap.data();
+    const likes = postData.likes || [];
+    const isLiked = likes.includes(currentUser.uid);
+
+    if (isLiked) await updateDoc(postRef, { likes: arrayRemove(currentUser.uid) });
+    else await updateDoc(postRef, { likes: arrayUnion(currentUser.uid) });
+
+    const newCount = isLiked ? likes.length - 1 : likes.length + 1;
+    const countSpan = btnEl.querySelector('span');
+    if (countSpan) countSpan.textContent = newCount;
+    btnEl.classList.toggle('liked', !isLiked);
+    btnEl.style.transform = 'scale(1.3)';
+    setTimeout(() => { btnEl.style.transform = ''; }, 200);
+  } catch (e) {}
+}
+
+/* ============================================================
+   SHARE POST
+   ============================================================ */
+async function sharePost(post) {
+  const appUrl = window.location.origin;
+  const shareText = `🎬 Check out this post on ReelHub!\n\n@${post.userHandle}\n\n${appUrl}`;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'ReelHub Post', text: shareText, url: appUrl }); return; }
+    catch (err) { if (err.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(shareText); showToast('✅ Link copied!'); }
+  catch (err) { showToast('❌ Could not share'); }
+}
+
+/* ============================================================
+   COMMENTS
+   ============================================================ */
+async function openComments(postId, title) {
+  if (!currentUser) return;
+  activeCommentPostId = postId;
+  activeReplyTo = null;
+  allCommentsForPost = [];
+  commentsTitle.textContent = title || 'Comments';
+  myAvatarForComment.src = currentProfile?.photo || defaultAvatar(currentProfile?.name || '?');
+  commentInput.value = '';
+  postCommentBtn.disabled = true;
+  hideReplyIndicator();
+  commentsList.innerHTML = `<div class="empty-msg">Loading comments...</div>`;
+  commentsModal.classList.add('show');
+  await loadComments();
+}
+
+document.getElementById('closeComments').addEventListener('click', () => {
+  commentsModal.classList.remove('show');
+  activeCommentPostId = null;
+  activeReplyTo = null;
+});
+commentsModal.addEventListener('click', (e) => {
+  if (e.target === commentsModal) {
+    commentsModal.classList.remove('show');
+    activeCommentPostId = null;
+    activeReplyTo = null;
+  }
+});
+
+async function loadComments() {
+  if (!activeCommentPostId) return;
+  try {
+    const commentsRef = collection(db, 'comments');
+    const q = query(commentsRef, where('postId', '==', activeCommentPostId));
+    const snap = await getDocs(q);
+    const allComments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const topLevel = allComments.filter(c => !c.parentId);
+    const replies = allComments.filter(c => c.parentId);
+    topLevel.sort((a, b) => {
+      const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+      const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+      return ta - tb;
+    });
+    topLevel.forEach(c => {
+      c.replies = replies.filter(r => r.parentId === c.id).sort((a, b) => {
+        const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+        const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+        return ta - tb;
+      });
+    });
+    allCommentsForPost = topLevel;
+    paintComments(topLevel);
+  } catch (e) {
+    commentsList.innerHTML = `<div class="comments-empty">Could not load</div>`;
+  }
+}
+
+function paintComments(comments) {
+  if (comments.length === 0) {
+    commentsList.innerHTML = `
+      <div class="comments-empty">
+        <svg viewBox="0 0 24 24">
+          <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </svg>
+        <div>No comments yet</div>
+      </div>`;
+    return;
+  }
+  commentsList.innerHTML = '';
+  comments.forEach(comment => commentsList.appendChild(makeCommentItem(comment, false)));
+}
+
+function makeCommentItem(comment, isReply) {
+  const item = document.createElement('div');
+  item.className = isReply ? 'comment-item reply-item' : 'comment-item';
+  item.dataset.commentId = comment.id;
+  const avatar = comment.userPhoto || defaultAvatar(comment.userName);
+  const isLiked = (comment.likes || []).includes(currentUser.uid);
+  const likesCount = (comment.likes || []).length;
+  const isOwner = comment.userId === currentUser.uid;
+  const time = comment.createdAt?.toDate?.();
+  const timeStr = time ? timeAgo(time) : 'just now';
+  let replyToHtml = '';
+  if (comment.replyToHandle) replyToHtml = `<span class="mention">@${escapeHtml(comment.replyToHandle)}</span> `;
+
+  let repliesHtml = '';
+  if (!isReply && comment.replies && comment.replies.length > 0) {
+    repliesHtml = `
+      <div class="replies-wrap">
+        <button class="replies-toggle" data-toggle="${comment.id}">
+          <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          <span>View ${comment.replies.length} ${comment.replies.length === 1 ? 'reply' : 'replies'}</span>
+        </button>
+        <div class="replies-list replies-hidden" data-replies="${comment.id}"></div>
+      </div>
+    `;
+  }
+
+  item.innerHTML = `
+    <div class="comment-main">
+      <img class="comment-avatar" src="${avatar}" alt="" data-uid="${comment.userId}">
+      <div class="comment-content">
+        <div class="comment-top">
+          <span class="comment-name" data-uid="${comment.userId}">${escapeHtml(comment.userName || 'User')}</span>
+          <span class="comment-time">${timeStr}</span>
+        </div>
+        <div class="comment-text">${replyToHtml}${escapeHtml(comment.text || '')}</div>
+        <div class="comment-actions-row">
+          <button class="comment-action-btn like-btn ${isLiked ? 'liked' : ''}" data-comment="${comment.id}">
+            <svg viewBox="0 0 24 24">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            <span class="comment-like-count">${likesCount > 0 ? likesCount : ''}</span>
+          </button>
+          ${!isReply ? `
+            <button class="comment-action-btn reply-btn" data-comment="${comment.id}" data-user="${escapeHtml(comment.userName)}" data-handle="${escapeHtml(comment.userHandle)}">
+              <svg viewBox="0 0 24 24">
+                <polyline points="9 17 4 12 9 7"/>
+                <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+              </svg>
+              Reply
+            </button>
+          ` : ''}
+          ${isOwner ? `<button class="comment-delete-btn" data-comment="${comment.id}">🗑️</button>` : ''}
+        </div>
+      </div>
+    </div>
+    ${repliesHtml}
+  `;
+
+  item.querySelector('.comment-avatar')?.addEventListener('click', () => openUserProfile(comment.userId));
+  item.querySelector('.comment-name')?.addEventListener('click', () => openUserProfile(comment.userId));
+  item.querySelector('.like-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await toggleCommentLike(comment.id, e.currentTarget);
+  });
+  const replyBtn = item.querySelector('.reply-btn');
+  if (replyBtn) replyBtn.addEventListener('click', () => showReplyIndicator(comment.id, comment.userName, comment.userHandle));
+  const deleteBtn = item.querySelector('.comment-delete-btn');
+  if (deleteBtn) deleteBtn.addEventListener('click', async () => {
+    if (!confirm('Delete?')) return;
+    await deleteComment(comment.id);
+  });
+  const toggleBtn = item.querySelector('.replies-toggle');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const repliesList = item.querySelector('.replies-list');
+      const isHidden = repliesList.classList.contains('replies-hidden');
+      if (isHidden) {
+        repliesList.innerHTML = '';
+        (comment.replies || []).forEach(reply => repliesList.appendChild(makeCommentItem(reply, true)));
+        repliesList.classList.remove('replies-hidden');
+        toggleBtn.innerHTML = `
+          <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+          <span>Hide ${comment.replies.length}</span>
+        `;
+      } else {
+        repliesList.classList.add('replies-hidden');
+        toggleBtn.innerHTML = `
+          <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          <span>View ${comment.replies.length}</span>
+        `;
+      }
+    });
+  }
+  return item;
+}
+
+commentInput.addEventListener('input', () => { postCommentBtn.disabled = !commentInput.value.trim(); });
+
+postCommentBtn.addEventListener('click', async () => {
+  const text = commentInput.value.trim();
+  if (!text || !activeCommentPostId || !currentUser) return;
+  postCommentBtn.disabled = true;
+  postCommentBtn.textContent = '...';
+
+  try {
+    const commentData = {
+      postId: activeCommentPostId,
+      userId: currentUser.uid,
+      userName: currentProfile?.name || 'User',
+      userHandle: currentProfile?.user || '',
+      userPhoto: currentProfile?.photo || '',
+      text: text,
+      likes: [],
+      parentId: activeReplyTo ? activeReplyTo.commentId : null,
+      replyToUser: activeReplyTo ? activeReplyTo.userName : null,
+      replyToHandle: activeReplyTo ? activeReplyTo.userHandle : null,
+      createdAt: serverTimestamp()
+    };
+    await addDoc(collection(db, 'comments'), commentData);
+    try {
+      const postRef = doc(db, 'posts', activeCommentPostId);
+      const postSnap = await getDoc(postRef);
+      if (postSnap.exists()) {
+        const comments = postSnap.data().comments || [];
+        await updateDoc(postRef, { comments: [...comments, 'new'] });
+      }
+    } catch (e) {}
+    commentInput.value = '';
+    hideReplyIndicator();
+    postCommentBtn.textContent = 'Post';
+    postCommentBtn.disabled = true;
+    await loadComments();
+  } catch (e) {
+    postCommentBtn.textContent = 'Post';
+    postCommentBtn.disabled = false;
+  }
+});
+
+function showReplyIndicator(commentId, userName, userHandle) {
+  activeReplyTo = { commentId, userName, userHandle };
+  replyIndicatorText.textContent = `Replying to @${userHandle}`;
+  replyIndicator.classList.add('show');
+  replyIndicator.style.display = 'flex';
+  commentInput.focus();
+  commentInput.placeholder = `Reply to @${userHandle}...`;
+}
+
+function hideReplyIndicator() {
+  activeReplyTo = null;
+  replyIndicator.classList.remove('show');
+  replyIndicator.style.display = 'none';
+  commentInput.placeholder = 'Add a comment...';
+}
+
+cancelReplyBtn.addEventListener('click', hideReplyIndicator);
+
+async function toggleCommentLike(commentId, btnEl) {
+  if (!currentUser) return;
+  try {
+    const ref = doc(db, 'comments', commentId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const likes = data.likes || [];
+    const isLiked = likes.includes(currentUser.uid);
+    if (isLiked) await updateDoc(ref, { likes: arrayRemove(currentUser.uid) });
+    else await updateDoc(ref, { likes: arrayUnion(currentUser.uid) });
+    const newCount = isLiked ? likes.length - 1 : likes.length + 1;
+    const countEl = btnEl.querySelector('.comment-like-count');
+    if (countEl) countEl.textContent = newCount > 0 ? newCount : '';
+    btnEl.classList.toggle('liked', !isLiked);
+  } catch (e) {}
+}
+
+async function deleteComment(commentId) {
+  try {
+    await deleteDoc(doc(db, 'comments', commentId));
+    const repliesQ = query(collection(db, 'comments'), where('parentId', '==', commentId));
+    const repliesSnap = await getDocs(repliesQ);
+    for (const replyDoc of repliesSnap.docs) await deleteDoc(doc(db, 'comments', replyDoc.id));
+    showToast('Comment deleted');
+    await loadComments();
+  } catch (e) { showToast('❌ Could not delete'); }
+}
