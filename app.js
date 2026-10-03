@@ -47,7 +47,7 @@ const auth = getAuth(firebaseApp);
 const db   = getFirestore(firebaseApp);
 
 /* ============================================================
-   CLOUDINARY — s3eresx6 account
+   CLOUDINARY — s3eresx6
    ============================================================ */
 const CLOUDINARY_ACCOUNTS = [
   {
@@ -116,7 +116,6 @@ const playerModal   = document.getElementById('playerModal');
 const playerTitle   = document.getElementById('playerTitle');
 const playerContent = document.getElementById('playerContent');
 
-// Comments
 const commentsModal      = document.getElementById('commentsModal');
 const commentsTitle      = document.getElementById('commentsTitle');
 const commentsList       = document.getElementById('commentsList');
@@ -127,7 +126,6 @@ const replyIndicator     = document.getElementById('replyIndicator');
 const replyIndicatorText = document.getElementById('replyIndicatorText');
 const cancelReplyBtn     = document.getElementById('cancelReplyBtn');
 
-// Chats
 const newChatModal = document.getElementById('newChatModal');
 const newChatSearch = document.getElementById('newChatSearch');
 const newChatResults = document.getElementById('newChatResults');
@@ -144,7 +142,6 @@ const recordingIndicator = document.getElementById('recordingIndicator');
 const recordingTimer = document.getElementById('recordingTimer');
 const cancelRecordingBtn = document.getElementById('cancelRecordingBtn');
 
-// Stories
 const storyUploadModal = document.getElementById('storyUploadModal');
 const storyFileInput = document.getElementById('storyFileInput');
 const storyPickerWrap = document.getElementById('storyPickerWrap');
@@ -186,21 +183,17 @@ let viewingUserId  = null;
 let currentUploadType = 'short';
 let selectedFile = null;
 let selectedFileDuration = 0;
-
 let shortsObserver = null;
 
-// Comments state
 let activeCommentPostId = null;
 let activeReplyTo = null;
 let allCommentsForPost = [];
 
-// Chat state
 let activeChatId = null;
 let activeChatUser = null;
 let chatMessagesUnsub = null;
 let chatListInterval = null;
 
-// Voice state
 let mediaRecorder = null;
 let audioChunks = [];
 let voiceTimerInterval = null;
@@ -209,7 +202,6 @@ let isRecording = false;
 let currentPlayingAudio = null;
 let currentPlayingBtn = null;
 
-// Story state
 let currentStoryType = 'photo';
 let currentStoryFile = null;
 let currentStoryVideoDuration = 0;
@@ -278,7 +270,6 @@ document.getElementById('goLogin').addEventListener('click', () => {
    ============================================================ */
 signupForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-
   const name  = document.getElementById('signupName').value.trim();
   const user  = document.getElementById('signupUser').value.trim().toLowerCase();
   const email = document.getElementById('signupEmail').value.trim().toLowerCase();
@@ -287,22 +278,10 @@ signupForm.addEventListener('submit', async (e) => {
   signupMsg.className = 'error-msg';
   signupMsg.textContent = '';
 
-  if (!name || !user || !email || !pass) {
-    signupMsg.textContent = 'Please fill all fields.';
-    return;
-  }
-  if (!/^[a-z0-9._]{3,20}$/.test(user)) {
-    signupMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
-    return;
-  }
-  if (!/^\S+@\S+\.\S+$/.test(email)) {
-    signupMsg.textContent = 'Please enter a valid email.';
-    return;
-  }
-  if (pass.length < 6) {
-    signupMsg.textContent = 'Password must be at least 6 characters.';
-    return;
-  }
+  if (!name || !user || !email || !pass) { signupMsg.textContent = 'Please fill all fields.'; return; }
+  if (!/^[a-z0-9._]{3,20}$/.test(user)) { signupMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _'; return; }
+  if (!/^\S+@\S+\.\S+$/.test(email)) { signupMsg.textContent = 'Please enter a valid email.'; return; }
+  if (pass.length < 6) { signupMsg.textContent = 'Password min 6 characters.'; return; }
 
   signupBtn.disabled = true;
   signupBtn.textContent = 'Creating...';
@@ -336,19 +315,13 @@ signupForm.addEventListener('submit', async (e) => {
 
     signupMsg.className = 'success-msg';
     signupMsg.textContent = 'Account created! Welcome 🎉';
-
   } catch (err) {
     console.error(err);
     signupMsg.className = 'error-msg';
-    if (err.code === 'auth/email-already-in-use') {
-      signupMsg.textContent = 'Email already registered. Try logging in.';
-    } else if (err.code === 'auth/invalid-email') {
-      signupMsg.textContent = 'Invalid email address.';
-    } else if (err.code === 'auth/weak-password') {
-      signupMsg.textContent = 'Password too weak.';
-    } else {
-      signupMsg.textContent = err.message || 'Signup failed.';
-    }
+    if (err.code === 'auth/email-already-in-use') signupMsg.textContent = 'Email already registered.';
+    else if (err.code === 'auth/invalid-email') signupMsg.textContent = 'Invalid email.';
+    else if (err.code === 'auth/weak-password') signupMsg.textContent = 'Password too weak.';
+    else signupMsg.textContent = err.message || 'Signup failed.';
   } finally {
     signupBtn.disabled = false;
     signupBtn.textContent = 'Sign Up';
@@ -360,17 +333,13 @@ signupForm.addEventListener('submit', async (e) => {
    ============================================================ */
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-
   const email = document.getElementById('loginEmail').value.trim().toLowerCase();
   const pass  = document.getElementById('loginPass').value;
 
   loginMsg.className = 'error-msg';
   loginMsg.textContent = '';
 
-  if (!email || !pass) {
-    loginMsg.textContent = 'Please enter email and password.';
-    return;
-  }
+  if (!email || !pass) { loginMsg.textContent = 'Please enter email and password.'; return; }
 
   isLoggingIn = true;
   loginBtn.disabled = true;
@@ -378,7 +347,6 @@ loginForm.addEventListener('submit', async (e) => {
 
   try {
     const result = await signInWithEmailAndPassword(auth, email, pass);
-
     if (!result || !result.user) throw new Error('Login failed');
 
     currentUser = result.user;
@@ -387,7 +355,6 @@ loginForm.addEventListener('submit', async (e) => {
     loginMsg.textContent = '';
     showApp();
     startNotifWatcher();
-
   } catch (err) {
     console.error(err);
     try { await signOut(auth); } catch (e) {}
@@ -395,20 +362,12 @@ loginForm.addEventListener('submit', async (e) => {
     currentProfile = null;
     loginMsg.className = 'error-msg';
 
-    if (
-      err.code === 'auth/user-not-found' ||
-      err.code === 'auth/wrong-password' ||
-      err.code === 'auth/invalid-credential' ||
-      err.code === 'auth/invalid-login-credentials'
-    ) {
+    if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' ||
+        err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials') {
       loginMsg.textContent = 'Invalid email or password.';
-    } else if (err.code === 'auth/too-many-requests') {
-      loginMsg.textContent = 'Too many attempts. Try again later.';
-    } else if (err.code === 'auth/network-request-failed') {
-      loginMsg.textContent = 'Network error. Check your internet.';
-    } else {
-      loginMsg.textContent = err.message || 'Login failed.';
-    }
+    } else if (err.code === 'auth/too-many-requests') loginMsg.textContent = 'Too many attempts.';
+    else if (err.code === 'auth/network-request-failed') loginMsg.textContent = 'Network error.';
+    else loginMsg.textContent = err.message || 'Login failed.';
 
     showAuth();
   } finally {
@@ -439,12 +398,11 @@ forgotModal.addEventListener('click', (e) => {
 
 sendResetBtn.addEventListener('click', async () => {
   const email = forgotEmail.value.trim().toLowerCase();
-
   forgotMsg.className = 'error-msg';
   forgotMsg.textContent = '';
 
-  if (!email) { forgotMsg.textContent = 'Please enter your email address.'; return; }
-  if (!/^\S+@\S+\.\S+$/.test(email)) { forgotMsg.textContent = 'Please enter a valid email.'; return; }
+  if (!email) { forgotMsg.textContent = 'Enter your email.'; return; }
+  if (!/^\S+@\S+\.\S+$/.test(email)) { forgotMsg.textContent = 'Invalid email.'; return; }
 
   sendResetBtn.disabled = true;
   sendResetBtn.textContent = 'Sending...';
@@ -452,24 +410,18 @@ sendResetBtn.addEventListener('click', async () => {
   try {
     await sendPasswordResetEmail(auth, email);
     forgotMsg.className = 'success-msg';
-    forgotMsg.textContent = 'Reset link sent! Check your inbox (and spam folder).';
+    forgotMsg.textContent = 'Reset link sent! Check your inbox (and spam).';
     setTimeout(() => {
       forgotModal.classList.remove('show');
       forgotEmail.value = '';
       forgotMsg.textContent = '';
     }, 3500);
   } catch (err) {
-    console.error(err);
     forgotMsg.className = 'error-msg';
-    if (err.code === 'auth/user-not-found') {
-      forgotMsg.textContent = 'No account found with this email.';
-    } else if (err.code === 'auth/invalid-email') {
-      forgotMsg.textContent = 'Invalid email address.';
-    } else if (err.code === 'auth/too-many-requests') {
-      forgotMsg.textContent = 'Too many attempts. Try again later.';
-    } else {
-      forgotMsg.textContent = err.message || 'Failed to send reset email.';
-    }
+    if (err.code === 'auth/user-not-found') forgotMsg.textContent = 'No account with this email.';
+    else if (err.code === 'auth/invalid-email') forgotMsg.textContent = 'Invalid email.';
+    else if (err.code === 'auth/too-many-requests') forgotMsg.textContent = 'Too many attempts.';
+    else forgotMsg.textContent = err.message || 'Failed.';
   } finally {
     sendResetBtn.disabled = false;
     sendResetBtn.textContent = 'Send Reset Link';
@@ -488,9 +440,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
     currentUser = null;
     currentProfile = null;
     viewingUserId = null;
-
     try { await signOut(auth); } catch (e) {}
-
     loginForm.reset();
     signupForm.reset();
     document.getElementById('goLogin').click();
@@ -501,22 +451,14 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
 /* ============================================================
    HEADER BUTTONS
    ============================================================ */
-notifBtn.addEventListener('click', () => {
-  setActiveNav(null);
-  renderPage('notifications');
-});
-
-searchBtn.addEventListener('click', () => {
-  setActiveNav(null);
-  renderPage('search');
-});
+notifBtn.addEventListener('click', () => { setActiveNav(null); renderPage('notifications'); });
+searchBtn.addEventListener('click', () => { setActiveNav(null); renderPage('search'); });
 
 /* ============================================================
    AUTH STATE LISTENER
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
   if (isLoggingIn) return;
-
   if (user) {
     currentUser = user;
     try { await loadProfile(user.uid); } catch (e) {}
@@ -549,9 +491,7 @@ async function loadProfile(uid) {
     } else {
       currentProfile = null;
     }
-  } catch (e) {
-    console.warn('Could not load profile:', e);
-  }
+  } catch (e) {}
 }
 
 /* ============================================================
@@ -581,23 +521,14 @@ document.querySelector('.upload-btn').addEventListener('click', () => {
 });
 
 function renderPage(page) {
-  if (page === 'profile') {
-    renderProfile();
-  } else if (page === 'home') {
-    renderHomeFeed();
-  } else if (page === 'shorts') {
-    renderShortsFeed();
-  } else if (page === 'messages') {
-    renderChatsPage();
-  } else if (page === 'notifications') {
-    renderNotifications();
-  } else if (page === 'search') {
-    renderSearch();
-  } else if (page === 'upload') {
-    content.innerHTML = `
-      <div class="page-placeholder">
-        <div class="page-title">${pages[page]}</div>
-      </div>`;
+  if (page === 'profile') renderProfile();
+  else if (page === 'home') renderHomeFeed();
+  else if (page === 'shorts') renderShortsFeed();
+  else if (page === 'messages') renderChatsPage();
+  else if (page === 'notifications') renderNotifications();
+  else if (page === 'search') renderSearch();
+  else if (page === 'upload') {
+    content.innerHTML = `<div class="page-placeholder"><div class="page-title">${pages[page]}</div></div>`;
   }
 }
 /* ============================================================
@@ -669,7 +600,6 @@ async function loadHomeFeedPosts() {
     });
 
     setupFeedAutoplay();
-
   } catch (e) {
     console.error('Home feed error:', e);
     container.innerHTML = `
@@ -758,17 +688,14 @@ function makeFeedPost(post) {
   postEl.querySelector('.feed-post-header .info').addEventListener('click', () => {
     openUserProfile(post.userId);
   });
-
   postEl.querySelector('.like-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     await toggleLike(post.id, e.currentTarget);
   });
-
   postEl.querySelector('.comment-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     openComments(post.id, post.caption || 'Comments');
   });
-
   postEl.querySelector('.share-btn-feed').addEventListener('click', async (e) => {
     e.stopPropagation();
     await sharePost(post);
@@ -782,18 +709,13 @@ function makeFeedPost(post) {
    ============================================================ */
 function setupFeedAutoplay() {
   const videos = document.querySelectorAll('.feed-post-media video');
-
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const video = entry.target;
-      if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
-        video.play().catch(() => {});
-      } else {
-        video.pause();
-      }
+      if (entry.isIntersecting && entry.intersectionRatio > 0.6) video.play().catch(() => {});
+      else video.pause();
     });
   }, { threshold: [0, 0.6, 1] });
-
   videos.forEach(v => observer.observe(v));
 }
 
@@ -803,28 +725,21 @@ function setupFeedAutoplay() {
 async function loadStoriesBar() {
   const bar = document.getElementById('storiesBar');
   if (!bar) return;
-
-  // Remove existing story items (keep Add button)
   bar.querySelectorAll('.story-item:not(#addStoryBtn)').forEach(el => el.remove());
 
   try {
     const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
     const storiesRef = collection(db, 'stories');
     const q = query(storiesRef, limit(100));
     const snap = await getDocs(q);
-
     const allStories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // Filter by 24 hours
     const validStories = allStories.filter(s => {
       const t = s.createdAt?.toDate?.();
       return t && t.getTime() > cutoffTime.getTime();
     });
-
     if (validStories.length === 0) return;
 
-    // Group by user
     const grouped = {};
     validStories.forEach(s => {
       if (!grouped[s.userId]) {
@@ -839,7 +754,6 @@ async function loadStoriesBar() {
       grouped[s.userId].stories.push(s);
     });
 
-    // Sort each user's stories by time (oldest first)
     Object.values(grouped).forEach(u => {
       u.stories.sort((a, b) => {
         const ta = a.createdAt?.toDate?.()?.getTime() || 0;
@@ -848,13 +762,10 @@ async function loadStoriesBar() {
       });
     });
 
-    // Convert to array + sort (own story first, then by latest)
     const userArray = Object.values(grouped);
     userArray.sort((a, b) => {
-      // Own story first
       if (a.userId === currentUser.uid) return -1;
       if (b.userId === currentUser.uid) return 1;
-      // Then by latest story time desc
       const ta = a.stories[a.stories.length-1].createdAt?.toDate?.()?.getTime() || 0;
       const tb = b.stories[b.stories.length-1].createdAt?.toDate?.()?.getTime() || 0;
       return tb - ta;
@@ -862,11 +773,9 @@ async function loadStoriesBar() {
 
     storiesByUser = userArray;
 
-    // Render
     userArray.forEach(userGroup => {
       const item = document.createElement('div');
       item.className = 'story-item';
-
       const allViewed = userGroup.stories.every(s => (s.viewers || []).includes(currentUser.uid));
       const avatar = userGroup.userPhoto || defaultAvatar(userGroup.userName);
 
@@ -878,17 +787,10 @@ async function loadStoriesBar() {
           ${userGroup.userId === currentUser.uid ? 'Your story' : escapeHtml(userGroup.userName)}
         </div>
       `;
-
-      item.addEventListener('click', () => {
-        openStoryViewer(userGroup.userId);
-      });
-
+      item.addEventListener('click', () => openStoryViewer(userGroup.userId));
       bar.appendChild(item);
     });
-
-  } catch (e) {
-    console.error('Load stories bar error:', e);
-  }
+  } catch (e) {}
 }
 
 /* ============================================================
@@ -898,7 +800,6 @@ function openStoryUploadModal() {
   currentStoryType = 'photo';
   currentStoryFile = null;
   currentStoryVideoDuration = 0;
-
   storyFileInput.value = '';
   storyPreviewImg.src = '';
   storyPreviewVideo.src = '';
@@ -910,10 +811,8 @@ function openStoryUploadModal() {
   storyProgressWrap.style.display = 'none';
   storyProgressBar.style.width = '0%';
   storyProgressText.textContent = '0%';
-
   document.querySelectorAll('.story-upload-tab').forEach(t => t.classList.remove('active'));
   document.querySelector('.story-upload-tab[data-type="photo"]').classList.add('active');
-
   updateStoryPickerText();
   storyUploadModal.classList.add('show');
 }
@@ -945,7 +844,6 @@ document.querySelectorAll('.story-upload-tab').forEach(tab => {
     document.querySelectorAll('.story-upload-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     currentStoryType = tab.dataset.type;
-
     currentStoryFile = null;
     currentStoryVideoDuration = 0;
     storyFileInput.value = '';
@@ -956,7 +854,6 @@ document.querySelectorAll('.story-upload-tab').forEach(tab => {
     storyPickerWrap.style.display = 'flex';
     storySubmitBtn.disabled = true;
     storyUploadMsg.textContent = '';
-
     updateStoryPickerText();
   });
 });
@@ -964,19 +861,12 @@ document.querySelectorAll('.story-upload-tab').forEach(tab => {
 storyFileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-
   storyUploadMsg.className = 'error-msg';
   storyUploadMsg.textContent = '';
 
   if (currentStoryType === 'photo') {
-    if (!file.type.startsWith('image/')) {
-      storyUploadMsg.textContent = 'Please choose an image file.';
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      storyUploadMsg.textContent = 'Photo too large. Max 5 MB.';
-      return;
-    }
+    if (!file.type.startsWith('image/')) { storyUploadMsg.textContent = 'Choose image file.'; return; }
+    if (file.size > 5 * 1024 * 1024) { storyUploadMsg.textContent = 'Max 5 MB.'; return; }
     currentStoryFile = file;
     const url = URL.createObjectURL(file);
     storyPreviewImg.src = url;
@@ -986,15 +876,8 @@ storyFileInput.addEventListener('change', async (e) => {
     return;
   }
 
-  // VIDEO
-  if (!file.type.startsWith('video/')) {
-    storyUploadMsg.textContent = 'Please choose a video file.';
-    return;
-  }
-  if (file.size > 20 * 1024 * 1024) {
-    storyUploadMsg.textContent = 'Video too large. Max 20 MB.';
-    return;
-  }
+  if (!file.type.startsWith('video/')) { storyUploadMsg.textContent = 'Choose video file.'; return; }
+  if (file.size > 20 * 1024 * 1024) { storyUploadMsg.textContent = 'Max 20 MB.'; return; }
 
   const url = URL.createObjectURL(file);
   const tempVideo = document.createElement('video');
@@ -1003,48 +886,27 @@ storyFileInput.addEventListener('change', async (e) => {
 
   tempVideo.onloadedmetadata = () => {
     const duration = tempVideo.duration;
-
-    if (!isFinite(duration) || duration <= 0) {
-      storyUploadMsg.textContent = 'Could not read video duration.';
-      return;
-    }
-
-    if (duration > 15.5) {
-      storyUploadMsg.textContent = `⚠️ Story video must be max 15 seconds. Yours is ${Math.round(duration)}s.`;
-      return;
-    }
-
+    if (!isFinite(duration) || duration <= 0) { storyUploadMsg.textContent = 'Could not read duration.'; return; }
+    if (duration > 15.5) { storyUploadMsg.textContent = `Max 15 sec. Yours ${Math.round(duration)}s.`; return; }
     currentStoryFile = file;
     currentStoryVideoDuration = duration;
-
     storyPreviewVideo.src = url;
     storyVideoPreviewWrap.style.display = 'block';
-    storyPreviewInfo.textContent = `Duration: ${Math.round(duration)}s · Size: ${(file.size/1024/1024).toFixed(2)} MB`;
+    storyPreviewInfo.textContent = `${Math.round(duration)}s · ${(file.size/1024/1024).toFixed(2)} MB`;
     storyPickerWrap.style.display = 'none';
     storySubmitBtn.disabled = false;
   };
-
-  tempVideo.onerror = () => {
-    storyUploadMsg.textContent = 'Could not load video.';
-  };
+  tempVideo.onerror = () => { storyUploadMsg.textContent = 'Could not load video.'; };
 });
 
 storySubmitBtn.addEventListener('click', async () => {
-  if (!currentUser || !currentProfile) {
-    storyUploadMsg.textContent = 'You must be logged in.';
-    return;
-  }
-  if (!currentStoryFile) {
-    storyUploadMsg.textContent = 'Please select a file.';
-    return;
-  }
+  if (!currentUser || !currentProfile) { storyUploadMsg.textContent = 'Login required.'; return; }
+  if (!currentStoryFile) { storyUploadMsg.textContent = 'Select a file.'; return; }
 
   storySubmitBtn.disabled = true;
   storySubmitBtn.textContent = 'Uploading...';
   storyUploadMsg.textContent = '';
   storyProgressWrap.style.display = 'block';
-  storyProgressBar.style.width = '0%';
-  storyProgressText.textContent = '0%';
 
   try {
     const result = await uploadToCloudinaryStory(currentStoryFile, (percent) => {
@@ -1059,9 +921,7 @@ storySubmitBtn.addEventListener('click', async () => {
       userPhoto: currentProfile.photo || '',
       type: currentStoryType,
       url: result.secure_url,
-      thumbnail: currentStoryType === 'video'
-        ? buildThumbnailUrl(result.secure_url, 'video')
-        : result.secure_url,
+      thumbnail: currentStoryType === 'video' ? buildThumbnailUrl(result.secure_url, 'video') : result.secure_url,
       duration: currentStoryType === 'photo' ? 5 : currentStoryVideoDuration,
       viewers: [],
       createdAt: serverTimestamp()
@@ -1078,11 +938,10 @@ storySubmitBtn.addEventListener('click', async () => {
         renderHomeFeed();
       }
     }, 1200);
-
   } catch (err) {
     console.error('Story upload failed:', err);
     storyUploadMsg.className = 'error-msg';
-    storyUploadMsg.textContent = err.message || 'Story upload failed.';
+    storyUploadMsg.textContent = err.message || 'Upload failed.';
     storySubmitBtn.disabled = false;
     storySubmitBtn.textContent = 'Share to Story';
   }
@@ -1095,7 +954,6 @@ function uploadToCloudinaryStory(file, onProgress) {
   return new Promise((resolve, reject) => {
     const resourceType = currentStoryType === 'photo' ? 'image' : 'video';
     const acc = CLOUDINARY_ACCOUNTS[0];
-
     const url = `https://api.cloudinary.com/v1_1/${acc.cloudName}/${resourceType}/upload`;
 
     const formData = new FormData();
@@ -1108,37 +966,25 @@ function uploadToCloudinaryStory(file, onProgress) {
     xhr.timeout = 120000;
 
     xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) {
-        const percent = Math.round((e.loaded / e.total) * 100);
-        onProgress(percent);
-      }
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
     };
 
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const res = JSON.parse(xhr.responseText);
-          if (!res.secure_url) {
-            reject(new Error('No URL returned'));
-            return;
-          }
+          if (!res.secure_url) { reject(new Error('No URL returned')); return; }
           resolve(res);
-        } catch (e) {
-          reject(new Error('Invalid response'));
-        }
+        } catch (e) { reject(new Error('Invalid response')); }
       } else {
         let errMsg = 'Upload failed';
-        try {
-          const errData = JSON.parse(xhr.responseText);
-          if (errData.error && errData.error.message) errMsg = errData.error.message;
-        } catch (e) { errMsg = 'HTTP ' + xhr.status; }
+        try { const errData = JSON.parse(xhr.responseText); if (errData.error?.message) errMsg = errData.error.message; }
+        catch (e) { errMsg = 'HTTP ' + xhr.status; }
         reject(new Error(errMsg));
       }
     };
-
     xhr.onerror = () => reject(new Error('Network error'));
-    xhr.ontimeout = () => reject(new Error('Upload timeout'));
-
+    xhr.ontimeout = () => reject(new Error('Timeout'));
     xhr.send(formData);
   });
 }
@@ -1147,70 +993,46 @@ function uploadToCloudinaryStory(file, onProgress) {
    STORY VIEWER
    ============================================================ */
 function openStoryViewer(userId) {
-  // Find user's index in storiesByUser
   const userIndex = storiesByUser.findIndex(u => u.userId === userId);
   if (userIndex === -1) return;
-
   currentStoryUserIndex = userIndex;
   currentStoryIndex = 0;
-
   storyViewer.style.display = 'block';
   document.body.style.overflow = 'hidden';
-
   renderCurrentStory();
 }
 
 function renderCurrentStory() {
   clearStoryTimers();
-
   const userGroup = storiesByUser[currentStoryUserIndex];
-  if (!userGroup) {
-    closeStoryViewer();
-    return;
-  }
-
+  if (!userGroup) { closeStoryViewer(); return; }
   const story = userGroup.stories[currentStoryIndex];
   if (!story) {
-    // Move to next user
     if (currentStoryUserIndex < storiesByUser.length - 1) {
       currentStoryUserIndex++;
       currentStoryIndex = 0;
       renderCurrentStory();
-    } else {
-      closeStoryViewer();
-    }
+    } else closeStoryViewer();
     return;
   }
 
-  // Header
   storyUserAvatar.src = userGroup.userPhoto || defaultAvatar(userGroup.userName);
   storyUserName.textContent = userGroup.userName || 'User';
-
   const time = story.createdAt?.toDate?.();
   storyTime.textContent = time ? timeAgo(time) : 'just now';
+  storyDeleteBtn.style.display = userGroup.userId === currentUser.uid ? 'block' : 'none';
 
-  // Delete button (own story only)
-  if (userGroup.userId === currentUser.uid) {
-    storyDeleteBtn.style.display = 'block';
-  } else {
-    storyDeleteBtn.style.display = 'none';
-  }
-
-  // Progress bars
   storyProgressBars.innerHTML = '';
   userGroup.stories.forEach((s, idx) => {
     const seg = document.createElement('div');
     seg.className = 'story-progress-segment';
     const fill = document.createElement('div');
     fill.className = 'story-progress-fill';
-    if (idx < currentStoryIndex) {
-      fill.style.width = '100%';
-    }
+    if (idx < currentStoryIndex) fill.style.width = '100%';
     seg.appendChild(fill);
     storyProgressBars.appendChild(seg);
   });
 
-  // Media
   storyMedia.innerHTML = '';
   if (story.type === 'photo') {
     const img = document.createElement('img');
@@ -1225,16 +1047,13 @@ function renderCurrentStory() {
     video.className = 'story-content';
     video.autoplay = true;
     video.playsInline = true;
-    video.muted = false;
     video.loop = false;
     storyMedia.appendChild(video);
     currentStoryMediaEl = video;
   }
 
-  // Mark as viewed
   markStoryViewed(story.id);
 
-  // Start progress
   const duration = (story.type === 'photo' ? 5 : (story.duration || 5)) * 1000;
   startStoryProgress(duration);
 }
@@ -1243,15 +1062,12 @@ function startStoryProgress(duration) {
   const fills = storyProgressBars.querySelectorAll('.story-progress-fill');
   const currentFill = fills[currentStoryIndex];
   if (!currentFill) return;
-
   let startTime = Date.now();
-  let elapsed = 0;
 
   storyProgressInterval = setInterval(() => {
-    elapsed = Date.now() - startTime;
+    const elapsed = Date.now() - startTime;
     const percent = Math.min((elapsed / duration) * 100, 100);
     currentFill.style.width = percent + '%';
-
     if (percent >= 100) {
       clearInterval(storyProgressInterval);
       storyProgressInterval = null;
@@ -1259,22 +1075,12 @@ function startStoryProgress(duration) {
     }
   }, 50);
 
-  // Auto-advance timeout as backup
-  storyAutoAdvanceTimeout = setTimeout(() => {
-    nextStory();
-  }, duration + 100);
+  storyAutoAdvanceTimeout = setTimeout(() => nextStory(), duration + 100);
 }
 
 function clearStoryTimers() {
-  if (storyProgressInterval) {
-    clearInterval(storyProgressInterval);
-    storyProgressInterval = null;
-  }
-  if (storyAutoAdvanceTimeout) {
-    clearTimeout(storyAutoAdvanceTimeout);
-    storyAutoAdvanceTimeout = null;
-  }
-  // Pause video if exists
+  if (storyProgressInterval) { clearInterval(storyProgressInterval); storyProgressInterval = null; }
+  if (storyAutoAdvanceTimeout) { clearTimeout(storyAutoAdvanceTimeout); storyAutoAdvanceTimeout = null; }
   if (currentStoryMediaEl && currentStoryMediaEl.tagName === 'VIDEO') {
     try { currentStoryMediaEl.pause(); } catch (e) {}
   }
@@ -1282,40 +1088,32 @@ function clearStoryTimers() {
 
 function nextStory() {
   clearStoryTimers();
-
   const userGroup = storiesByUser[currentStoryUserIndex];
   if (!userGroup) { closeStoryViewer(); return; }
-
   if (currentStoryIndex < userGroup.stories.length - 1) {
     currentStoryIndex++;
     renderCurrentStory();
   } else {
-    // Next user
     if (currentStoryUserIndex < storiesByUser.length - 1) {
       currentStoryUserIndex++;
       currentStoryIndex = 0;
       renderCurrentStory();
-    } else {
-      closeStoryViewer();
-    }
+    } else closeStoryViewer();
   }
 }
 
 function prevStory() {
   clearStoryTimers();
-
   if (currentStoryIndex > 0) {
     currentStoryIndex--;
     renderCurrentStory();
   } else {
-    // Previous user
     if (currentStoryUserIndex > 0) {
       currentStoryUserIndex--;
       const prevUser = storiesByUser[currentStoryUserIndex];
       currentStoryIndex = prevUser.stories.length - 1;
       renderCurrentStory();
     } else {
-      // Restart current story
       currentStoryIndex = 0;
       renderCurrentStory();
     }
@@ -1343,20 +1141,12 @@ async function markStoryViewed(storyId) {
   } catch (e) {}
 }
 
-/* Story viewer event listeners */
 storyCloseBtn.addEventListener('click', closeStoryViewer);
-
-storyTapLeft.addEventListener('click', () => {
-  prevStory();
-});
-
-storyTapRight.addEventListener('click', () => {
-  nextStory();
-});
+storyTapLeft.addEventListener('click', prevStory);
+storyTapRight.addEventListener('click', nextStory);
 
 storyDeleteBtn.addEventListener('click', async () => {
   if (!confirm('Delete this story?')) return;
-
   const userGroup = storiesByUser[currentStoryUserIndex];
   if (!userGroup) return;
   const story = userGroup.stories[currentStoryIndex];
@@ -1365,97 +1155,27 @@ storyDeleteBtn.addEventListener('click', async () => {
   try {
     await deleteDoc(doc(db, 'stories', story.id));
     showToast('Story deleted');
-
-    // Remove from local array
     userGroup.stories.splice(currentStoryIndex, 1);
-
     if (userGroup.stories.length === 0) {
       storiesByUser.splice(currentStoryUserIndex, 1);
-      if (storiesByUser.length === 0) {
-        closeStoryViewer();
-        renderHomeFeed();
-        return;
-      }
-      if (currentStoryUserIndex >= storiesByUser.length) {
-        currentStoryUserIndex = storiesByUser.length - 1;
-      }
+      if (storiesByUser.length === 0) { closeStoryViewer(); renderHomeFeed(); return; }
+      if (currentStoryUserIndex >= storiesByUser.length) currentStoryUserIndex = storiesByUser.length - 1;
       currentStoryIndex = 0;
     } else if (currentStoryIndex >= userGroup.stories.length) {
       currentStoryIndex = userGroup.stories.length - 1;
     }
-
     renderCurrentStory();
-
-  } catch (e) {
-    console.error(e);
-    showToast('❌ Could not delete');
-  }
+  } catch (e) { showToast('❌ Could not delete'); }
 });
-
-// Pause on hold
-let storyHoldTimer = null;
-storyMedia.addEventListener('mousedown', pauseStory);
-storyMedia.addEventListener('touchstart', pauseStory, { passive: true });
-storyMedia.addEventListener('mouseup', resumeStory);
-storyMedia.addEventListener('touchend', resumeStory);
-storyMedia.addEventListener('mouseleave', resumeStory);
-
-function pauseStory() {
-  if (storyProgressInterval) {
-    clearInterval(storyProgressInterval);
-    storyProgressInterval = null;
-  }
-  if (currentStoryMediaEl && currentStoryMediaEl.tagName === 'VIDEO') {
-    try { currentStoryMediaEl.pause(); } catch (e) {}
-  }
-}
-
-function resumeStory() {
-  if (!storyViewer || storyViewer.style.display === 'none') return;
-  const userGroup = storiesByUser[currentStoryUserIndex];
-  if (!userGroup) return;
-  const story = userGroup.stories[currentStoryIndex];
-  if (!story) return;
-
-  if (currentStoryMediaEl && currentStoryMediaEl.tagName === 'VIDEO') {
-    try { currentStoryMediaEl.play(); } catch (e) {}
-  }
-
-  // Resume progress (simplified — restart from current position not tracked)
-  const fills = storyProgressBars.querySelectorAll('.story-progress-fill');
-  const currentFill = fills[currentStoryIndex];
-  if (!currentFill) return;
-
-  const currentWidth = parseFloat(currentFill.style.width) || 0;
-  const duration = (story.type === 'photo' ? 5 : (story.duration || 5)) * 1000;
-  const remainingTime = duration * (1 - currentWidth / 100);
-
-  setTimeout(() => {
-    storyProgressInterval = setInterval(() => {
-      const newWidth = parseFloat(currentFill.style.width) + (100 / (remainingTime / 50));
-      if (newWidth >= 100) {
-        currentFill.style.width = '100%';
-        clearInterval(storyProgressInterval);
-        storyProgressInterval = null;
-        nextStory();
-      } else {
-        currentFill.style.width = newWidth + '%';
-      }
-    }, 50);
-  }, 50);
-}
 /* ============================================================
    SHORTS FEED
    ============================================================ */
 async function renderShortsFeed() {
   content.innerHTML = `
     <div class="shorts-wrap" id="shortsWrap">
-      <div class="shorts-empty">
-        <div class="page-title">Loading shorts...</div>
-      </div>
+      <div class="shorts-empty"><div class="page-title">Loading shorts...</div></div>
     </div>
   `;
-
   const wrap = document.getElementById('shortsWrap');
   if (!wrap) return;
 
@@ -1486,19 +1206,11 @@ async function renderShortsFeed() {
     });
 
     wrap.innerHTML = '';
-    shorts.forEach(short => {
-      wrap.appendChild(makeShortItem(short));
-    });
-
+    shorts.forEach(short => wrap.appendChild(makeShortItem(short)));
     setupShortsAutoplay(wrap);
-
   } catch (e) {
     console.error('Shorts error:', e);
-    wrap.innerHTML = `
-      <div class="shorts-empty">
-        <h3>Could not load shorts</h3>
-        <p>Please try again later</p>
-      </div>`;
+    wrap.innerHTML = `<div class="shorts-empty"><h3>Could not load shorts</h3></div>`;
   }
 }
 
@@ -1513,8 +1225,7 @@ function makeShortItem(short) {
   const commentsCount = (short.comments || []).length;
 
   item.innerHTML = `
-    <video src="${short.url}"
-           loop muted playsinline preload="metadata"
+    <video src="${short.url}" loop muted playsinline preload="metadata"
            style="width:100%;height:100%;object-fit:contain;background:#000;"></video>
 
     <div class="short-overlay">
@@ -1537,14 +1248,12 @@ function makeShortItem(short) {
             </svg>
             <span>${likesCount}</span>
           </button>
-
           <button class="comment-btn" data-post="${short.id}">
             <svg viewBox="0 0 24 24">
               <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
             </svg>
             <span>${commentsCount}</span>
           </button>
-
           <button class="share-btn-short" data-post="${short.id}">
             <svg viewBox="0 0 24 24">
               <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
@@ -1559,22 +1268,18 @@ function makeShortItem(short) {
 
   const userImg = item.querySelector('.short-user-row img');
   if (userImg) userImg.addEventListener('click', () => openUserProfile(short.userId));
-
   item.querySelector('.like-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     await toggleLike(short.id, e.currentTarget);
   });
-
   item.querySelector('.comment-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     openComments(short.id, short.caption || 'Comments');
   });
-
   item.querySelector('.share-btn-short').addEventListener('click', async (e) => {
     e.stopPropagation();
     await sharePost(short);
   });
-
   return item;
 }
 
@@ -1584,24 +1289,16 @@ function setupShortsAutoplay(wrap) {
   shortsObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const video = entry.target;
-      if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
-        video.play().catch(() => {});
-      } else {
-        video.pause();
-      }
+      if (entry.isIntersecting && entry.intersectionRatio > 0.6) video.play().catch(() => {});
+      else video.pause();
     });
   }, { threshold: [0, 0.6, 1] });
   videos.forEach(v => shortsObserver.observe(v));
 }
 
 function stopShortsObserver() {
-  if (shortsObserver) {
-    shortsObserver.disconnect();
-    shortsObserver = null;
-  }
-  document.querySelectorAll('.short-item video').forEach(v => {
-    try { v.pause(); } catch (e) {}
-  });
+  if (shortsObserver) { shortsObserver.disconnect(); shortsObserver = null; }
+  document.querySelectorAll('.short-item video').forEach(v => { try { v.pause(); } catch (e) {} });
 }
 
 /* ============================================================
@@ -1613,16 +1310,12 @@ async function toggleLike(postId, btnEl) {
     const postRef = doc(db, 'posts', postId);
     const postSnap = await getDoc(postRef);
     if (!postSnap.exists()) return;
-
     const postData = postSnap.data();
     const likes = postData.likes || [];
     const isLiked = likes.includes(currentUser.uid);
 
-    if (isLiked) {
-      await updateDoc(postRef, { likes: arrayRemove(currentUser.uid) });
-    } else {
-      await updateDoc(postRef, { likes: arrayUnion(currentUser.uid) });
-    }
+    if (isLiked) await updateDoc(postRef, { likes: arrayRemove(currentUser.uid) });
+    else await updateDoc(postRef, { likes: arrayUnion(currentUser.uid) });
 
     const newCount = isLiked ? likes.length - 1 : likes.length + 1;
     const countSpan = btnEl.querySelector('span');
@@ -1630,7 +1323,7 @@ async function toggleLike(postId, btnEl) {
     btnEl.classList.toggle('liked', !isLiked);
     btnEl.style.transform = 'scale(1.3)';
     setTimeout(() => { btnEl.style.transform = ''; }, 200);
-  } catch (e) { console.error('Like error:', e); }
+  } catch (e) {}
 }
 
 /* ============================================================
@@ -1640,19 +1333,15 @@ async function sharePost(post) {
   const appUrl = window.location.origin;
   const shareText = `🎬 Check out this post on ReelHub!\n\n@${post.userHandle}\n\n${appUrl}`;
   if (navigator.share) {
-    try {
-      await navigator.share({ title: 'ReelHub Post', text: shareText, url: appUrl });
-      return;
-    } catch (err) { if (err.name === 'AbortError') return; }
+    try { await navigator.share({ title: 'ReelHub Post', text: shareText, url: appUrl }); return; }
+    catch (err) { if (err.name === 'AbortError') return; }
   }
-  try {
-    await navigator.clipboard.writeText(shareText);
-    showToast('✅ Link copied!');
-  } catch (err) { showToast('❌ Could not share'); }
+  try { await navigator.clipboard.writeText(shareText); showToast('✅ Link copied!'); }
+  catch (err) { showToast('❌ Could not share'); }
 }
 
 /* ============================================================
-   COMMENTS SYSTEM
+   COMMENTS
    ============================================================ */
 async function openComments(postId, title) {
   if (!currentUser) return;
@@ -1707,8 +1396,7 @@ async function loadComments() {
     allCommentsForPost = topLevel;
     paintComments(topLevel);
   } catch (e) {
-    console.error('Load comments error:', e);
-    commentsList.innerHTML = `<div class="comments-empty">Could not load comments</div>`;
+    commentsList.innerHTML = `<div class="comments-empty">Could not load</div>`;
   }
 }
 
@@ -1720,32 +1408,25 @@ function paintComments(comments) {
           <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
         </svg>
         <div>No comments yet</div>
-        <div style="font-size:12px;color:#444;margin-top:6px;">Be the first to comment!</div>
       </div>`;
     return;
   }
   commentsList.innerHTML = '';
-  comments.forEach(comment => {
-    commentsList.appendChild(makeCommentItem(comment, false));
-  });
+  comments.forEach(comment => commentsList.appendChild(makeCommentItem(comment, false)));
 }
 
 function makeCommentItem(comment, isReply) {
   const item = document.createElement('div');
   item.className = isReply ? 'comment-item reply-item' : 'comment-item';
   item.dataset.commentId = comment.id;
-
   const avatar = comment.userPhoto || defaultAvatar(comment.userName);
   const isLiked = (comment.likes || []).includes(currentUser.uid);
   const likesCount = (comment.likes || []).length;
   const isOwner = comment.userId === currentUser.uid;
   const time = comment.createdAt?.toDate?.();
   const timeStr = time ? timeAgo(time) : 'just now';
-
   let replyToHtml = '';
-  if (comment.replyToHandle) {
-    replyToHtml = `<span class="mention">@${escapeHtml(comment.replyToHandle)}</span> `;
-  }
+  if (comment.replyToHandle) replyToHtml = `<span class="mention">@${escapeHtml(comment.replyToHandle)}</span> `;
 
   let repliesHtml = '';
   if (!isReply && comment.replies && comment.replies.length > 0) {
@@ -1776,7 +1457,6 @@ function makeCommentItem(comment, isReply) {
             </svg>
             <span class="comment-like-count">${likesCount > 0 ? likesCount : ''}</span>
           </button>
-
           ${!isReply ? `
             <button class="comment-action-btn reply-btn" data-comment="${comment.id}" data-user="${escapeHtml(comment.userName)}" data-handle="${escapeHtml(comment.userHandle)}">
               <svg viewBox="0 0 24 24">
@@ -1786,8 +1466,7 @@ function makeCommentItem(comment, isReply) {
               Reply
             </button>
           ` : ''}
-
-          ${isOwner ? `<button class="comment-delete-btn" data-comment="${comment.id}" title="Delete">🗑️</button>` : ''}
+          ${isOwner ? `<button class="comment-delete-btn" data-comment="${comment.id}">🗑️</button>` : ''}
         </div>
       </div>
     </div>
@@ -1804,10 +1483,9 @@ function makeCommentItem(comment, isReply) {
   if (replyBtn) replyBtn.addEventListener('click', () => showReplyIndicator(comment.id, comment.userName, comment.userHandle));
   const deleteBtn = item.querySelector('.comment-delete-btn');
   if (deleteBtn) deleteBtn.addEventListener('click', async () => {
-    if (!confirm('Delete this comment?')) return;
+    if (!confirm('Delete?')) return;
     await deleteComment(comment.id);
   });
-
   const toggleBtn = item.querySelector('.replies-toggle');
   if (toggleBtn) {
     toggleBtn.addEventListener('click', () => {
@@ -1815,35 +1493,29 @@ function makeCommentItem(comment, isReply) {
       const isHidden = repliesList.classList.contains('replies-hidden');
       if (isHidden) {
         repliesList.innerHTML = '';
-        (comment.replies || []).forEach(reply => {
-          repliesList.appendChild(makeCommentItem(reply, true));
-        });
+        (comment.replies || []).forEach(reply => repliesList.appendChild(makeCommentItem(reply, true)));
         repliesList.classList.remove('replies-hidden');
         toggleBtn.innerHTML = `
           <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
-          <span>Hide ${comment.replies.length} ${comment.replies.length === 1 ? 'reply' : 'replies'}</span>
+          <span>Hide ${comment.replies.length}</span>
         `;
       } else {
         repliesList.classList.add('replies-hidden');
         toggleBtn.innerHTML = `
           <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-          <span>View ${comment.replies.length} ${comment.replies.length === 1 ? 'reply' : 'replies'}</span>
+          <span>View ${comment.replies.length}</span>
         `;
       }
     });
   }
-
   return item;
 }
 
-commentInput.addEventListener('input', () => {
-  postCommentBtn.disabled = !commentInput.value.trim();
-});
+commentInput.addEventListener('input', () => { postCommentBtn.disabled = !commentInput.value.trim(); });
 
 postCommentBtn.addEventListener('click', async () => {
   const text = commentInput.value.trim();
   if (!text || !activeCommentPostId || !currentUser) return;
-
   postCommentBtn.disabled = true;
   postCommentBtn.textContent = '...';
 
@@ -1861,7 +1533,6 @@ postCommentBtn.addEventListener('click', async () => {
       replyToHandle: activeReplyTo ? activeReplyTo.userHandle : null,
       createdAt: serverTimestamp()
     };
-
     await addDoc(collection(db, 'comments'), commentData);
 
     try {
@@ -1879,8 +1550,6 @@ postCommentBtn.addEventListener('click', async () => {
     postCommentBtn.disabled = true;
     await loadComments();
   } catch (e) {
-    console.error('Post comment error:', e);
-    showToast('❌ Could not post comment');
     postCommentBtn.textContent = 'Post';
     postCommentBtn.disabled = false;
   }
@@ -1913,18 +1582,13 @@ async function toggleCommentLike(commentId, btnEl) {
     const data = snap.data();
     const likes = data.likes || [];
     const isLiked = likes.includes(currentUser.uid);
-
-    if (isLiked) {
-      await updateDoc(ref, { likes: arrayRemove(currentUser.uid) });
-    } else {
-      await updateDoc(ref, { likes: arrayUnion(currentUser.uid) });
-    }
-
+    if (isLiked) await updateDoc(ref, { likes: arrayRemove(currentUser.uid) });
+    else await updateDoc(ref, { likes: arrayUnion(currentUser.uid) });
     const newCount = isLiked ? likes.length - 1 : likes.length + 1;
     const countEl = btnEl.querySelector('.comment-like-count');
     if (countEl) countEl.textContent = newCount > 0 ? newCount : '';
     btnEl.classList.toggle('liked', !isLiked);
-  } catch (e) { console.error('Comment like error:', e); }
+  } catch (e) {}
 }
 
 async function deleteComment(commentId) {
@@ -1932,15 +1596,10 @@ async function deleteComment(commentId) {
     await deleteDoc(doc(db, 'comments', commentId));
     const repliesQ = query(collection(db, 'comments'), where('parentId', '==', commentId));
     const repliesSnap = await getDocs(repliesQ);
-    for (const replyDoc of repliesSnap.docs) {
-      await deleteDoc(doc(db, 'comments', replyDoc.id));
-    }
+    for (const replyDoc of repliesSnap.docs) await deleteDoc(doc(db, 'comments', replyDoc.id));
     showToast('Comment deleted');
     await loadComments();
-  } catch (e) {
-    console.error('Delete comment error:', e);
-    showToast('❌ Could not delete');
-  }
+  } catch (e) { showToast('❌ Could not delete'); }
 }
 
 /* ============================================================
@@ -1958,9 +1617,7 @@ async function renderChatsPage() {
           </svg>
         </button>
       </div>
-      <div class="chats-list" id="chatsList">
-        <div class="empty-msg">Loading chats...</div>
-      </div>
+      <div class="chats-list" id="chatsList"><div class="empty-msg">Loading chats...</div></div>
     </div>
   `;
   document.getElementById('openNewChatBtn').addEventListener('click', openNewChatModal);
@@ -1982,7 +1639,7 @@ async function loadChatsList() {
             <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
           </svg>
           <h3>No chats yet</h3>
-          <p>Start a conversation with someone</p>
+          <p>Start a conversation</p>
           <button class="start-btn" id="emptyStartChatBtn">Start New Chat</button>
         </div>`;
       document.getElementById('emptyStartChatBtn').addEventListener('click', openNewChatModal);
@@ -2007,17 +1664,11 @@ async function loadChatsList() {
     }));
 
     const validChats = enriched.filter(c => c);
-    if (validChats.length === 0) {
-      wrap.innerHTML = `<div class="empty-msg">No valid chats</div>`;
-      return;
-    }
+    if (validChats.length === 0) { wrap.innerHTML = `<div class="empty-msg">No valid chats</div>`; return; }
 
     wrap.innerHTML = '';
     validChats.forEach(chat => wrap.appendChild(makeChatItem(chat)));
-  } catch (e) {
-    console.error('Load chats error:', e);
-    wrap.innerHTML = `<div class="empty-msg">Could not load chats</div>`;
-  }
+  } catch (e) { wrap.innerHTML = `<div class="empty-msg">Could not load</div>`; }
 }
 
 function makeChatItem(chat) {
@@ -2031,15 +1682,7 @@ function makeChatItem(chat) {
 
   let lastMsgHtml = '';
   if (chat.lastMessageType === 'voice') {
-    lastMsgHtml = `
-      <div class="last-msg voice ${hasUnread ? 'unread' : ''}">
-        <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;">
-          <rect x="9" y="2" width="6" height="12" rx="3"/>
-          <path d="M5 10v2a7 7 0 0 0 14 0v-2"/>
-        </svg>
-        Voice message
-      </div>
-    `;
+    lastMsgHtml = `<div class="last-msg voice ${hasUnread ? 'unread' : ''}">🎤 Voice message</div>`;
   } else {
     const preview = (chat.lastMessage || '').substring(0, 40);
     lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">${escapeHtml(preview)}${chat.lastMessage && chat.lastMessage.length > 40 ? '...' : ''}</div>`;
@@ -2056,17 +1699,13 @@ function makeChatItem(chat) {
       ${hasUnread ? `<div class="unread-badge">●</div>` : ''}
     </div>
   `;
-
   item.addEventListener('click', () => openChatWindow(otherUser));
   return item;
 }
 
-/* ============================================================
-   NEW CHAT MODAL
-   ============================================================ */
 function openNewChatModal() {
   newChatSearch.value = '';
-  newChatResults.innerHTML = `<div class="search-empty">Start typing to search users...</div>`;
+  newChatResults.innerHTML = `<div class="search-empty">Start typing...</div>`;
   newChatModal.classList.add('show');
   newChatSearch.focus();
 }
@@ -2086,10 +1725,7 @@ newChatSearch.addEventListener('input', (e) => {
 });
 
 async function searchUsersForChat(term) {
-  if (!term) {
-    newChatResults.innerHTML = `<div class="search-empty">Start typing...</div>`;
-    return;
-  }
+  if (!term) { newChatResults.innerHTML = `<div class="search-empty">Start typing...</div>`; return; }
   newChatResults.innerHTML = `<div class="search-empty">Searching...</div>`;
   try {
     const usersRef = collection(db, 'users');
@@ -2098,77 +1734,48 @@ async function searchUsersForChat(term) {
     const matches = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .filter(u => u.id !== currentUser.uid)
-      .filter(u =>
-        (u.name || '').toLowerCase().includes(lowerTerm) ||
-        (u.user || '').toLowerCase().includes(lowerTerm)
-      )
+      .filter(u => (u.name || '').toLowerCase().includes(lowerTerm) || (u.user || '').toLowerCase().includes(lowerTerm))
       .slice(0, 20);
-
-    if (matches.length === 0) {
-      newChatResults.innerHTML = `<div class="search-empty">No users found</div>`;
-      return;
-    }
-
+    if (matches.length === 0) { newChatResults.innerHTML = `<div class="search-empty">No users found</div>`; return; }
     newChatResults.innerHTML = '';
     matches.forEach(u => {
       const row = document.createElement('div');
       row.className = 'search-user';
       row.innerHTML = `
         <img src="${u.photo || defaultAvatar(u.name)}" alt="">
-        <div class="info">
-          <b>${escapeHtml(u.name)}</b>
-          <span>@${escapeHtml(u.user)}</span>
-        </div>
+        <div class="info"><b>${escapeHtml(u.name)}</b><span>@${escapeHtml(u.user)}</span></div>
         <button class="follow">Chat</button>
       `;
-      row.addEventListener('click', () => {
-        newChatModal.classList.remove('show');
-        openChatWindow(u);
-      });
+      row.addEventListener('click', () => { newChatModal.classList.remove('show'); openChatWindow(u); });
       newChatResults.appendChild(row);
     });
-  } catch (e) {
-    console.error(e);
-    newChatResults.innerHTML = `<div class="search-empty">Search failed</div>`;
-  }
+  } catch (e) { newChatResults.innerHTML = `<div class="search-empty">Search failed</div>`; }
 }
 
 /* ============================================================
    CHAT WINDOW
    ============================================================ */
-function getChatId(uid1, uid2) {
-  return [uid1, uid2].sort().join('_');
-}
+function getChatId(uid1, uid2) { return [uid1, uid2].sort().join('_'); }
 
 async function openChatWindow(otherUser) {
   if (!otherUser || otherUser.uid === currentUser.uid) return;
   activeChatId = getChatId(currentUser.uid, otherUser.uid);
   activeChatUser = otherUser;
-
   chatHeaderAvatar.src = otherUser.photo || defaultAvatar(otherUser.name);
   chatHeaderName.textContent = otherUser.name || 'User';
   chatHeaderHandle.textContent = '@' + (otherUser.user || '');
-
-  chatHeaderInfo.onclick = () => {
-    closeChatWindow();
-    openUserProfile(otherUser.uid);
-  };
-
+  chatHeaderInfo.onclick = () => { closeChatWindow(); openUserProfile(otherUser.uid); };
   chatMessages.innerHTML = `<div class="empty-msg">Loading messages...</div>`;
   chatMessageInput.value = '';
   updateSendTextBtn();
   chatWindowModal.classList.add('show');
-
   await loadChatMessages();
   await markChatRead();
 }
 
 function closeChatWindow() {
   chatWindowModal.classList.remove('show');
-  if (chatMessagesUnsub) {
-    clearInterval(chatMessagesUnsub);
-    chatMessagesUnsub = null;
-  }
+  if (chatMessagesUnsub) { clearInterval(chatMessagesUnsub); chatMessagesUnsub = null; }
   activeChatId = null;
   activeChatUser = null;
   stopVoicePlayback();
@@ -2203,17 +1810,11 @@ async function loadChatMessages() {
         paintChatMessages(msgs);
       } catch (e) {}
     }, 3000);
-  } catch (e) {
-    console.error('Load chat messages error:', e);
-    chatMessages.innerHTML = `<div class="chat-empty">Could not load messages</div>`;
-  }
+  } catch (e) { chatMessages.innerHTML = `<div class="chat-empty">Could not load</div>`; }
 }
 
 function paintChatMessages(messages) {
-  if (messages.length === 0) {
-    chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
-    return;
-  }
+  if (messages.length === 0) { chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`; return; }
   chatMessages.innerHTML = '';
   let lastDateStr = '';
   messages.forEach(msg => {
@@ -2235,7 +1836,6 @@ function makeMessageBubble(msg) {
   const row = document.createElement('div');
   const isMe = msg.from === currentUser.uid;
   row.className = 'msg-row ' + (isMe ? 'me' : 'other');
-
   const time = msg.time?.toDate?.();
   const timeStr = time ? formatTime(time) : '';
 
@@ -2243,7 +1843,6 @@ function makeMessageBubble(msg) {
     const duration = msg.voiceDuration || 0;
     const bars = [];
     for (let i = 0; i < 22; i++) bars.push(30 + Math.floor(Math.random() * 70));
-
     row.innerHTML = `
       <div class="msg-bubble voice-bubble" data-msg="${msg.id}">
         <button class="voice-play-btn" data-play="${msg.id}">
@@ -2256,49 +1855,29 @@ function makeMessageBubble(msg) {
         <div class="msg-time" style="position:absolute;bottom:-14px;right:0;">${timeStr}</div>
       </div>
     `;
-
     row.querySelector('.voice-play-btn').addEventListener('click', async (e) => {
       e.stopPropagation();
       await playVoiceMessage(msg, row.querySelector('.voice-waveform'), row.querySelector('.voice-play-btn'));
     });
   } else {
-    row.innerHTML = `
-      <div class="msg-bubble">
-        ${escapeHtml(msg.text || '')}
-        <div class="msg-time">${timeStr}</div>
-      </div>
-    `;
+    row.innerHTML = `<div class="msg-bubble">${escapeHtml(msg.text || '')}<div class="msg-time">${timeStr}</div></div>`;
   }
-
   return row;
 }
 
-function formatVoiceDuration(seconds) {
-  const s = Math.round(seconds);
-  return `0:${s < 10 ? '0' + s : s}`;
-}
-
+function formatVoiceDuration(seconds) { const s = Math.round(seconds); return `0:${s < 10 ? '0' + s : s}`; }
 function formatTime(date) {
-  let h = date.getHours();
-  const m = date.getMinutes();
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12 || 12;
-  return `${h}:${m < 10 ? '0' + m : m} ${ampm}`;
+  let h = date.getHours(); const m = date.getMinutes(); const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12; return `${h}:${m < 10 ? '0' + m : m} ${ampm}`;
 }
-
 function formatDate(date) {
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+  const today = new Date(); const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
   if (date.toDateString() === today.toDateString()) return 'Today';
   if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return `${date.getDate()} ${months[date.getMonth()]}`;
 }
 
-/* ============================================================
-   SEND TEXT
-   ============================================================ */
 function updateSendTextBtn() {
   const hasText = chatMessageInput.value.trim().length > 0;
   sendTextBtn.style.display = hasText ? 'flex' : 'none';
@@ -2316,10 +1895,7 @@ sendTextBtn.addEventListener('click', async () => {
 });
 
 chatMessageInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendTextBtn.click();
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTextBtn.click(); }
 });
 
 async function sendMessage(msgData) {
@@ -2334,13 +1910,10 @@ async function sendMessage(msgData) {
     time: serverTimestamp(),
     read: false
   };
-
   try {
     await addDoc(collection(db, 'chats', activeChatId, 'messages'), message);
-
     const chatRef = doc(db, 'chats', activeChatId);
     const chatSnap = await getDoc(chatRef);
-
     const chatData = {
       members: [currentUser.uid, activeChatUser.uid],
       lastMessage: msgData.type === 'voice' ? '🎤 Voice message' : (msgData.text || ''),
@@ -2349,19 +1922,10 @@ async function sendMessage(msgData) {
       lastMessageBy: currentUser.uid,
       unreadBy: [activeChatUser.uid]
     };
-
-    if (!chatSnap.exists()) {
-      chatData.createdAt = serverTimestamp();
-      await setDoc(chatRef, chatData);
-    } else {
-      await updateDoc(chatRef, chatData);
-    }
-
+    if (!chatSnap.exists()) { chatData.createdAt = serverTimestamp(); await setDoc(chatRef, chatData); }
+    else await updateDoc(chatRef, chatData);
     await loadChatMessages();
-  } catch (e) {
-    console.error('Send message error:', e);
-    showToast('❌ Could not send');
-  }
+  } catch (e) { showToast('❌ Could not send'); }
 }
 
 async function markChatRead() {
@@ -2380,7 +1944,6 @@ micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startVoiceRec
 micBtn.addEventListener('mouseup', stopVoiceRecordingAndSend);
 micBtn.addEventListener('mouseleave', () => { if (isRecording) stopVoiceRecordingAndSend(); });
 micBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopVoiceRecordingAndSend(); }, { passive: false });
-
 cancelRecordingBtn.addEventListener('click', cancelVoiceRecording);
 
 async function startVoiceRecording() {
@@ -2389,28 +1952,21 @@ async function startVoiceRecording() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     let mimeType = 'audio/webm';
     if (!MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/mp4';
-
     mediaRecorder = new MediaRecorder(stream, { mimeType });
     audioChunks = [];
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) audioChunks.push(e.data);
-    };
-
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
     mediaRecorder.start();
     isRecording = true;
     voiceSeconds = 0;
     recordingTimer.textContent = '0:00';
     recordingIndicator.classList.add('show');
     recordingIndicator.style.display = 'flex';
-
     voiceTimerInterval = setInterval(() => {
       voiceSeconds++;
       recordingTimer.textContent = `0:${voiceSeconds < 10 ? '0' + voiceSeconds : voiceSeconds}`;
       if (voiceSeconds >= 10) stopVoiceRecordingAndSend();
     }, 1000);
   } catch (e) {
-    console.error('Mic error:', e);
     showToast('❌ Microphone permission needed');
     isRecording = false;
   }
@@ -2427,17 +1983,9 @@ async function stopVoiceRecordingAndSend() {
   return new Promise((resolve) => {
     mediaRecorder.onstop = async () => {
       mediaRecorder.stream.getTracks().forEach(t => t.stop());
-      if (finalSeconds < 1) {
-        showToast('Too short — hold longer');
-        resolve();
-        return;
-      }
+      if (finalSeconds < 1) { showToast('Too short'); resolve(); return; }
       const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
-      if (audioBlob.size > 500 * 1024) {
-        showToast('Voice too large');
-        resolve();
-        return;
-      }
+      if (audioBlob.size > 500 * 1024) { showToast('Voice too large'); resolve(); return; }
       const base64 = await blobToBase64(audioBlob);
       await sendMessage({ type: 'voice', voiceData: base64, voiceDuration: finalSeconds });
       resolve();
@@ -2470,14 +2018,8 @@ function blobToBase64(blob) {
   });
 }
 
-/* ============================================================
-   VOICE PLAYBACK
-   ============================================================ */
 async function playVoiceMessage(msg, waveformEl, btnEl) {
-  if (currentPlayingAudio && currentPlayingBtn === btnEl) {
-    stopVoicePlayback();
-    return;
-  }
+  if (currentPlayingAudio && currentPlayingBtn === btnEl) { stopVoicePlayback(); return; }
   stopVoicePlayback();
   if (!msg.voiceData) return;
   try {
@@ -2489,17 +2031,11 @@ async function playVoiceMessage(msg, waveformEl, btnEl) {
     audio.onended = () => stopVoicePlayback();
     audio.onerror = () => { stopVoicePlayback(); showToast('❌ Could not play'); };
     await audio.play();
-  } catch (e) {
-    console.error('Play error:', e);
-    stopVoicePlayback();
-  }
+  } catch (e) { stopVoicePlayback(); }
 }
 
 function stopVoicePlayback() {
-  if (currentPlayingAudio) {
-    try { currentPlayingAudio.pause(); } catch (e) {}
-    currentPlayingAudio = null;
-  }
+  if (currentPlayingAudio) { try { currentPlayingAudio.pause(); } catch (e) {} currentPlayingAudio = null; }
   if (currentPlayingBtn) {
     currentPlayingBtn.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>`;
     currentPlayingBtn = null;
@@ -2517,10 +2053,7 @@ function startChatListWatcher() {
 }
 
 function stopChatListWatcher() {
-  if (chatListInterval) {
-    clearInterval(chatListInterval);
-    chatListInterval = null;
-  }
+  if (chatListInterval) { clearInterval(chatListInterval); chatListInterval = null; }
   if (chatsDot) chatsDot.style.display = 'none';
 }
 
@@ -2533,16 +2066,14 @@ async function checkChatsUnread() {
     let hasUnread = false;
     snap.forEach(d => {
       const data = d.data();
-      if (data.lastMessageBy !== currentUser.uid && (data.unreadBy || []).includes(currentUser.uid)) {
-        hasUnread = true;
-      }
+      if (data.lastMessageBy !== currentUser.uid && (data.unreadBy || []).includes(currentUser.uid)) hasUnread = true;
     });
     if (chatsDot) chatsDot.style.display = hasUnread ? 'block' : 'none';
   } catch (e) {}
 }
 
 /* ============================================================
-   PROFILE PAGE
+   PROFILE (OWN)
    ============================================================ */
 async function renderProfile() {
   if (!currentProfile) {
@@ -2587,12 +2118,8 @@ async function renderProfile() {
           Share Profile
         </button>
       </div>
-      <div class="profile-tabs">
-        <button class="profile-tab active">Posts</button>
-      </div>
-      <div class="profile-grid" id="myPostsGrid">
-        <div class="grid-empty">Loading posts...</div>
-      </div>
+      <div class="profile-tabs"><button class="profile-tab active">Posts</button></div>
+      <div class="profile-grid" id="myPostsGrid"><div class="grid-empty">Loading posts...</div></div>
     </div>
   `;
 
@@ -2642,7 +2169,6 @@ async function renderUserPosts(uid, containerId) {
     container.innerHTML = '';
     posts.forEach(post => container.appendChild(makeGridItem(post)));
   } catch (e) {
-    console.error('Could not load posts:', e);
     container.innerHTML = `<div class="grid-empty">Could not load posts.</div>`;
   }
 }
@@ -2655,11 +2181,8 @@ function makeGridItem(post) {
 
   const thumbUrl = post.thumbnail || (post.type === 'photo' ? post.url : '');
   let inner = '';
-  if (post.type === 'photo') {
-    inner = `<img src="${post.url}" alt="">`;
-  } else {
-    inner = `<video src="${post.url}" muted playsinline preload="metadata" ${thumbUrl ? `poster="${thumbUrl}"` : ''}></video>`;
-  }
+  if (post.type === 'photo') inner = `<img src="${post.url}" alt="">`;
+  else inner = `<video src="${post.url}" muted playsinline preload="metadata" ${thumbUrl ? `poster="${thumbUrl}"` : ''}></video>`;
 
   const badgeText = post.type === 'photo' ? 'PHOTO' : (post.type === 'long' ? 'LONG' : 'SHORT');
   item.innerHTML = `
@@ -2669,6 +2192,154 @@ function makeGridItem(post) {
   `;
   item.addEventListener('click', () => openPlayer(post));
   return item;
+}
+
+/* ============================================================
+   PUBLIC USER PROFILE — Follow + Messages + Share
+   ============================================================ */
+async function openUserProfile(userId) {
+  if (!userId) return;
+  if (userId === currentUser.uid) {
+    setActiveNav('profile');
+    renderPage('profile');
+    return;
+  }
+
+  viewingUserId = userId;
+  setActiveNav(null);
+  content.innerHTML = `<div class="page-placeholder"><div class="page-title">Loading...</div></div>`;
+
+  try {
+    const snap = await getDoc(doc(db, 'users', userId));
+    if (!snap.exists()) {
+      content.innerHTML = `<div class="page-placeholder"><div class="page-title">User not found</div></div>`;
+      return;
+    }
+
+    const user = snap.data();
+    const followers = Array.isArray(user.followers) ? user.followers : [];
+    const following = Array.isArray(user.following) ? user.following : [];
+    const videoCount = typeof user.videoCount === 'number' ? user.videoCount : 0;
+    const avatarSrc = user.photo || defaultAvatar(user.name);
+    const isFollowing = currentProfile?.following?.includes(userId) || false;
+
+    content.innerHTML = `
+      <div style="padding: 12px 16px;">
+        <button id="backFromProfileBtn">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+      </div>
+
+      <div class="profile-page" style="padding-top:0;">
+        <div class="profile-top">
+          <div class="profile-avatar-wrap">
+            <img class="profile-avatar" src="${avatarSrc}" alt="${escapeHtml(user.name)}">
+          </div>
+          <div class="profile-stats">
+            <div class="profile-stat"><b>${videoCount}</b><span>Videos</span></div>
+            <div class="profile-stat"><b>${followers.length}</b><span>Followers</span></div>
+            <div class="profile-stat"><b>${following.length}</b><span>Following</span></div>
+          </div>
+        </div>
+
+        <div class="profile-info">
+          <div class="profile-name">${escapeHtml(user.name)}</div>
+          <div class="profile-username">@${escapeHtml(user.user)}</div>
+          <div class="profile-bio">${user.bio ? escapeHtml(user.bio) : '<span style="color:#555">No bio yet.</span>'}</div>
+        </div>
+
+        <div class="profile-actions">
+          <button id="pubFollowBtn" class="${isFollowing ? 'following' : ''}">
+            <svg viewBox="0 0 24 24">
+              ${isFollowing
+                ? '<polyline points="20 6 9 17 4 12"/>'
+                : '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'}
+            </svg>
+            ${isFollowing ? 'Following' : 'Follow'}
+          </button>
+
+          <button id="pubMessageBtn">
+            <svg viewBox="0 0 24 24">
+              <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+            Messages
+          </button>
+
+          <button id="pubShareBtn">
+            <svg viewBox="0 0 24 24">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            Share
+          </button>
+        </div>
+
+        <div class="profile-tabs"><button class="profile-tab active">Posts</button></div>
+        <div class="profile-grid" id="pubPostsGrid"><div class="grid-empty">Loading posts...</div></div>
+      </div>
+    `;
+
+    document.getElementById('backFromProfileBtn').addEventListener('click', () => {
+      viewingUserId = null;
+      setActiveNav(null);
+      renderPage('home');
+    });
+
+    // Follow button
+    const followBtn = document.getElementById('pubFollowBtn');
+    followBtn.addEventListener('click', async () => {
+      await toggleFollow(userId, null);
+      const isNowFollowing = currentProfile.following.includes(userId);
+
+      if (isNowFollowing) {
+        followBtn.classList.add('following');
+        followBtn.innerHTML = `
+          <svg viewBox="0 0 24 24">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Following
+        `;
+      } else {
+        followBtn.classList.remove('following');
+        followBtn.innerHTML = `
+          <svg viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Follow
+        `;
+      }
+    });
+
+    // Messages button → opens chat
+    const messageBtn = document.getElementById('pubMessageBtn');
+    if (messageBtn) {
+      messageBtn.addEventListener('click', () => {
+        openChatWindow(user);
+      });
+    }
+
+    // Share button
+    document.getElementById('pubShareBtn').addEventListener('click', () => shareUser(user));
+
+    await renderUserPosts(userId, 'pubPostsGrid');
+  } catch (e) {
+    console.error(e);
+    content.innerHTML = `<div class="page-placeholder"><div class="page-title">Could not load</div></div>`;
+  }
+}
+
+async function shareUser(user) {
+  const appUrl = window.location.origin;
+  const shareText = `🎬 Check out ${user.name}'s profile on ReelHub!\n\n@${user.user}\n\n${appUrl}`;
+  if (navigator.share) {
+    try { await navigator.share({ title: `${user.name} on ReelHub`, text: shareText, url: appUrl }); return; }
+    catch (err) { if (err.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(shareText); showToast('✅ Link copied!'); }
+  catch (err) { showToast('❌ Could not share'); }
 }
 
 /* ============================================================
@@ -2719,7 +2390,6 @@ function updatePickerText() {
 document.getElementById('closeUpload').addEventListener('click', () => {
   uploadModal.classList.remove('show');
 });
-
 uploadModal.addEventListener('click', (e) => {
   if (e.target === uploadModal) uploadModal.classList.remove('show');
 });
@@ -2750,8 +2420,8 @@ uploadFileInput.addEventListener('change', async (e) => {
   uploadMsg.textContent = '';
 
   if (currentUploadType === 'photo') {
-    if (!file.type.startsWith('image/')) { uploadMsg.textContent = 'Choose an image file.'; return; }
-    if (file.size > 5 * 1024 * 1024) { uploadMsg.textContent = 'Photo too large. Max 5 MB.'; return; }
+    if (!file.type.startsWith('image/')) { uploadMsg.textContent = 'Choose an image.'; return; }
+    if (file.size > 5 * 1024 * 1024) { uploadMsg.textContent = 'Max 5 MB.'; return; }
     selectedFile = file;
     const url = URL.createObjectURL(file);
     uploadPhotoPreview.src = url;
@@ -2761,14 +2431,13 @@ uploadFileInput.addEventListener('change', async (e) => {
     return;
   }
 
-  if (!file.type.startsWith('video/')) { uploadMsg.textContent = 'Choose a video file.'; return; }
-  if (file.size > 100 * 1024 * 1024) { uploadMsg.textContent = 'Video too large. Max 100 MB.'; return; }
+  if (!file.type.startsWith('video/')) { uploadMsg.textContent = 'Choose a video.'; return; }
+  if (file.size > 100 * 1024 * 1024) { uploadMsg.textContent = 'Max 100 MB.'; return; }
 
   const url = URL.createObjectURL(file);
   const tempVideo = document.createElement('video');
   tempVideo.preload = 'metadata';
   tempVideo.src = url;
-
   tempVideo.onloadedmetadata = () => {
     const duration = tempVideo.duration;
     if (!isFinite(duration) || duration <= 0) { uploadMsg.textContent = 'Could not read duration.'; return; }
@@ -2786,17 +2455,17 @@ uploadFileInput.addEventListener('change', async (e) => {
       return;
     }
     if (currentUploadType === 'long' && duration > 60.5) {
-      uploadMsg.textContent = `⚠️ Long video max 1 minute.`;
+      uploadMsg.textContent = `⚠️ Max 1 minute.`;
       return;
     }
 
     uploadPreview.src = url;
     uploadPreviewWrap.style.display = 'block';
     uploadPickerWrap.style.display = 'none';
-    uploadPreviewInfo.textContent = `Duration: ${Math.round(duration)}s • Size: ${(file.size/1024/1024).toFixed(2)} MB`;
+    uploadPreviewInfo.textContent = `${Math.round(duration)}s · ${(file.size/1024/1024).toFixed(2)} MB`;
     uploadSubmitBtn.disabled = false;
   };
-  tempVideo.onerror = () => { uploadMsg.textContent = 'Could not load video.'; };
+  tempVideo.onerror = () => { uploadMsg.textContent = 'Could not load.'; };
 });
 
 function switchUploadType(type) {
@@ -2813,8 +2482,7 @@ function switchUploadType(type) {
 
 uploadSubmitBtn.addEventListener('click', async () => {
   if (!currentUser || !currentProfile) { uploadMsg.textContent = 'Login required.'; return; }
-  if (!selectedFile) { uploadMsg.textContent = 'Select a file first.'; return; }
-
+  if (!selectedFile) { uploadMsg.textContent = 'Select a file.'; return; }
   const caption = uploadCaption.value.trim();
   uploadSubmitBtn.disabled = true;
   uploadSubmitBtn.textContent = 'Uploading...';
@@ -2852,13 +2520,11 @@ uploadSubmitBtn.addEventListener('click', async () => {
 
     uploadMsg.className = 'success-msg';
     uploadMsg.textContent = '✅ Uploaded!';
-
     setTimeout(() => {
       uploadModal.classList.remove('show');
       if (document.querySelector('.nav-item[data-page="profile"]').classList.contains('active')) renderProfile();
     }, 1500);
   } catch (err) {
-    console.error('Upload failed:', err);
     uploadMsg.className = 'error-msg';
     uploadMsg.textContent = err.message || 'Upload failed.';
     uploadSubmitBtn.disabled = false;
@@ -2866,15 +2532,11 @@ uploadSubmitBtn.addEventListener('click', async () => {
   }
 });
 
-/* ============================================================
-   CLOUDINARY — VIDEO/PHOTO UPLOAD
-   ============================================================ */
 function uploadToCloudinary(file, onProgress) {
   return new Promise((resolve, reject) => {
     const resourceType = currentUploadType === 'photo' ? 'image' : 'video';
     const acc = CLOUDINARY_ACCOUNTS[0];
     const url = `https://api.cloudinary.com/v1_1/${acc.cloudName}/${resourceType}/upload`;
-
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', acc.preset);
@@ -2883,24 +2545,20 @@ function uploadToCloudinary(file, onProgress) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
     xhr.timeout = 120000;
-
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
     };
-
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const res = JSON.parse(xhr.responseText);
-          if (!res.secure_url) { reject(new Error('No URL returned')); return; }
+          if (!res.secure_url) { reject(new Error('No URL')); return; }
           resolve(res);
         } catch (e) { reject(new Error('Invalid response')); }
       } else {
         let errMsg = 'Upload failed';
-        try {
-          const errData = JSON.parse(xhr.responseText);
-          if (errData.error && errData.error.message) errMsg = errData.error.message;
-        } catch (e) { errMsg = 'HTTP ' + xhr.status; }
+        try { const d = JSON.parse(xhr.responseText); if (d.error?.message) errMsg = d.error.message; }
+        catch (e) { errMsg = 'HTTP ' + xhr.status; }
         reject(new Error(errMsg));
       }
     };
@@ -2939,117 +2597,12 @@ document.getElementById('closePlayer').addEventListener('click', () => {
   playerModal.classList.remove('show');
   playerContent.innerHTML = '';
 });
-
 playerModal.addEventListener('click', (e) => {
   if (e.target === playerModal) {
     playerModal.classList.remove('show');
     playerContent.innerHTML = '';
   }
 });
-
-/* ============================================================
-   PUBLIC USER PROFILE
-   ============================================================ */
-async function openUserProfile(userId) {
-  if (!userId) return;
-  if (userId === currentUser.uid) {
-    setActiveNav('profile');
-    renderPage('profile');
-    return;
-  }
-  viewingUserId = userId;
-  setActiveNav(null);
-  content.innerHTML = `<div class="page-placeholder"><div class="page-title">Loading...</div></div>`;
-
-  try {
-    const snap = await getDoc(doc(db, 'users', userId));
-    if (!snap.exists()) {
-      content.innerHTML = `<div class="page-placeholder"><div class="page-title">User not found</div></div>`;
-      return;
-    }
-    const user = snap.data();
-    const followers = Array.isArray(user.followers) ? user.followers : [];
-    const following = Array.isArray(user.following) ? user.following : [];
-    const videoCount = typeof user.videoCount === 'number' ? user.videoCount : 0;
-    const avatarSrc = user.photo || defaultAvatar(user.name);
-    const isFollowing = currentProfile?.following?.includes(userId) || false;
-
-    content.innerHTML = `
-      <div style="padding: 12px 16px;">
-        <button id="backFromProfileBtn">
-          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-          Back
-        </button>
-      </div>
-      <div class="profile-page" style="padding-top:0;">
-        <div class="profile-top">
-          <div class="profile-avatar-wrap">
-            <img class="profile-avatar" src="${avatarSrc}" alt="${escapeHtml(user.name)}">
-          </div>
-          <div class="profile-stats">
-            <div class="profile-stat"><b>${videoCount}</b><span>Videos</span></div>
-            <div class="profile-stat"><b>${followers.length}</b><span>Followers</span></div>
-            <div class="profile-stat"><b>${following.length}</b><span>Following</span></div>
-          </div>
-        </div>
-        <div class="profile-info">
-          <div class="profile-name">${escapeHtml(user.name)}</div>
-          <div class="profile-username">@${escapeHtml(user.user)}</div>
-          <div class="profile-bio">${user.bio ? escapeHtml(user.bio) : '<span style="color:#555">No bio yet.</span>'}</div>
-        </div>
-        <div class="profile-actions">
-          <button class="btn-outline" id="pubFollowBtn" style="${isFollowing ? '' : 'background: linear-gradient(90deg, #ff2e63, #ff8a00); border: none;'}">
-            ${isFollowing ? 'Following' : 'Follow'}
-          </button>
-          <button class="btn-outline" id="pubShareBtn">
-            <svg viewBox="0 0 24 24">
-              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-            </svg>
-            Share
-          </button>
-        </div>
-        <div class="profile-tabs"><button class="profile-tab active">Posts</button></div>
-        <div class="profile-grid" id="pubPostsGrid"><div class="grid-empty">Loading posts...</div></div>
-      </div>
-    `;
-
-    document.getElementById('backFromProfileBtn').addEventListener('click', () => {
-      viewingUserId = null;
-      setActiveNav(null);
-      renderPage('home');
-    });
-
-    const followBtn = document.getElementById('pubFollowBtn');
-    followBtn.addEventListener('click', async () => {
-      const wasFollowing = currentProfile.following.includes(userId);
-      await toggleFollow(userId, null);
-      if (wasFollowing) {
-        followBtn.textContent = 'Follow';
-        followBtn.style.cssText = 'background: linear-gradient(90deg, #ff2e63, #ff8a00); border: none;';
-      } else {
-        followBtn.textContent = 'Following';
-        followBtn.style.cssText = '';
-      }
-    });
-
-    document.getElementById('pubShareBtn').addEventListener('click', () => shareUser(user));
-    await renderUserPosts(userId, 'pubPostsGrid');
-  } catch (e) {
-    console.error(e);
-    content.innerHTML = `<div class="page-placeholder"><div class="page-title">Could not load</div></div>`;
-  }
-}
-
-async function shareUser(user) {
-  const appUrl = window.location.origin;
-  const shareText = `🎬 Check out ${user.name}'s profile on ReelHub!\n\n@${user.user}\n\n${appUrl}`;
-  if (navigator.share) {
-    try { await navigator.share({ title: `${user.name} on ReelHub`, text: shareText, url: appUrl }); return; } catch (err) { if (err.name === 'AbortError') return; }
-  }
-  try { await navigator.clipboard.writeText(shareText); showToast('✅ Link copied!'); } catch (err) { showToast('❌ Could not share'); }
-}
 
 /* ============================================================
    EDIT PROFILE MODAL
@@ -3068,7 +2621,6 @@ function openEditModal() {
 document.getElementById('closeEdit').addEventListener('click', () => {
   editModal.classList.remove('show');
 });
-
 editModal.addEventListener('click', (e) => {
   if (e.target === editModal) editModal.classList.remove('show');
 });
@@ -3092,7 +2644,7 @@ saveProfileBtn.addEventListener('click', async () => {
   editMsg.textContent = '';
   if (!newName) { editMsg.textContent = 'Name required.'; return; }
   if (!/^[a-z0-9._]{3,20}$/.test(newUser)) { editMsg.textContent = 'Username: 3-20 chars.'; return; }
-  if (newBio.length > 150) { editMsg.textContent = 'Bio max 150 chars.'; return; }
+  if (newBio.length > 150) { editMsg.textContent = 'Bio max 150.'; return; }
 
   saveProfileBtn.disabled = true;
   saveProfileBtn.textContent = 'Saving...';
@@ -3191,7 +2743,6 @@ async function toggleFollow(targetUid, btnEl) {
       if (btnEl) { btnEl.textContent = 'Following'; btnEl.className = 'unfollow'; }
     }
   } catch (err) {
-    console.error(err);
     showToast('Could not update follow.');
   }
 }
@@ -3222,7 +2773,6 @@ async function renderNotifications() {
     }
     updateNotifDot(0);
   } catch (e) {
-    console.error(e);
     const el = document.getElementById('notifList');
     if (el) el.innerHTML = `<div class="empty-notif">Could not load.</div>`;
   }
@@ -3389,9 +2939,7 @@ async function performSearch(searchTerm) {
       row.querySelector('button').addEventListener('click', async (e) => { e.stopPropagation(); await toggleFollow(u.id, e.target); });
       results.appendChild(row);
     });
-  } catch (e) {
-    results.innerHTML = `<div class="search-empty">Search failed</div>`;
-  }
+  } catch (e) { results.innerHTML = `<div class="search-empty">Search failed</div>`; }
 }
 
 /* ============================================================
@@ -3402,12 +2950,11 @@ async function shareProfile() {
   const appUrl = window.location.origin;
   const shareText = `🎬 Check out ${currentProfile.name}'s profile on ReelHub!\n\n@${currentProfile.user}\n\n${appUrl}`;
   if (navigator.share) {
-    try { await navigator.share({ title: `${currentProfile.name} on ReelHub`, text: shareText, url: appUrl }); return; } catch (err) { if (err.name === 'AbortError') return; }
+    try { await navigator.share({ title: `${currentProfile.name} on ReelHub`, text: shareText, url: appUrl }); return; }
+    catch (err) { if (err.name === 'AbortError') return; }
   }
-  try {
-    await navigator.clipboard.writeText(shareText);
-    showToast('✅ Link copied!');
-  } catch (err) {
+  try { await navigator.clipboard.writeText(shareText); showToast('✅ Link copied!'); }
+  catch (err) {
     const textarea = document.createElement('textarea');
     textarea.value = shareText;
     textarea.style.position = 'fixed';
@@ -3429,16 +2976,11 @@ function showToast(message) {
   toast.id = 'toast';
   toast.textContent = message;
   toast.style.cssText = `
-    position: fixed;
-    bottom: 90px;
-    left: 50%;
+    position: fixed; bottom: 90px; left: 50%;
     transform: translateX(-50%);
-    background: #1e1e28;
-    color: #fff;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 500;
+    background: #1e1e28; color: #fff;
+    padding: 12px 20px; border-radius: 10px;
+    font-size: 14px; font-weight: 500;
     z-index: 10000;
     box-shadow: 0 8px 20px rgba(0,0,0,0.6);
     border: 1px solid #333;
@@ -3515,6 +3057,5 @@ function timeAgoShort(date) {
   if (hrs < 24) return hrs + 'h';
   const days = Math.floor(hrs / 24);
   if (days < 7) return days + 'd';
-  const weeks = Math.floor(days / 7);
-  return weeks + 'w';
+  return Math.floor(days / 7) + 'w';
 }
