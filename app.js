@@ -500,8 +500,8 @@ function renderPage(page) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 2/4) — UPDATED
-   Helpers, Home Feed (Private Account), Stories, Report/Block
+   ReelHub — app.js (PART 2/4) — YouTube Style Home Feed
+   Helpers, Home Feed, Stories, Report/Block
    ============================================================ */
 
 /* ============================================================
@@ -712,7 +712,7 @@ async function loadStoryViewersList(uids, containerId) {
 }
 
 /* ============================================================
-   HOME FEED — With Private Account Filter + Feed Order
+   HOME FEED — YouTube Style
    ============================================================ */
 async function renderHomeFeed() {
   content.innerHTML = `
@@ -832,72 +832,124 @@ async function loadHomeFeedPosts() {
   }
 }
 
+/* ============================================================
+   FEED POST — Router (Short / Long / Photo)
+   ============================================================ */
 function makeFeedPost(post) {
-  const postEl = document.createElement('div');
-  postEl.className = 'feed-post';
-  postEl.dataset.postId = post.id;
+  if (post.type === 'short') {
+    return makeShortCard(post);
+  }
+  return makeLongCard(post);
+}
+
+/* ============================================================
+   SHORT VIDEO CARD (YouTube Shorts style — small)
+   ============================================================ */
+function makeShortCard(post) {
+  const card = document.createElement('div');
+  card.className = 'short-card-feed';
+  card.dataset.postId = post.id;
 
   const avatar = post.userPhoto || defaultAvatar(post.userName);
+  const thumbUrl = post.thumbnail || post.url;
+  const isLiked = (post.likes || []).includes(currentUser.uid);
+  const likesCount = (post.likes || []).length;
+  const viewsCount = post.views || 0;
+
+  card.innerHTML = `
+    <div class="short-card-thumb">
+      <img src="${thumbUrl}" alt="" loading="lazy">
+      <div class="short-card-badge">SHORT</div>
+      <div class="short-card-views">👁 ${viewsCount}</div>
+      <div class="short-card-play">▶</div>
+    </div>
+    <div class="short-card-info">
+      <img class="short-card-avatar" src="${avatar}" alt="">
+      <div class="short-card-meta">
+        <div class="short-card-caption">${escapeHtml(post.caption || post.userName || 'Short video')}</div>
+        <div class="short-card-sub">${escapeHtml(post.userName || 'User')} · ${likesCount} ❤️</div>
+      </div>
+    </div>
+  `;
+
+  // Click → Open shorts player
+  let lastTap = 0;
+  let tapTimer = null;
+  card.addEventListener('click', () => {
+    const s = typeof getSettings === 'function' ? getSettings() : { doubleTapLike: true };
+    if (!s.doubleTapLike) {
+      openPostPlayer(post);
+      return;
+    }
+    const now = Date.now();
+    if (now - lastTap < 350) {
+      clearTimeout(tapTimer);
+      lastTap = 0;
+      handleDoubleTapLike(post, card);
+    } else {
+      lastTap = now;
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => {
+        lastTap = 0;
+        openPostPlayer(post);
+      }, 350);
+    }
+  });
+
+  trackPostView(post.id);
+  return card;
+}
+
+/* ============================================================
+   LONG VIDEO / PHOTO CARD (YouTube style — big)
+   ============================================================ */
+function makeLongCard(post) {
+  const card = document.createElement('div');
+  card.className = 'long-card-feed';
+  card.dataset.postId = post.id;
+
+  const avatar = post.userPhoto || defaultAvatar(post.userName);
+  const thumbUrl = post.thumbnail || (post.type === 'photo' ? post.url : '');
   const isLiked = (post.likes || []).includes(currentUser.uid);
   const likesCount = (post.likes || []).length;
   const commentsCount = (post.comments || []).length;
   const viewsCount = post.views || 0;
-
   const settings = typeof getSettings === 'function' ? getSettings() : { showViews: true };
 
-  let mediaHtml = '';
-  if (post.type === 'photo') {
-    mediaHtml = `<img src="${post.url}" alt="" loading="lazy">`;
-  } else {
-    const aspectClass = post.type === 'long' ? 'aspect-16-9' : 'aspect-9-16';
-    mediaHtml = `
-      <video src="${post.url}"
-             class="${aspectClass}"
-             controls
-             muted
-             playsinline
-             preload="metadata"
-             loop
-             style="width:100%;max-height:600px;background:#000;"></video>
-    `;
-  }
-
-  postEl.innerHTML = `
-    <div class="feed-post-header">
-      <img src="${avatar}" alt="" data-uid="${post.userId}">
-      <div class="info" data-uid="${post.userId}">
-        <b>${escapeHtml(post.userName || 'User')}</b>
-        <span>@${escapeHtml(post.userHandle || '')}</span>
+  card.innerHTML = `
+    <div class="long-card-thumb">
+      ${post.type === 'photo'
+        ? `<img src="${post.url}" alt="" loading="lazy">`
+        : `<img src="${thumbUrl}" alt="" loading="lazy">`}
+      ${post.type !== 'photo' ? `
+        <div class="long-card-badge">${post.type === 'long' ? 'LONG' : 'VIDEO'}</div>
+        <div class="long-card-play-icon">
+          <svg viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div>
+        ${settings.showViews !== false ? `<div class="long-card-duration">👁 ${viewsCount}</div>` : ''}
+      ` : ''}
+    </div>
+    <div class="long-card-info">
+      <img class="long-card-avatar" src="${avatar}" alt="">
+      <div class="long-card-meta">
+        <div class="long-card-title">${escapeHtml(post.caption || 'Untitled')}</div>
+        <div class="long-card-channel">${escapeHtml(post.userName || 'User')}</div>
+        <div class="long-card-stats">${settings.showViews !== false ? viewsCount + ' views · ' : ''}${likesCount} likes · ${commentsCount} comments</div>
       </div>
-      <button class="post-menu-btn" data-post="${post.id}" data-uid="${post.userId}" title="More">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/>
-          <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
-          <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/>
-        </svg>
-      </button>
     </div>
-
-    <div class="feed-post-media">
-      ${mediaHtml}
-      <div class="type-badge-feed">${post.type === 'photo' ? 'PHOTO' : (post.type === 'long' ? 'LONG' : 'SHORT')}</div>
-    </div>
-
-    <div class="feed-actions">
+    <div class="long-card-actions">
       <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${post.id}" ${isLiked ? 'disabled' : ''}>
         <svg viewBox="0 0 24 24">
           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
         </svg>
         <span>${likesCount}</span>
       </button>
-
       <button class="comment-btn" data-post="${post.id}">
         <svg viewBox="0 0 24 24">
           <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
         </svg>
         <span>${commentsCount}</span>
       </button>
-
       <button class="share-btn-feed" data-post="${post.id}">
         <svg viewBox="0 0 24 24">
           <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
@@ -905,47 +957,30 @@ function makeFeedPost(post) {
           <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
         </svg>
       </button>
-
-      ${settings.showViews !== false ? buildViewsHTML(viewsCount) : ''}
-
       ${buildSaveButtonHTML(post.id)}
     </div>
-
-    ${post.caption ? `
-      <div class="feed-caption">
-        <b>${escapeHtml(post.userHandle || '')}</b>${escapeHtml(post.caption)}
-      </div>
-    ` : ''}
   `;
 
-  postEl.querySelector('.feed-post-header img').addEventListener('click', () => {
-    openUserProfile(post.userId);
-  });
-  postEl.querySelector('.feed-post-header .info').addEventListener('click', () => {
-    openUserProfile(post.userId);
+  card.querySelector('.long-card-thumb').addEventListener('click', () => {
+    openPostPlayer(post);
   });
 
-  postEl.querySelector('.post-menu-btn').addEventListener('click', async (e) => {
-    e.stopPropagation();
-    await showPostMenu(e.currentTarget, post);
-  });
-
-  postEl.querySelector('.like-btn').addEventListener('click', async (e) => {
+  card.querySelector('.like-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     await toggleLike(post.id, e.currentTarget);
   });
 
-  postEl.querySelector('.comment-btn').addEventListener('click', (e) => {
+  card.querySelector('.comment-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     openComments(post.id, post.caption || 'Comments');
   });
 
-  postEl.querySelector('.share-btn-feed').addEventListener('click', async (e) => {
+  card.querySelector('.share-btn-feed').addEventListener('click', async (e) => {
     e.stopPropagation();
     await sharePost(post);
   });
 
-  const saveBtn = postEl.querySelector('.save-btn');
+  const saveBtn = card.querySelector('.save-btn');
   if (saveBtn) {
     saveBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -953,56 +988,50 @@ function makeFeedPost(post) {
     });
   }
 
-  // ✅ DOUBLE TAP TO LIKE — IMPROVED
-  let lastTap = 0;
-  let tapTimer = null;
-  const mediaEl = postEl.querySelector('.feed-post-media');
-
-  function handleTap(e) {
-    const s = typeof getSettings === 'function' ? getSettings() : { doubleTapLike: true };
-    if (!s.doubleTapLike) return;
-
-    // Skip if tap is on video controls (bottom 50px area)
-    const video = mediaEl.querySelector('video');
-    if (video && video.controls) {
-      const rect = video.getBoundingClientRect();
-      let clientY = 0;
-      if (e.touches && e.touches[0]) clientY = e.touches[0].clientY;
-      else if (e.changedTouches && e.changedTouches[0]) clientY = e.changedTouches[0].clientY;
-      else clientY = e.clientY;
-      const y = clientY - rect.top;
-      if (y > rect.height - 60) return; // Skip controls area
-    }
-
-    const now = Date.now();
-    if (now - lastTap < 350) {
-      clearTimeout(tapTimer);
-      lastTap = 0;
-      handleDoubleTapLike(post, postEl);
-    } else {
-      lastTap = now;
-      clearTimeout(tapTimer);
-      tapTimer = setTimeout(() => { lastTap = 0; }, 350);
-    }
-  }
-
-  mediaEl.addEventListener('click', handleTap);
-  mediaEl.addEventListener('touchend', (e) => {
-    if (e.cancelable) e.preventDefault();
-    handleTap(e);
-  }, { passive: false });
-
   trackPostView(post.id);
-
-  return postEl;
+  return card;
 }
 
-// ✅ DOUBLE TAP HELPER
-async function handleDoubleTapLike(post, postEl) {
+/* ============================================================
+   Post Player — YouTube style modal
+   ============================================================ */
+function openPostPlayer(post) {
+  playerTitle.textContent = post.caption || (post.type === 'photo' ? 'Photo' : 'Video');
+
+  if (post.type === 'photo') {
+    playerContent.innerHTML = `<img src="${post.url}" alt="">`;
+  } else if (post.type === 'short') {
+    playerContent.innerHTML = `
+      <div class="player-short-wrap">
+        <video src="${post.url}" controls autoplay playsinline
+               style="width:100%;max-height:75vh;background:#000;border-radius:8px;"></video>
+      </div>
+    `;
+  } else {
+    playerContent.innerHTML = `
+      <div class="player-youtube-wrap">
+        <video src="${post.url}" controls autoplay playsinline
+               ${post.thumbnail ? `poster="${post.thumbnail}"` : ''}
+               style="width:100%;max-height:75vh;background:#000;"></video>
+        <div class="player-youtube-info">
+          <div class="player-youtube-title">${escapeHtml(post.caption || 'Video')}</div>
+          <div class="player-youtube-channel">${escapeHtml(post.userName || 'User')}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  playerModal.classList.add('show');
+}
+
+/* ============================================================
+   Double Tap Like Helper
+   ============================================================ */
+async function handleDoubleTapLike(post, cardEl) {
   if ((post.likes || []).includes(currentUser.uid)) return;
-  const likeBtn = postEl.querySelector('.like-btn');
+  const likeBtn = cardEl.querySelector('.like-btn');
   if (likeBtn) await toggleLike(post.id, likeBtn);
-  showHeartAnimation(postEl);
+  showHeartAnimation(cardEl);
   if (navigator.vibrate) navigator.vibrate(50);
 }
 
@@ -1028,6 +1057,9 @@ function showHeartAnimation(container) {
   setTimeout(() => heart.remove(), 800);
 }
 
+/* ============================================================
+   POST MENU (Report / Block / Delete)
+   ============================================================ */
 async function showPostMenu(anchorEl, post) {
   document.querySelectorAll('.post-menu-dropdown').forEach(el => el.remove());
 
@@ -1190,12 +1222,14 @@ async function blockUser(userId, userHandle) {
   }
 }
 
-/* ✅ Auto Play Setting */
+/* ============================================================
+   Auto Play (Long video only)
+   ============================================================ */
 function setupFeedAutoplay() {
   const settings = typeof getSettings === 'function' ? getSettings() : { autoPlay: true };
   if (!settings.autoPlay) return;
 
-  const videos = document.querySelectorAll('.feed-post-media video');
+  const videos = document.querySelectorAll('.long-card-feed video, .feed-post-media video');
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const video = entry.target;
@@ -1211,6 +1245,9 @@ function setupFeedAutoplay() {
   videos.forEach(v => observer.observe(v));
 }
 
+/* ============================================================
+   STORIES BAR
+   ============================================================ */
 async function loadStoriesBar() {
   const bar = document.getElementById('storiesBar');
   if (!bar) return;
@@ -1284,6 +1321,9 @@ async function loadStoriesBar() {
   } catch (e) {}
 }
 
+/* ============================================================
+   STORY UPLOAD MODAL
+   ============================================================ */
 function openStoryUploadModal() {
   currentStoryType = 'photo';
   currentStoryFile = null;
