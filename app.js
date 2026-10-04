@@ -498,10 +498,13 @@ function renderPage(page) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 2/4)
-   Helpers, Home Feed, Stories, Report/Block
+   ReelHub — app.js (PART 2/4) — UPDATED
+   Helpers, Home Feed (Private Account), Stories, Report/Block
    ============================================================ */
 
+/* ============================================================
+   BATCH 1 HELPERS — Save + Views
+   ============================================================ */
 function isPostSaved(postId) {
   if (!currentProfile) return false;
   return (currentProfile.savedPosts || []).includes(postId);
@@ -706,6 +709,9 @@ async function loadStoryViewersList(uids, containerId) {
   });
 }
 
+/* ============================================================
+   HOME FEED — With Private Account Filter + Feed Order
+   ============================================================ */
 async function renderHomeFeed() {
   content.innerHTML = `
     <div class="home-feed">
@@ -764,11 +770,49 @@ async function loadHomeFeedPosts() {
     const blocked = currentProfile?.blockedUsers || [];
     posts = posts.filter(p => !blocked.includes(p.userId));
 
-    posts.sort((a, b) => {
-      const ta = a.createdAt?.toDate?.()?.getTime() || 0;
-      const tb = b.createdAt?.toDate?.()?.getTime() || 0;
-      return tb - ta;
-    });
+    // ✅ PRIVATE ACCOUNT FILTER
+    const myFollowing = currentProfile?.following || [];
+    const filteredPosts = [];
+    for (const post of posts) {
+      if (post.userId === currentUser.uid) {
+        filteredPosts.push(post);
+        continue;
+      }
+      try {
+        const userSnap = await getDoc(doc(db, 'users', post.userId));
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          if (userData.isPrivate && !myFollowing.includes(post.userId)) {
+            continue;
+          }
+        }
+      } catch (e) {}
+      filteredPosts.push(post);
+    }
+    posts = filteredPosts;
+
+    // ✅ FEED ORDER SETTINGS
+    const settings = typeof getSettings === 'function' ? getSettings() : { feedOrder: 'newest' };
+    if (settings.feedOrder === 'trending') {
+      posts.sort((a, b) => {
+        const ta = (a.likes?.length || 0) + (a.views || 0);
+        const tb = (b.likes?.length || 0) + (b.views || 0);
+        return tb - ta;
+      });
+    } else if (settings.feedOrder === 'following') {
+      posts = posts.filter(p => myFollowing.includes(p.userId) || p.userId === currentUser.uid);
+      posts.sort((a, b) => {
+        const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+        const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+        return tb - ta;
+      });
+    } else {
+      posts.sort((a, b) => {
+        const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+        const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+        return tb - ta;
+      });
+    }
 
     container.innerHTML = '';
     posts.forEach(post => {
@@ -796,6 +840,8 @@ function makeFeedPost(post) {
   const likesCount = (post.likes || []).length;
   const commentsCount = (post.comments || []).length;
   const viewsCount = post.views || 0;
+
+  const settings = typeof getSettings === 'function' ? getSettings() : { showViews: true };
 
   let mediaHtml = '';
   if (post.type === 'photo') {
@@ -858,7 +904,7 @@ function makeFeedPost(post) {
         </svg>
       </button>
 
-      ${buildViewsHTML(viewsCount)}
+      ${settings.showViews !== false ? buildViewsHTML(viewsCount) : ''}
 
       ${buildSaveButtonHTML(post.id)}
     </div>
@@ -905,9 +951,53 @@ function makeFeedPost(post) {
     });
   }
 
+  // ✅ DOUBLE TAP TO LIKE
+  let lastTap = 0;
+  const mediaEl = postEl.querySelector('.feed-post-media');
+  mediaEl.addEventListener('click', (e) => {
+    const settings = typeof getSettings === 'function' ? getSettings() : { doubleTapLike: true };
+    if (!settings.doubleTapLike) return;
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      handleDoubleTapLike(post, postEl);
+    }
+    lastTap = now;
+  });
+
   trackPostView(post.id);
 
   return postEl;
+}
+
+// ✅ DOUBLE TAP HELPER
+async function handleDoubleTapLike(post, postEl) {
+  if ((post.likes || []).includes(currentUser.uid)) return;
+  const likeBtn = postEl.querySelector('.like-btn');
+  if (likeBtn) await toggleLike(post.id, likeBtn);
+  showHeartAnimation(postEl);
+  if (navigator.vibrate) navigator.vibrate(50);
+}
+
+function showHeartAnimation(container) {
+  const existing = container.querySelector('.heart-animation');
+  if (existing) existing.remove();
+
+  const heart = document.createElement('div');
+  heart.className = 'heart-animation';
+  heart.innerHTML = '❤️';
+  heart.style.cssText = `
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: 100px;
+    pointer-events: none;
+    animation: heartPop 0.8s ease forwards;
+    z-index: 100;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+  `;
+  container.style.position = 'relative';
+  container.appendChild(heart);
+  setTimeout(() => heart.remove(), 800);
 }
 
 async function showPostMenu(anchorEl, post) {
@@ -1030,7 +1120,8 @@ async function reportPost(post) {
 }
 
 async function deletePost(postId) {
-  if (!confirm('Delete this post permanently?')) return;
+  const settings = typeof getSettings === 'function' ? getSettings() : { confirmDelete: true };
+  if (settings.confirmDelete && !confirm('Delete this post permanently?')) return;
   try {
     await deleteDoc(doc(db, 'posts', postId));
     await updateDoc(doc(db, 'users', currentUser.uid), {
@@ -1071,16 +1162,22 @@ async function blockUser(userId, userHandle) {
   }
 }
 
+/* ✅ UPDATED: Auto Play Setting */
 function setupFeedAutoplay() {
-  const settings = getSettings();
+  const settings = typeof getSettings === 'function' ? getSettings() : { autoPlay: true };
   if (!settings.autoPlay) return;
 
   const videos = document.querySelectorAll('.feed-post-media video');
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const video = entry.target;
-      if (entry.isIntersecting && entry.intersectionRatio > 0.6) video.play().catch(() => {});
-      else video.pause();
+      if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+        video.muted = !settings.autoplaySound;
+        video.loop = settings.videoLoop !== false;
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
     });
   }, { threshold: [0, 0.6, 1] });
   videos.forEach(v => observer.observe(v));
@@ -2083,7 +2180,7 @@ async function deleteComment(commentId) {
   } catch (e) { showToast('❌ Could not delete'); }
 }
 /* ============================================================
-   ReelHub — app.js (PART 4/4)
+   ReelHub — app.js (PART 4/4) — UPDATED with 30 Settings
    Chat, Profile, Upload, Notifications, Search, Settings, Helpers
    ============================================================ */
 
@@ -2509,7 +2606,8 @@ function showMessageActionsMenu(anchorEl, msg) {
       else if (action === 'copy') await copyMessageText(msg);
       else if (action === 'pin') await togglePinMessage(msg);
       else if (action === 'delete') {
-        if (confirm('Delete this message?')) await deleteMessage(msg.id);
+        const settings = getSettings();
+        if (!settings.confirmDelete || confirm('Delete this message?')) await deleteMessage(msg.id);
       }
     });
   });
@@ -2593,6 +2691,9 @@ async function copyMessageText(msg) {
 
 function buildTicksHTML(msg) {
   if (msg.from !== currentUser.uid) return '';
+  const settings = getSettings();
+  if (settings.readReceipts === false) return '';
+
   if (msg.read) {
     return `<span class="msg-ticks read">
       <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
@@ -2756,6 +2857,10 @@ async function sendMessage(msgData) {
     if (chatMessages.querySelector('.chat-empty')) chatMessages.innerHTML = '';
     chatMessages.appendChild(makeMessageBubble(tempMsg));
     chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    // Vibration on send
+    const settings = getSettings();
+    if (settings.vibration && navigator.vibrate) navigator.vibrate(30);
 
     await addDoc(collection(db, 'chats', activeChatId, 'messages'), message);
 
@@ -3087,6 +3192,9 @@ function makeGridItem(post) {
   return item;
 }
 
+/* ============================================================
+   PUBLIC USER PROFILE — With Private Account Check
+   ============================================================ */
 async function openUserProfile(userId) {
   if (!userId) return;
   if (userId === currentUser.uid) {
@@ -3117,6 +3225,62 @@ async function openUserProfile(userId) {
     const videoCount = typeof user.videoCount === 'number' ? user.videoCount : 0;
     const avatarSrc = user.photo || defaultAvatar(user.name);
     const isFollowing = currentProfile?.following?.includes(userId) || false;
+
+    // ✅ PRIVATE ACCOUNT CHECK
+    if (user.isPrivate && !isFollowing) {
+      content.innerHTML = `
+        <div style="padding: 12px 16px;">
+          <button id="backFromProfileBtn">
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+          </button>
+        </div>
+        <div class="profile-page" style="padding-top:0;text-align:center;">
+          <div class="profile-top" style="justify-content:center;">
+            <div class="profile-avatar-wrap">
+              <img class="profile-avatar" src="${avatarSrc}" alt="${escapeHtml(user.name)}">
+            </div>
+          </div>
+          <div class="profile-info">
+            <div class="profile-name">${escapeHtml(user.name)}</div>
+            <div class="profile-username">@${escapeHtml(user.user)}</div>
+          </div>
+          <div style="padding:30px 20px;">
+            <svg viewBox="0 0 24 24" style="width:70px;height:70px;stroke:#666;fill:none;stroke-width:1.5;margin-bottom:16px;">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <div style="font-size:18px;font-weight:700;margin-bottom:8px;">This Account is Private</div>
+            <div style="color:#888;font-size:14px;margin-bottom:20px;">
+              Follow @${escapeHtml(user.user)} to see their posts and videos
+            </div>
+          </div>
+          <div class="profile-actions" style="justify-content:center;">
+            <button id="pubFollowBtn">
+              <svg viewBox="0 0 24 24">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Follow
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('backFromProfileBtn').addEventListener('click', () => {
+        viewingUserId = null;
+        setActiveNav(null);
+        renderPage('home');
+      });
+
+      document.getElementById('pubFollowBtn').addEventListener('click', async (e) => {
+        await toggleFollow(userId, e.currentTarget);
+        if (currentProfile.following.includes(userId)) {
+          showToast('✅ Followed! Loading profile...');
+          setTimeout(() => openUserProfile(userId), 500);
+        }
+      });
+      return;
+    }
 
     content.innerHTML = `
       <div style="padding: 12px 16px;">
@@ -3223,6 +3387,9 @@ async function shareUser(user) {
   catch (err) { showToast('❌ Could not share'); }
 }
 
+/* ============================================================
+   UPLOAD MODAL
+   ============================================================ */
 function openUploadModal() {
   selectedFile = null;
   selectedFileDuration = 0;
@@ -3712,6 +3879,9 @@ function stopNotifWatcher() {
 async function checkUnreadNotifications() {
   if (!currentUser) return;
   try {
+    const settings = getSettings();
+    if (settings.pushNotif === false) { updateNotifDot(0); return; }
+
     const q = query(collection(db, 'notifications'), where('userId', '==', currentUser.uid), where('read', '==', false), limit(20));
     const snap = await getDocs(q);
     updateNotifDot(snap.size);
@@ -3928,20 +4098,47 @@ function formatVoiceDuration(seconds) {
 }
 
 /* ============================================================
-   SETTINGS — localStorage based
+   SETTINGS — 30 Settings (localStorage based)
    ============================================================ */
 
 const DEFAULT_SETTINGS = {
+  // App Preferences (5)
   darkMode: true,
   autoPlay: true,
   dataSaver: false,
   videoQuality: 'auto',
   language: 'en',
+  // Notifications (5)
   pushNotif: true,
   notifLikes: true,
   notifComments: true,
   notifFollows: true,
-  notifMessages: true
+  notifMessages: true,
+  // Privacy (6)
+  privateAccount: false,
+  readReceipts: true,
+  showActivity: true,
+  showOnline: true,
+  allowTagging: true,
+  allowStorySharing: true,
+  // More Settings (4)
+  autoDownload: false,
+  vibration: true,
+  soundEffects: true,
+  fontSize: 'medium',
+  // Video & Playback (4)
+  autoplaySound: false,
+  videoLoop: true,
+  showCaptions: true,
+  videoPreload: 'metadata',
+  // Feed & Display (3)
+  showViews: true,
+  infiniteScroll: true,
+  feedOrder: 'newest',
+  // Interactions (3)
+  doubleTapLike: true,
+  confirmDelete: true,
+  compactMode: false
 };
 
 function getSettings() {
@@ -3973,7 +4170,27 @@ function applySetting(key, value) {
       });
       break;
     }
+    case 'compactMode':
+      document.body.classList.toggle('compact-mode', value);
+      break;
+    case 'fontSize':
+      applyFontSize(value);
+      break;
+    case 'privateAccount': {
+      const descEl = document.getElementById('privateAccountDesc');
+      if (descEl) {
+        descEl.textContent = value ? 'Private — Sirf followers dekh sakte hain' : 'Public — Sab dekh sakte hain';
+      }
+      break;
+    }
   }
+}
+
+function applyFontSize(size) {
+  const html = document.documentElement;
+  if (size === 'small') html.style.fontSize = '13px';
+  else if (size === 'large') html.style.fontSize = '17px';
+  else html.style.fontSize = '15px';
 }
 
 function loadSettingsToUI() {
@@ -3987,7 +4204,24 @@ function loadSettingsToUI() {
     settingNotifLikes: s.notifLikes,
     settingNotifComments: s.notifComments,
     settingNotifFollows: s.notifFollows,
-    settingNotifMessages: s.notifMessages
+    settingNotifMessages: s.notifMessages,
+    settingPrivateAccount: s.privateAccount,
+    settingReadReceipts: s.readReceipts,
+    settingShowActivity: s.showActivity,
+    settingShowOnline: s.showOnline,
+    settingAllowTagging: s.allowTagging,
+    settingAllowStorySharing: s.allowStorySharing,
+    settingAutoDownload: s.autoDownload,
+    settingVibration: s.vibration,
+    settingSoundEffects: s.soundEffects,
+    settingAutoplaySound: s.autoplaySound,
+    settingVideoLoop: s.videoLoop,
+    settingShowCaptions: s.showCaptions,
+    settingShowViews: s.showViews,
+    settingInfiniteScroll: s.infiniteScroll,
+    settingDoubleTapLike: s.doubleTapLike,
+    settingConfirmDelete: s.confirmDelete,
+    settingCompactMode: s.compactMode
   };
 
   Object.keys(checkboxes).forEach(id => {
@@ -3995,10 +4229,23 @@ function loadSettingsToUI() {
     if (el) el.checked = checkboxes[id];
   });
 
-  const elVQ = document.getElementById('settingVideoQuality');
-  const elLang = document.getElementById('settingLanguage');
-  if (elVQ) elVQ.value = s.videoQuality;
-  if (elLang) elLang.value = s.language;
+  const selects = {
+    settingVideoQuality: s.videoQuality,
+    settingLanguage: s.language,
+    settingFontSize: s.fontSize,
+    settingVideoPreload: s.videoPreload,
+    settingFeedOrder: s.feedOrder
+  };
+
+  Object.keys(selects).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = selects[id];
+  });
+
+  const descEl = document.getElementById('privateAccountDesc');
+  if (descEl) {
+    descEl.textContent = s.privateAccount ? 'Private — Sirf followers dekh sakte hain' : 'Public — Sab dekh sakte hain';
+  }
 
   const subIds = ['settingNotifLikes', 'settingNotifComments', 'settingNotifFollows', 'settingNotifMessages'];
   subIds.forEach(id => {
@@ -4029,41 +4276,69 @@ function initSettingsListeners() {
     }
   });
 
-  document.getElementById('settingDarkMode')?.addEventListener('change', (e) => {
-    saveSetting('darkMode', e.target.checked);
-    showToast(e.target.checked ? '🌙 Dark mode ON' : '☀️ Light mode ON');
-  });
+  function wireToggle(id, key, onMsg, offMsg) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', (e) => {
+      saveSetting(key, e.target.checked);
+      if (onMsg || offMsg) showToast(e.target.checked ? onMsg : offMsg);
+    });
+  }
 
-  document.getElementById('settingAutoPlay')?.addEventListener('change', (e) => {
-    saveSetting('autoPlay', e.target.checked);
-    showToast(e.target.checked ? '▶️ Auto play ON' : '⏸️ Auto play OFF');
-  });
+  function wireSelect(id, key, prefix) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', (e) => {
+      saveSetting(key, e.target.value);
+      showToast(prefix + e.target.value);
+    });
+  }
 
-  document.getElementById('settingDataSaver')?.addEventListener('change', (e) => {
-    saveSetting('dataSaver', e.target.checked);
-    showToast(e.target.checked ? '📉 Data saver ON' : '📈 Data saver OFF');
-  });
+  // App Preferences
+  wireToggle('settingDarkMode', 'darkMode', '🌙 Dark mode ON', '☀️ Light mode ON');
+  wireToggle('settingAutoPlay', 'autoPlay', '▶️ Auto play ON', '⏸️ Auto play OFF');
+  wireToggle('settingDataSaver', 'dataSaver', '📉 Data saver ON', '📈 Data saver OFF');
+  wireSelect('settingVideoQuality', 'videoQuality', '🎬 Quality: ');
+  wireSelect('settingLanguage', 'language', '🌐 Language: ');
 
-  document.getElementById('settingPushNotif')?.addEventListener('change', (e) => {
-    saveSetting('pushNotif', e.target.checked);
-    showToast(e.target.checked ? '🔔 Notifications ON' : '🔕 Notifications OFF');
-  });
+  // Notifications
+  wireToggle('settingPushNotif', 'pushNotif', '🔔 Notifications ON', '🔕 Notifications OFF');
+  wireToggle('settingNotifLikes', 'notifLikes', '', '');
+  wireToggle('settingNotifComments', 'notifComments', '', '');
+  wireToggle('settingNotifFollows', 'notifFollows', '', '');
+  wireToggle('settingNotifMessages', 'notifMessages', '', '');
 
-  document.getElementById('settingNotifLikes')?.addEventListener('change', (e) => saveSetting('notifLikes', e.target.checked));
-  document.getElementById('settingNotifComments')?.addEventListener('change', (e) => saveSetting('notifComments', e.target.checked));
-  document.getElementById('settingNotifFollows')?.addEventListener('change', (e) => saveSetting('notifFollows', e.target.checked));
-  document.getElementById('settingNotifMessages')?.addEventListener('change', (e) => saveSetting('notifMessages', e.target.checked));
+  // Privacy
+  wireToggle('settingPrivateAccount', 'privateAccount', '🔐 Private account ON', '🌐 Public account ON');
+  wireToggle('settingReadReceipts', 'readReceipts', '✓✓ Read receipts ON', '✓✓ Read receipts OFF');
+  wireToggle('settingShowActivity', 'showActivity', '🟢 Activity status ON', '⚫ Activity status OFF');
+  wireToggle('settingShowOnline', 'showOnline', '📶 Online status ON', '📴 Online status OFF');
+  wireToggle('settingAllowTagging', 'allowTagging', '🏷️ Tagging allowed', '🚫 Tagging blocked');
+  wireToggle('settingAllowStorySharing', 'allowStorySharing', '📤 Story sharing ON', '📥 Story sharing OFF');
 
-  document.getElementById('settingVideoQuality')?.addEventListener('change', (e) => {
-    saveSetting('videoQuality', e.target.value);
-    showToast('🎬 Quality: ' + e.target.value);
-  });
+  // More Settings
+  wireToggle('settingAutoDownload', 'autoDownload', '📥 Auto download ON', '📥 Auto download OFF');
+  wireToggle('settingVibration', 'vibration', '📳 Vibration ON', '📳 Vibration OFF');
+  wireToggle('settingSoundEffects', 'soundEffects', '🔊 Sound effects ON', '🔇 Sound effects OFF');
+  wireSelect('settingFontSize', 'fontSize', '🔤 Font: ');
 
-  document.getElementById('settingLanguage')?.addEventListener('change', (e) => {
-    saveSetting('language', e.target.value);
-    showToast('🌐 Language: ' + (e.target.value === 'hi' ? 'हिंदी' : 'English'));
-  });
+  // Video & Playback
+  wireToggle('settingAutoplaySound', 'autoplaySound', '🔊 Autoplay sound ON', '🔇 Autoplay sound OFF');
+  wireToggle('settingVideoLoop', 'videoLoop', '🔁 Video loop ON', '🔁 Video loop OFF');
+  wireToggle('settingShowCaptions', 'showCaptions', '📝 Captions ON', '📝 Captions OFF');
+  wireSelect('settingVideoPreload', 'videoPreload', '⚡ Preload: ');
 
+  // Feed & Display
+  wireToggle('settingShowViews', 'showViews', '📊 Views ON', '📊 Views OFF');
+  wireToggle('settingInfiniteScroll', 'infiniteScroll', '♾️ Infinite scroll ON', '♾️ Infinite scroll OFF');
+  wireSelect('settingFeedOrder', 'feedOrder', '📋 Feed: ');
+
+  // Interactions
+  wireToggle('settingDoubleTapLike', 'doubleTapLike', '👆 Double tap ON', '👆 Double tap OFF');
+  wireToggle('settingConfirmDelete', 'confirmDelete', '🗑️ Confirm delete ON', '🗑️ Confirm delete OFF');
+  wireToggle('settingCompactMode', 'compactMode', '📐 Compact mode ON', '📐 Compact mode OFF');
+
+  // About
   document.getElementById('settingAboutBtn')?.addEventListener('click', () => {
     showToast('📱 ReelHub v1.0.0 — Made with ❤️');
   });
@@ -4074,6 +4349,9 @@ initSettingsListeners();
 (function applyInitialSettings() {
   const s = getSettings();
   applySetting('darkMode', s.darkMode);
+  applySetting('fontSize', s.fontSize);
+  applySetting('compactMode', s.compactMode);
+  applySetting('privateAccount', s.privateAccount);
 })();
 
-console.log('✅ app.js loaded — Complete with Settings');
+console.log('✅ app.js loaded — Complete with 30 Settings');
