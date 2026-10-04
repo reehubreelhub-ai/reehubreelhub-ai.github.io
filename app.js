@@ -209,7 +209,6 @@ let pinnedMessage = null;
 // ✅ GROUP CHAT STATE
 let activeGroupId = null;
 let activeGroupData = null;
-let groupMessagesUnsub = null;
 let selectedGroupMembers = [];
 let currentGroupFile = null;
 
@@ -235,12 +234,14 @@ let viewedPostsSession = new Set();
 let shortsSoundEnabled = localStorage.getItem('shortsSound') === 'true';
 
 /* ============================================================
-   SCREEN SWITCHING
+   SCREEN SWITCHING — ✅ FIXED
    ============================================================ */
 function showAuth() {
   if (loadingScreen) loadingScreen.style.display = 'none';
   authScreen.classList.add('show');
+  authScreen.style.display = 'block';      // ✅ ADDED
   appScreen.classList.remove('show');
+  appScreen.style.display = 'none';         // ✅ ADDED
   stopNotifWatcher();
   stopShortsObserver();
   stopChatListWatcher();
@@ -249,7 +250,9 @@ function showAuth() {
 function showApp() {
   if (loadingScreen) loadingScreen.style.display = 'none';
   authScreen.classList.remove('show');
+  authScreen.style.display = 'none';        // ✅ ADDED
   appScreen.classList.add('show');
+  appScreen.style.display = 'flex';          // ✅ ADDED
   setActiveNav('home');
   renderPage('home');
   startChatListWatcher();
@@ -454,7 +457,7 @@ sendResetBtn.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   LOGOUT
+   LOGOUT — ✅ FIXED (closeGroupChatWindow removed)
    ============================================================ */
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   if (confirm('Log out of ReelHub?')) {
@@ -462,7 +465,6 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
     stopShortsObserver();
     stopChatListWatcher();
     closeChatWindow();
-    closeGroupChatWindow();
     viewedPostsSession.clear();
     currentUser = null;
     currentProfile = null;
@@ -562,7 +564,7 @@ function renderPage(page) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 2/4) — Updated with 3-Dot Menu
+   ReelHub — app.js (PART 2/4)
    Helpers, Home Feed (YouTube Style), Stories, Report/Block
    ============================================================ */
 
@@ -888,13 +890,11 @@ function makeShortCard(post) {
     </div>
   `;
 
-  // 3-dot menu
   card.querySelector('.post-menu-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     await showPostMenu(e.currentTarget, post);
   });
 
-  // Card click (open player)
   let lastTap = 0;
   let tapTimer = null;
   card.addEventListener('click', () => {
@@ -974,7 +974,6 @@ function makeLongCard(post) {
     </div>
   `;
 
-  // 3-dot menu
   card.querySelector('.post-menu-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     await showPostMenu(e.currentTarget, post);
@@ -1380,6 +1379,9 @@ storySubmitBtn.addEventListener('click', async () => {
   }
 });
 
+/* ============================================================
+   CLOUDINARY UPLOAD — STORY
+   ============================================================ */
 function uploadToCloudinaryStory(file, onProgress) {
   return new Promise((resolve, reject) => {
     const resourceType = currentStoryType === 'photo' ? 'image' : 'video';
@@ -2203,8 +2205,8 @@ async function deleteComment(commentId) {
 }
 /* ============================================================
    ReelHub — app.js (PART 4/4)
-   Chat, Groups, Profile, Upload, Notifications, Search, Settings
-   Block + Report System
+   Chat, Groups, Profile, Upload, Notifications, Search, Settings,
+   Block/Report System
    ============================================================ */
 
 /* ============================================================
@@ -2548,7 +2550,7 @@ document.getElementById('createGroupBtn')?.addEventListener('click', async () =>
       } catch (e) {}
     }
 
-    const groupRef = await addDoc(collection(db, 'groups'), {
+    await addDoc(collection(db, 'groups'), {
       name: name,
       photo: photoUrl,
       createdBy: currentUser.uid,
@@ -2582,13 +2584,11 @@ function getChatId(uid1, uid2) { return [uid1, uid2].sort().join('_'); }
 async function openChatWindow(otherUser) {
   if (!otherUser || otherUser.uid === currentUser.uid) return;
 
-  // Blocked check
   if ((currentProfile?.blockedUsers || []).includes(otherUser.uid)) {
     showToast('🚫 You blocked this user');
     return;
   }
 
-  // Private check
   if (otherUser.isPrivate) {
     const iFollowThem = currentProfile?.following?.includes(otherUser.uid);
     if (!iFollowThem) {
@@ -2621,6 +2621,8 @@ function closeChatWindow() {
   document.querySelectorAll('.msg-actions-menu, .edit-msg-modal').forEach(el => el.remove());
   activeChatId = null;
   activeChatUser = null;
+  activeGroupId = null;
+  activeGroupData = null;
   pinnedMessage = null;
   stopVoicePlayback();
 }
@@ -3253,7 +3255,7 @@ function removePinnedBanner() {
 }
 
 /* ============================================================
-   SEND TEXT / VOICE / FILE — DM + Group
+   SEND TEXT / VOICE / FILE
    ============================================================ */
 function updateSendTextBtn() {
   const hasText = chatMessageInput.value.trim().length > 0;
@@ -3711,7 +3713,7 @@ function makeGridItem(post) {
 }
 
 /* ============================================================
-   PUBLIC PROFILE — With 3-dot + Private Lock
+   PUBLIC PROFILE
    ============================================================ */
 async function openUserProfile(userId) {
   if (!userId) return;
@@ -3871,7 +3873,6 @@ async function shareUser(user) {
 /* ============================================================
    BLOCK + REPORT SYSTEM
    ============================================================ */
-
 async function showProfileMenu(anchorEl, userId, userHandle) {
   document.querySelectorAll('.post-menu-dropdown').forEach(el => el.remove());
   const menu = document.createElement('div');
@@ -4728,7 +4729,6 @@ function initSettingsListeners() {
   wireToggle('settingNotifFollows', 'notifFollows', '', '');
   wireToggle('settingNotifMessages', 'notifMessages', '', '');
 
-  // PRIVATE ACCOUNT with Firestore sync
   document.getElementById('settingPrivateAccount')?.addEventListener('change', async (e) => {
     const isPrivate = e.target.checked;
     saveSetting('privateAccount', isPrivate);
@@ -4760,7 +4760,6 @@ function initSettingsListeners() {
   wireToggle('settingCompactMode', 'compactMode', '📐 ON', '📐 OFF');
   document.getElementById('settingAboutBtn')?.addEventListener('click', () => showToast('📱 ReelHub v1.0.0'));
 
-  // ✅ BLOCKED USERS
   document.getElementById('settingBlockedUsersBtn')?.addEventListener('click', () => {
     document.getElementById('settingsModal')?.classList.remove('show');
     openBlockedUsersModal();
@@ -4777,4 +4776,4 @@ initSettingsListeners();
   applySetting('privateAccount', s.privateAccount);
 })();
 
-console.log('✅ app.js loaded — Complete with Block + Report System');
+console.log('✅ app.js loaded — Complete with 4 Parts');
