@@ -1,5 +1,5 @@
 /* ============================================================
-   ReelHub — style.css (Updated)
+   ReelHub — style.css (Complete)
    ============================================================ */
 
 * {
@@ -7,6 +7,10 @@
   padding: 0;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  font-size: 15px;
 }
 
 html, body {
@@ -2068,7 +2072,6 @@ html, body {
 /* ============================================================
    BATCH 1 — SAVE POSTS + VIEWS + STORY VIEWERS
    ============================================================ */
-
 .save-btn {
   background: none;
   border: none;
@@ -2298,21 +2301,6 @@ html, body {
 }
 
 /* ============================================================
-   MOBILE FIXES
-   ============================================================ */
-@media (max-width: 480px) {
-  .chat-window { max-width: 100%; }
-  .msg-bubble { max-width: 82%; }
-  .short-side-actions { gap: 14px; }
-  .story-ring { width: 62px; height: 62px; }
-  .story-item { width: 66px; }
-  .story-name { font-size: 10px; max-width: 66px; }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-/* ============================================================
    SETTINGS MODAL
    ============================================================ */
 .settings-modal {
@@ -2325,6 +2313,16 @@ html, body {
 .settings-modal::-webkit-scrollbar-thumb {
   background: #333;
   border-radius: 2px;
+}
+
+.settings-modal .modal-header {
+  padding: 16px 20px;
+  margin: 0;
+  border-bottom: 1px solid #1e1e28;
+  position: sticky;
+  top: 0;
+  background: #121212;
+  z-index: 10;
 }
 
 .settings-content {
@@ -2468,4 +2466,165 @@ html, body {
 .settings-select option {
   background: #1a1a1a;
   color: #fff;
+}
+
+/* ============================================================
+   COMPACT MODE
+   ============================================================ */
+body.compact-mode .feed-post {
+  padding: 0 0 8px 0;
+}
+
+body.compact-mode .feed-post-header {
+  padding: 8px 12px;
+}
+
+body.compact-mode .feed-post-header img {
+  width: 30px;
+  height: 30px;
+}
+
+body.compact-mode .feed-actions {
+  padding: 8px 12px 4px;
+  gap: 12px;
+}
+
+body.compact-mode .feed-actions button svg {
+  width: 18px;
+  height: 18px;
+}
+
+body.compact-mode .feed-caption {
+  padding: 4px 12px 2px;
+  font-size: 12px;
+}
+
+body.compact-mode .short-side-actions {
+  gap: 12px;
+}
+
+body.compact-mode .short-side-actions button svg {
+  width: 22px;
+  height: 22px;
+}
+
+body.compact-mode .chat-item {
+  padding: 8px 12px;
+}
+
+body.compact-mode .chat-item img {
+  width: 42px;
+  height: 42px;
+}
+
+body.compact-mode .profile-page {
+  padding: 12px;
+}
+
+body.compact-mode .profile-avatar {
+  width: 70px;
+  height: 70px;
+}
+
+/* ============================================================
+   LIGHT MODE (Optional)
+   ============================================================ */
+body.light-mode {
+  background: #fff;
+  color: #000;
+}
+
+body.light-mode .header {
+  background: #fff;
+  border-bottom-color: #e5e5e5;
+}
+
+body.light-mode .header .icon-btn svg {
+  stroke: #000;
+}
+
+body.light-mode .bottom-nav {
+  background: #f5f5f5;
+  border-color: #e5e5e5;
+}
+
+body.light-mode .nav-item {
+  color: #666;
+}
+
+body.light-mode .nav-item.active {
+  color: #000;
+}
+
+body.light-mode .feed-post,
+body.light-mode .home-feed {
+  background: #fff;
+}
+
+body.light-mode .feed-post-header .info b,
+body.light-mode .feed-caption {
+  color: #000;
+}
+
+body.light-mode .settings-modal,
+body.light-mode .modal {
+  background: #fff;
+  color: #000;
+}
+
+body.light-mode .settings-item-label {
+  color: #000;
+}
+
+body.light-mode .settings-item-desc {
+  color: #666;
+}
+
+body.light-mode .settings-section-title {
+  color: #888;
+  border-bottom-color: #e5e5e5;
+}
+
+body.light-mode .settings-item {
+  border-bottom-color: #e5e5e5;
+}
+
+body.light-mode .toggle-slider {
+  background: #ccc;
+}
+
+body.light-mode .settings-select {
+  background: #f5f5f5;
+  border-color: #ddd;
+  color: #000;
+}
+
+body.light-mode .modal-header {
+  background: #fff;
+  border-bottom-color: #e5e5e5;
+}
+
+body.light-mode .modal-close {
+  color: #666;
+}
+
+body.light-mode .modal-close:hover {
+  background: #f0f0f0;
+  color: #000;
+}
+
+/* ============================================================
+   MOBILE FIXES
+   ============================================================ */
+@media (max-width: 480px) {
+  .chat-window { max-width: 100%; }
+  .msg-bubble { max-width: 82%; }
+  .short-side-actions { gap: 14px; }
+  .story-ring { width: 62px; height: 62px; }
+  .story-item { width: 66px; }
+  .story-name { font-size: 10px; max-width: 66px; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
