@@ -1,5 +1,5 @@
 /* ============================================================
-   ReelHub — app.js (PART 1/4)
+   ReelHub — app.js (PART 1/4) — UPDATED
    Imports, Config, DOM, State, Auth
    ============================================================ */
 
@@ -294,6 +294,7 @@ signupForm.addEventListener('submit', async (e) => {
       videoCount: 0,
       savedPosts: [],
       blockedUsers: [],
+      isPrivate: false,
       createdAt: serverTimestamp()
     });
 
@@ -457,6 +458,7 @@ async function loadProfile(uid) {
       if (!Array.isArray(currentProfile.savedPosts)) currentProfile.savedPosts = [];
       if (!Array.isArray(currentProfile.blockedUsers)) currentProfile.blockedUsers = [];
       if (typeof currentProfile.videoCount !== 'number') currentProfile.videoCount = 0;
+      if (typeof currentProfile.isPrivate !== 'boolean') currentProfile.isPrivate = false;
     } else {
       currentProfile = null;
     }
@@ -951,18 +953,44 @@ function makeFeedPost(post) {
     });
   }
 
-  // ✅ DOUBLE TAP TO LIKE
+  // ✅ DOUBLE TAP TO LIKE — IMPROVED
   let lastTap = 0;
+  let tapTimer = null;
   const mediaEl = postEl.querySelector('.feed-post-media');
-  mediaEl.addEventListener('click', (e) => {
-    const settings = typeof getSettings === 'function' ? getSettings() : { doubleTapLike: true };
-    if (!settings.doubleTapLike) return;
-    const now = Date.now();
-    if (now - lastTap < 300) {
-      handleDoubleTapLike(post, postEl);
+
+  function handleTap(e) {
+    const s = typeof getSettings === 'function' ? getSettings() : { doubleTapLike: true };
+    if (!s.doubleTapLike) return;
+
+    // Skip if tap is on video controls (bottom 50px area)
+    const video = mediaEl.querySelector('video');
+    if (video && video.controls) {
+      const rect = video.getBoundingClientRect();
+      let clientY = 0;
+      if (e.touches && e.touches[0]) clientY = e.touches[0].clientY;
+      else if (e.changedTouches && e.changedTouches[0]) clientY = e.changedTouches[0].clientY;
+      else clientY = e.clientY;
+      const y = clientY - rect.top;
+      if (y > rect.height - 60) return; // Skip controls area
     }
-    lastTap = now;
-  });
+
+    const now = Date.now();
+    if (now - lastTap < 350) {
+      clearTimeout(tapTimer);
+      lastTap = 0;
+      handleDoubleTapLike(post, postEl);
+    } else {
+      lastTap = now;
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => { lastTap = 0; }, 350);
+    }
+  }
+
+  mediaEl.addEventListener('click', handleTap);
+  mediaEl.addEventListener('touchend', (e) => {
+    if (e.cancelable) e.preventDefault();
+    handleTap(e);
+  }, { passive: false });
 
   trackPostView(post.id);
 
@@ -1162,7 +1190,7 @@ async function blockUser(userId, userHandle) {
   }
 }
 
-/* ✅ UPDATED: Auto Play Setting */
+/* ✅ Auto Play Setting */
 function setupFeedAutoplay() {
   const settings = typeof getSettings === 'function' ? getSettings() : { autoPlay: true };
   if (!settings.autoPlay) return;
@@ -1450,6 +1478,9 @@ function uploadToCloudinaryStory(file, onProgress) {
    Story Viewer, Shorts (Auto Sound), Like, Share, Comments
    ============================================================ */
 
+/* ============================================================
+   STORY VIEWER
+   ============================================================ */
 function openStoryViewer(userId) {
   const userIndex = storiesByUser.findIndex(u => u.userId === userId);
   if (userIndex === -1) return;
@@ -1649,6 +1680,9 @@ storyDeleteBtn.addEventListener('click', async () => {
   } catch (e) { showToast('❌ Could not delete'); }
 });
 
+/* ============================================================
+   SHORTS FEED — AUTO SOUND SYSTEM
+   ============================================================ */
 async function renderShortsFeed() {
   content.innerHTML = `
     <div class="shorts-wrap" id="shortsWrap">
@@ -1846,6 +1880,7 @@ function makeShortItem(short) {
     await sharePost(short);
   });
 
+  // Sound toggle on tap
   videoEl.addEventListener('click', () => {
     videoEl.muted = !videoEl.muted;
     shortsSoundEnabled = !videoEl.muted;
@@ -1858,7 +1893,7 @@ function makeShortItem(short) {
 }
 
 function setupShortsAutoplay(wrap) {
-  const settings = getSettings();
+  const settings = typeof getSettings === 'function' ? getSettings() : { autoPlay: true };
   stopShortsObserver();
   const videos = wrap.querySelectorAll('.short-item video');
   shortsObserver = new IntersectionObserver((entries) => {
@@ -1885,6 +1920,10 @@ function stopShortsObserver() {
   document.querySelectorAll('.short-item video').forEach(v => { try { v.pause(); } catch (e) {} });
 }
 
+/* ============================================================
+   LIKE SYSTEM
+   ✅ Ek user ek hi baar like kar sakta hai
+   ============================================================ */
 async function toggleLike(postId, btnEl) {
   if (!currentUser) return;
   try {
@@ -1913,6 +1952,9 @@ async function toggleLike(postId, btnEl) {
   }
 }
 
+/* ============================================================
+   SHARE POST
+   ============================================================ */
 async function sharePost(post) {
   const appUrl = window.location.origin;
   const shareText = `🎬 Check out this post on ReelHub!\n\n@${post.userHandle}\n\n${appUrl}`;
@@ -1924,6 +1966,9 @@ async function sharePost(post) {
   catch (err) { showToast('❌ Could not share'); }
 }
 
+/* ============================================================
+   COMMENTS
+   ============================================================ */
 async function openComments(postId, title) {
   if (!currentUser) return;
   activeCommentPostId = postId;
@@ -2063,7 +2108,8 @@ function makeCommentItem(comment, isReply) {
   if (replyBtn) replyBtn.addEventListener('click', () => showReplyIndicator(comment.id, comment.userName, comment.userHandle));
   const deleteBtn = item.querySelector('.comment-delete-btn');
   if (deleteBtn) deleteBtn.addEventListener('click', async () => {
-    if (!confirm('Delete?')) return;
+    const settings = typeof getSettings === 'function' ? getSettings() : { confirmDelete: true };
+    if (settings.confirmDelete && !confirm('Delete?')) return;
     await deleteComment(comment.id);
   });
   const toggleBtn = item.querySelector('.replies-toggle');
@@ -2180,8 +2226,8 @@ async function deleteComment(commentId) {
   } catch (e) { showToast('❌ Could not delete'); }
 }
 /* ============================================================
-   ReelHub — app.js (PART 4/4) — UPDATED with 30 Settings
-   Chat, Profile, Upload, Notifications, Search, Settings, Helpers
+   ReelHub — app.js (PART 4/4) — UPDATED
+   Chat, Profile, Upload, Notifications, Search, 30 Settings, Helpers
    ============================================================ */
 
 /* ============================================================
@@ -2606,7 +2652,7 @@ function showMessageActionsMenu(anchorEl, msg) {
       else if (action === 'copy') await copyMessageText(msg);
       else if (action === 'pin') await togglePinMessage(msg);
       else if (action === 'delete') {
-        const settings = getSettings();
+        const settings = typeof getSettings === 'function' ? getSettings() : { confirmDelete: true };
         if (!settings.confirmDelete || confirm('Delete this message?')) await deleteMessage(msg.id);
       }
     });
@@ -2691,7 +2737,7 @@ async function copyMessageText(msg) {
 
 function buildTicksHTML(msg) {
   if (msg.from !== currentUser.uid) return '';
-  const settings = getSettings();
+  const settings = typeof getSettings === 'function' ? getSettings() : { readReceipts: true };
   if (settings.readReceipts === false) return '';
 
   if (msg.read) {
@@ -2858,8 +2904,7 @@ async function sendMessage(msgData) {
     chatMessages.appendChild(makeMessageBubble(tempMsg));
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    // Vibration on send
-    const settings = getSettings();
+    const settings = typeof getSettings === 'function' ? getSettings() : { vibration: true };
     if (settings.vibration && navigator.vibrate) navigator.vibrate(30);
 
     await addDoc(collection(db, 'chats', activeChatId, 'messages'), message);
@@ -3879,7 +3924,7 @@ function stopNotifWatcher() {
 async function checkUnreadNotifications() {
   if (!currentUser) return;
   try {
-    const settings = getSettings();
+    const settings = typeof getSettings === 'function' ? getSettings() : { pushNotif: true };
     if (settings.pushNotif === false) { updateNotifDot(0); return; }
 
     const q = query(collection(db, 'notifications'), where('userId', '==', currentUser.uid), where('read', '==', false), limit(20));
@@ -4308,8 +4353,22 @@ function initSettingsListeners() {
   wireToggle('settingNotifFollows', 'notifFollows', '', '');
   wireToggle('settingNotifMessages', 'notifMessages', '', '');
 
-  // Privacy
-  wireToggle('settingPrivateAccount', 'privateAccount', '🔐 Private account ON', '🌐 Public account ON');
+  // ✅ PRIVATE ACCOUNT — with Firestore sync
+  document.getElementById('settingPrivateAccount')?.addEventListener('change', async (e) => {
+    const isPrivate = e.target.checked;
+    saveSetting('privateAccount', isPrivate);
+    showToast(isPrivate ? '🔐 Private account ON' : '🌐 Public account ON');
+
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), { isPrivate: isPrivate });
+      if (currentProfile) currentProfile.isPrivate = isPrivate;
+      console.log('✅ Private setting saved:', isPrivate);
+    } catch (err) {
+      console.error('❌ Failed:', err);
+      showToast('❌ Could not save');
+    }
+  });
+
   wireToggle('settingReadReceipts', 'readReceipts', '✓✓ Read receipts ON', '✓✓ Read receipts OFF');
   wireToggle('settingShowActivity', 'showActivity', '🟢 Activity status ON', '⚫ Activity status OFF');
   wireToggle('settingShowOnline', 'showOnline', '📶 Online status ON', '📴 Online status OFF');
