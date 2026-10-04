@@ -562,12 +562,12 @@ function renderPage(page) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 2/4)
+   ReelHub — app.js (PART 2/4) — Updated with 3-Dot Menu
    Helpers, Home Feed (YouTube Style), Stories, Report/Block
    ============================================================ */
 
 /* ============================================================
-   BATCH 1 HELPERS — Save + Views
+   BATCH 1 HELPERS
    ============================================================ */
 function isPostSaved(postId) {
   if (!currentProfile) return false;
@@ -630,15 +630,12 @@ async function toggleSavePost(postId, btnEl) {
 async function renderSavedPosts(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
-
   const savedIds = currentProfile?.savedPosts || [];
 
   if (savedIds.length === 0) {
     container.innerHTML = `
       <div class="saved-empty">
-        <svg viewBox="0 0 24 24">
-          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-        </svg>
+        <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
         <h3>No saved posts yet</h3>
         <p>Tap 🔖 on any post to save it here</p>
       </div>`;
@@ -655,18 +652,15 @@ async function renderSavedPosts(containerId) {
         if (snap.exists()) posts.push({ id: snap.id, ...snap.data() });
       } catch (e) {}
     }
-
     if (posts.length === 0) {
       container.innerHTML = `<div class="saved-empty"><h3>No saved posts available</h3></div>`;
       return;
     }
-
     posts.sort((a, b) => {
       const ta = a.createdAt?.toDate?.()?.getTime() || 0;
       const tb = b.createdAt?.toDate?.()?.getTime() || 0;
       return tb - ta;
     });
-
     container.innerHTML = '';
     posts.forEach(post => container.appendChild(makeGridItem(post)));
   } catch (e) {
@@ -678,19 +672,16 @@ async function trackPostView(postId) {
   if (!currentUser || !postId) return;
   if (viewedPostsSession.has(postId)) return;
   viewedPostsSession.add(postId);
-
   try {
     const viewDocId = `${currentUser.uid}_${postId}`;
     const viewRef = doc(db, 'postViews', viewDocId);
     const viewSnap = await getDoc(viewRef);
-
     if (!viewSnap.exists()) {
       await setDoc(viewRef, {
         userId: currentUser.uid,
         postId: postId,
         viewedAt: serverTimestamp()
       });
-
       const postRef = doc(db, 'posts', postId);
       const postSnap = await getDoc(postRef);
       if (postSnap.exists()) {
@@ -698,28 +689,21 @@ async function trackPostView(postId) {
         await updateDoc(postRef, { views: currentViews + 1 });
       }
     }
-  } catch (e) {
-    console.error('Track view error:', e);
-  }
+  } catch (e) {}
 }
 
 async function showStoryViewers(story) {
   if (!story) return;
   const viewers = story.viewers || [];
-
   document.getElementById('storyViewersSheet')?.remove();
 
   const sheet = document.createElement('div');
   sheet.id = 'storyViewersSheet';
   sheet.className = 'story-viewers-sheet';
-
   sheet.innerHTML = `
     <div class="story-viewers-header">
       <h3>
-        <svg viewBox="0 0 24 24">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
+        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         ${viewers.length} ${viewers.length === 1 ? 'view' : 'views'}
       </h3>
       <button class="story-viewers-close">✕</button>
@@ -728,19 +712,15 @@ async function showStoryViewers(story) {
       ${viewers.length === 0 ? '<div class="story-viewers-empty">No views yet</div>' : '<div class="story-viewers-empty">Loading...</div>'}
     </div>
   `;
-
   document.body.appendChild(sheet);
-
   sheet.querySelector('.story-viewers-close').addEventListener('click', () => sheet.remove());
   sheet.addEventListener('click', (e) => { if (e.target === sheet) sheet.remove(); });
-
   if (viewers.length > 0) await loadStoryViewersList(viewers, 'storyViewersList');
 }
 
 async function loadStoryViewersList(uids, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
-
   const users = [];
   for (const uid of uids) {
     try {
@@ -748,12 +728,10 @@ async function loadStoryViewersList(uids, containerId) {
       if (snap.exists()) users.push({ uid, ...snap.data() });
     } catch (e) {}
   }
-
   if (users.length === 0) {
     container.innerHTML = `<div class="story-viewers-empty">Users not found</div>`;
     return;
   }
-
   container.innerHTML = '';
   users.forEach(u => {
     const row = document.createElement('div');
@@ -774,7 +752,7 @@ async function loadStoryViewersList(uids, containerId) {
 }
 
 /* ============================================================
-   HOME FEED — YouTube Style
+   HOME FEED
    ============================================================ */
 async function renderHomeFeed() {
   content.innerHTML = `
@@ -793,15 +771,11 @@ async function renderHomeFeed() {
         </div>
       </div>
       <div id="feedContainer">
-        <div class="feed-empty">
-          <div class="page-title">Loading feed...</div>
-        </div>
+        <div class="feed-empty"><div class="page-title">Loading feed...</div></div>
       </div>
     </div>
   `;
-
   document.getElementById('addStoryBtn').addEventListener('click', openStoryUploadModal);
-
   await loadStoriesBar();
   await loadHomeFeedPosts();
 }
@@ -834,7 +808,7 @@ async function loadHomeFeedPosts() {
     const blocked = currentProfile?.blockedUsers || [];
     posts = posts.filter(p => !blocked.includes(p.userId));
 
-    // ✅ PRIVATE ACCOUNT FILTER
+    // PRIVATE ACCOUNT FILTER
     const myFollowing = currentProfile?.following || [];
     const filteredPosts = [];
     for (const post of posts) {
@@ -846,61 +820,35 @@ async function loadHomeFeedPosts() {
         const userSnap = await getDoc(doc(db, 'users', post.userId));
         if (userSnap.exists()) {
           const userData = userSnap.data();
-          if (userData.isPrivate && !myFollowing.includes(post.userId)) {
-            continue;
-          }
+          if (userData.isPrivate && !myFollowing.includes(post.userId)) continue;
         }
       } catch (e) {}
       filteredPosts.push(post);
     }
     posts = filteredPosts;
 
-    // ✅ FEED ORDER SETTINGS
+    // FEED ORDER
     const settings = typeof getSettings === 'function' ? getSettings() : { feedOrder: 'newest' };
     if (settings.feedOrder === 'trending') {
-      posts.sort((a, b) => {
-        const ta = (a.likes?.length || 0) + (a.views || 0);
-        const tb = (b.likes?.length || 0) + (b.views || 0);
-        return tb - ta;
-      });
+      posts.sort((a, b) => ((b.likes?.length || 0) + (b.views || 0)) - ((a.likes?.length || 0) + (a.views || 0)));
     } else if (settings.feedOrder === 'following') {
       posts = posts.filter(p => myFollowing.includes(p.userId) || p.userId === currentUser.uid);
-      posts.sort((a, b) => {
-        const ta = a.createdAt?.toDate?.()?.getTime() || 0;
-        const tb = b.createdAt?.toDate?.()?.getTime() || 0;
-        return tb - ta;
-      });
+      posts.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
     } else {
-      posts.sort((a, b) => {
-        const ta = a.createdAt?.toDate?.()?.getTime() || 0;
-        const tb = b.createdAt?.toDate?.()?.getTime() || 0;
-        return tb - ta;
-      });
+      posts.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
     }
 
     container.innerHTML = '';
-    posts.forEach(post => {
-      container.appendChild(makeFeedPost(post));
-    });
-
+    posts.forEach(post => container.appendChild(makeFeedPost(post)));
     setupFeedAutoplay();
   } catch (e) {
     console.error('Home feed error:', e);
-    container.innerHTML = `
-      <div class="feed-empty">
-        <h3>Could not load feed</h3>
-        <p>Please try again later</p>
-      </div>`;
+    container.innerHTML = `<div class="feed-empty"><h3>Could not load feed</h3><p>Please try again later</p></div>`;
   }
 }
 
-/* ============================================================
-   FEED POST — Router
-   ============================================================ */
 function makeFeedPost(post) {
-  if (post.type === 'short') {
-    return makeShortCard(post);
-  }
+  if (post.type === 'short') return makeShortCard(post);
   return makeLongCard(post);
 }
 
@@ -914,7 +862,6 @@ function makeShortCard(post) {
 
   const avatar = post.userPhoto || defaultAvatar(post.userName);
   const thumbUrl = post.thumbnail || post.url;
-  const isLiked = (post.likes || []).includes(currentUser.uid);
   const likesCount = (post.likes || []).length;
   const viewsCount = post.views || 0;
 
@@ -931,17 +878,28 @@ function makeShortCard(post) {
         <div class="short-card-caption">${escapeHtml(post.caption || post.userName || 'Short video')}</div>
         <div class="short-card-sub">${escapeHtml(post.userName || 'User')} · ${likesCount} ❤️</div>
       </div>
+      <button class="post-menu-btn" data-post="${post.id}" data-uid="${post.userId}" title="More">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
     </div>
   `;
 
+  // 3-dot menu
+  card.querySelector('.post-menu-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await showPostMenu(e.currentTarget, post);
+  });
+
+  // Card click (open player)
   let lastTap = 0;
   let tapTimer = null;
   card.addEventListener('click', () => {
     const s = typeof getSettings === 'function' ? getSettings() : { doubleTapLike: true };
-    if (!s.doubleTapLike) {
-      openPostPlayer(post);
-      return;
-    }
+    if (!s.doubleTapLike) { openPostPlayer(post); return; }
     const now = Date.now();
     if (now - lastTap < 350) {
       clearTimeout(tapTimer);
@@ -950,10 +908,7 @@ function makeShortCard(post) {
     } else {
       lastTap = now;
       clearTimeout(tapTimer);
-      tapTimer = setTimeout(() => {
-        lastTap = 0;
-        openPostPlayer(post);
-      }, 350);
+      tapTimer = setTimeout(() => { lastTap = 0; openPostPlayer(post); }, 350);
     }
   });
 
@@ -979,9 +934,7 @@ function makeLongCard(post) {
 
   card.innerHTML = `
     <div class="long-card-thumb">
-      ${post.type === 'photo'
-        ? `<img src="${post.url}" alt="" loading="lazy">`
-        : `<img src="${thumbUrl}" alt="" loading="lazy">`}
+      ${post.type === 'photo' ? `<img src="${post.url}" alt="" loading="lazy">` : `<img src="${thumbUrl}" alt="" loading="lazy">`}
       ${post.type !== 'photo' ? `
         <div class="long-card-badge">${post.type === 'long' ? 'LONG' : 'VIDEO'}</div>
         <div class="long-card-play-icon">
@@ -997,34 +950,37 @@ function makeLongCard(post) {
         <div class="long-card-channel">${escapeHtml(post.userName || 'User')}</div>
         <div class="long-card-stats">${settings.showViews !== false ? viewsCount + ' views · ' : ''}${likesCount} likes · ${commentsCount} comments</div>
       </div>
+      <button class="post-menu-btn" data-post="${post.id}" data-uid="${post.userId}" title="More">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
     </div>
     <div class="long-card-actions">
       <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${post.id}" ${isLiked ? 'disabled' : ''}>
-        <svg viewBox="0 0 24 24">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
+        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         <span>${likesCount}</span>
       </button>
       <button class="comment-btn" data-post="${post.id}">
-        <svg viewBox="0 0 24 24">
-          <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-        </svg>
+        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
         <span>${commentsCount}</span>
       </button>
       <button class="share-btn-feed" data-post="${post.id}">
-        <svg viewBox="0 0 24 24">
-          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-        </svg>
+        <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
       </button>
       ${buildSaveButtonHTML(post.id)}
     </div>
   `;
 
-  card.querySelector('.long-card-thumb').addEventListener('click', () => {
-    openPostPlayer(post);
+  // 3-dot menu
+  card.querySelector('.post-menu-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await showPostMenu(e.currentTarget, post);
   });
+
+  card.querySelector('.long-card-thumb').addEventListener('click', () => openPostPlayer(post));
 
   card.querySelector('.like-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
@@ -1058,22 +1014,18 @@ function makeLongCard(post) {
    ============================================================ */
 function openPostPlayer(post) {
   playerTitle.textContent = post.caption || (post.type === 'photo' ? 'Photo' : 'Video');
-
   if (post.type === 'photo') {
     playerContent.innerHTML = `<img src="${post.url}" alt="">`;
   } else if (post.type === 'short') {
     playerContent.innerHTML = `
       <div class="player-short-wrap">
-        <video src="${post.url}" controls autoplay playsinline
-               style="width:100%;max-height:75vh;background:#000;border-radius:8px;"></video>
+        <video src="${post.url}" controls autoplay playsinline style="width:100%;max-height:75vh;background:#000;border-radius:8px;"></video>
       </div>
     `;
   } else {
     playerContent.innerHTML = `
       <div class="player-youtube-wrap">
-        <video src="${post.url}" controls autoplay playsinline
-               ${post.thumbnail ? `poster="${post.thumbnail}"` : ''}
-               style="width:100%;max-height:75vh;background:#000;"></video>
+        <video src="${post.url}" controls autoplay playsinline ${post.thumbnail ? `poster="${post.thumbnail}"` : ''} style="width:100%;max-height:75vh;background:#000;"></video>
         <div class="player-youtube-info">
           <div class="player-youtube-title">${escapeHtml(post.caption || 'Video')}</div>
           <div class="player-youtube-channel">${escapeHtml(post.userName || 'User')}</div>
@@ -1081,7 +1033,6 @@ function openPostPlayer(post) {
       </div>
     `;
   }
-
   playerModal.classList.add('show');
 }
 
@@ -1099,27 +1050,17 @@ async function handleDoubleTapLike(post, cardEl) {
 function showHeartAnimation(container) {
   const existing = container.querySelector('.heart-animation');
   if (existing) existing.remove();
-
   const heart = document.createElement('div');
   heart.className = 'heart-animation';
   heart.innerHTML = '❤️';
-  heart.style.cssText = `
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    font-size: 100px;
-    pointer-events: none;
-    animation: heartPop 0.8s ease forwards;
-    z-index: 100;
-    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
-  `;
+  heart.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:100px;pointer-events:none;animation:heartPop 0.8s ease forwards;z-index:100;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));`;
   container.style.position = 'relative';
   container.appendChild(heart);
   setTimeout(() => heart.remove(), 800);
 }
 
 /* ============================================================
-   POST MENU
+   POST MENU (3-dot) — Report / Block / Delete
    ============================================================ */
 async function showPostMenu(anchorEl, post) {
   document.querySelectorAll('.post-menu-dropdown').forEach(el => el.remove());
@@ -1128,33 +1069,26 @@ async function showPostMenu(anchorEl, post) {
   menu.className = 'post-menu-dropdown';
 
   const isOwner = post.userId === currentUser.uid;
+  const isBlocked = (currentProfile?.blockedUsers || []).includes(post.userId);
 
   let menuHTML = '';
+
   if (isOwner) {
     menuHTML += `
       <button data-action="delete" class="danger">
-        <svg viewBox="0 0 24 24">
-          <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-        </svg>
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
         Delete Post
       </button>
     `;
   } else {
     menuHTML += `
       <button data-action="report">
-        <svg viewBox="0 0 24 24">
-          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-          <line x1="4" y1="22" x2="4" y2="15"/>
-        </svg>
+        <svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
         Report Post
       </button>
-      <button data-action="block" class="danger">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-        </svg>
-        Block @${escapeHtml(post.userHandle || '')}
+      <button data-action="${isBlocked ? 'unblock' : 'block'}" class="${isBlocked ? '' : 'danger'}">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        ${isBlocked ? 'Unblock @' : 'Block @'}${escapeHtml(post.userHandle || 'user')}
       </button>
     `;
   }
@@ -1167,7 +1101,6 @@ async function showPostMenu(anchorEl, post) {
 
   let top = rect.bottom + 5;
   let left = rect.right - menuRect.width;
-
   if (left < 10) left = 10;
   if (left + menuRect.width > window.innerWidth - 10) left = window.innerWidth - menuRect.width - 10;
   if (top + menuRect.height > window.innerHeight - 10) top = rect.top - menuRect.height - 5;
@@ -1183,6 +1116,7 @@ async function showPostMenu(anchorEl, post) {
 
       if (action === 'report') await reportPost(post);
       else if (action === 'block') await blockUser(post.userId, post.userHandle);
+      else if (action === 'unblock') await unblockUser(post.userId, post.userHandle);
       else if (action === 'delete') await deletePost(post.id);
     });
   });
@@ -1200,46 +1134,6 @@ async function showPostMenu(anchorEl, post) {
   }, 100);
 }
 
-async function reportPost(post) {
-  const reasons = [
-    'Spam or misleading',
-    'Nudity or sexual content',
-    'Hate speech or symbols',
-    'Violence or dangerous',
-    'Harassment or bullying',
-    'False information',
-    'Other'
-  ];
-
-  const reasonStr = prompt(
-    '🚨 Report this post\n\nChoose a reason:\n' + reasons.map((r, i) => `${i + 1}. ${r}`).join('\n') + '\n\nType number (1-7):'
-  );
-
-  if (!reasonStr) return;
-  const idx = parseInt(reasonStr) - 1;
-  if (idx < 0 || idx >= reasons.length) {
-    showToast('❌ Invalid choice');
-    return;
-  }
-
-  try {
-    await addDoc(collection(db, 'reports'), {
-      type: 'post',
-      postId: post.id,
-      postUserId: post.userId,
-      reportedBy: currentUser.uid,
-      reportedByHandle: currentProfile?.user || '',
-      reason: reasons[idx],
-      status: 'pending',
-      createdAt: serverTimestamp()
-    });
-    showToast('✅ Report submitted');
-  } catch (e) {
-    console.error('Report error:', e);
-    showToast('❌ Could not report');
-  }
-}
-
 async function deletePost(postId) {
   const settings = typeof getSettings === 'function' ? getSettings() : { confirmDelete: true };
   if (settings.confirmDelete && !confirm('Delete this post permanently?')) return;
@@ -1251,36 +1145,7 @@ async function deletePost(postId) {
     currentProfile.videoCount = Math.max(0, (currentProfile.videoCount || 1) - 1);
     showToast('🗑️ Post deleted');
     renderHomeFeed();
-  } catch (e) {
-    console.error('Delete error:', e);
-    showToast('❌ Could not delete');
-  }
-}
-
-async function blockUser(userId, userHandle) {
-  if (userId === currentUser.uid) {
-    showToast('❌ Cannot block yourself');
-    return;
-  }
-  if (!confirm(`Block @${userHandle}?\n\nThey won't be able to message you or see your profile.`)) return;
-
-  try {
-    await updateDoc(doc(db, 'users', currentUser.uid), {
-      blockedUsers: arrayUnion(userId)
-    });
-    if (!currentProfile.blockedUsers) currentProfile.blockedUsers = [];
-    if (!currentProfile.blockedUsers.includes(userId)) currentProfile.blockedUsers.push(userId);
-
-    if (currentProfile.following.includes(userId)) {
-      await toggleFollow(userId, null);
-    }
-
-    showToast(`🚫 Blocked @${userHandle}`);
-    renderHomeFeed();
-  } catch (e) {
-    console.error('Block error:', e);
-    showToast('❌ Could not block');
-  }
+  } catch (e) { showToast('❌ Could not delete'); }
 }
 
 /* ============================================================
@@ -1320,7 +1185,6 @@ async function loadStoriesBar() {
     const q = query(storiesRef, limit(100));
     const snap = await getDocs(q);
     const allStories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
     const blocked = currentProfile?.blockedUsers || [];
 
     const validStories = allStories.filter(s => {
@@ -1332,23 +1196,13 @@ async function loadStoriesBar() {
     const grouped = {};
     validStories.forEach(s => {
       if (!grouped[s.userId]) {
-        grouped[s.userId] = {
-          userId: s.userId,
-          userName: s.userName,
-          userHandle: s.userHandle,
-          userPhoto: s.userPhoto,
-          stories: []
-        };
+        grouped[s.userId] = { userId: s.userId, userName: s.userName, userHandle: s.userHandle, userPhoto: s.userPhoto, stories: [] };
       }
       grouped[s.userId].stories.push(s);
     });
 
     Object.values(grouped).forEach(u => {
-      u.stories.sort((a, b) => {
-        const ta = a.createdAt?.toDate?.()?.getTime() || 0;
-        const tb = b.createdAt?.toDate?.()?.getTime() || 0;
-        return ta - tb;
-      });
+      u.stories.sort((a, b) => (a.createdAt?.toDate?.()?.getTime() || 0) - (b.createdAt?.toDate?.()?.getTime() || 0));
     });
 
     const userArray = Object.values(grouped);
@@ -1367,7 +1221,6 @@ async function loadStoriesBar() {
       item.className = 'story-item';
       const allViewed = userGroup.stories.every(s => (s.viewers || []).includes(currentUser.uid));
       const avatar = userGroup.userPhoto || defaultAvatar(userGroup.userName);
-
       item.innerHTML = `
         <div class="story-ring ${allViewed ? 'viewed' : ''}">
           <img src="${avatar}" alt="">
@@ -1420,13 +1273,8 @@ function updateStoryPickerText() {
   }
 }
 
-document.getElementById('closeStoryUpload').addEventListener('click', () => {
-  storyUploadModal.classList.remove('show');
-});
-
-storyUploadModal.addEventListener('click', (e) => {
-  if (e.target === storyUploadModal) storyUploadModal.classList.remove('show');
-});
+document.getElementById('closeStoryUpload').addEventListener('click', () => storyUploadModal.classList.remove('show'));
+storyUploadModal.addEventListener('click', (e) => { if (e.target === storyUploadModal) storyUploadModal.classList.remove('show'); });
 
 document.querySelectorAll('.story-upload-tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -1517,18 +1365,14 @@ storySubmitBtn.addEventListener('click', async () => {
     };
 
     await addDoc(collection(db, 'stories'), storyData);
-
     storyUploadMsg.className = 'success-msg';
     storyUploadMsg.textContent = '✅ Story posted!';
 
     setTimeout(() => {
       storyUploadModal.classList.remove('show');
-      if (document.querySelector('.nav-item[data-page="home"]').classList.contains('active')) {
-        renderHomeFeed();
-      }
+      if (document.querySelector('.nav-item[data-page="home"]').classList.contains('active')) renderHomeFeed();
     }, 1200);
   } catch (err) {
-    console.error('Story upload failed:', err);
     storyUploadMsg.className = 'error-msg';
     storyUploadMsg.textContent = err.message || 'Upload failed.';
     storySubmitBtn.disabled = false;
@@ -1536,9 +1380,6 @@ storySubmitBtn.addEventListener('click', async () => {
   }
 });
 
-/* ============================================================
-   CLOUDINARY UPLOAD — STORY (Uses stories account)
-   ============================================================ */
 function uploadToCloudinaryStory(file, onProgress) {
   return new Promise((resolve, reject) => {
     const resourceType = currentStoryType === 'photo' ? 'image' : 'video';
@@ -1553,11 +1394,7 @@ function uploadToCloudinaryStory(file, onProgress) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
     xhr.timeout = 120000;
-
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
-    };
-
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); };
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
@@ -1579,14 +1416,13 @@ function uploadToCloudinaryStory(file, onProgress) {
 }
 
 /* ============================================================
-   CLOUDINARY UPLOAD — GROUP FILES (Uses stories account)
+   CLOUDINARY UPLOAD — GROUP FILES
    ============================================================ */
 function uploadToCloudinaryGroupFile(file, onProgress) {
   return new Promise((resolve, reject) => {
     let resourceType = 'raw';
     if (file.type.startsWith('image/')) resourceType = 'image';
     else if (file.type.startsWith('video/')) resourceType = 'video';
-    else resourceType = 'raw';
 
     const acc = CLOUDINARY_ACCOUNTS.stories;
     const url = `https://api.cloudinary.com/v1_1/${acc.cloudName}/${resourceType}/upload`;
@@ -1599,22 +1435,14 @@ function uploadToCloudinaryGroupFile(file, onProgress) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
     xhr.timeout = 180000;
-
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
-    };
-
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); };
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const res = JSON.parse(xhr.responseText);
-          if (!res.secure_url) { reject(new Error('No URL returned')); return; }
-          resolve(res);
-        } catch (e) { reject(new Error('Invalid response')); }
+        try { const res = JSON.parse(xhr.responseText); if (!res.secure_url) { reject(new Error('No URL')); return; } resolve(res); }
+        catch (e) { reject(new Error('Invalid')); }
       } else {
         let errMsg = 'Upload failed';
-        try { const errData = JSON.parse(xhr.responseText); if (errData.error?.message) errMsg = errData.error.message; }
-        catch (e) { errMsg = 'HTTP ' + xhr.status; }
+        try { const d = JSON.parse(xhr.responseText); if (d.error?.message) errMsg = d.error.message; } catch (e) {}
         reject(new Error(errMsg));
       }
     };
@@ -2375,11 +2203,12 @@ async function deleteComment(commentId) {
 }
 /* ============================================================
    ReelHub — app.js (PART 4/4)
-   Chat, Groups, Private/Public, Profile, Upload, Notifications, Settings
+   Chat, Groups, Profile, Upload, Notifications, Search, Settings
+   Block + Report System
    ============================================================ */
 
 /* ============================================================
-   CHATS PAGE — Tabs: All / DM / Groups
+   CHATS PAGE — Tabs: All / Direct / Groups
    ============================================================ */
 async function renderChatsPage() {
   content.innerHTML = `
@@ -2436,13 +2265,11 @@ async function loadChatsList(filter = 'all') {
   wrap.innerHTML = `<div class="empty-msg">Loading chats...</div>`;
 
   try {
-    // ---- DIRECT CHATS ----
     let dms = [];
     if (filter === 'all' || filter === 'dm') {
       const chatsRef = collection(db, 'chats');
       const q = query(chatsRef, where('members', 'array-contains', currentUser.uid));
       const snap = await getDocs(q);
-
       for (const docSnap of snap.docs) {
         const chat = { id: docSnap.id, ...docSnap.data() };
         if (chat.type === 'group') continue;
@@ -2450,36 +2277,25 @@ async function loadChatsList(filter = 'all') {
         if (!otherUid) continue;
         try {
           const userSnap = await getDoc(doc(db, 'users', otherUid));
-          if (userSnap.exists()) {
-            dms.push({ ...chat, otherUser: { uid: otherUid, ...userSnap.data() } });
-          }
+          if (userSnap.exists()) dms.push({ ...chat, otherUser: { uid: otherUid, ...userSnap.data() } });
         } catch (e) {}
       }
     }
 
-    // ---- GROUP CHATS ----
     let groups = [];
     if (filter === 'all' || filter === 'group') {
-      const groupsRef = collection(db, 'groups');
-      const gq = query(groupsRef, where('members', 'array-contains', currentUser.uid));
+      const gq = query(collection(db, 'groups'), where('members', 'array-contains', currentUser.uid));
       const gsnap = await getDocs(gq);
       gsnap.forEach(d => groups.push({ id: d.id, ...d.data() }));
     }
 
-    // Merge + Sort
     const all = [...dms, ...groups];
-    all.sort((a, b) => {
-      const ta = a.lastMessageTime?.toDate?.()?.getTime() || 0;
-      const tb = b.lastMessageTime?.toDate?.()?.getTime() || 0;
-      return tb - ta;
-    });
+    all.sort((a, b) => (b.lastMessageTime?.toDate?.()?.getTime() || 0) - (a.lastMessageTime?.toDate?.()?.getTime() || 0));
 
     if (all.length === 0) {
       wrap.innerHTML = `
         <div class="chats-empty">
-          <svg viewBox="0 0 24 24">
-            <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-          </svg>
+          <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
           <h3>No chats yet</h3>
           <p>Start a conversation or create a group</p>
         </div>`;
@@ -2497,9 +2313,6 @@ async function loadChatsList(filter = 'all') {
   }
 }
 
-/* ============================================================
-   DM Chat Item
-   ============================================================ */
 function makeChatItem(chat) {
   const item = document.createElement('div');
   item.className = 'chat-item';
@@ -2510,11 +2323,9 @@ function makeChatItem(chat) {
   const hasUnread = chat.lastMessageBy !== currentUser.uid && (chat.unreadBy || []).includes(currentUser.uid);
 
   let lastMsgHtml = '';
-  if (chat.lastMessageType === 'voice') {
-    lastMsgHtml = `<div class="last-msg voice ${hasUnread ? 'unread' : ''}">🎤 Voice message</div>`;
-  } else if (chat.lastMessageType === 'file') {
-    lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">📎 File</div>`;
-  } else {
+  if (chat.lastMessageType === 'voice') lastMsgHtml = `<div class="last-msg voice ${hasUnread ? 'unread' : ''}">🎤 Voice message</div>`;
+  else if (chat.lastMessageType === 'file') lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">📎 File</div>`;
+  else {
     const preview = (chat.lastMessage || '').substring(0, 40);
     lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">${escapeHtml(preview)}${chat.lastMessage && chat.lastMessage.length > 40 ? '...' : ''}</div>`;
   }
@@ -2534,9 +2345,6 @@ function makeChatItem(chat) {
   return item;
 }
 
-/* ============================================================
-   Group Chat Item
-   ============================================================ */
 function makeGroupChatItem(group) {
   const item = document.createElement('div');
   item.className = 'chat-item';
@@ -2546,11 +2354,9 @@ function makeGroupChatItem(group) {
   const hasUnread = group.lastMessageBy !== currentUser.uid && (group.unreadBy || []).includes(currentUser.uid);
 
   let lastMsgHtml = '';
-  if (group.lastMessageType === 'voice') {
-    lastMsgHtml = `<div class="last-msg voice ${hasUnread ? 'unread' : ''}">🎤 Voice message</div>`;
-  } else if (group.lastMessageType === 'file') {
-    lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">📎 ${escapeHtml(group.lastFileName || 'File')}</div>`;
-  } else {
+  if (group.lastMessageType === 'voice') lastMsgHtml = `<div class="last-msg voice ${hasUnread ? 'unread' : ''}">🎤 Voice message</div>`;
+  else if (group.lastMessageType === 'file') lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">📎 ${escapeHtml(group.lastFileName || 'File')}</div>`;
+  else {
     const preview = (group.lastMessage || '').substring(0, 40);
     lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">${escapeHtml(preview)}</div>`;
   }
@@ -2572,16 +2378,12 @@ function makeGroupChatItem(group) {
 
 function defaultGroupAvatar(name) {
   const letter = (name || 'G').trim().charAt(0).toUpperCase() || 'G';
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="50" fill="#4ea8ff"/>
-      <text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${letter}</text>
-    </svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#4ea8ff"/><text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${letter}</text></svg>`;
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
 
 /* ============================================================
-   NEW CHAT / NEW GROUP MODALS
+   NEW CHAT MODAL
    ============================================================ */
 function openNewChatModal() {
   newChatSearch.value = '';
@@ -2634,10 +2436,8 @@ async function searchUsersForChat(term) {
 function openNewGroupModal() {
   selectedGroupMembers = [];
   currentGroupFile = null;
-
   const modal = document.getElementById('newGroupModal');
   modal.classList.add('show');
-
   document.getElementById('groupNameInput').value = '';
   document.getElementById('groupSearchInput').value = '';
   document.getElementById('groupSearchResults').innerHTML = `<div class="search-empty">Start typing to add members...</div>`;
@@ -2645,12 +2445,8 @@ function openNewGroupModal() {
   document.getElementById('createGroupBtn').disabled = true;
 }
 
-document.getElementById('closeNewGroup')?.addEventListener('click', () => {
-  document.getElementById('newGroupModal').classList.remove('show');
-});
-document.getElementById('newGroupModal')?.addEventListener('click', (e) => {
-  if (e.target.id === 'newGroupModal') e.target.classList.remove('show');
-});
+document.getElementById('closeNewGroup')?.addEventListener('click', () => document.getElementById('newGroupModal').classList.remove('show'));
+document.getElementById('newGroupModal')?.addEventListener('click', (e) => { if (e.target.id === 'newGroupModal') e.target.classList.remove('show'); });
 
 let groupSearchDebounce = null;
 document.getElementById('groupSearchInput')?.addEventListener('input', (e) => {
@@ -2715,7 +2511,6 @@ async function searchUsersForGroup(term) {
 function addSelectedMemberChip(user) {
   const list = document.getElementById('selectedMembersList');
   if (list.querySelector('.empty-msg')) list.innerHTML = '';
-
   const chip = document.createElement('div');
   chip.className = 'member-chip';
   chip.dataset.uid = user.id;
@@ -2787,7 +2582,13 @@ function getChatId(uid1, uid2) { return [uid1, uid2].sort().join('_'); }
 async function openChatWindow(otherUser) {
   if (!otherUser || otherUser.uid === currentUser.uid) return;
 
-  // ✅ Private account check
+  // Blocked check
+  if ((currentProfile?.blockedUsers || []).includes(otherUser.uid)) {
+    showToast('🚫 You blocked this user');
+    return;
+  }
+
+  // Private check
   if (otherUser.isPrivate) {
     const iFollowThem = currentProfile?.following?.includes(otherUser.uid);
     if (!iFollowThem) {
@@ -2839,7 +2640,7 @@ async function openGroupChatWindow(group) {
   chatHeaderAvatar.src = group.photo || defaultGroupAvatar(group.name);
   chatHeaderName.textContent = group.name || 'Group';
   chatHeaderHandle.textContent = group.members.length + ' members';
-  chatHeaderInfo.onclick = () => { showGroupInfo(group); };
+  chatHeaderInfo.onclick = () => showGroupInfo(group);
   chatMessages.innerHTML = `<div class="empty-msg">Loading messages...</div>`;
   chatMessageInput.value = '';
   updateSendTextBtn();
@@ -2875,15 +2676,12 @@ async function fetchAndPaintGroupMessages() {
       return ta - tb;
     });
     paintGroupMessages(messages);
-    await markGroupMessagesAsRead(messages);
+    await markGroupMessagesAsRead();
   } catch (e) {}
 }
 
 function paintGroupMessages(messages) {
-  if (messages.length === 0) {
-    chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
-    return;
-  }
+  if (messages.length === 0) { chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`; return; }
   const currentIds = Array.from(chatMessages.querySelectorAll('.msg-row')).map(el => el.dataset.msgId).join(',');
   const newIds = messages.map(m => m.id).join(',');
   if (currentIds === newIds) return;
@@ -2903,9 +2701,7 @@ function paintGroupMessages(messages) {
     }
     chatMessages.appendChild(makeGroupMessageBubble(msg));
   });
-  if (wasAtBottom) {
-    setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
-  }
+  if (wasAtBottom) setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
 }
 
 function makeGroupMessageBubble(msg) {
@@ -2918,7 +2714,6 @@ function makeGroupMessageBubble(msg) {
   const timeStr = time ? formatTime(time) : '';
   const senderName = !isMe ? `<div class="msg-sender-name">${escapeHtml(msg.fromName || 'User')}</div>` : '';
 
-  // File type
   if (msg.type === 'file') {
     const fileName = msg.fileName || 'File';
     const fileType = msg.fileType || '';
@@ -2926,7 +2721,6 @@ function makeGroupMessageBubble(msg) {
     if (fileType.startsWith('image/')) fileIcon = '🖼️';
     else if (fileType.startsWith('video/')) fileIcon = '🎬';
     else if (fileType === 'application/pdf') fileIcon = '📄';
-
     row.innerHTML = `
       <div class="msg-bubble file-bubble" data-msg="${msg.id}">
         ${senderName}
@@ -2943,7 +2737,6 @@ function makeGroupMessageBubble(msg) {
     return row;
   }
 
-  // Voice
   if (msg.type === 'voice') {
     const duration = msg.voiceDuration || 0;
     const bars = [];
@@ -2967,7 +2760,6 @@ function makeGroupMessageBubble(msg) {
     return row;
   }
 
-  // Text
   row.innerHTML = `
     <div class="msg-bubble" data-msg="${msg.id}">
       ${senderName}
@@ -2978,7 +2770,7 @@ function makeGroupMessageBubble(msg) {
   return row;
 }
 
-async function markGroupMessagesAsRead(messages) {
+async function markGroupMessagesAsRead() {
   if (!currentUser || !activeGroupId) return;
   try {
     await updateDoc(doc(db, 'groups', activeGroupId), { unreadBy: arrayRemove(currentUser.uid) });
@@ -3138,10 +2930,7 @@ async function fetchAndPaintMessages() {
 }
 
 function paintChatMessages(messages) {
-  if (messages.length === 0) {
-    chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
-    return;
-  }
+  if (messages.length === 0) { chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`; return; }
   const currentIds = Array.from(chatMessages.querySelectorAll('.msg-row')).map(el => el.dataset.msgId).join(',');
   const newIds = messages.map(m => m.id).join(',');
   if (currentIds === newIds) return;
@@ -3161,9 +2950,7 @@ function paintChatMessages(messages) {
     }
     chatMessages.appendChild(makeMessageBubble(msg));
   });
-  if (wasAtBottom) {
-    setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
-  }
+  if (wasAtBottom) setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
 }
 
 function makeMessageBubble(msg) {
@@ -3184,7 +2971,6 @@ function makeMessageBubble(msg) {
     return row;
   }
 
-  // File type DM
   if (msg.type === 'file') {
     const fileName = msg.fileName || 'File';
     const fileType = msg.fileType || '';
@@ -3211,7 +2997,6 @@ function makeMessageBubble(msg) {
     return row;
   }
 
-  // Voice
   if (msg.type === 'voice') {
     const duration = msg.voiceDuration || 0;
     const bars = [];
@@ -3237,7 +3022,6 @@ function makeMessageBubble(msg) {
     return row;
   }
 
-  // Text
   const editedLabel = msg.edited ? '<span class="edited-label">(edited)</span>' : '';
   row.innerHTML = `
     ${isMe ? buildDotsButton(msg) : ''}
@@ -3355,9 +3139,7 @@ async function editMessage(msgId, newText) {
   if (!activeChatId || !currentUser) return;
   try {
     const col = activeGroupId ? 'groups' : 'chats';
-    await updateDoc(doc(db, col, activeChatId, 'messages', msgId), {
-      text: newText, edited: true, editedAt: serverTimestamp()
-    });
+    await updateDoc(doc(db, col, activeChatId, 'messages', msgId), { text: newText, edited: true, editedAt: serverTimestamp() });
     showToast('✏️ Edited');
   } catch (e) { showToast('❌ Could not edit'); }
 }
@@ -3493,9 +3275,7 @@ chatMessageInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTextBtn.click(); }
 });
 
-/* ============================================================
-   FILE SHARE — Group + DM
-   ============================================================ */
+/* FILE SHARE */
 document.querySelector('.chat-attach-btn')?.addEventListener('click', () => {
   if (!activeChatId) return;
   const input = document.createElement('input');
@@ -3511,7 +3291,6 @@ document.querySelector('.chat-attach-btn')?.addEventListener('click', () => {
 
 async function sendFileMessage(file) {
   if (file.size > 25 * 1024 * 1024) { showToast('❌ Max 25 MB'); return; }
-
   showToast('📤 Uploading file...');
   try {
     const res = await uploadToCloudinaryGroupFile(file, () => {});
@@ -3642,7 +3421,6 @@ function stopVoicePlayback() {
    ============================================================ */
 function showGroupInfo(group) {
   document.querySelectorAll('.group-info-modal').forEach(el => el.remove());
-
   const modal = document.createElement('div');
   modal.className = 'modal-overlay group-info-modal show';
   modal.innerHTML = `
@@ -3744,7 +3522,6 @@ async function openAddMemberModal(group) {
     </div>
   `;
   document.body.appendChild(modal);
-
   modal.querySelector('#closeAddMember').addEventListener('click', () => modal.remove());
   modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
@@ -3807,16 +3584,14 @@ async function checkChatsUnread() {
   if (!currentUser) return;
   try {
     let hasUnread = false;
-    const chatsRef = collection(db, 'chats');
-    const q = query(chatsRef, where('members', 'array-contains', currentUser.uid));
+    const q = query(collection(db, 'chats'), where('members', 'array-contains', currentUser.uid));
     const snap = await getDocs(q);
     snap.forEach(d => {
       const data = d.data();
       if (data.type === 'group') return;
       if (data.lastMessageBy !== currentUser.uid && (data.unreadBy || []).includes(currentUser.uid)) hasUnread = true;
     });
-    const groupsRef = collection(db, 'groups');
-    const gq = query(groupsRef, where('members', 'array-contains', currentUser.uid));
+    const gq = query(collection(db, 'groups'), where('members', 'array-contains', currentUser.uid));
     const gsnap = await getDocs(gq);
     gsnap.forEach(d => {
       const data = d.data();
@@ -3827,7 +3602,7 @@ async function checkChatsUnread() {
 }
 
 /* ============================================================
-   PROFILE (OWN) — With Private/Public Badge
+   PROFILE (OWN)
    ============================================================ */
 async function renderProfile() {
   if (!currentProfile) {
@@ -3908,8 +3683,7 @@ async function renderUserPosts(uid, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
   try {
-    const postsRef = collection(db, 'posts');
-    const q = query(postsRef, where('userId', '==', uid), limit(60));
+    const q = query(collection(db, 'posts'), where('userId', '==', uid), limit(60));
     const snap = await getDocs(q);
     if (snap.empty) {
       container.innerHTML = `<div class="grid-empty"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><div>No posts yet</div></div>`;
@@ -3937,7 +3711,7 @@ function makeGridItem(post) {
 }
 
 /* ============================================================
-   PUBLIC PROFILE — With Private Lock
+   PUBLIC PROFILE — With 3-dot + Private Lock
    ============================================================ */
 async function openUserProfile(userId) {
   if (!userId) return;
@@ -3960,11 +3734,18 @@ async function openUserProfile(userId) {
     const avatarSrc = user.photo || defaultAvatar(user.name);
     const isFollowing = currentProfile?.following?.includes(userId) || false;
 
-    // ✅ PRIVATE ACCOUNT LOCK
+    // PRIVATE LOCK
     if (user.isPrivate && !isFollowing) {
       content.innerHTML = `
-        <div style="padding:12px 16px;">
-          <button id="backFromProfileBtn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+          <button id="backFromProfileBtn">
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back
+          </button>
+          <button id="profileMenuBtn" style="background:none;border:none;color:#fff;cursor:pointer;padding:6px;border-radius:50%;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/>
+            </svg>
+          </button>
         </div>
         <div class="profile-page" style="padding-top:0;text-align:center;">
           <div class="profile-top" style="justify-content:center;">
@@ -3979,14 +3760,21 @@ async function openUserProfile(userId) {
               <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
             <div style="font-size:18px;font-weight:700;margin-bottom:8px;">This Account is Private</div>
-            <div style="color:#888;font-size:14px;margin-bottom:20px;">Follow @${escapeHtml(user.user)} to see their posts and videos</div>
+            <div style="color:#888;font-size:14px;margin-bottom:20px;">Follow @${escapeHtml(user.user)} to see their posts</div>
           </div>
           <div class="profile-actions" style="justify-content:center;">
-            <button id="pubFollowBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Follow</button>
+            <button id="pubFollowBtn">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Follow
+            </button>
           </div>
         </div>
       `;
       document.getElementById('backFromProfileBtn').addEventListener('click', () => { viewingUserId = null; setActiveNav(null); renderPage('home'); });
+      document.getElementById('profileMenuBtn').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await showProfileMenu(e.currentTarget, userId, user.user);
+      });
       document.getElementById('pubFollowBtn').addEventListener('click', async (e) => {
         await toggleFollow(userId, e.currentTarget);
         if (currentProfile.following.includes(userId)) {
@@ -3998,8 +3786,15 @@ async function openUserProfile(userId) {
     }
 
     content.innerHTML = `
-      <div style="padding:12px 16px;">
-        <button id="backFromProfileBtn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+        <button id="backFromProfileBtn">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back
+        </button>
+        <button id="profileMenuBtn" style="background:none;border:none;color:#fff;cursor:pointer;padding:6px;border-radius:50%;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/>
+          </svg>
+        </button>
       </div>
       <div class="profile-page" style="padding-top:0;">
         <div class="profile-top">
@@ -4020,8 +3815,14 @@ async function openUserProfile(userId) {
             <svg viewBox="0 0 24 24">${isFollowing ? '<polyline points="20 6 9 17 4 12"/>' : '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'}</svg>
             ${isFollowing ? 'Following' : 'Follow'}
           </button>
-          <button id="pubMessageBtn"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Messages</button>
-          <button id="pubShareBtn"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share</button>
+          <button id="pubMessageBtn">
+            <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            Messages
+          </button>
+          <button id="pubShareBtn">
+            <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share
+          </button>
         </div>
         <div class="profile-tabs"><button class="profile-tab active">Posts</button></div>
         <div class="profile-grid" id="pubPostsGrid"><div class="grid-empty">Loading posts...</div></div>
@@ -4029,6 +3830,11 @@ async function openUserProfile(userId) {
     `;
 
     document.getElementById('backFromProfileBtn').addEventListener('click', () => { viewingUserId = null; setActiveNav(null); renderPage('home'); });
+
+    document.getElementById('profileMenuBtn').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await showProfileMenu(e.currentTarget, userId, user.user);
+    });
 
     const followBtn = document.getElementById('pubFollowBtn');
     followBtn.addEventListener('click', async () => {
@@ -4063,7 +3869,171 @@ async function shareUser(user) {
 }
 
 /* ============================================================
-   UPLOAD MODAL (uses videos account)
+   BLOCK + REPORT SYSTEM
+   ============================================================ */
+
+async function showProfileMenu(anchorEl, userId, userHandle) {
+  document.querySelectorAll('.post-menu-dropdown').forEach(el => el.remove());
+  const menu = document.createElement('div');
+  menu.className = 'post-menu-dropdown';
+  const isBlocked = (currentProfile?.blockedUsers || []).includes(userId);
+
+  menu.innerHTML = `
+    <button data-action="${isBlocked ? 'unblock' : 'block'}" class="${isBlocked ? '' : 'danger'}">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+      ${isBlocked ? 'Unblock User' : 'Block User'}
+    </button>
+    <button data-action="report-user">
+      <svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+      Report User
+    </button>
+  `;
+
+  document.body.appendChild(menu);
+  const rect = anchorEl.getBoundingClientRect();
+  const menuRect = menu.getBoundingClientRect();
+  let top = rect.bottom + 5;
+  let left = rect.right - menuRect.width;
+  if (left < 10) left = 10;
+  if (left + menuRect.width > window.innerWidth - 10) left = window.innerWidth - menuRect.width - 10;
+  if (top + menuRect.height > window.innerHeight - 10) top = rect.top - menuRect.height - 5;
+  menu.style.top = top + 'px';
+  menu.style.left = left + 'px';
+
+  menu.querySelectorAll('button[data-action]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const action = btn.dataset.action;
+      menu.remove();
+      if (action === 'block') await blockUser(userId, userHandle);
+      else if (action === 'unblock') await unblockUser(userId, userHandle);
+      else if (action === 'report-user') await reportUser(userId, userHandle);
+    });
+  });
+
+  setTimeout(() => {
+    const closeMenu = (ev) => {
+      if (!menu.contains(ev.target) && ev.target !== anchorEl) {
+        menu.remove();
+        document.removeEventListener('click', closeMenu);
+        document.removeEventListener('touchstart', closeMenu);
+      }
+    };
+    document.addEventListener('click', closeMenu);
+    document.addEventListener('touchstart', closeMenu);
+  }, 100);
+}
+
+async function blockUser(userId, userHandle) {
+  if (userId === currentUser.uid) { showToast('❌ Cannot block yourself'); return; }
+  if (!confirm(`Block @${userHandle}?\n\nThey won't be able to message you or see your profile.`)) return;
+  try {
+    await updateDoc(doc(db, 'users', currentUser.uid), { blockedUsers: arrayUnion(userId) });
+    if (!currentProfile.blockedUsers) currentProfile.blockedUsers = [];
+    if (!currentProfile.blockedUsers.includes(userId)) currentProfile.blockedUsers.push(userId);
+    if (currentProfile.following.includes(userId)) await toggleFollow(userId, null);
+    showToast(`🚫 Blocked @${userHandle}`);
+    renderHomeFeed();
+  } catch (e) { showToast('❌ Could not block'); }
+}
+
+async function unblockUser(userId, userHandle) {
+  if (!confirm(`Unblock @${userHandle}?`)) return;
+  try {
+    await updateDoc(doc(db, 'users', currentUser.uid), { blockedUsers: arrayRemove(userId) });
+    if (currentProfile) currentProfile.blockedUsers = (currentProfile.blockedUsers || []).filter(id => id !== userId);
+    showToast(`✅ Unblocked @${userHandle}`);
+    closeBlockedUsersModal();
+    if (viewingUserId === userId) openUserProfile(userId);
+  } catch (e) { showToast('❌ Could not unblock'); }
+}
+
+async function reportPost(post) {
+  const reasons = ['Spam or misleading','Nudity or sexual content','Hate speech or symbols','Violence or dangerous','Harassment or bullying','False information','Other'];
+  const reasonStr = prompt('🚨 Report this post\n\n' + reasons.map((r, i) => `${i + 1}. ${r}`).join('\n') + '\n\nType number (1-7):');
+  if (!reasonStr) return;
+  const idx = parseInt(reasonStr) - 1;
+  if (idx < 0 || idx >= reasons.length) { showToast('❌ Invalid'); return; }
+  try {
+    await addDoc(collection(db, 'reports'), {
+      type: 'post', postId: post.id, postUserId: post.userId,
+      reportedBy: currentUser.uid, reportedByHandle: currentProfile?.user || '',
+      reason: reasons[idx], status: 'pending', createdAt: serverTimestamp()
+    });
+    showToast('✅ Report submitted');
+  } catch (e) { showToast('❌ Could not report'); }
+}
+
+async function reportUser(userId, userHandle) {
+  const reasons = ['Fake account','Impersonation','Harassment','Spam','Inappropriate content','Other'];
+  const reasonStr = prompt('🚨 Report @' + userHandle + '\n\n' + reasons.map((r, i) => `${i + 1}. ${r}`).join('\n') + '\n\nType number (1-6):');
+  if (!reasonStr) return;
+  const idx = parseInt(reasonStr) - 1;
+  if (idx < 0 || idx >= reasons.length) { showToast('❌ Invalid'); return; }
+  try {
+    await addDoc(collection(db, 'reports'), {
+      type: 'user', reportedUserId: userId, reportedUserHandle: userHandle,
+      reportedBy: currentUser.uid, reportedByHandle: currentProfile?.user || '',
+      reason: reasons[idx], status: 'pending', createdAt: serverTimestamp()
+    });
+    showToast('✅ Report submitted');
+  } catch (e) { showToast('❌ Could not report'); }
+}
+
+async function openBlockedUsersModal() {
+  const modal = document.getElementById('blockedUsersModal');
+  const list = document.getElementById('blockedUsersList');
+  modal.classList.add('show');
+  list.innerHTML = '<div class="empty-msg">Loading...</div>';
+  const blockedIds = currentProfile?.blockedUsers || [];
+  if (blockedIds.length === 0) { list.innerHTML = '<div class="empty-msg">No blocked users</div>'; return; }
+  try {
+    const users = [];
+    for (const uid of blockedIds) {
+      const snap = await getDoc(doc(db, 'users', uid));
+      if (snap.exists()) users.push({ uid, ...snap.data() });
+    }
+    if (users.length === 0) { list.innerHTML = '<div class="empty-msg">No blocked users</div>'; return; }
+    list.innerHTML = '';
+    users.forEach(u => {
+      const row = document.createElement('div');
+      row.className = 'user-row';
+      row.innerHTML = `
+        <img src="${u.photo || defaultAvatar(u.name)}" alt="">
+        <div class="meta"><b>${escapeHtml(u.name)}</b><span>@${escapeHtml(u.user)}</span></div>
+        <button class="unblock" data-uid="${u.uid}" style="background:#ff4d4d;color:#fff;">Unblock</button>
+      `;
+      row.querySelector('button').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await unblockUser(u.uid, u.user);
+        row.remove();
+        if (!list.querySelector('.user-row')) list.innerHTML = '<div class="empty-msg">No blocked users</div>';
+      });
+      list.appendChild(row);
+    });
+  } catch (e) { list.innerHTML = '<div class="empty-msg">Could not load</div>'; }
+}
+
+function closeBlockedUsersModal() {
+  document.getElementById('blockedUsersModal')?.classList.remove('show');
+  updateBlockedUsersCount();
+}
+
+function updateBlockedUsersCount() {
+  const count = (currentProfile?.blockedUsers || []).length;
+  const el = document.getElementById('blockedUsersCount');
+  if (el) {
+    el.textContent = count === 0 ? 'No users blocked' : count === 1 ? '1 user blocked' : `${count} users blocked`;
+  }
+}
+
+document.getElementById('closeBlockedUsers')?.addEventListener('click', closeBlockedUsersModal);
+document.getElementById('blockedUsersModal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'blockedUsersModal') closeBlockedUsersModal();
+});
+
+/* ============================================================
+   UPLOAD MODAL
    ============================================================ */
 function openUploadModal() {
   selectedFile = null;
@@ -4139,8 +4109,7 @@ uploadFileInput.addEventListener('change', async (e) => {
     if (!file.type.startsWith('image/')) { uploadMsg.textContent = 'Choose an image.'; return; }
     if (file.size > 5 * 1024 * 1024) { uploadMsg.textContent = 'Max 5 MB.'; return; }
     selectedFile = file;
-    const url = URL.createObjectURL(file);
-    uploadPhotoPreview.src = url;
+    uploadPhotoPreview.src = URL.createObjectURL(file);
     uploadPhotoPreviewWrap.style.display = 'block';
     uploadPickerWrap.style.display = 'none';
     uploadSubmitBtn.disabled = false;
@@ -4718,6 +4687,8 @@ function loadSettingsToUI() {
 
   const subIds = ['settingNotifLikes', 'settingNotifComments', 'settingNotifFollows', 'settingNotifMessages'];
   subIds.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = !s.pushNotif; });
+
+  updateBlockedUsersCount();
 }
 
 function openSettingsModal() {
@@ -4757,7 +4728,7 @@ function initSettingsListeners() {
   wireToggle('settingNotifFollows', 'notifFollows', '', '');
   wireToggle('settingNotifMessages', 'notifMessages', '', '');
 
-  // ✅ PRIVATE ACCOUNT with Firestore sync
+  // PRIVATE ACCOUNT with Firestore sync
   document.getElementById('settingPrivateAccount')?.addEventListener('change', async (e) => {
     const isPrivate = e.target.checked;
     saveSetting('privateAccount', isPrivate);
@@ -4788,6 +4759,12 @@ function initSettingsListeners() {
   wireToggle('settingConfirmDelete', 'confirmDelete', '🗑️ ON', '🗑️ OFF');
   wireToggle('settingCompactMode', 'compactMode', '📐 ON', '📐 OFF');
   document.getElementById('settingAboutBtn')?.addEventListener('click', () => showToast('📱 ReelHub v1.0.0'));
+
+  // ✅ BLOCKED USERS
+  document.getElementById('settingBlockedUsersBtn')?.addEventListener('click', () => {
+    document.getElementById('settingsModal')?.classList.remove('show');
+    openBlockedUsersModal();
+  });
 }
 
 initSettingsListeners();
@@ -4800,4 +4777,4 @@ initSettingsListeners();
   applySetting('privateAccount', s.privateAccount);
 })();
 
-console.log('✅ app.js loaded — Complete with Groups + Private/Public');
+console.log('✅ app.js loaded — Complete with Block + Report System');
