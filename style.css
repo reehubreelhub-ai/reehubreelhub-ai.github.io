@@ -1,5 +1,5 @@
 /* ============================================================
-   ReelHub — style.css (Complete with Group System)
+   ReelHub — style.css (Complete with Block/Report + Groups)
    ============================================================ */
 
 * {
@@ -721,6 +721,29 @@ html, body {
   stroke: #ff2e63;
 }
 
+/* POST MENU BUTTON (3-dot) */
+.post-menu-btn {
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.post-menu-btn:hover { background: #1a1a1a; }
+
+.post-menu-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
 /* PLAYER MODAL */
 #playerModal .modal {
   max-width: 100%;
@@ -1392,7 +1415,6 @@ html, body {
   padding: 0 4px;
 }
 
-/* Group Info Modal */
 .group-info-modal .modal {
   max-width: 460px;
 }
@@ -1992,6 +2014,17 @@ html, body {
   fill: none;
   stroke-width: 2;
 }
+
+#profileMenuBtn {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+#profileMenuBtn:hover { background: #1a1a1a; }
 
 #pubFollowBtn,
 #pubMessageBtn,
@@ -2666,14 +2699,16 @@ body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; 
 body.light-mode .modal-close { color: #666; }
 body.light-mode .modal-close:hover { background: #f0f0f0; color: #000; }
 
-/* POST MENU DROPDOWN */
+/* ============================================================
+   POST MENU DROPDOWN (3-dot)
+   ============================================================ */
 .post-menu-dropdown {
   position: fixed;
   background: #1e1e28;
   border: 1px solid #333;
   border-radius: 10px;
   padding: 6px;
-  min-width: 160px;
+  min-width: 180px;
   z-index: 9999;
   box-shadow: 0 8px 24px rgba(0,0,0,0.6);
   animation: fadeIn 0.15s ease;
@@ -2694,6 +2729,7 @@ body.light-mode .modal-close:hover { background: #f0f0f0; color: #000; }
   display: flex;
   align-items: center;
   gap: 10px;
+  transition: background 0.15s;
 }
 
 .post-menu-dropdown button:hover { background: #2a2a34; }
@@ -2708,7 +2744,21 @@ body.light-mode .modal-close:hover { background: #f0f0f0; color: #000; }
   flex-shrink: 0;
 }
 
-/* PERFORMANCE OPTIMIZATIONS */
+/* ============================================================
+   BLOCKED USERS MODAL
+   ============================================================ */
+#blockedUsersModal .modal {
+  max-height: 70vh;
+}
+
+#blockedUsersList .user-row button.unblock {
+  background: #ff4d4d;
+  color: #fff;
+}
+
+/* ============================================================
+   PERFORMANCE OPTIMIZATIONS
+   ============================================================ */
 .long-card-feed,
 .short-card-feed {
   contain: layout style paint;
@@ -2761,6 +2811,7 @@ body.scrolling .short-card-play {
   .short-card-thumb { max-width: 160px; }
   .long-card-play-icon svg { width: 20px; height: 20px; }
   .long-card-play-icon { width: 48px; height: 48px; }
+  .post-menu-dropdown { min-width: 160px; }
 }
 
 @keyframes spin {
