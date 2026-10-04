@@ -393,6 +393,51 @@
     </div>
   </div>
 
+  <!-- ================= NEW GROUP MODAL ================= -->
+  <div class="modal-overlay" id="newGroupModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>👥 New Group</h3>
+        <button class="modal-close" id="closeNewGroup">&times;</button>
+      </div>
+
+      <div class="photo-preview">
+        <img id="groupPhotoPreview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%234ea8ff'/><text x='50' y='50' font-size='44' font-family='sans-serif' font-weight='700' fill='white' text-anchor='middle' dominant-baseline='central'>G</text></svg>" alt="">
+        <div class="info">
+          <div>Group photo (optional)</div>
+          <label for="groupPhotoInput">Choose photo</label>
+          <input type="file" id="groupPhotoInput" accept="image/*" style="display:none;">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Group Name</label>
+        <input type="text" id="groupNameInput" placeholder="Enter group name" maxlength="40">
+      </div>
+
+      <div class="input-group">
+        <label>Add Members</label>
+        <div class="search-bar-wrap" style="margin-bottom:8px;">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="search-bar" id="groupSearchInput" placeholder="Search users...">
+        </div>
+        <div class="search-results" id="groupSearchResults" style="max-height:180px;overflow-y:auto;margin-bottom:10px;">
+          <div class="search-empty">Start typing to add members...</div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Selected Members</label>
+        <div id="selectedMembersList" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px;background:#0a0a0a;border-radius:10px;min-height:50px;">
+          <div class="empty-msg" style="padding:8px;font-size:12px;">No members selected</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="createGroupBtn" disabled>Create Group</button>
+      <div class="error-msg" id="groupMsg"></div>
+    </div>
+  </div>
+
   <!-- ================= CHAT WINDOW MODAL ================= -->
   <div class="modal-overlay" id="chatWindowModal" style="align-items:stretch;padding:0;">
     <div class="chat-window" id="chatWindow" style="
@@ -449,7 +494,7 @@
         border-top:1px solid #1a1a1a;
         display:flex; align-items:center; gap:8px;
       ">
-        <button class="chat-attach-btn" data-type="photo" title="Photo (coming soon)" style="
+        <button class="chat-attach-btn" data-type="photo" title="Attach file" style="
           width:38px; height:38px; border-radius:50%;
           background:#1a1a1a; border:none; color:#888;
           cursor:pointer; display:flex;
@@ -674,10 +719,7 @@
               <div class="settings-item-label">🌙 Dark Mode</div>
               <div class="settings-item-desc">Dark theme use karein</div>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingDarkMode">
-              <span class="toggle-slider"></span>
-            </label>
+            <label class="toggle-switch"><input type="checkbox" id="settingDarkMode"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
@@ -685,27 +727,20 @@
               <div class="settings-item-label">▶️ Auto Play Videos</div>
               <div class="settings-item-desc">Feed mein videos auto play</div>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingAutoPlay">
-              <span class="toggle-slider"></span>
-            </label>
+            <label class="toggle-switch"><input type="checkbox" id="settingAutoPlay"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
             <div class="settings-item-info">
               <div class="settings-item-label">📉 Data Saver</div>
-              <div class="settings-item-desc">Low quality videos (kam data)</div>
+              <div class="settings-item-desc">Low quality videos</div>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingDataSaver">
-              <span class="toggle-slider"></span>
-            </label>
+            <label class="toggle-switch"><input type="checkbox" id="settingDataSaver"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
             <div class="settings-item-info">
               <div class="settings-item-label">🎬 Video Quality</div>
-              <div class="settings-item-desc">Default quality</div>
             </div>
             <select class="settings-select" id="settingVideoQuality">
               <option value="auto">Auto</option>
@@ -718,7 +753,6 @@
           <div class="settings-item">
             <div class="settings-item-info">
               <div class="settings-item-label">🌐 Language</div>
-              <div class="settings-item-desc">App ki bhasha</div>
             </div>
             <select class="settings-select" id="settingLanguage">
               <option value="en">English</option>
@@ -736,50 +770,27 @@
               <div class="settings-item-label">📢 Push Notifications</div>
               <div class="settings-item-desc">Sabhi notifications on/off</div>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingPushNotif">
-              <span class="toggle-slider"></span>
-            </label>
+            <label class="toggle-switch"><input type="checkbox" id="settingPushNotif"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item sub-setting">
-            <div class="settings-item-info">
-              <div class="settings-item-label">❤️ Likes</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingNotifLikes">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">❤️ Likes</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingNotifLikes"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item sub-setting">
-            <div class="settings-item-info">
-              <div class="settings-item-label">💬 Comments</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingNotifComments">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">💬 Comments</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingNotifComments"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item sub-setting">
-            <div class="settings-item-info">
-              <div class="settings-item-label">👥 New Followers</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingNotifFollows">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">👥 New Followers</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingNotifFollows"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item sub-setting">
-            <div class="settings-item-info">
-              <div class="settings-item-label">💌 Messages</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingNotifMessages">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">💌 Messages</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingNotifMessages"><span class="toggle-slider"></span></label>
           </div>
         </div>
 
@@ -792,10 +803,7 @@
               <div class="settings-item-label">🔐 Private Account</div>
               <div class="settings-item-desc" id="privateAccountDesc">Public — Sab dekh sakte hain</div>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingPrivateAccount">
-              <span class="toggle-slider"></span>
-            </label>
+            <label class="toggle-switch"><input type="checkbox" id="settingPrivateAccount"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
@@ -803,54 +811,35 @@
               <div class="settings-item-label">✓✓ Read Receipts</div>
               <div class="settings-item-desc">Chat mein blue ticks</div>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingReadReceipts">
-              <span class="toggle-slider"></span>
-            </label>
+            <label class="toggle-switch"><input type="checkbox" id="settingReadReceipts"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
             <div class="settings-item-info">
               <div class="settings-item-label">🟢 Show Activity Status</div>
-              <div class="settings-item-desc">Online status dikhe</div>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingShowActivity">
-              <span class="toggle-slider"></span>
-            </label>
+            <label class="toggle-switch"><input type="checkbox" id="settingShowActivity"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
             <div class="settings-item-info">
               <div class="settings-item-label">📶 Show Online Status</div>
-              <div class="settings-item-desc">Abhi online ho ya nahi</div>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingShowOnline">
-              <span class="toggle-slider"></span>
-            </label>
+            <label class="toggle-switch"><input type="checkbox" id="settingShowOnline"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
             <div class="settings-item-info">
               <div class="settings-item-label">🏷️ Allow Tagging</div>
-              <div class="settings-item-desc">Log aapko tag kar sakein</div>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingAllowTagging">
-              <span class="toggle-slider"></span>
-            </label>
+            <label class="toggle-switch"><input type="checkbox" id="settingAllowTagging"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
             <div class="settings-item-info">
               <div class="settings-item-label">📤 Allow Story Sharing</div>
-              <div class="settings-item-desc">Story share kar sakein</div>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingAllowStorySharing">
-              <span class="toggle-slider"></span>
-            </label>
+            <label class="toggle-switch"><input type="checkbox" id="settingAllowStorySharing"><span class="toggle-slider"></span></label>
           </div>
         </div>
 
@@ -859,43 +848,22 @@
           <div class="settings-section-title">⚡ More Settings</div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">📥 Auto Download Media</div>
-              <div class="settings-item-desc">Photos/videos auto download</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingAutoDownload">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">📥 Auto Download Media</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingAutoDownload"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">📳 Vibration</div>
-              <div class="settings-item-desc">Notifications par vibrate</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingVibration">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">📳 Vibration</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingVibration"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">🔊 Sound Effects</div>
-              <div class="settings-item-desc">App sounds on/off</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingSoundEffects">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">🔊 Sound Effects</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingSoundEffects"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">🔤 Font Size</div>
-              <div class="settings-item-desc">Text size adjust</div>
-            </div>
+            <div class="settings-item-info"><div class="settings-item-label">🔤 Font Size</div></div>
             <select class="settings-select" id="settingFontSize">
               <option value="small">Small</option>
               <option value="medium">Medium</option>
@@ -909,43 +877,22 @@
           <div class="settings-section-title">🎬 Video & Playback</div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">🔊 Autoplay Sound</div>
-              <div class="settings-item-desc">Sound ke saath auto play</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingAutoplaySound">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">🔊 Autoplay Sound</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingAutoplaySound"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">🔁 Video Loop</div>
-              <div class="settings-item-desc">Videos repeat hon</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingVideoLoop">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">🔁 Video Loop</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingVideoLoop"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">📝 Show Captions</div>
-              <div class="settings-item-desc">Captions dikhayein</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingShowCaptions">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">📝 Show Captions</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingShowCaptions"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">⚡ Video Preload</div>
-              <div class="settings-item-desc">Loading behavior</div>
-            </div>
+            <div class="settings-item-info"><div class="settings-item-label">⚡ Video Preload</div></div>
             <select class="settings-select" id="settingVideoPreload">
               <option value="auto">Auto</option>
               <option value="metadata">Metadata</option>
@@ -959,32 +906,17 @@
           <div class="settings-section-title">📱 Feed & Display</div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">📊 Show View Count</div>
-              <div class="settings-item-desc">Posts par views</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingShowViews">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">📊 Show View Count</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingShowViews"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">♾️ Infinite Scroll</div>
-              <div class="settings-item-desc">Auto next posts load</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingInfiniteScroll">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">♾️ Infinite Scroll</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingInfiniteScroll"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">📋 Feed Order</div>
-              <div class="settings-item-desc">Posts kaise sort hon</div>
-            </div>
+            <div class="settings-item-info"><div class="settings-item-label">📋 Feed Order</div></div>
             <select class="settings-select" id="settingFeedOrder">
               <option value="newest">Newest</option>
               <option value="trending">Trending</option>
@@ -998,36 +930,18 @@
           <div class="settings-section-title">⚙️ Interactions</div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">👆 Double Tap to Like</div>
-              <div class="settings-item-desc">Double tap se like</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingDoubleTapLike">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">👆 Double Tap to Like</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingDoubleTapLike"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">🗑️ Confirm Before Delete</div>
-              <div class="settings-item-desc">Delete se pehle poochhein</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingConfirmDelete">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">🗑️ Confirm Before Delete</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingConfirmDelete"><span class="toggle-slider"></span></label>
           </div>
 
           <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">📐 Compact Mode</div>
-              <div class="settings-item-desc">Chhota layout</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="settingCompactMode">
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="settings-item-info"><div class="settings-item-label">📐 Compact Mode</div></div>
+            <label class="toggle-switch"><input type="checkbox" id="settingCompactMode"><span class="toggle-slider"></span></label>
           </div>
         </div>
 
