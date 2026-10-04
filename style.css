@@ -1,5 +1,5 @@
 /* ============================================================
-   ReelHub — style.css (Complete with Block/Report + Groups)
+   ReelHub — style.css (Complete)
    ============================================================ */
 
 * {
@@ -735,6 +735,7 @@ html, body {
   align-items: center;
   justify-content: center;
   transition: background 0.15s;
+  flex-shrink: 0;
 }
 
 .post-menu-btn:hover { background: #1a1a1a; }
@@ -1014,7 +1015,7 @@ html, body {
 }
 
 /* ============================================================
-   CHATS PAGE — With Tabs
+   CHATS PAGE
    ============================================================ */
 .chats-page { padding: 0; min-height: 100%; }
 
@@ -1333,9 +1334,7 @@ html, body {
 #chatMessages::-webkit-scrollbar { width: 4px; }
 #chatMessages::-webkit-scrollbar-thumb { background: #262626; border-radius: 2px; }
 
-/* ============================================================
-   FILE MESSAGE BUBBLE
-   ============================================================ */
+/* FILE MESSAGE BUBBLE */
 .file-bubble {
   padding: 8px !important;
   max-width: 280px;
@@ -1384,9 +1383,7 @@ html, body {
   opacity: 0.75;
 }
 
-/* ============================================================
-   MEMBER CHIPS (Group)
-   ============================================================ */
+/* MEMBER CHIPS (Group) */
 .member-chip {
   display: inline-flex;
   align-items: center;
@@ -2699,9 +2696,7 @@ body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; 
 body.light-mode .modal-close { color: #666; }
 body.light-mode .modal-close:hover { background: #f0f0f0; color: #000; }
 
-/* ============================================================
-   POST MENU DROPDOWN (3-dot)
-   ============================================================ */
+/* POST MENU DROPDOWN (3-dot) */
 .post-menu-dropdown {
   position: fixed;
   background: #1e1e28;
@@ -2744,9 +2739,7 @@ body.light-mode .modal-close:hover { background: #f0f0f0; color: #000; }
   flex-shrink: 0;
 }
 
-/* ============================================================
-   BLOCKED USERS MODAL
-   ============================================================ */
+/* BLOCKED USERS MODAL */
 #blockedUsersModal .modal {
   max-height: 70vh;
 }
@@ -2756,9 +2749,7 @@ body.light-mode .modal-close:hover { background: #f0f0f0; color: #000; }
   color: #fff;
 }
 
-/* ============================================================
-   PERFORMANCE OPTIMIZATIONS
-   ============================================================ */
+/* PERFORMANCE OPTIMIZATIONS */
 .long-card-feed,
 .short-card-feed {
   contain: layout style paint;
