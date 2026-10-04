@@ -1,5 +1,5 @@
 /* ============================================================
-   ReelHub — style.css (Complete + YouTube Style)
+   ReelHub — style.css (Complete + Performance Optimized)
    ============================================================ */
 
 * {
@@ -262,6 +262,7 @@ html, body {
   flex: 1;
   overflow-y: auto;
   padding: 0;
+  -webkit-overflow-scrolling: touch;
 }
 .content::-webkit-scrollbar { display: none; }
 
@@ -811,6 +812,7 @@ html, body {
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   background: #000;
+  -webkit-overflow-scrolling: touch;
 }
 .shorts-wrap::-webkit-scrollbar { display: none; }
 
@@ -2694,6 +2696,56 @@ body.light-mode .modal-close:hover { background: #f0f0f0; color: #000; }
 }
 
 /* ============================================================
+   PERFORMANCE OPTIMIZATIONS
+   ============================================================ */
+
+/* GPU acceleration for cards */
+.long-card-feed,
+.short-card-feed {
+  contain: layout style paint;
+  will-change: transform;
+}
+
+/* Hardware-accelerated images */
+.long-card-thumb img,
+.short-card-thumb img,
+.long-card-avatar,
+.short-card-avatar,
+.grid-item img,
+.grid-item video {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Remove heavy backdrop-filter (slow on mobile) */
+.header,
+.bottom-nav,
+.modal-overlay {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Smooth scrolling */
+.content,
+#chatMessages,
+#commentsList,
+.shorts-wrap,
+.settings-modal {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Disable animations during scroll (prevents lag) */
+body.scrolling * {
+  transition: none !important;
+  animation-play-state: paused !important;
+}
+
+body.scrolling .long-card-play-icon,
+body.scrolling .short-card-play {
+  display: none;
+}
+
+/* ============================================================
    MOBILE FIXES
    ============================================================ */
 @media (max-width: 480px) {
@@ -2704,6 +2756,10 @@ body.light-mode .modal-close:hover { background: #f0f0f0; color: #000; }
   .story-item { width: 66px; }
   .story-name { font-size: 10px; max-width: 66px; }
   .short-card-thumb { max-width: 160px; }
+
+  /* Extra performance on small screens */
+  .long-card-play-icon svg { width: 20px; height: 20px; }
+  .long-card-play-icon { width: 48px; height: 48px; }
 }
 
 @keyframes spin {
