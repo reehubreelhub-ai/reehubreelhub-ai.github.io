@@ -186,7 +186,7 @@ let currentUser    = null;
 let currentProfile = null;
 let selectedPhotoBase64 = null;
 let isLoggingIn    = false;
-let isSigningUp    = false;                    // ✅ FIXED #1 — signup guard
+let isSigningUp    = false;                    // ✅ FIXED — signup guard
 let notifIntervalId = null;
 let viewingUserId  = null;
 
@@ -290,7 +290,7 @@ document.getElementById('goLogin')?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   SIGNUP — ✅ FULLY FIXED (Rules + Timing + Error Handling)
+   SIGNUP — ✅ FIXED (AUTH पहले, फिर username check, फिर profile)
    ============================================================ */
 signupForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -308,25 +308,31 @@ signupForm.addEventListener('submit', async (e) => {
   if (!/^\S+@\S+\.\S+$/.test(email)) { signupMsg.textContent = 'Please enter a valid email.'; return; }
   if (pass.length < 6) { signupMsg.textContent = 'Password min 6 characters.'; return; }
 
-  isSigningUp = true;                          // ✅ FIXED #1 — block onAuthStateChanged
+  isSigningUp = true;
   signupBtn.disabled = true;
   signupBtn.textContent = 'Creating...';
 
+  let createdAuthUser = null;
+
   try {
-    // 1) Check username uniqueness
+    // ✅ STEP 1 — पहले AUTH बनाओ (ताकि rules pass हों)
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    const uid  = cred.user.uid;
+    createdAuthUser = cred.user;
+
+    // ✅ STEP 2 — अब USERNAME check करो (user logged-in है, rules allow करेंगे)
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('user', '==', user));
     const snap = await getDocs(q);
+
     if (!snap.empty) {
-      signupMsg.textContent = 'Username already taken.';
+      // Username लिया हुआ है — created auth user को delete करो
+      try { await createdAuthUser.delete(); } catch (e) { await signOut(auth); }
+      signupMsg.textContent = 'Username already taken. Try another.';
       return;
     }
 
-    // 2) Create Auth user
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    const uid  = cred.user.uid;
-
-    // 3) Create Firestore profile
+    // ✅ STEP 3 — अब Firestore profile बनाओ
     await setDoc(doc(db, 'users', uid), {
       uid: uid,
       name: name,
@@ -343,7 +349,7 @@ signupForm.addEventListener('submit', async (e) => {
       createdAt: serverTimestamp()
     });
 
-    // 4) Manually set state — क्योंकि onAuthStateChanged blocked है
+    // ✅ STEP 4 — State set करो
     currentUser = cred.user;
     await loadProfile(uid);
 
@@ -352,7 +358,6 @@ signupForm.addEventListener('submit', async (e) => {
 
     signupForm.reset();
 
-    // 5) Show app after short delay
     setTimeout(() => {
       showApp();
       startNotifWatcher();
@@ -361,13 +366,14 @@ signupForm.addEventListener('submit', async (e) => {
   } catch (err) {
     console.error('Signup error:', err);
 
-    // ✅ FIXED — specific Firestore rules denial handling
+    // ✅ अगर step 2/3 fail हो, तो orphan auth user clean करो
+    if (createdAuthUser && !currentProfile) {
+      try { await createdAuthUser.delete(); } catch (e) { try { await signOut(auth); } catch (e2) {} }
+    }
+
     if (err.code === 'permission-denied' ||
         (err.message && err.message.toLowerCase().includes('permission'))) {
       signupMsg.textContent = '⚠️ Firestore rules block kar rahe hain. Console → Rules publish karein.';
-      try { await signOut(auth); } catch (e) {}
-      currentUser = null;
-      currentProfile = null;
     }
     else if (err.code === 'auth/email-already-in-use')  signupMsg.textContent = 'Email already registered.';
     else if (err.code === 'auth/invalid-email')         signupMsg.textContent = 'Invalid email.';
@@ -377,7 +383,7 @@ signupForm.addEventListener('submit', async (e) => {
     else                                                signupMsg.textContent = err.message || 'Signup failed.';
 
   } finally {
-    isSigningUp = false;                       // ✅ FIXED #1 — release
+    isSigningUp = false;
     signupBtn.disabled = false;
     signupBtn.textContent = 'Sign Up';
   }
@@ -484,7 +490,7 @@ sendResetBtn.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   LOGOUT — ✅ FIXED (chatMessagesUnsub cleared)
+   LOGOUT
    ============================================================ */
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   if (confirm('Log out of ReelHub?')) {
@@ -492,7 +498,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
     stopShortsObserver();
     stopChatListWatcher();
 
-    // ✅ FIXED #12 — clear chat polling interval
+    // ✅ Clear chat polling interval
     if (chatMessagesUnsub) { clearInterval(chatMessagesUnsub); chatMessagesUnsub = null; }
 
     closeChatWindow();
@@ -520,7 +526,7 @@ searchBtn.addEventListener('click', () => { setActiveNav(null); renderPage('sear
    AUTH STATE LISTENER — ✅ FIXED (isSigningUp guard)
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
-  if (isLoggingIn || isSigningUp) return;      // ✅ FIXED #1 — skip during signup/login
+  if (isLoggingIn || isSigningUp) return;      // ✅ Signup/Login के बीच skip
 
   if (user) {
     currentUser = user;
@@ -582,7 +588,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
 });
 
 /* ============================================================
-   UPLOAD BUTTON — ✅ FIXED (null safety)
+   UPLOAD BUTTON — ✅ null safety
    ============================================================ */
 document.querySelector('.upload-btn')?.addEventListener('click', () => {
   setActiveNav(null);
