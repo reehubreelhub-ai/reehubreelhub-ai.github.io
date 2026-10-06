@@ -290,7 +290,7 @@ document.getElementById('goLogin')?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   SIGNUP — ✅ FIXED (AUTH पहले, फिर username check, फिर profile)
+   SIGNUP — ✅ FULLY FIXED (AUTH पहले, फिर username check, फिर profile)
    ============================================================ */
 signupForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -490,7 +490,7 @@ sendResetBtn.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   LOGOUT
+   LOGOUT — ✅ FIXED (chatMessagesUnsub cleared)
    ============================================================ */
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   if (confirm('Log out of ReelHub?')) {
@@ -607,15 +607,15 @@ function renderPage(page) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 2/4) — FIXED VERSION
-   Helpers, Home Feed (YouTube Style), Stories, Report/Block
+   ReelHub — app.js (PART 2/4) — FIXED with Double-Tap Like
+   Helpers, Home Feed, Stories Bar, Double-Tap System
    ============================================================ */
 
-// ✅ FIXED — module-level observer (leak fix)
+// ✅ Module-level observer (leak fix)
 let feedAutoplayObserver = null;
 
 /* ============================================================
-   BATCH 1 HELPERS
+   HELPERS
    ============================================================ */
 function isPostSaved(postId) {
   if (!currentProfile) return false;
@@ -800,6 +800,107 @@ async function loadStoryViewersList(uids, containerId) {
 }
 
 /* ============================================================
+   ✅ DOUBLE TAP LIKE — Universal Helper
+   ============================================================ */
+function attachDoubleTapLike(element, post, onSingleTap) {
+  if (!element || !post) return;
+
+  let lastTap = 0;
+  let tapTimer = null;
+  const TAP_DELAY = 300;
+
+  element.addEventListener('click', (e) => {
+    // Button / link / menu पर tap ignore करो
+    if (e.target.closest('button, a, .post-menu-btn, .msg-dots-btn')) return;
+
+    // Settings check
+    const s = typeof getSettings === 'function' ? getSettings() : { doubleTapLike: true };
+    if (s.doubleTapLike === false) {
+      if (onSingleTap) onSingleTap(e);
+      return;
+    }
+
+    const now = Date.now();
+
+    if (now - lastTap < TAP_DELAY) {
+      // ✅ DOUBLE TAP!
+      clearTimeout(tapTimer);
+      lastTap = 0;
+      handleDoubleTapLikeUniversal(post, element);
+    } else {
+      lastTap = now;
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => {
+        lastTap = 0;
+        if (onSingleTap) onSingleTap(e);
+      }, TAP_DELAY);
+    }
+  });
+}
+
+async function handleDoubleTapLikeUniversal(post, cardEl) {
+  if (!currentUser || !post) return;
+
+  const alreadyLiked = (post.likes || []).includes(currentUser.uid);
+
+  showHeartAnimation(cardEl);
+  if (navigator.vibrate) navigator.vibrate(40);
+
+  if (alreadyLiked) return;
+
+  const likeBtn = cardEl.querySelector('.like-btn');
+  const countSpan = likeBtn?.querySelector('span');
+  if (likeBtn && !likeBtn.classList.contains('liked')) {
+    likeBtn.classList.add('liked');
+    if (countSpan) {
+      const current = parseInt(countSpan.textContent) || 0;
+      countSpan.textContent = current + 1;
+    }
+  }
+
+  try {
+    await updateDoc(doc(db, 'posts', post.id), {
+      likes: arrayUnion(currentUser.uid)
+    });
+    if (!post.likes) post.likes = [];
+    if (!post.likes.includes(currentUser.uid)) post.likes.push(currentUser.uid);
+  } catch (e) {
+    console.error('Double tap like error:', e);
+    if (likeBtn) {
+      likeBtn.classList.remove('liked');
+      if (countSpan) {
+        const current = parseInt(countSpan.textContent) || 0;
+        countSpan.textContent = Math.max(0, current - 1);
+      }
+    }
+    showToast('❌ Could not like');
+  }
+}
+
+function showHeartAnimation(container, event) {
+  if (!container) return;
+
+  container.querySelectorAll('.heart-pop').forEach(h => h.remove());
+  container.style.position = container.style.position || 'relative';
+
+  const heart = document.createElement('div');
+  heart.className = 'heart-pop' + (container.classList.contains('grid-item') ? ' small' : '');
+  heart.innerHTML = '❤️';
+
+  if (event && container.getBoundingClientRect) {
+    const rect = container.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    heart.style.left = x + 'px';
+    heart.style.top  = y + 'px';
+    heart.style.transform = 'translate(-50%, -50%) scale(0)';
+  }
+
+  container.appendChild(heart);
+  setTimeout(() => heart.remove(), 900);
+}
+
+/* ============================================================
    HOME FEED
    ============================================================ */
 async function renderHomeFeed() {
@@ -828,14 +929,9 @@ async function renderHomeFeed() {
   await loadHomeFeedPosts();
 }
 
-/* ============================================================
-   LOAD HOME FEED POSTS — ✅ FIXED (N+1 reads eliminated)
-   ============================================================ */
 async function loadHomeFeedPosts() {
   const container = document.getElementById('feedContainer');
   if (!container) return;
-
-  // ✅ Safety — currentUser null हो तो कुछ मत करो
   if (!currentUser) { container.innerHTML = `<div class="feed-empty"><h3>Please log in</h3></div>`; return; }
 
   try {
@@ -864,9 +960,7 @@ async function loadHomeFeedPosts() {
 
     const myFollowing = currentProfile?.following || [];
 
-    // ✅ FIXED #5 — N+1 reads eliminated.
-    // पहले: हर post के लिए 1 getDoc (15 posts = 15 extra reads)
-    // अब: unique users को batch में fetch करो (max 10 per query)
+    // ✅ Batch fetch — N+1 reads eliminated
     const uniqueUserIds = [...new Set(posts.map(p => p.userId))].filter(id => id && id !== currentUser.uid);
     const privateUsers = new Set();
 
@@ -880,10 +974,7 @@ async function loadHomeFeedPosts() {
           const u = d.data();
           if (u.isPrivate) privateUsers.add(u.uid);
         });
-      } catch (e) {
-        // अगर uid field नहीं है तो fallback: no privacy filter
-        console.warn('Batch user fetch failed:', e);
-      }
+      } catch (e) { console.warn('Batch user fetch failed:', e); }
     }
 
     posts = posts.filter(p => {
@@ -919,7 +1010,7 @@ function makeFeedPost(post) {
 }
 
 /* ============================================================
-   SHORT VIDEO CARD
+   SHORT VIDEO CARD — ✅ Double Tap Like added
    ============================================================ */
 function makeShortCard(post) {
   const card = document.createElement('div');
@@ -959,29 +1050,15 @@ function makeShortCard(post) {
     await showPostMenu(e.currentTarget, post);
   });
 
-  let lastTap = 0;
-  let tapTimer = null;
-  card.addEventListener('click', () => {
-    const s = typeof getSettings === 'function' ? getSettings() : { doubleTapLike: true };
-    if (!s.doubleTapLike) { openPostPlayer(post); return; }
-    const now = Date.now();
-    if (now - lastTap < 350) {
-      clearTimeout(tapTimer);
-      lastTap = 0;
-      handleDoubleTapLike(post, card);
-    } else {
-      lastTap = now;
-      clearTimeout(tapTimer);
-      tapTimer = setTimeout(() => { lastTap = 0; openPostPlayer(post); }, 350);
-    }
-  });
+  // ✅ DOUBLE TAP LIKE — single tap opens player
+  attachDoubleTapLike(card, post, () => openPostPlayer(post));
 
   trackPostView(post.id);
   return card;
 }
 
 /* ============================================================
-   LONG VIDEO / PHOTO CARD — ✅ FIXED (commentsCount)
+   LONG VIDEO / PHOTO CARD — ✅ Double Tap Like added
    ============================================================ */
 function makeLongCard(post) {
   const card = document.createElement('div');
@@ -992,11 +1069,8 @@ function makeLongCard(post) {
   const thumbUrl = post.thumbnail || (post.type === 'photo' ? post.url : '');
   const isLiked = (post.likes || []).includes(currentUser.uid);
   const likesCount = (post.likes || []).length;
-
-  // ✅ FIXED #7 — commentsCount field use करो, array length नहीं
-  const commentsCount = post.commentsCount || 0;
+  const commentsCount = post.commentsCount ?? (post.comments || []).length;
   const viewsCount = post.views || 0;
-
   const settings = typeof getSettings === 'function' ? getSettings() : { showViews: true };
 
   card.innerHTML = `
@@ -1026,7 +1100,7 @@ function makeLongCard(post) {
       </button>
     </div>
     <div class="long-card-actions">
-      <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${post.id}" ${isLiked ? 'disabled' : ''}>
+      <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${post.id}">
         <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         <span>${likesCount}</span>
       </button>
@@ -1071,12 +1145,16 @@ function makeLongCard(post) {
     });
   }
 
+  // ✅ DOUBLE TAP LIKE on thumbnail and info area
+  attachDoubleTapLike(card.querySelector('.long-card-thumb'), post, null);
+  attachDoubleTapLike(card.querySelector('.long-card-info'), post, null);
+
   trackPostView(post.id);
   return card;
 }
 
 /* ============================================================
-   Post Player
+   Post Player — ✅ Double Tap Like added
    ============================================================ */
 function openPostPlayer(post) {
   playerTitle.textContent = post.caption || (post.type === 'photo' ? 'Photo' : 'Video');
@@ -1084,13 +1162,13 @@ function openPostPlayer(post) {
     playerContent.innerHTML = `<img src="${post.url}" alt="">`;
   } else if (post.type === 'short') {
     playerContent.innerHTML = `
-      <div class="player-short-wrap">
+      <div class="player-short-wrap" style="position:relative;">
         <video src="${post.url}" controls autoplay playsinline style="width:100%;max-height:75vh;background:#000;border-radius:8px;"></video>
       </div>
     `;
   } else {
     playerContent.innerHTML = `
-      <div class="player-youtube-wrap">
+      <div class="player-youtube-wrap" style="position:relative;">
         <video src="${post.url}" controls autoplay playsinline ${post.thumbnail ? `poster="${post.thumbnail}"` : ''} style="width:100%;max-height:75vh;background:#000;"></video>
         <div class="player-youtube-info">
           <div class="player-youtube-title">${escapeHtml(post.caption || 'Video')}</div>
@@ -1100,33 +1178,16 @@ function openPostPlayer(post) {
     `;
   }
   playerModal.classList.add('show');
+
+  // ✅ Double tap in player
+  const playerInner = playerContent.firstElementChild;
+  if (playerInner && post.type !== 'photo') {
+    attachDoubleTapLike(playerInner, post, null);
+  }
 }
 
 /* ============================================================
-   Double Tap Like
-   ============================================================ */
-async function handleDoubleTapLike(post, cardEl) {
-  if ((post.likes || []).includes(currentUser.uid)) return;
-  const likeBtn = cardEl.querySelector('.like-btn');
-  if (likeBtn) await toggleLike(post.id, likeBtn);
-  showHeartAnimation(cardEl);
-  if (navigator.vibrate) navigator.vibrate(50);
-}
-
-function showHeartAnimation(container) {
-  const existing = container.querySelector('.heart-animation');
-  if (existing) existing.remove();
-  const heart = document.createElement('div');
-  heart.className = 'heart-animation';
-  heart.innerHTML = '❤️';
-  heart.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:100px;pointer-events:none;animation:heartPop 0.8s ease forwards;z-index:100;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));`;
-  container.style.position = 'relative';
-  container.appendChild(heart);
-  setTimeout(() => heart.remove(), 800);
-}
-
-/* ============================================================
-   POST MENU (3-dot) — Report / Block / Delete
+   POST MENU (3-dot)
    ============================================================ */
 async function showPostMenu(anchorEl, post) {
   document.querySelectorAll('.post-menu-dropdown').forEach(el => el.remove());
@@ -1215,13 +1276,12 @@ async function deletePost(postId) {
 }
 
 /* ============================================================
-   Auto Play — ✅ FIXED (observer leak)
+   Auto Play — ✅ Observer leak fixed
    ============================================================ */
 function setupFeedAutoplay() {
   const settings = typeof getSettings === 'function' ? getSettings() : { autoPlay: true };
   if (!settings.autoPlay) return;
 
-  // ✅ FIXED — पहले पुराना observer disconnect करो (memory leak fix)
   if (feedAutoplayObserver) { feedAutoplayObserver.disconnect(); feedAutoplayObserver = null; }
 
   const videos = document.querySelectorAll('.long-card-feed video, .feed-post-media video');
@@ -1524,18 +1584,18 @@ function uploadToCloudinaryGroupFile(file, onProgress) {
   });
 }
 /* ============================================================
-   ReelHub — app.js (PART 3/4) — FIXED VERSION
-   Story Viewer, Shorts (Auto Sound), Like, Share, Comments
+   ReelHub — app.js (PART 3/4) — FIXED Like/Unlike + Double-Tap
+   Story Viewer, Shorts, Like System, Comments
    ============================================================ */
 
 /* ============================================================
-   STORY VIEWER — ✅ FIXED (pauses shorts, syncs video)
+   STORY VIEWER
    ============================================================ */
 function openStoryViewer(userId) {
   const userIndex = storiesByUser.findIndex(u => u.userId === userId);
   if (userIndex === -1) return;
 
-  // ✅ FIXED — pause any playing shorts (sound overlap रुकेगा)
+  // ✅ Pause any playing shorts (sound overlap fix)
   document.querySelectorAll('.short-item video').forEach(v => {
     try { v.pause(); } catch (e) {}
   });
@@ -1612,7 +1672,6 @@ function renderCurrentStory() {
 
   markStoryViewed(story.id);
 
-  // ✅ FIXED — photo के लिए timer, video के लिए timeupdate events
   const fills = storyProgressBars.querySelectorAll('.story-progress-fill');
   const currentFill = fills[currentStoryIndex];
 
@@ -1620,7 +1679,7 @@ function renderCurrentStory() {
     const duration = (story.duration || 5) * 1000;
     startPhotoStoryProgress(duration, currentFill);
   } else {
-    startVideoStoryProgress(video, currentFill);
+    startVideoStoryProgress(currentStoryMediaEl, currentFill);
   }
 }
 
@@ -1639,7 +1698,6 @@ function startPhotoStoryProgress(duration, currentFill) {
   }, 50);
 }
 
-// ✅ FIXED — video progress video time से sync होता है (network slow = bar भी slow)
 function startVideoStoryProgress(video, currentFill) {
   if (!video || !currentFill) return;
 
@@ -1656,8 +1714,7 @@ function startVideoStoryProgress(video, currentFill) {
   video.addEventListener('loadedmetadata', onLoaded);
   if (video.readyState >= 1) onLoaded();
 
-  // cleanup के लिए store करो
-  currentStoryMediaEl._cleanup = () => {
+  video._cleanup = () => {
     video.removeEventListener('timeupdate', onTimeUpdate);
     video.removeEventListener('ended', onEnded);
     video.removeEventListener('loadedmetadata', onLoaded);
@@ -1771,7 +1828,7 @@ storyDeleteBtn.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   SHORTS FEED — Auto Sound
+   SHORTS FEED
    ============================================================ */
 async function renderShortsFeed() {
   content.innerHTML = `
@@ -1887,6 +1944,9 @@ function getCurrentVisibleVideo(wrap) {
   return videos[0];
 }
 
+/* ============================================================
+   SHORT ITEM — ✅ Double Tap Like added
+   ============================================================ */
 function makeShortItem(short) {
   const item = document.createElement('div');
   item.className = 'short-item';
@@ -1895,9 +1955,7 @@ function makeShortItem(short) {
   const avatar = short.userPhoto || defaultAvatar(short.userName);
   const isLiked = (short.likes || []).includes(currentUser.uid);
   const likesCount = (short.likes || []).length;
-
-  // ✅ FIXED — commentsCount use
-  const commentsCount = short.commentsCount || 0;
+  const commentsCount = short.commentsCount ?? (short.comments || []).length;
   const isSaved = isPostSaved(short.id);
 
   const mutedAttr = shortsSoundEnabled ? '' : 'muted';
@@ -1920,7 +1978,7 @@ function makeShortItem(short) {
         </div>
 
         <div class="short-side-actions">
-          <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${short.id}" ${isLiked ? 'disabled' : ''}>
+          <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${short.id}">
             <svg viewBox="0 0 24 24">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
@@ -1972,13 +2030,18 @@ function makeShortItem(short) {
     await sharePost(short);
   });
 
-  videoEl.addEventListener('click', () => {
+  // ✅ Sound toggle — double tap पर skip
+  videoEl.addEventListener('click', (e) => {
+    if (e.detail >= 2) return;
     videoEl.muted = !videoEl.muted;
     shortsSoundEnabled = !videoEl.muted;
     localStorage.setItem('shortsSound', shortsSoundEnabled ? 'true' : 'false');
     showToast(videoEl.muted ? '🔇 Sound OFF' : '🔊 Sound ON');
     if (!videoEl.muted) videoEl.play().catch(() => {});
   });
+
+  // ✅ DOUBLE TAP LIKE
+  attachDoubleTapLike(item, short, null);
 
   return item;
 }
@@ -2012,45 +2075,62 @@ function stopShortsObserver() {
 }
 
 /* ============================================================
-   LIKE SYSTEM — ✅ FIXED (extra read removed)
+   ✅ LIKE / UNLIKE SYSTEM — FIXED (both work)
    ============================================================ */
 async function toggleLike(postId, btnEl) {
   if (!currentUser) return;
+  if (!btnEl) return;
 
-  // ✅ FIXED — पहले local UI check करो, getDoc की ज़रूरत नहीं
-  if (btnEl.classList.contains('liked')) {
-    showToast('❤️ Already liked');
-    return;
-  }
-
-  // ✅ FIXED — Optimistic UI (तुरंत feel होगा)
-  btnEl.classList.add('liked');
-  btnEl.disabled = true;
+  const isCurrentlyLiked = btnEl.classList.contains('liked');
   const countSpan = btnEl.querySelector('span');
-  if (countSpan) {
-    const current = parseInt(countSpan.textContent) || 0;
-    countSpan.textContent = current + 1;
-  }
-  btnEl.style.transform = 'scale(1.3)';
-  setTimeout(() => { btnEl.style.transform = ''; }, 200);
-  showToast('❤️ Liked');
+  const currentCount = countSpan ? (parseInt(countSpan.textContent) || 0) : 0;
 
-  try {
-    // ✅ FIXED — सिर्फ 1 write, कोई getDoc नहीं
-    await updateDoc(doc(db, 'posts', postId), {
-      likes: arrayUnion(currentUser.uid)
-    });
-  } catch (e) {
-    console.error('Like error:', e);
-    // Rollback on failure
+  btnEl.disabled = true;
+
+  if (isCurrentlyLiked) {
+    // 💔 UNLIKE
     btnEl.classList.remove('liked');
-    btnEl.disabled = false;
-    if (countSpan) {
-      const current = parseInt(countSpan.textContent) || 0;
-      countSpan.textContent = Math.max(0, current - 1);
+    if (countSpan) countSpan.textContent = Math.max(0, currentCount - 1);
+
+    try {
+      await updateDoc(doc(db, 'posts', postId), {
+        likes: arrayRemove(currentUser.uid)
+      });
+      showToast('💔 Unliked');
+      if (navigator.vibrate) navigator.vibrate(20);
+    } catch (e) {
+      console.error('Unlike error:', e);
+      btnEl.classList.add('liked');
+      if (countSpan) countSpan.textContent = currentCount;
+      showToast('❌ Could not unlike');
     }
-    showToast('❌ Could not like');
+  } else {
+    // ❤️ LIKE
+    btnEl.classList.add('liked');
+    if (countSpan) countSpan.textContent = currentCount + 1;
+
+    btnEl.style.transform = 'scale(1.3)';
+    setTimeout(() => { btnEl.style.transform = ''; }, 200);
+
+    // Heart animation
+    const card = btnEl.closest('.short-card-feed, .long-card-feed, .short-item, .grid-item');
+    if (card) showHeartAnimation(card);
+
+    try {
+      await updateDoc(doc(db, 'posts', postId), {
+        likes: arrayUnion(currentUser.uid)
+      });
+      showToast('❤️ Liked');
+      if (navigator.vibrate) navigator.vibrate(30);
+    } catch (e) {
+      console.error('Like error:', e);
+      btnEl.classList.remove('liked');
+      if (countSpan) countSpan.textContent = currentCount;
+      showToast('❌ Could not like');
+    }
   }
+
+  btnEl.disabled = false;
 }
 
 /* ============================================================
@@ -2240,9 +2320,6 @@ function makeCommentItem(comment, isReply) {
 
 commentInput.addEventListener('input', () => { postCommentBtn.disabled = !commentInput.value.trim(); });
 
-/* ============================================================
-   POST COMMENT — ✅ FIXED (commentsCount, no array inflation)
-   ============================================================ */
 postCommentBtn.addEventListener('click', async () => {
   const text = commentInput.value.trim();
   if (!text || !activeCommentPostId || !currentUser) return;
@@ -2265,19 +2342,14 @@ postCommentBtn.addEventListener('click', async () => {
     };
     await addDoc(collection(db, 'comments'), commentData);
 
-    // ✅ FIXED — numeric commentsCount, infinite array नहीं
     try {
       const postRef = doc(db, 'posts', activeCommentPostId);
       const postSnap = await getDoc(postRef);
       if (postSnap.exists()) {
         const currentCount = postSnap.data().commentsCount || 0;
         await updateDoc(postRef, { commentsCount: currentCount + 1 });
-
-        // ✅ UI को भी update करो (feed cards में तुरंत reflect हो)
         document.querySelectorAll(`.comment-btn[data-post="${activeCommentPostId}"] span`)
-          .forEach(el => {
-            el.textContent = currentCount + 1;
-          });
+          .forEach(el => { el.textContent = currentCount + 1; });
       }
     } catch (e) { console.warn('Count update failed:', e); }
 
@@ -2330,12 +2402,8 @@ async function toggleCommentLike(commentId, btnEl) {
   } catch (e) {}
 }
 
-/* ============================================================
-   DELETE COMMENT — ✅ FIXED (decrements commentsCount)
-   ============================================================ */
 async function deleteComment(commentId) {
   try {
-    // Reply count track करो (parent के साथ replies भी delete होंगी)
     const commentRef = doc(db, 'comments', commentId);
     const commentSnap = await getDoc(commentRef);
     const isReply = commentSnap.exists() && commentSnap.data().parentId;
@@ -2346,8 +2414,6 @@ async function deleteComment(commentId) {
     const repliesCount = repliesSnap.size;
     for (const replyDoc of repliesSnap.docs) await deleteDoc(doc(db, 'comments', replyDoc.id));
 
-    // ✅ FIXED — commentsCount properly decrement करो
-    // (reply delete हो तो भी count घटेगा, parent delete हो तो parent + सारे replies घटेंगे)
     const totalDeleted = 1 + repliesCount;
     if (activeCommentPostId) {
       try {
@@ -2357,8 +2423,6 @@ async function deleteComment(commentId) {
           const currentCount = postSnap.data().commentsCount || 0;
           const newCount = Math.max(0, currentCount - totalDeleted);
           await updateDoc(postRef, { commentsCount: newCount });
-
-          // ✅ UI update
           document.querySelectorAll(`.comment-btn[data-post="${activeCommentPostId}"] span`)
             .forEach(el => { el.textContent = newCount; });
         }
@@ -2373,12 +2437,12 @@ async function deleteComment(commentId) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 4/4) — FIXED VERSION
+   ReelHub — app.js (PART 4/4) — FIXED + Double-Tap Like
    Chat, Groups, Profile, Upload, Notifications, Search, Settings
    ============================================================ */
 
 /* ============================================================
-   CHATS PAGE — Tabs: All / Direct / Groups
+   CHATS PAGE
    ============================================================ */
 async function renderChatsPage() {
   content.innerHTML = `
@@ -2548,7 +2612,7 @@ function makeGroupChatItem(group) {
 
 function defaultGroupAvatar(name) {
   const raw = (name || 'G').trim().charAt(0).toUpperCase() || 'G';
-  const letter = raw.replace(/[<>&"']/g, '');   // ✅ FIXED #11 — XSS-safe
+  const letter = raw.replace(/[<>&"']/g, '');
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#4ea8ff"/><text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${letter}</text></svg>`;
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
@@ -2746,7 +2810,7 @@ document.getElementById('createGroupBtn')?.addEventListener('click', async () =>
 });
 
 /* ============================================================
-   DM CHAT WINDOW — ✅ FIXED (interval leak)
+   DM CHAT WINDOW — ✅ Interval leak fixed
    ============================================================ */
 function getChatId(uid1, uid2) { return [uid1, uid2].sort().join('_'); }
 
@@ -2766,7 +2830,7 @@ async function openChatWindow(otherUser) {
     }
   }
 
-  // ✅ FIXED #3 — पुराना polling interval clear करो (DM ↔ Group switch)
+  // ✅ Clear old polling interval (DM ↔ Group switch)
   if (chatMessagesUnsub) { clearInterval(chatMessagesUnsub); chatMessagesUnsub = null; }
   removePinnedBanner();
   stopVoicePlayback();
@@ -2804,12 +2868,11 @@ function closeChatWindow() {
 document.getElementById('closeChatWindow')?.addEventListener('click', closeChatWindow);
 
 /* ============================================================
-   GROUP CHAT WINDOW — ✅ FIXED (interval leak)
+   GROUP CHAT WINDOW — ✅ Interval leak fixed
    ============================================================ */
 async function openGroupChatWindow(group) {
   if (!group || !group.members.includes(currentUser.uid)) return;
 
-  // ✅ FIXED #3 — पुराना polling interval clear करो
   if (chatMessagesUnsub) { clearInterval(chatMessagesUnsub); chatMessagesUnsub = null; }
   removePinnedBanner();
   stopVoicePlayback();
@@ -2835,7 +2898,7 @@ async function loadGroupMessages() {
   if (!activeGroupId) return;
   try {
     await fetchAndPaintGroupMessages();
-    await loadPinnedMessage();                     // ✅ FIXED — पिन भी load करो
+    await loadPinnedMessage();
     if (chatMessagesUnsub) clearInterval(chatMessagesUnsub);
     chatMessagesUnsub = setInterval(async () => {
       if (!activeGroupId) return;
@@ -2888,7 +2951,7 @@ function paintGroupMessages(messages) {
 }
 
 /* ============================================================
-   GROUP MESSAGE BUBBLE — ✅ FIXED (dots button for edit/delete/pin)
+   GROUP MESSAGE BUBBLE — ✅ Dots button (edit/delete/pin)
    ============================================================ */
 function makeGroupMessageBubble(msg) {
   const row = document.createElement('div');
@@ -2900,7 +2963,6 @@ function makeGroupMessageBubble(msg) {
   const timeStr = time ? formatTime(time) : '';
   const senderName = !isMe ? `<div class="msg-sender-name">${escapeHtml(msg.fromName || 'User')}</div>` : '';
 
-  // ✅ DELETED
   if (msg.deleted) {
     row.innerHTML = `
       <div class="msg-bubble deleted"><div class="deleted-text">🚫 This message was deleted</div></div>
@@ -2910,7 +2972,6 @@ function makeGroupMessageBubble(msg) {
     return row;
   }
 
-  // ✅ FILE
   if (msg.type === 'file') {
     const fileName = msg.fileName || 'File';
     const fileType = msg.fileType || '';
@@ -2937,7 +2998,6 @@ function makeGroupMessageBubble(msg) {
     return row;
   }
 
-  // ✅ VOICE
   if (msg.type === 'voice') {
     const duration = msg.voiceDuration || 0;
     const bars = [];
@@ -2964,7 +3024,6 @@ function makeGroupMessageBubble(msg) {
     return row;
   }
 
-  // ✅ TEXT
   const editedLabel = msg.edited ? '<span class="edited-label">(edited)</span>' : '';
   row.innerHTML = `
     ${isMe ? buildDotsButton(msg) : ''}
@@ -2995,7 +3054,7 @@ async function markGroupRead() {
 }
 
 /* ============================================================
-   SEND MESSAGE (DM + Group)
+   SEND MESSAGE
    ============================================================ */
 async function sendGroupMessage(msgData) {
   if (!activeGroupId) return;
@@ -3369,21 +3428,19 @@ function buildTicksHTML(msg) {
 }
 
 /* ============================================================
-   MARK AS READ — ✅ FIXED (only unread, capped writes)
+   MARK AS READ — ✅ Performance fixed (filter + cap + Promise.all)
    ============================================================ */
 async function markMessagesAsRead(messages) {
   if (!currentUser || !activeChatId || activeGroupId) return;
   try {
-    // ✅ FIXED #6 — पहले filter करो, सिर्फ ज़रूरी updates भेजो
     const unreadFromOther = messages.filter(m =>
       m.to === currentUser.uid && !m.read && !m.deleted
-    ).slice(0, 20);  // safety cap
+    ).slice(0, 20);
 
     const undeliveredFromMe = messages.filter(m =>
       m.from === currentUser.uid && !m.delivered && !m.deleted
     ).slice(0, 20);
 
-    // Batch updates
     const updates = [];
     for (const msg of unreadFromOther) {
       updates.push(
@@ -3503,7 +3560,6 @@ chatMessageInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTextBtn.click(); }
 });
 
-/* FILE SHARE */
 document.querySelector('.chat-attach-btn')?.addEventListener('click', () => {
   if (!activeChatId) return;
   const input = document.createElement('input');
@@ -3538,7 +3594,7 @@ async function sendFileMessage(file) {
 }
 
 /* ============================================================
-   VOICE RECORDING — ✅ FIXED (pointer events, slide-to-cancel)
+   VOICE RECORDING
    ============================================================ */
 micBtn.addEventListener('mousedown', startVoiceRecording);
 micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startVoiceRecording(); }, { passive: false });
@@ -3924,6 +3980,9 @@ async function renderUserPosts(uid, containerId) {
   } catch (e) {}
 }
 
+/* ============================================================
+   GRID ITEM — ✅ Double Tap Like added
+   ============================================================ */
 function makeGridItem(post) {
   const item = document.createElement('div');
   item.className = 'grid-item';
@@ -3934,7 +3993,10 @@ function makeGridItem(post) {
   else inner = `<video src="${post.url}" muted playsinline preload="metadata" ${thumbUrl ? `poster="${thumbUrl}"` : ''}></video>`;
   const badgeText = post.type === 'photo' ? 'PHOTO' : (post.type === 'long' ? 'LONG' : 'SHORT');
   item.innerHTML = `${inner}<div class="type-badge">${badgeText}</div>${post.type !== 'photo' ? `<div class="play-icon">▶</div>` : ''}`;
-  item.addEventListener('click', () => openPlayer(post));
+
+  // ✅ DOUBLE TAP LIKE on grid
+  attachDoubleTapLike(item, post, () => openPlayer(post));
+
   return item;
 }
 
@@ -4415,7 +4477,7 @@ uploadSubmitBtn.addEventListener('click', async () => {
       duration: selectedFileDuration || 0,
       aspectRatio: currentUploadType === 'long' ? '16:9' : (currentUploadType === 'short' ? '9:16' : '1:1'),
       likes: [],
-      commentsCount: 0,                        // ✅ FIXED #7 — numeric count
+      commentsCount: 0,
       views: 0,
       createdAt: serverTimestamp()
     };
@@ -4768,7 +4830,7 @@ function fileToBase64(file) {
 
 function defaultAvatar(name) {
   const raw = (name || '?').trim().charAt(0).toUpperCase() || '?';
-  const letter = raw.replace(/[<>&"']/g, '');   // ✅ FIXED #11 — XSS-safe
+  const letter = raw.replace(/[<>&"']/g, '');
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e1e28"/><text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${letter}</text></svg>`;
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
@@ -4839,7 +4901,7 @@ function formatVoiceDuration(seconds) {
 }
 
 /* ============================================================
-   SETTINGS — 30 settings (localStorage)
+   SETTINGS
    ============================================================ */
 const DEFAULT_SETTINGS = {
   darkMode: true, autoPlay: true, dataSaver: false, videoQuality: 'auto', language: 'en',
@@ -5002,4 +5064,4 @@ initSettingsListeners();
   applySetting('privateAccount', s.privateAccount);
 })();
 
-console.log('✅ app.js loaded — FIXED (4 Parts)');
+console.log('✅ app.js loaded — FIXED with Double-Tap Like (4 Parts)');
