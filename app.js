@@ -1,5 +1,5 @@
 /* ============================================================
-   ReelHub — app.js (PART 1/4) — FIXED VERSION
+   ReelHub — app.js (PART 1/4) — FINAL VERSION
    Imports, Config, DOM, State, Auth
    ============================================================ */
 
@@ -50,7 +50,7 @@ const auth = getAuth(firebaseApp);
 const db   = getFirestore(firebaseApp);
 
 /* ============================================================
-   CLOUDINARY ACCOUNTS (2 Accounts)
+   CLOUDINARY ACCOUNTS
    ============================================================ */
 const CLOUDINARY_ACCOUNTS = {
   videos: {
@@ -186,7 +186,7 @@ let currentUser    = null;
 let currentProfile = null;
 let selectedPhotoBase64 = null;
 let isLoggingIn    = false;
-let isSigningUp    = false;                    // ✅ FIXED — signup guard
+let isSigningUp    = false;
 let notifIntervalId = null;
 let viewingUserId  = null;
 
@@ -205,7 +205,6 @@ let chatMessagesUnsub = null;
 let chatListInterval = null;
 let pinnedMessage = null;
 
-// GROUP CHAT STATE
 let activeGroupId = null;
 let activeGroupData = null;
 let selectedGroupMembers = [];
@@ -274,7 +273,7 @@ document.querySelectorAll('.eye').forEach(eye => {
 });
 
 /* ============================================================
-   LOGIN <-> SIGNUP
+   LOGIN <-> SIGNUP TOGGLE
    ============================================================ */
 document.getElementById('goSignup')?.addEventListener('click', () => {
   loginForm.style.display = 'none';
@@ -290,7 +289,7 @@ document.getElementById('goLogin')?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   SIGNUP — ✅ FULLY FIXED (AUTH पहले, फिर username check, फिर profile)
+   SIGNUP — FIXED (AUTH first, then username check)
    ============================================================ */
 signupForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -302,7 +301,6 @@ signupForm.addEventListener('submit', async (e) => {
   signupMsg.className = 'error-msg';
   signupMsg.textContent = '';
 
-  // Validations
   if (!name || !user || !email || !pass) { signupMsg.textContent = 'Please fill all fields.'; return; }
   if (!/^[a-z0-9._]{3,20}$/.test(user)) { signupMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _'; return; }
   if (!/^\S+@\S+\.\S+$/.test(email)) { signupMsg.textContent = 'Please enter a valid email.'; return; }
@@ -315,24 +313,23 @@ signupForm.addEventListener('submit', async (e) => {
   let createdAuthUser = null;
 
   try {
-    // ✅ STEP 1 — पहले AUTH बनाओ (ताकि rules pass हों)
+    // STEP 1 — पहले AUTH बनाओ
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const uid  = cred.user.uid;
     createdAuthUser = cred.user;
 
-    // ✅ STEP 2 — अब USERNAME check करो (user logged-in है, rules allow करेंगे)
+    // STEP 2 — Username check (user logged-in है)
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('user', '==', user));
     const snap = await getDocs(q);
 
     if (!snap.empty) {
-      // Username लिया हुआ है — created auth user को delete करो
       try { await createdAuthUser.delete(); } catch (e) { await signOut(auth); }
       signupMsg.textContent = 'Username already taken. Try another.';
       return;
     }
 
-    // ✅ STEP 3 — अब Firestore profile बनाओ
+    // STEP 3 — Firestore profile बनाओ
     await setDoc(doc(db, 'users', uid), {
       uid: uid,
       name: name,
@@ -346,16 +343,17 @@ signupForm.addEventListener('submit', async (e) => {
       savedPosts: [],
       blockedUsers: [],
       isPrivate: false,
+      verified: false,
+      banned: false,
       createdAt: serverTimestamp()
     });
 
-    // ✅ STEP 4 — State set करो
+    // STEP 4 — State set
     currentUser = cred.user;
     await loadProfile(uid);
 
     signupMsg.className = 'success-msg';
     signupMsg.textContent = 'Account created! Welcome 🎉';
-
     signupForm.reset();
 
     setTimeout(() => {
@@ -365,23 +363,18 @@ signupForm.addEventListener('submit', async (e) => {
 
   } catch (err) {
     console.error('Signup error:', err);
-
-    // ✅ अगर step 2/3 fail हो, तो orphan auth user clean करो
     if (createdAuthUser && !currentProfile) {
       try { await createdAuthUser.delete(); } catch (e) { try { await signOut(auth); } catch (e2) {} }
     }
 
-    if (err.code === 'permission-denied' ||
-        (err.message && err.message.toLowerCase().includes('permission'))) {
-      signupMsg.textContent = '⚠️ Firestore rules block kar rahe hain. Console → Rules publish karein.';
+    if (err.code === 'permission-denied' || (err.message && err.message.toLowerCase().includes('permission'))) {
+      signupMsg.textContent = '⚠️ Firestore rules block kar rahe hain.';
     }
     else if (err.code === 'auth/email-already-in-use')  signupMsg.textContent = 'Email already registered.';
     else if (err.code === 'auth/invalid-email')         signupMsg.textContent = 'Invalid email.';
     else if (err.code === 'auth/weak-password')         signupMsg.textContent = 'Password too weak.';
-    else if (err.code === 'auth/network-request-failed') signupMsg.textContent = 'Network error. Internet check karein.';
-    else if (err.code === 'unavailable')                signupMsg.textContent = 'Server unreachable. Try again.';
+    else if (err.code === 'auth/network-request-failed') signupMsg.textContent = 'Network error.';
     else                                                signupMsg.textContent = err.message || 'Signup failed.';
-
   } finally {
     isSigningUp = false;
     signupBtn.disabled = false;
@@ -412,6 +405,16 @@ loginForm.addEventListener('submit', async (e) => {
 
     currentUser = result.user;
     await loadProfile(result.user.uid);
+
+    // ✅ BAN CHECK
+    if (currentProfile?.banned) {
+      await signOut(auth);
+      currentUser = null;
+      currentProfile = null;
+      loginMsg.textContent = '🚫 Your account has been banned.';
+      showAuth();
+      return;
+    }
 
     loginMsg.textContent = '';
     showApp();
@@ -471,7 +474,7 @@ sendResetBtn.addEventListener('click', async () => {
   try {
     await sendPasswordResetEmail(auth, email);
     forgotMsg.className = 'success-msg';
-    forgotMsg.textContent = 'Reset link sent! Check your inbox (and spam).';
+    forgotMsg.textContent = 'Reset link sent! Check your inbox.';
     setTimeout(() => {
       forgotModal.classList.remove('show');
       forgotEmail.value = '';
@@ -490,7 +493,7 @@ sendResetBtn.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   LOGOUT — ✅ FIXED (chatMessagesUnsub cleared)
+   LOGOUT
    ============================================================ */
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   if (confirm('Log out of ReelHub?')) {
@@ -498,7 +501,6 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
     stopShortsObserver();
     stopChatListWatcher();
 
-    // ✅ Clear chat polling interval
     if (chatMessagesUnsub) { clearInterval(chatMessagesUnsub); chatMessagesUnsub = null; }
 
     closeChatWindow();
@@ -523,14 +525,24 @@ notifBtn.addEventListener('click', () => { setActiveNav(null); renderPage('notif
 searchBtn.addEventListener('click', () => { setActiveNav(null); renderPage('search'); });
 
 /* ============================================================
-   AUTH STATE LISTENER — ✅ FIXED (isSigningUp guard)
+   AUTH STATE LISTENER
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
-  if (isLoggingIn || isSigningUp) return;      // ✅ Signup/Login के बीच skip
+  if (isLoggingIn || isSigningUp) return;
 
   if (user) {
     currentUser = user;
     try { await loadProfile(user.uid); } catch (e) {}
+
+    // ✅ BAN CHECK
+    if (currentProfile?.banned) {
+      await signOut(auth);
+      currentUser = null;
+      currentProfile = null;
+      showAuth();
+      return;
+    }
+
     showApp();
     startNotifWatcher();
   } else {
@@ -560,6 +572,8 @@ async function loadProfile(uid) {
       if (!Array.isArray(currentProfile.blockedUsers)) currentProfile.blockedUsers = [];
       if (typeof currentProfile.videoCount !== 'number') currentProfile.videoCount = 0;
       if (typeof currentProfile.isPrivate !== 'boolean') currentProfile.isPrivate = false;
+      if (typeof currentProfile.verified !== 'boolean') currentProfile.verified = false;
+      if (typeof currentProfile.banned !== 'boolean') currentProfile.banned = false;
     } else {
       currentProfile = null;
     }
@@ -587,9 +601,6 @@ document.querySelectorAll('.nav-item').forEach(item => {
   });
 });
 
-/* ============================================================
-   UPLOAD BUTTON — ✅ null safety
-   ============================================================ */
 document.querySelector('.upload-btn')?.addEventListener('click', () => {
   setActiveNav(null);
   openUploadModal();
@@ -607,11 +618,10 @@ function renderPage(page) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 2/4) — FIXED with Double-Tap Like
-   Helpers, Home Feed, Stories Bar, Double-Tap System
+   ReelHub — app.js (PART 2/4) — FINAL VERSION
+   Helpers, Home Feed, Stories Bar, Double-Tap Like, Story Upload
    ============================================================ */
 
-// ✅ Module-level observer (leak fix)
 let feedAutoplayObserver = null;
 
 /* ============================================================
@@ -800,7 +810,7 @@ async function loadStoryViewersList(uids, containerId) {
 }
 
 /* ============================================================
-   ✅ DOUBLE TAP LIKE — Universal Helper
+   DOUBLE TAP LIKE — Universal Helper
    ============================================================ */
 function attachDoubleTapLike(element, post, onSingleTap) {
   if (!element || !post) return;
@@ -810,10 +820,8 @@ function attachDoubleTapLike(element, post, onSingleTap) {
   const TAP_DELAY = 300;
 
   element.addEventListener('click', (e) => {
-    // Button / link / menu पर tap ignore करो
     if (e.target.closest('button, a, .post-menu-btn, .msg-dots-btn')) return;
 
-    // Settings check
     const s = typeof getSettings === 'function' ? getSettings() : { doubleTapLike: true };
     if (s.doubleTapLike === false) {
       if (onSingleTap) onSingleTap(e);
@@ -823,7 +831,6 @@ function attachDoubleTapLike(element, post, onSingleTap) {
     const now = Date.now();
 
     if (now - lastTap < TAP_DELAY) {
-      // ✅ DOUBLE TAP!
       clearTimeout(tapTimer);
       lastTap = 0;
       handleDoubleTapLikeUniversal(post, element);
@@ -864,6 +871,22 @@ async function handleDoubleTapLikeUniversal(post, cardEl) {
     });
     if (!post.likes) post.likes = [];
     if (!post.likes.includes(currentUser.uid)) post.likes.push(currentUser.uid);
+
+    // ✅ Send notification to post owner
+    if (post.userId && post.userId !== currentUser.uid) {
+      try {
+        await addDoc(collection(db, 'notifications'), {
+          userId: post.userId,
+          type: 'like',
+          title: '❤️ New Like',
+          message: `${currentProfile?.name || 'Someone'} liked your post`,
+          postId: post.id,
+          fromUserId: currentUser.uid,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {}
+    }
   } catch (e) {
     console.error('Double tap like error:', e);
     if (likeBtn) {
@@ -960,7 +983,7 @@ async function loadHomeFeedPosts() {
 
     const myFollowing = currentProfile?.following || [];
 
-    // ✅ Batch fetch — N+1 reads eliminated
+    // Batch fetch private users
     const uniqueUserIds = [...new Set(posts.map(p => p.userId))].filter(id => id && id !== currentUser.uid);
     const privateUsers = new Set();
 
@@ -984,7 +1007,7 @@ async function loadHomeFeedPosts() {
       return true;
     });
 
-    // FEED ORDER
+    // Feed order
     const settings = typeof getSettings === 'function' ? getSettings() : { feedOrder: 'newest' };
     if (settings.feedOrder === 'trending') {
       posts.sort((a, b) => ((b.likes?.length || 0) + (b.views || 0)) - ((a.likes?.length || 0) + (a.views || 0)));
@@ -1010,7 +1033,7 @@ function makeFeedPost(post) {
 }
 
 /* ============================================================
-   SHORT VIDEO CARD — ✅ Double Tap Like added
+   SHORT VIDEO CARD
    ============================================================ */
 function makeShortCard(post) {
   const card = document.createElement('div');
@@ -1050,7 +1073,6 @@ function makeShortCard(post) {
     await showPostMenu(e.currentTarget, post);
   });
 
-  // ✅ DOUBLE TAP LIKE — single tap opens player
   attachDoubleTapLike(card, post, () => openPostPlayer(post));
 
   trackPostView(post.id);
@@ -1058,7 +1080,7 @@ function makeShortCard(post) {
 }
 
 /* ============================================================
-   LONG VIDEO / PHOTO CARD — ✅ Double Tap Like added
+   LONG VIDEO / PHOTO CARD
    ============================================================ */
 function makeLongCard(post) {
   const card = document.createElement('div');
@@ -1088,7 +1110,7 @@ function makeLongCard(post) {
       <img class="long-card-avatar" src="${avatar}" alt="">
       <div class="long-card-meta">
         <div class="long-card-title">${escapeHtml(post.caption || 'Untitled')}</div>
-        <div class="long-card-channel">${escapeHtml(post.userName || 'User')}</div>
+        <div class="long-card-channel">${escapeHtml(post.userName || 'User')}${post.userVerified ? ' ✓' : ''}</div>
         <div class="long-card-stats">${settings.showViews !== false ? viewsCount + ' views · ' : ''}${likesCount} likes · ${commentsCount} comments</div>
       </div>
       <button class="post-menu-btn" data-post="${post.id}" data-uid="${post.userId}" title="More">
@@ -1145,7 +1167,6 @@ function makeLongCard(post) {
     });
   }
 
-  // ✅ DOUBLE TAP LIKE on thumbnail and info area
   attachDoubleTapLike(card.querySelector('.long-card-thumb'), post, null);
   attachDoubleTapLike(card.querySelector('.long-card-info'), post, null);
 
@@ -1154,7 +1175,7 @@ function makeLongCard(post) {
 }
 
 /* ============================================================
-   Post Player — ✅ Double Tap Like added
+   Post Player
    ============================================================ */
 function openPostPlayer(post) {
   playerTitle.textContent = post.caption || (post.type === 'photo' ? 'Photo' : 'Video');
@@ -1179,7 +1200,6 @@ function openPostPlayer(post) {
   }
   playerModal.classList.add('show');
 
-  // ✅ Double tap in player
   const playerInner = playerContent.firstElementChild;
   if (playerInner && post.type !== 'photo') {
     attachDoubleTapLike(playerInner, post, null);
@@ -1276,7 +1296,7 @@ async function deletePost(postId) {
 }
 
 /* ============================================================
-   Auto Play — ✅ Observer leak fixed
+   Auto Play
    ============================================================ */
 function setupFeedAutoplay() {
   const settings = typeof getSettings === 'function' ? getSettings() : { autoPlay: true };
@@ -1584,8 +1604,8 @@ function uploadToCloudinaryGroupFile(file, onProgress) {
   });
 }
 /* ============================================================
-   ReelHub — app.js (PART 3/4) — FIXED Like/Unlike + Double-Tap
-   Story Viewer, Shorts, Like System, Comments
+   ReelHub — app.js (PART 3/4) — FINAL VERSION
+   Story Viewer, Shorts, Like/Unlike, Comments
    ============================================================ */
 
 /* ============================================================
@@ -1595,7 +1615,6 @@ function openStoryViewer(userId) {
   const userIndex = storiesByUser.findIndex(u => u.userId === userId);
   if (userIndex === -1) return;
 
-  // ✅ Pause any playing shorts (sound overlap fix)
   document.querySelectorAll('.short-item video').forEach(v => {
     try { v.pause(); } catch (e) {}
   });
@@ -1784,9 +1803,26 @@ async function markStoryViewed(storyId) {
     const storyRef = doc(db, 'stories', storyId);
     const snap = await getDoc(storyRef);
     if (!snap.exists()) return;
-    const viewers = snap.data().viewers || [];
+    const data = snap.data();
+    const viewers = data.viewers || [];
     if (!viewers.includes(currentUser.uid)) {
       await updateDoc(storyRef, { viewers: arrayUnion(currentUser.uid) });
+
+      // ✅ Notify story owner
+      if (data.userId && data.userId !== currentUser.uid) {
+        try {
+          await addDoc(collection(db, 'notifications'), {
+            userId: data.userId,
+            type: 'story_view',
+            title: '👁 New Story View',
+            message: `${currentProfile?.name || 'Someone'} viewed your story`,
+            storyId: storyId,
+            fromUserId: currentUser.uid,
+            read: false,
+            createdAt: serverTimestamp()
+          });
+        } catch (e) {}
+      }
     }
   } catch (e) {}
 }
@@ -1944,9 +1980,6 @@ function getCurrentVisibleVideo(wrap) {
   return videos[0];
 }
 
-/* ============================================================
-   SHORT ITEM — ✅ Double Tap Like added
-   ============================================================ */
 function makeShortItem(short) {
   const item = document.createElement('div');
   item.className = 'short-item';
@@ -1970,7 +2003,7 @@ function makeShortItem(short) {
           <div class="short-user-row">
             <img src="${avatar}" alt="" data-uid="${short.userId}">
             <div>
-              <b>${escapeHtml(short.userName || 'User')}</b>
+              <b>${escapeHtml(short.userName || 'User')}${short.userVerified ? ' ✓' : ''}</b>
               <span>@${escapeHtml(short.userHandle || '')}</span>
             </div>
           </div>
@@ -2030,7 +2063,6 @@ function makeShortItem(short) {
     await sharePost(short);
   });
 
-  // ✅ Sound toggle — double tap पर skip
   videoEl.addEventListener('click', (e) => {
     if (e.detail >= 2) return;
     videoEl.muted = !videoEl.muted;
@@ -2040,7 +2072,6 @@ function makeShortItem(short) {
     if (!videoEl.muted) videoEl.play().catch(() => {});
   });
 
-  // ✅ DOUBLE TAP LIKE
   attachDoubleTapLike(item, short, null);
 
   return item;
@@ -2075,7 +2106,7 @@ function stopShortsObserver() {
 }
 
 /* ============================================================
-   ✅ LIKE / UNLIKE SYSTEM — FIXED (both work)
+   ✅ LIKE / UNLIKE SYSTEM — Both work + Notifications
    ============================================================ */
 async function toggleLike(postId, btnEl) {
   if (!currentUser) return;
@@ -2112,7 +2143,6 @@ async function toggleLike(postId, btnEl) {
     btnEl.style.transform = 'scale(1.3)';
     setTimeout(() => { btnEl.style.transform = ''; }, 200);
 
-    // Heart animation
     const card = btnEl.closest('.short-card-feed, .long-card-feed, .short-item, .grid-item');
     if (card) showHeartAnimation(card);
 
@@ -2122,6 +2152,27 @@ async function toggleLike(postId, btnEl) {
       });
       showToast('❤️ Liked');
       if (navigator.vibrate) navigator.vibrate(30);
+
+      // ✅ Send notification to post owner
+      try {
+        const postRef = doc(db, 'posts', postId);
+        const postSnap = await getDoc(postRef);
+        if (postSnap.exists()) {
+          const postData = postSnap.data();
+          if (postData.userId && postData.userId !== currentUser.uid) {
+            await addDoc(collection(db, 'notifications'), {
+              userId: postData.userId,
+              type: 'like',
+              title: '❤️ New Like',
+              message: `${currentProfile?.name || 'Someone'} liked your post`,
+              postId: postId,
+              fromUserId: currentUser.uid,
+              read: false,
+              createdAt: serverTimestamp()
+            });
+          }
+        }
+      } catch (e) {}
     } catch (e) {
       console.error('Like error:', e);
       btnEl.classList.remove('liked');
@@ -2320,6 +2371,9 @@ function makeCommentItem(comment, isReply) {
 
 commentInput.addEventListener('input', () => { postCommentBtn.disabled = !commentInput.value.trim(); });
 
+/* ============================================================
+   POST COMMENT — With notifications
+   ============================================================ */
 postCommentBtn.addEventListener('click', async () => {
   const text = commentInput.value.trim();
   if (!text || !activeCommentPostId || !currentUser) return;
@@ -2350,6 +2404,46 @@ postCommentBtn.addEventListener('click', async () => {
         await updateDoc(postRef, { commentsCount: currentCount + 1 });
         document.querySelectorAll(`.comment-btn[data-post="${activeCommentPostId}"] span`)
           .forEach(el => { el.textContent = currentCount + 1; });
+
+        // ✅ Send notification to post owner
+        const postData = postSnap.data();
+        if (postData.userId && postData.userId !== currentUser.uid) {
+          try {
+            await addDoc(collection(db, 'notifications'), {
+              userId: postData.userId,
+              type: 'comment',
+              title: '💬 New Comment',
+              message: `${currentProfile?.name || 'Someone'} commented: "${text.substring(0, 40)}${text.length > 40 ? '...' : ''}"`,
+              postId: activeCommentPostId,
+              fromUserId: currentUser.uid,
+              read: false,
+              createdAt: serverTimestamp()
+            });
+          } catch (e) {}
+        }
+
+        // ✅ If reply, notify the user being replied to
+        if (activeReplyTo && activeReplyTo.commentId) {
+          try {
+            const parentRef = doc(db, 'comments', activeReplyTo.commentId);
+            const parentSnap = await getDoc(parentRef);
+            if (parentSnap.exists()) {
+              const parentData = parentSnap.data();
+              if (parentData.userId && parentData.userId !== currentUser.uid) {
+                await addDoc(collection(db, 'notifications'), {
+                  userId: parentData.userId,
+                  type: 'reply',
+                  title: '↩️ New Reply',
+                  message: `${currentProfile?.name || 'Someone'} replied: "${text.substring(0, 40)}${text.length > 40 ? '...' : ''}"`,
+                  postId: activeCommentPostId,
+                  fromUserId: currentUser.uid,
+                  read: false,
+                  createdAt: serverTimestamp()
+                });
+              }
+            }
+          } catch (e) {}
+        }
       }
     } catch (e) { console.warn('Count update failed:', e); }
 
@@ -2437,7 +2531,7 @@ async function deleteComment(commentId) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 4/4) — FIXED + Double-Tap Like
+   ReelHub — app.js (PART 4/4) — FINAL VERSION
    Chat, Groups, Profile, Upload, Notifications, Search, Settings
    ============================================================ */
 
@@ -2567,7 +2661,7 @@ function makeChatItem(chat) {
   item.innerHTML = `
     <img src="${avatar}" alt="">
     <div class="meta">
-      <b>${escapeHtml(otherUser.name || 'User')} ${otherUser.isPrivate ? '🔒' : ''}</b>
+      <b>${escapeHtml(otherUser.name || 'User')} ${otherUser.isPrivate ? '🔒' : ''} ${otherUser.verified ? '✓' : ''}</b>
       ${lastMsgHtml}
     </div>
     <div class="info">
@@ -2810,7 +2904,7 @@ document.getElementById('createGroupBtn')?.addEventListener('click', async () =>
 });
 
 /* ============================================================
-   DM CHAT WINDOW — ✅ Interval leak fixed
+   DM CHAT WINDOW
    ============================================================ */
 function getChatId(uid1, uid2) { return [uid1, uid2].sort().join('_'); }
 
@@ -2830,7 +2924,6 @@ async function openChatWindow(otherUser) {
     }
   }
 
-  // ✅ Clear old polling interval (DM ↔ Group switch)
   if (chatMessagesUnsub) { clearInterval(chatMessagesUnsub); chatMessagesUnsub = null; }
   removePinnedBanner();
   stopVoicePlayback();
@@ -2868,7 +2961,7 @@ function closeChatWindow() {
 document.getElementById('closeChatWindow')?.addEventListener('click', closeChatWindow);
 
 /* ============================================================
-   GROUP CHAT WINDOW — ✅ Interval leak fixed
+   GROUP CHAT WINDOW
    ============================================================ */
 async function openGroupChatWindow(group) {
   if (!group || !group.members.includes(currentUser.uid)) return;
@@ -2950,9 +3043,6 @@ function paintGroupMessages(messages) {
   if (wasAtBottom) setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
 }
 
-/* ============================================================
-   GROUP MESSAGE BUBBLE — ✅ Dots button (edit/delete/pin)
-   ============================================================ */
 function makeGroupMessageBubble(msg) {
   const row = document.createElement('div');
   const isMe = msg.from === currentUser.uid;
@@ -3094,6 +3184,9 @@ async function sendGroupMessage(msgData) {
       unreadBy: otherMembers
     });
 
+    // ✅ Notify group members (optional — could spam, skip if wanted)
+    // Skipping for now to avoid notification spam
+
     setTimeout(() => fetchAndPaintGroupMessages(), 800);
   } catch (e) {
     console.error('Group send error:', e);
@@ -3152,6 +3245,20 @@ async function sendMessage(msgData) {
     } else {
       await updateDoc(chatRef, chatData);
     }
+
+    // ✅ Send notification to receiver
+    try {
+      await addDoc(collection(db, 'notifications'), {
+        userId: activeChatUser.uid,
+        type: 'message',
+        title: '💬 New Message',
+        message: `${currentProfile?.name || 'Someone'}: ${(msgData.text || 'Sent you a message').substring(0, 50)}`,
+        fromUserId: currentUser.uid,
+        chatId: activeChatId,
+        read: false,
+        createdAt: serverTimestamp()
+      });
+    } catch (e) {}
 
     setTimeout(() => fetchAndPaintMessages(), 800);
   } catch (e) {
@@ -3427,32 +3534,18 @@ function buildTicksHTML(msg) {
   return `<span class="msg-ticks sent"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
 }
 
-/* ============================================================
-   MARK AS READ — ✅ Performance fixed (filter + cap + Promise.all)
-   ============================================================ */
 async function markMessagesAsRead(messages) {
   if (!currentUser || !activeChatId || activeGroupId) return;
   try {
-    const unreadFromOther = messages.filter(m =>
-      m.to === currentUser.uid && !m.read && !m.deleted
-    ).slice(0, 20);
-
-    const undeliveredFromMe = messages.filter(m =>
-      m.from === currentUser.uid && !m.delivered && !m.deleted
-    ).slice(0, 20);
+    const unreadFromOther = messages.filter(m => m.to === currentUser.uid && !m.read && !m.deleted).slice(0, 20);
+    const undeliveredFromMe = messages.filter(m => m.from === currentUser.uid && !m.delivered && !m.deleted).slice(0, 20);
 
     const updates = [];
     for (const msg of unreadFromOther) {
-      updates.push(
-        updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id),
-          { read: true, readAt: serverTimestamp() }).catch(() => {})
-      );
+      updates.push(updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), { read: true, readAt: serverTimestamp() }).catch(() => {}));
     }
     for (const msg of undeliveredFromMe) {
-      updates.push(
-        updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id),
-          { delivered: true }).catch(() => {})
-      );
+      updates.push(updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), { delivered: true }).catch(() => {}));
     }
     if (updates.length > 0) await Promise.all(updates);
   } catch (e) {}
@@ -3621,7 +3714,7 @@ async function startVoiceRecording() {
     voiceTimerInterval = setInterval(() => {
       voiceSeconds++;
       recordingTimer.textContent = `0:${voiceSeconds < 10 ? '0' + voiceSeconds : voiceSeconds}`;
-      if (voiceSeconds >= 10) stopVoiceRecordingAndSend();
+      if (voiceSeconds >= 60) stopVoiceRecordingAndSend();
     }, 1000);
   } catch (e) {
     showToast('❌ Mic permission needed');
@@ -3916,7 +4009,7 @@ async function renderProfile() {
         </div>
       </div>
       <div class="profile-info">
-        <div class="profile-name">${escapeHtml(p.name)} ${p.isPrivate ? '🔒' : ''}</div>
+        <div class="profile-name">${escapeHtml(p.name)} ${p.verified ? '✓' : ''} ${p.isPrivate ? '🔒' : ''}</div>
         <div class="profile-username">@${escapeHtml(p.user)}</div>
         <div class="profile-bio">${p.bio ? escapeHtml(p.bio) : '<span style="color:#555">No bio yet.</span>'}</div>
       </div>
@@ -3937,8 +4030,7 @@ async function renderProfile() {
 
   document.getElementById('editProfileBtn')?.addEventListener('click', openEditModal);
   document.getElementById('avatarWrap')?.addEventListener('click', openEditModal);
-  const shareBtn = document.getElementById('shareProfileBtn');
-  if (shareBtn) shareBtn.addEventListener('click', () => shareProfile());
+  document.getElementById('shareProfileBtn')?.addEventListener('click', () => shareProfile());
 
   document.querySelectorAll('.profile-stat').forEach(el => {
     el.addEventListener('click', () => {
@@ -3980,9 +4072,6 @@ async function renderUserPosts(uid, containerId) {
   } catch (e) {}
 }
 
-/* ============================================================
-   GRID ITEM — ✅ Double Tap Like added
-   ============================================================ */
 function makeGridItem(post) {
   const item = document.createElement('div');
   item.className = 'grid-item';
@@ -3994,7 +4083,6 @@ function makeGridItem(post) {
   const badgeText = post.type === 'photo' ? 'PHOTO' : (post.type === 'long' ? 'LONG' : 'SHORT');
   item.innerHTML = `${inner}<div class="type-badge">${badgeText}</div>${post.type !== 'photo' ? `<div class="play-icon">▶</div>` : ''}`;
 
-  // ✅ DOUBLE TAP LIKE on grid
   attachDoubleTapLike(item, post, () => openPlayer(post));
 
   return item;
@@ -4095,7 +4183,7 @@ async function openUserProfile(userId) {
           </div>
         </div>
         <div class="profile-info">
-          <div class="profile-name">${escapeHtml(user.name)} ${user.isPrivate ? '🔒' : ''}</div>
+          <div class="profile-name">${escapeHtml(user.name)} ${user.verified ? '✓' : ''} ${user.isPrivate ? '🔒' : ''}</div>
           <div class="profile-username">@${escapeHtml(user.user)}</div>
           <div class="profile-bio">${user.bio ? escapeHtml(user.bio) : '<span style="color:#555">No bio yet.</span>'}</div>
         </div>
@@ -4405,7 +4493,7 @@ uploadFileInput.addEventListener('change', async (e) => {
   }
 
   if (!file.type.startsWith('video/')) { uploadMsg.textContent = 'Choose a video.'; return; }
-  if (file.size > 100 * 1024 * 1024) { uploadMsg.textContent = 'Max 100 MB.'; return; }
+  if (file.size > 500 * 1024 * 1024) { uploadMsg.textContent = 'Max 500 MB.'; return; }
 
   const url = URL.createObjectURL(file);
   const tempVideo = document.createElement('video');
@@ -4416,7 +4504,7 @@ uploadFileInput.addEventListener('change', async (e) => {
     if (!isFinite(duration) || duration <= 0) { uploadMsg.textContent = 'Could not read duration.'; return; }
     selectedFile = file;
     selectedFileDuration = duration;
-    if (currentUploadType === 'short' && duration > 30.5) {
+    if (currentUploadType === 'short' && duration > 60.5) {
       uploadMsg.textContent = `⚠️ Switching to Long...`;
       setTimeout(() => { switchUploadType('long'); uploadFileInput.value = ''; selectedFile = null; uploadMsg.textContent = 'Select again as Long.'; }, 1500);
       return;
@@ -4426,7 +4514,6 @@ uploadFileInput.addEventListener('change', async (e) => {
       setTimeout(() => { switchUploadType('short'); uploadFileInput.value = ''; selectedFile = null; uploadMsg.textContent = 'Select again as Short.'; }, 1500);
       return;
     }
-    if (currentUploadType === 'long' && duration > 60.5) { uploadMsg.textContent = `⚠️ Max 1 minute.`; return; }
     uploadPreview.src = url;
     uploadPreviewWrap.style.display = 'block';
     uploadPickerWrap.style.display = 'none';
@@ -4470,6 +4557,7 @@ uploadSubmitBtn.addEventListener('click', async () => {
       userName: currentProfile.name,
       userHandle: currentProfile.user,
       userPhoto: currentProfile.photo || '',
+      userVerified: currentProfile.verified || false,
       type: currentUploadType,
       url: result.secure_url,
       thumbnail: buildThumbnailUrl(result.secure_url, currentUploadType),
@@ -4663,24 +4751,46 @@ async function toggleFollow(targetUid, btnEl) {
       await updateDoc(targetRef, { followers: arrayUnion(currentUser.uid) });
       currentProfile.following.push(targetUid);
       if (btnEl) { btnEl.textContent = 'Following'; btnEl.className = 'unfollow'; }
+
+      // ✅ Send follow notification
+      try {
+        await addDoc(collection(db, 'notifications'), {
+          userId: targetUid,
+          type: 'follow',
+          title: '👤 New Follower',
+          message: `${currentProfile.name || 'Someone'} started following you`,
+          fromUserId: currentUser.uid,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {}
     }
   } catch (err) { showToast('Could not update follow.'); }
 }
 
 /* ============================================================
-   NOTIFICATIONS
+   NOTIFICATIONS — Render (with admin invite accept/reject)
    ============================================================ */
 async function renderNotifications() {
   if (!currentUser) return;
-  content.innerHTML = `<div class="notif-page"><div class="page-title" style="margin-bottom:16px;text-align:left;padding:0 4px;">Notifications</div><div id="notifList"><div class="empty-notif">Loading...</div></div></div>`;
+  content.innerHTML = `
+    <div class="notif-page">
+      <div class="page-title" style="margin-bottom:16px;text-align:left;padding:0 4px;">Notifications</div>
+      <div id="notifList"><div class="empty-notif">Loading...</div></div>
+    </div>
+  `;
   try {
     const q = query(collection(db, 'notifications'), where('userId', '==', currentUser.uid), limit(50));
     const snap = await getDocs(q);
     const notifications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     notifications.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
     paintNotifications(notifications);
+
+    // Mark all as read except admin invites (jo pending हैं)
     for (const n of notifications) {
-      if (!n.read) { try { await updateDoc(doc(db, 'notifications', n.id), { read: true }); } catch (e) {} }
+      if (!n.read && n.type !== 'admin_invite') {
+        try { await updateDoc(doc(db, 'notifications', n.id), { read: true }); } catch (e) {}
+      }
     }
     updateNotifDot(0);
   } catch (e) {
@@ -4692,21 +4802,164 @@ async function renderNotifications() {
 function paintNotifications(list) {
   const wrap = document.getElementById('notifList');
   if (!wrap) return;
+
   if (list.length === 0) {
-    wrap.innerHTML = `<div class="empty-notif"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><div>No notifications yet</div></div>`;
+    wrap.innerHTML = `
+      <div class="empty-notif">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <div>No notifications yet</div>
+      </div>`;
     return;
   }
+
   wrap.innerHTML = '';
+
   list.forEach(n => {
     const item = document.createElement('div');
     item.className = 'notif-item' + (n.read ? '' : ' unread');
     const time = n.createdAt?.toDate?.();
+
+    const isInvite = n.type === 'admin_invite';
+    const isHandled = n.handled === true;
+
+    const inviteActions = (isInvite && !isHandled) ? `
+      <div class="notif-actions">
+        <button class="accept" data-invite-action="accept" data-invite-id="${n.inviteId || ''}" data-notif-id="${n.id}">✓ Accept</button>
+        <button class="reject" data-invite-action="reject" data-invite-id="${n.inviteId || ''}" data-notif-id="${n.id}">✕ Decline</button>
+      </div>
+    ` : (isInvite && isHandled ? `<div style="font-size:11px;color:#888;margin-top:8px;">✅ Handled</div>` : '');
+
     item.innerHTML = `
-      <div class="notif-header"><div class="notif-title">${escapeHtml(n.title || 'Notification')}</div><div class="notif-time">${time ? timeAgo(time) : 'now'}</div></div>
+      <div class="notif-header">
+        <div class="notif-title">${escapeHtml(n.title || 'Notification')}</div>
+        <div class="notif-time">${time ? timeAgo(time) : 'now'}</div>
+      </div>
       <div class="notif-message">${escapeHtml(n.message || '')}</div>
+      ${inviteActions}
     `;
+
+    if (isInvite && !isHandled) {
+      item.querySelectorAll('[data-invite-action]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const action = btn.dataset.inviteAction;
+          const inviteId = btn.dataset.inviteId;
+          const notifId = btn.dataset.notifId;
+          await handleAdminInviteAction(action, inviteId, notifId, item);
+        });
+      });
+    }
+
     wrap.appendChild(item);
   });
+}
+
+/* ============================================================
+   ADMIN INVITE — Accept / Reject Handler
+   ============================================================ */
+async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
+  if (!currentUser || !currentUser.email) {
+    showToast('❌ Please login first');
+    return;
+  }
+
+  if (!inviteId) {
+    showToast('❌ Invalid invitation');
+    return;
+  }
+
+  try {
+    const inviteRef = doc(db, 'admin_invites', inviteId);
+    const inviteSnap = await getDoc(inviteRef);
+
+    if (!inviteSnap.exists()) {
+      showToast('❌ Invitation not found');
+      return;
+    }
+
+    const inviteData = inviteSnap.data();
+    if (inviteData.status !== 'pending') {
+      showToast('⚠️ Invitation already ' + inviteData.status);
+      if (notifId) {
+        try { await updateDoc(doc(db, 'notifications', notifId), { handled: true, read: true }); } catch (e) {}
+      }
+      return;
+    }
+
+    if (action === 'accept') {
+      if (!confirm('🎉 Accept admin invitation?\n\nYou will get admin panel access.')) return;
+
+      await updateDoc(inviteRef, {
+        status: 'accepted',
+        respondedAt: serverTimestamp()
+      });
+
+      const configRef = doc(db, 'admin_config', 'emails');
+      const configSnap = await getDoc(configRef);
+
+      const currentList = configSnap.exists() ? (configSnap.data().list || []) : [];
+      const myEmail = currentUser.email.toLowerCase().trim();
+
+      if (!currentList.map(e => e.toLowerCase()).includes(myEmail)) {
+        currentList.push(myEmail);
+        if (configSnap.exists()) {
+          await updateDoc(configRef, { list: currentList });
+        } else {
+          await setDoc(configRef, { list: currentList });
+        }
+      }
+
+      if (notifId) {
+        try { await updateDoc(doc(db, 'notifications', notifId), { read: true, handled: true }); } catch (e) {}
+      }
+
+      if (itemEl) {
+        itemEl.innerHTML = `
+          <div class="notif-header">
+            <div class="notif-title">🎉 Admin Invitation Accepted</div>
+            <div class="notif-time">now</div>
+          </div>
+          <div class="notif-message">You are now a ReelHub Admin. Login at the admin panel.</div>
+          <div style="font-size:11px;color:#4ade80;margin-top:8px;">✅ Handled</div>
+        `;
+      }
+
+      showToast('✅ You are now an admin!');
+
+      setTimeout(() => {
+        alert('🎉 Congratulations!\n\nYou are now a ReelHub Admin.\n\nOpen the admin panel and login with your email:\n' + currentUser.email);
+      }, 500);
+
+    } else if (action === 'reject') {
+      if (!confirm('Decline admin invitation?')) return;
+
+      await updateDoc(inviteRef, {
+        status: 'rejected',
+        respondedAt: serverTimestamp()
+      });
+
+      if (notifId) {
+        try { await updateDoc(doc(db, 'notifications', notifId), { read: true, handled: true }); } catch (e) {}
+      }
+
+      if (itemEl) {
+        itemEl.innerHTML = `
+          <div class="notif-header">
+            <div class="notif-title">Admin Invitation Declined</div>
+            <div class="notif-time">now</div>
+          </div>
+          <div class="notif-message">You declined the admin invitation.</div>
+          <div style="font-size:11px;color:#888;margin-top:8px;">Handled</div>
+        `;
+      }
+
+      showToast('Invitation declined');
+    }
+
+  } catch (err) {
+    console.error('Admin invite error:', err);
+    showToast('❌ ' + (err.message || 'Failed'));
+  }
 }
 
 function startNotifWatcher() {
@@ -4782,7 +5035,7 @@ async function performSearch(searchTerm) {
       const isFollowing = currentProfile?.following?.includes(u.id);
       row.innerHTML = `
         <img src="${u.photo || defaultAvatar(u.name)}" alt="">
-        <div class="info"><b>${escapeHtml(u.name)} ${u.isPrivate ? '🔒' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
+        <div class="info"><b>${escapeHtml(u.name)} ${u.isPrivate ? '🔒' : ''} ${u.verified ? '✓' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
         <button class="${isFollowing ? 'unfollow' : 'follow'}">${isFollowing ? 'Following' : 'Follow'}</button>
       `;
       row.querySelector('img').addEventListener('click', (e) => { e.stopPropagation(); openUserProfile(u.id); });
@@ -4829,8 +5082,8 @@ function fileToBase64(file) {
 }
 
 function defaultAvatar(name) {
-  const raw = (name || '?').trim().charAt(0).toUpperCase() || '?';
-  const letter = raw.replace(/[<>&"']/g, '');
+  const raw = (name || '?').trim().charAt(0).toUpperCase();
+  const letter = raw.replace(/[<>&"']/g, '') || '?';
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e1e28"/><text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${letter}</text></svg>`;
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
@@ -5064,4 +5317,4 @@ initSettingsListeners();
   applySetting('privateAccount', s.privateAccount);
 })();
 
-console.log('✅ app.js loaded — FIXED with Double-Tap Like (4 Parts)');
+console.log('✅ app.js loaded — FINAL VERSION (4 Parts)');
