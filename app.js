@@ -618,8 +618,8 @@ function renderPage(page) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 2/4) — FINAL VERSION
-   Helpers, Home Feed, Stories Bar, Double-Tap Like, Story Upload
+   ReelHub — app.js (PART 2/4) — FINAL with Verified Badge
+   Helpers, Home Feed, Stories Bar, Double-Tap, Story Upload
    ============================================================ */
 
 let feedAutoplayObserver = null;
@@ -652,6 +652,21 @@ function buildViewsHTML(viewsCount) {
       </svg>
       <span>${viewsCount || 0}</span>
     </div>
+  `;
+}
+
+/* ============================================================
+   ✅ VERIFIED BADGE — Universal Helper
+   ============================================================ */
+function verifiedBadgeHTML(isVerified, size = 'normal') {
+  if (!isVerified) return '';
+  const sizeClass = size === 'large' ? 'large' : '';
+  return `
+    <span class="verified-badge ${sizeClass}" title="Verified">
+      <svg viewBox="0 0 24 24">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </span>
   `;
 }
 
@@ -797,7 +812,7 @@ async function loadStoryViewersList(uids, containerId) {
     row.innerHTML = `
       <img src="${u.photo || defaultAvatar(u.name)}" alt="">
       <div class="info">
-        <b>${escapeHtml(u.name || 'User')}</b>
+        <b>${escapeHtml(u.name || 'User')}${verifiedBadgeHTML(u.verified)}</b>
         <span>@${escapeHtml(u.user || '')}</span>
       </div>
     `;
@@ -1056,7 +1071,7 @@ function makeShortCard(post) {
       <img class="short-card-avatar" src="${avatar}" alt="">
       <div class="short-card-meta">
         <div class="short-card-caption">${escapeHtml(post.caption || post.userName || 'Short video')}</div>
-        <div class="short-card-sub">${escapeHtml(post.userName || 'User')} · ${likesCount} ❤️</div>
+        <div class="short-card-sub">${escapeHtml(post.userName || 'User')}${verifiedBadgeHTML(post.userVerified)} · ${likesCount} ❤️</div>
       </div>
       <button class="post-menu-btn" data-post="${post.id}" data-uid="${post.userId}" title="More">
         <svg viewBox="0 0 24 24">
@@ -1110,7 +1125,7 @@ function makeLongCard(post) {
       <img class="long-card-avatar" src="${avatar}" alt="">
       <div class="long-card-meta">
         <div class="long-card-title">${escapeHtml(post.caption || 'Untitled')}</div>
-        <div class="long-card-channel">${escapeHtml(post.userName || 'User')}${post.userVerified ? ' ✓' : ''}</div>
+        <div class="long-card-channel">${escapeHtml(post.userName || 'User')}${verifiedBadgeHTML(post.userVerified)}</div>
         <div class="long-card-stats">${settings.showViews !== false ? viewsCount + ' views · ' : ''}${likesCount} likes · ${commentsCount} comments</div>
       </div>
       <button class="post-menu-btn" data-post="${post.id}" data-uid="${post.userId}" title="More">
@@ -1193,7 +1208,7 @@ function openPostPlayer(post) {
         <video src="${post.url}" controls autoplay playsinline ${post.thumbnail ? `poster="${post.thumbnail}"` : ''} style="width:100%;max-height:75vh;background:#000;"></video>
         <div class="player-youtube-info">
           <div class="player-youtube-title">${escapeHtml(post.caption || 'Video')}</div>
-          <div class="player-youtube-channel">${escapeHtml(post.userName || 'User')}</div>
+          <div class="player-youtube-channel">${escapeHtml(post.userName || 'User')}${verifiedBadgeHTML(post.userVerified)}</div>
         </div>
       </div>
     `;
@@ -1345,7 +1360,7 @@ async function loadStoriesBar() {
     const grouped = {};
     validStories.forEach(s => {
       if (!grouped[s.userId]) {
-        grouped[s.userId] = { userId: s.userId, userName: s.userName, userHandle: s.userHandle, userPhoto: s.userPhoto, stories: [] };
+        grouped[s.userId] = { userId: s.userId, userName: s.userName, userHandle: s.userHandle, userPhoto: s.userPhoto, userVerified: s.userVerified, stories: [] };
       }
       grouped[s.userId].stories.push(s);
     });
@@ -1505,6 +1520,7 @@ storySubmitBtn.addEventListener('click', async () => {
       userName: currentProfile.name,
       userHandle: currentProfile.user,
       userPhoto: currentProfile.photo || '',
+      userVerified: currentProfile.verified || false,   // ✅ Verified badge
       type: currentStoryType,
       url: result.secure_url,
       thumbnail: currentStoryType === 'video' ? buildThumbnailUrl(result.secure_url, 'video') : result.secure_url,
@@ -1604,7 +1620,7 @@ function uploadToCloudinaryGroupFile(file, onProgress) {
   });
 }
 /* ============================================================
-   ReelHub — app.js (PART 3/4) — FINAL VERSION
+   ReelHub — app.js (PART 3/4) — FINAL with Verified Badge
    Story Viewer, Shorts, Like/Unlike, Comments
    ============================================================ */
 
@@ -1641,7 +1657,7 @@ function renderCurrentStory() {
   }
 
   storyUserAvatar.src = userGroup.userPhoto || defaultAvatar(userGroup.userName);
-  storyUserName.textContent = userGroup.userName || 'User';
+  storyUserName.innerHTML = `${escapeHtml(userGroup.userName || 'User')}${verifiedBadgeHTML(userGroup.userVerified)}`;
   const time = story.createdAt?.toDate?.();
   storyTime.textContent = time ? timeAgo(time) : 'just now';
 
@@ -2003,7 +2019,7 @@ function makeShortItem(short) {
           <div class="short-user-row">
             <img src="${avatar}" alt="" data-uid="${short.userId}">
             <div>
-              <b>${escapeHtml(short.userName || 'User')}${short.userVerified ? ' ✓' : ''}</b>
+              <b>${escapeHtml(short.userName || 'User')}${verifiedBadgeHTML(short.userVerified)}</b>
               <span>@${escapeHtml(short.userHandle || '')}</span>
             </div>
           </div>
@@ -2303,7 +2319,7 @@ function makeCommentItem(comment, isReply) {
       <img class="comment-avatar" src="${avatar}" alt="" data-uid="${comment.userId}">
       <div class="comment-content">
         <div class="comment-top">
-          <span class="comment-name" data-uid="${comment.userId}">${escapeHtml(comment.userName || 'User')}</span>
+          <span class="comment-name" data-uid="${comment.userId}">${escapeHtml(comment.userName || 'User')}${verifiedBadgeHTML(comment.userVerified)}</span>
           <span class="comment-time">${timeStr}</span>
         </div>
         <div class="comment-text">${replyToHtml}${escapeHtml(comment.text || '')}</div>
@@ -2372,7 +2388,7 @@ function makeCommentItem(comment, isReply) {
 commentInput.addEventListener('input', () => { postCommentBtn.disabled = !commentInput.value.trim(); });
 
 /* ============================================================
-   POST COMMENT — With notifications
+   POST COMMENT — With notifications + verified badge
    ============================================================ */
 postCommentBtn.addEventListener('click', async () => {
   const text = commentInput.value.trim();
@@ -2387,6 +2403,7 @@ postCommentBtn.addEventListener('click', async () => {
       userName: currentProfile?.name || 'User',
       userHandle: currentProfile?.user || '',
       userPhoto: currentProfile?.photo || '',
+      userVerified: currentProfile?.verified || false,   // ✅ Verified badge
       text: text,
       likes: [],
       parentId: activeReplyTo ? activeReplyTo.commentId : null,
@@ -2531,7 +2548,7 @@ async function deleteComment(commentId) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 4/4) — FINAL VERSION
+   ReelHub — app.js (PART 4/4) — FINAL with Verified Badge
    Chat, Groups, Profile, Upload, Notifications, Search, Settings
    ============================================================ */
 
@@ -2661,7 +2678,7 @@ function makeChatItem(chat) {
   item.innerHTML = `
     <img src="${avatar}" alt="">
     <div class="meta">
-      <b>${escapeHtml(otherUser.name || 'User')} ${otherUser.isPrivate ? '🔒' : ''} ${otherUser.verified ? '✓' : ''}</b>
+      <b>${escapeHtml(otherUser.name || 'User')}${verifiedBadgeHTML(otherUser.verified)}${otherUser.isPrivate ? ' 🔒' : ''}</b>
       ${lastMsgHtml}
     </div>
     <div class="info">
@@ -2750,7 +2767,7 @@ async function searchUsersForChat(term) {
       row.className = 'search-user';
       row.innerHTML = `
         <img src="${u.photo || defaultAvatar(u.name)}" alt="">
-        <div class="info"><b>${escapeHtml(u.name)}${u.isPrivate ? ' 🔒' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
+        <div class="info"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}${u.isPrivate ? ' 🔒' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
         <button class="follow">Chat</button>
       `;
       row.addEventListener('click', () => { newChatModal.classList.remove('show'); openChatWindow(u); });
@@ -2822,7 +2839,7 @@ async function searchUsersForGroup(term) {
       row.className = 'search-user';
       row.innerHTML = `
         <img src="${u.photo || defaultAvatar(u.name)}" alt="">
-        <div class="info"><b>${escapeHtml(u.name)}</b><span>@${escapeHtml(u.user)}</span></div>
+        <div class="info"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}</b><span>@${escapeHtml(u.user)}</span></div>
         <button class="follow">Add</button>
       `;
       row.addEventListener('click', () => {
@@ -2934,7 +2951,7 @@ async function openChatWindow(otherUser) {
   activeGroupData = null;
 
   chatHeaderAvatar.src = otherUser.photo || defaultAvatar(otherUser.name);
-  chatHeaderName.textContent = otherUser.name || 'User';
+  chatHeaderName.innerHTML = `${escapeHtml(otherUser.name || 'User')}${verifiedBadgeHTML(otherUser.verified)}`;
   chatHeaderHandle.textContent = '@' + (otherUser.user || '');
   chatHeaderInfo.onclick = () => { closeChatWindow(); openUserProfile(otherUser.uid); };
   chatMessages.innerHTML = `<div class="empty-msg">Loading messages...</div>`;
@@ -3051,7 +3068,7 @@ function makeGroupMessageBubble(msg) {
 
   const time = msg.time?.toDate?.();
   const timeStr = time ? formatTime(time) : '';
-  const senderName = !isMe ? `<div class="msg-sender-name">${escapeHtml(msg.fromName || 'User')}</div>` : '';
+  const senderName = !isMe ? `<div class="msg-sender-name">${escapeHtml(msg.fromName || 'User')}${verifiedBadgeHTML(msg.fromVerified)}</div>` : '';
 
   if (msg.deleted) {
     row.innerHTML = `
@@ -3153,6 +3170,7 @@ async function sendGroupMessage(msgData) {
     from: currentUser.uid,
     fromName: currentProfile?.name || 'User',
     fromPhoto: currentProfile?.photo || '',
+    fromVerified: currentProfile?.verified || false,   // ✅ Verified badge
     type: msgData.type || 'text',
     text: msgData.text || null,
     voiceData: msgData.voiceData || null,
@@ -3183,9 +3201,6 @@ async function sendGroupMessage(msgData) {
       lastMessageBy: currentUser.uid,
       unreadBy: otherMembers
     });
-
-    // ✅ Notify group members (optional — could spam, skip if wanted)
-    // Skipping for now to avoid notification spam
 
     setTimeout(() => fetchAndPaintGroupMessages(), 800);
   } catch (e) {
@@ -3836,7 +3851,7 @@ function showGroupInfo(group) {
         row.className = 'user-row';
         row.innerHTML = `
           <img src="${u.photo || defaultAvatar(u.name)}" alt="">
-          <div class="meta"><b>${escapeHtml(u.name)} ${isAdmin ? '👑' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
+          <div class="meta"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)} ${isAdmin ? '👑' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
           ${uid !== currentUser.uid && group.admins?.includes(currentUser.uid) ? `<button class="unfollow" data-remove="${uid}" style="color:#ff4d4d;">Remove</button>` : ''}
         `;
         row.querySelector('img').addEventListener('click', () => { modal.remove(); openUserProfile(uid); });
@@ -3925,7 +3940,7 @@ async function openAddMemberModal(group) {
           row.className = 'search-user';
           row.innerHTML = `
             <img src="${u.photo || defaultAvatar(u.name)}" alt="">
-            <div class="info"><b>${escapeHtml(u.name)}</b><span>@${escapeHtml(u.user)}</span></div>
+            <div class="info"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}</b><span>@${escapeHtml(u.user)}</span></div>
             <button class="follow">Add</button>
           `;
           row.addEventListener('click', async () => {
@@ -4009,7 +4024,7 @@ async function renderProfile() {
         </div>
       </div>
       <div class="profile-info">
-        <div class="profile-name">${escapeHtml(p.name)} ${p.verified ? '✓' : ''} ${p.isPrivate ? '🔒' : ''}</div>
+        <div class="profile-name">${escapeHtml(p.name)}${verifiedBadgeHTML(p.verified, 'large')}${p.isPrivate ? ' 🔒' : ''}</div>
         <div class="profile-username">@${escapeHtml(p.user)}</div>
         <div class="profile-bio">${p.bio ? escapeHtml(p.bio) : '<span style="color:#555">No bio yet.</span>'}</div>
       </div>
@@ -4129,7 +4144,7 @@ async function openUserProfile(userId) {
             <div class="profile-avatar-wrap"><img class="profile-avatar" src="${avatarSrc}" alt=""></div>
           </div>
           <div class="profile-info">
-            <div class="profile-name">${escapeHtml(user.name)} 🔒</div>
+            <div class="profile-name">${escapeHtml(user.name)}${verifiedBadgeHTML(user.verified, 'large')} 🔒</div>
             <div class="profile-username">@${escapeHtml(user.user)}</div>
           </div>
           <div style="padding:30px 20px;">
@@ -4183,7 +4198,7 @@ async function openUserProfile(userId) {
           </div>
         </div>
         <div class="profile-info">
-          <div class="profile-name">${escapeHtml(user.name)} ${user.verified ? '✓' : ''} ${user.isPrivate ? '🔒' : ''}</div>
+          <div class="profile-name">${escapeHtml(user.name)}${verifiedBadgeHTML(user.verified, 'large')}${user.isPrivate ? ' 🔒' : ''}</div>
           <div class="profile-username">@${escapeHtml(user.user)}</div>
           <div class="profile-bio">${user.bio ? escapeHtml(user.bio) : '<span style="color:#555">No bio yet.</span>'}</div>
         </div>
@@ -4376,7 +4391,7 @@ async function openBlockedUsersModal() {
       row.className = 'user-row';
       row.innerHTML = `
         <img src="${u.photo || defaultAvatar(u.name)}" alt="">
-        <div class="meta"><b>${escapeHtml(u.name)}</b><span>@${escapeHtml(u.user)}</span></div>
+        <div class="meta"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}</b><span>@${escapeHtml(u.user)}</span></div>
         <button class="unblock" data-uid="${u.uid}" style="background:#ff4d4d;color:#fff;">Unblock</button>
       `;
       row.querySelector('button').addEventListener('click', async (e) => {
@@ -4557,7 +4572,7 @@ uploadSubmitBtn.addEventListener('click', async () => {
       userName: currentProfile.name,
       userHandle: currentProfile.user,
       userPhoto: currentProfile.photo || '',
-      userVerified: currentProfile.verified || false,
+      userVerified: currentProfile.verified || false,   // ✅ Verified badge
       type: currentUploadType,
       url: result.secure_url,
       thumbnail: buildThumbnailUrl(result.secure_url, currentUploadType),
@@ -4720,7 +4735,7 @@ function openListModal(type) {
       row.className = 'user-row';
       row.innerHTML = `
         <img src="${u.photo || defaultAvatar(u.name)}" alt="">
-        <div class="meta"><b>${escapeHtml(u.name)} ${u.isPrivate ? '🔒' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
+        <div class="meta"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}${u.isPrivate ? ' 🔒' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
         <button class="${currentProfile.following.includes(u.uid) ? 'unfollow' : 'follow'}">${currentProfile.following.includes(u.uid) ? 'Following' : 'Follow'}</button>
       `;
       row.querySelector('img').addEventListener('click', () => { listModal.classList.remove('show'); openUserProfile(u.uid); });
@@ -4786,7 +4801,6 @@ async function renderNotifications() {
     notifications.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
     paintNotifications(notifications);
 
-    // Mark all as read except admin invites (jo pending हैं)
     for (const n of notifications) {
       if (!n.read && n.type !== 'admin_invite') {
         try { await updateDoc(doc(db, 'notifications', n.id), { read: true }); } catch (e) {}
@@ -5035,7 +5049,7 @@ async function performSearch(searchTerm) {
       const isFollowing = currentProfile?.following?.includes(u.id);
       row.innerHTML = `
         <img src="${u.photo || defaultAvatar(u.name)}" alt="">
-        <div class="info"><b>${escapeHtml(u.name)} ${u.isPrivate ? '🔒' : ''} ${u.verified ? '✓' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
+        <div class="info"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}${u.isPrivate ? ' 🔒' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
         <button class="${isFollowing ? 'unfollow' : 'follow'}">${isFollowing ? 'Following' : 'Follow'}</button>
       `;
       row.querySelector('img').addEventListener('click', (e) => { e.stopPropagation(); openUserProfile(u.id); });
@@ -5317,4 +5331,4 @@ initSettingsListeners();
   applySetting('privateAccount', s.privateAccount);
 })();
 
-console.log('✅ app.js loaded — FINAL VERSION (4 Parts)');
+console.log('✅ app.js loaded — FINAL VERSION with Verified Badge (4 Parts)');
