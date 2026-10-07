@@ -7,7 +7,6 @@
   <meta name="description" content="ReelHub Privacy Policy - Learn how we collect, use, and protect your data.">
   <title>Privacy Policy — ReelHub</title>
   
-  <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='50' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='central'>R</text></svg>">
   
   <style>
@@ -42,6 +41,13 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 12px;
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
     
     .logo {
@@ -55,12 +61,18 @@
       letter-spacing: -0.5px;
     }
     
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
     .back-btn {
       color: #888;
       text-decoration: none;
       font-size: 14px;
       font-weight: 600;
-      padding: 8px 14px;
+      padding: 8px 12px;
       border-radius: 8px;
       transition: all 0.2s;
       display: flex;
@@ -71,6 +83,41 @@
     .back-btn:hover {
       background: #1a1a24;
       color: #fff;
+    }
+    
+    /* ================= LANGUAGE TOGGLE ================= */
+    .lang-toggle {
+      display: flex;
+      background: #121212;
+      border: 1px solid #262626;
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+    }
+    
+    .lang-btn {
+      padding: 6px 14px;
+      background: transparent;
+      border: none;
+      border-radius: 7px;
+      color: #888;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+    
+    .lang-btn:hover {
+      color: #ccc;
+    }
+    
+    .lang-btn.active {
+      background: linear-gradient(90deg, #ff2e63, #ff8a00);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(255, 46, 99, 0.3);
     }
     
     /* ================= CONTAINER ================= */
@@ -400,35 +447,22 @@
       margin: 0 8px;
     }
     
-    /* ================= BADGE ================= */
-    .badge {
-      display: inline-block;
-      padding: 3px 8px;
-      font-size: 10px;
-      font-weight: 800;
-      border-radius: 20px;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      vertical-align: middle;
-      margin-left: 6px;
+    /* ================= LANGUAGE CONTENT ================= */
+    [data-lang] {
+      display: none;
     }
     
-    .badge.blue {
-      background: rgba(78, 168, 255, 0.15);
-      color: #4ea8ff;
-      border: 1px solid rgba(78, 168, 255, 0.3);
+    [data-lang].active {
+      display: block;
     }
     
-    .badge.green {
-      background: rgba(22, 163, 74, 0.15);
-      color: #22c55e;
-      border: 1px solid rgba(22, 163, 74, 0.3);
+    /* Inline language (for small text) */
+    span[data-lang] {
+      display: none;
     }
     
-    .badge.orange {
-      background: rgba(255, 138, 0, 0.15);
-      color: #ff8a00;
-      border: 1px solid rgba(255, 138, 0, 0.3);
+    span[data-lang].active {
+      display: inline;
     }
     
     /* ================= MOBILE ================= */
@@ -437,37 +471,23 @@
       h2 { font-size: 19px; margin-top: 32px; }
       h3 { font-size: 16px; }
       .container { padding: 24px 16px 80px; }
-      .header { padding: 12px 16px; }
-      .logo { font-size: 20px; }
-      .back-btn { font-size: 13px; padding: 6px 10px; }
+      .header { padding: 12px 14px; gap: 8px; }
+      .logo { font-size: 18px; }
+      .back-btn { font-size: 12px; padding: 6px 8px; }
+      .back-btn span { display: none; }
+      .lang-btn { padding: 5px 10px; font-size: 11px; }
       .contact-box { padding: 22px 18px; }
-      .contact-email { font-size: 13px; padding: 10px 18px; }
+      .contact-email { font-size: 13px; padding: 10px 16px; }
       .quick-nav ul { grid-template-columns: 1fr; }
     }
     
     /* ================= SCROLLBAR ================= */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: #262626; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #333; }
     
-    ::-webkit-scrollbar-track {
-      background: #0a0a0a;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-      background: #262626;
-      border-radius: 4px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-      background: #333;
-    }
-    
-    /* ================= SELECTION ================= */
-    ::selection {
-      background: #ff2e63;
-      color: #fff;
-    }
+    ::selection { background: #ff2e63; color: #fff; }
   </style>
 </head>
 
@@ -475,375 +495,649 @@
 
   <!-- ================= HEADER ================= -->
   <header class="header">
-    <a href="index.html" class="logo">ReelHub</a>
-    <a href="index.html" class="back-btn">← Back to App</a>
+    <div class="header-left">
+      <a href="index.html" class="logo">ReelHub</a>
+    </div>
+    <div class="header-right">
+      <div class="lang-toggle">
+        <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+        <button class="lang-btn" data-lang="hi" onclick="setLanguage('hi')">हिं</button>
+      </div>
+      <a href="index.html" class="back-btn">← <span>Back</span></a>
+    </div>
   </header>
 
-  <!-- ================= MAIN CONTENT ================= -->
   <main class="container">
 
-    <h1>Privacy Policy</h1>
-    <div class="updated">
-      <strong>Last Updated:</strong> <span id="lastUpdated">January 2026</span>
-    </div>
+    <!-- ============================================================
+         ENGLISH VERSION
+         ============================================================ -->
+    <div data-lang="en" class="active">
 
-    <!-- Quick Nav -->
-    <nav class="quick-nav">
-      <div class="quick-nav-title">Quick Navigation</div>
+      <h1>Privacy Policy</h1>
+      <div class="updated">
+        <strong>Last Updated:</strong> <span id="lastUpdatedEn">January 2026</span>
+      </div>
+
+      <nav class="quick-nav">
+        <div class="quick-nav-title">Quick Navigation</div>
+        <ul>
+          <li><a href="#intro-en">Introduction</a></li>
+          <li><a href="#collect-en">What We Collect</a></li>
+          <li><a href="#use-en">How We Use It</a></li>
+          <li><a href="#dont-en">What We Don't Do</a></li>
+          <li><a href="#share-en">Data Sharing</a></li>
+          <li><a href="#security-en">Data Security</a></li>
+          <li><a href="#rights-en">Your Rights</a></li>
+          <li><a href="#contact-en">Contact Us</a></li>
+        </ul>
+      </nav>
+
+      <div class="box info">
+        <strong>📌 In Simple Words:</strong>
+        We collect only what's needed to run ReelHub. We never sell your data. Your private messages stay private. You can delete your account anytime.
+      </div>
+
+      <h2 id="intro-en">1. Introduction</h2>
+      <p>Welcome to <strong>ReelHub</strong> ("we", "our", "us"). This Privacy Policy explains how we collect, use, and protect your personal information when you use our mobile and web application (the "Service").</p>
+      <p>By using ReelHub, you agree to the collection and use of information in accordance with this policy. If you do not agree with any part of this policy, please do not use the Service.</p>
+      <p>This policy applies to all users of ReelHub, regardless of location. We are committed to protecting your privacy and being transparent about our data practices.</p>
+
+      <h2 id="collect-en">2. Information We Collect</h2>
+      
+      <h3>2.1 Information You Provide</h3>
+      <p>When you create an account or use ReelHub, you may provide:</p>
       <ul>
-        <li><a href="#intro">Introduction</a></li>
-        <li><a href="#collect">What We Collect</a></li>
-        <li><a href="#use">How We Use It</a></li>
-        <li><a href="#dont">What We Don't Do</a></li>
-        <li><a href="#share">Data Sharing</a></li>
-        <li><a href="#security">Data Security</a></li>
-        <li><a href="#rights">Your Rights</a></li>
-        <li><a href="#contact">Contact Us</a></li>
+        <li><strong>Account Information:</strong> Your name, username, email address, and password</li>
+        <li><strong>Profile Information:</strong> Profile photo, bio, and other details you choose to add</li>
+        <li><strong>Content:</strong> Videos, photos, comments, messages, and stories you upload or share</li>
+        <li><strong>Communications:</strong> Direct messages, group chat messages, and voice messages</li>
+        <li><strong>Feedback:</strong> Any information you provide when contacting support or reporting issues</li>
       </ul>
-    </nav>
-
-    <!-- Highlight Box -->
-    <div class="box info">
-      <strong>📌 In Simple Words:</strong>
-      We collect only what's needed to run ReelHub. We never sell your data. Your private messages stay private. You can delete your account anytime.
-    </div>
-
-    <!-- ================= 1. INTRODUCTION ================= -->
-    <h2 id="intro">1. Introduction</h2>
-    <p>
-      Welcome to <strong>ReelHub</strong> ("we", "our", "us"). This Privacy Policy explains how we collect, use, and protect your personal information when you use our mobile and web application (the "Service").
-    </p>
-    <p>
-      By using ReelHub, you agree to the collection and use of information in accordance with this policy. If you do not agree with any part of this policy, please do not use the Service.
-    </p>
-    <p>
-      This policy applies to all users of ReelHub, regardless of location. We are committed to protecting your privacy and being transparent about our data practices.
-    </p>
-
-    <!-- ================= 2. INFORMATION WE COLLECT ================= -->
-    <h2 id="collect">2. Information We Collect</h2>
-    
-    <h3>2.1 Information You Provide</h3>
-    <p>When you create an account or use ReelHub, you may provide:</p>
-    <ul>
-      <li><strong>Account Information:</strong> Your name, username, email address, and password</li>
-      <li><strong>Profile Information:</strong> Profile photo, bio, and other details you choose to add</li>
-      <li><strong>Content:</strong> Videos, photos, comments, messages, and stories you upload or share</li>
-      <li><strong>Communications:</strong> Direct messages, group chat messages, and voice messages</li>
-      <li><strong>Feedback:</strong> Any information you provide when contacting support or reporting issues</li>
-    </ul>
-    
-    <h3>2.2 Information We Collect Automatically</h3>
-    <p>When you use ReelHub, we automatically collect some information:</p>
-    <ul>
-      <li><strong>Device Information:</strong> Device type, operating system, browser type, and version</li>
-      <li><strong>Usage Data:</strong> Videos watched, likes, follows, comments, and interaction patterns</li>
-      <li><strong>Log Data:</strong> IP address, access times, error logs, and pages visited</li>
-      <li><strong>Location Data:</strong> General location based on IP address (we do not collect precise GPS location)</li>
-    </ul>
-    
-    <h3>2.3 Information from Third Parties</h3>
-    <p>We use trusted third-party services to run ReelHub:</p>
-    <div class="info-list">
-      <div class="info-list-item">
-        <div class="icon">🔥</div>
-        <div class="content">
-          <strong>Google Firebase</strong>
-          <p>For secure authentication, database storage, and app hosting</p>
-        </div>
-      </div>
-      <div class="info-list-item">
-        <div class="icon">☁️</div>
-        <div class="content">
-          <strong>Cloudinary</strong>
-          <p>For video, photo, and story storage and delivery</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- ================= 3. HOW WE USE YOUR INFORMATION ================= -->
-    <h2 id="use">3. How We Use Your Information</h2>
-    <p>We use your information for the following purposes:</p>
-    
-    <h3>3.1 Core Features</h3>
-    <ul>
-      <li>Create and manage your ReelHub account</li>
-      <li>Display your content to other users based on your privacy settings</li>
-      <li>Enable communication features like chats, groups, and comments</li>
-      <li>Send notifications about activity related to your account</li>
-      <li>Provide personalized content recommendations</li>
-    </ul>
-    
-    <h3>3.2 Safety & Security</h3>
-    <ul>
-      <li>Detect and prevent fraud, abuse, and violations of our Terms</li>
-      <li>Investigate reports and take action against policy violations</li>
-      <li>Protect the safety of our users and community</li>
-      <li>Comply with legal obligations and law enforcement requests</li>
-    </ul>
-    
-    <h3>3.3 Improvement & Support</h3>
-    <ul>
-      <li>Improve ReelHub's features and user experience</li>
-      <li>Analyze usage patterns to make better decisions</li>
-      <li>Respond to your support requests and feedback</li>
-      <li>Send you important updates about the Service</li>
-    </ul>
-
-    <!-- ================= 4. WHAT WE DON'T DO ================= -->
-    <h2 id="dont">4. What We Don't Do</h2>
-    <div class="box success">
-      <strong>✅ Our Commitment to You:</strong>
+      
+      <h3>2.2 Information We Collect Automatically</h3>
+      <p>When you use ReelHub, we automatically collect some information:</p>
       <ul>
-        <li>❌ We <strong>never sell</strong> your personal information to third parties</li>
-        <li>❌ We <strong>never share</strong> your password with anyone (it's encrypted)</li>
-        <li>❌ We <strong>don't read</strong> your private messages</li>
-        <li>❌ We <strong>don't track</strong> your activity outside ReelHub</li>
-        <li>❌ We <strong>don't use</strong> third-party advertising trackers</li>
-        <li>❌ We <strong>don't access</strong> your camera or microphone without permission</li>
+        <li><strong>Device Information:</strong> Device type, operating system, browser type, and version</li>
+        <li><strong>Usage Data:</strong> Videos watched, likes, follows, comments, and interaction patterns</li>
+        <li><strong>Log Data:</strong> IP address, access times, error logs, and pages visited</li>
+        <li><strong>Location Data:</strong> General location based on IP address (we do not collect precise GPS location)</li>
       </ul>
+      
+      <h3>2.3 Information from Third Parties</h3>
+      <p>We use trusted third-party services to run ReelHub:</p>
+      <div class="info-list">
+        <div class="info-list-item">
+          <div class="icon">🔥</div>
+          <div class="content">
+            <strong>Google Firebase</strong>
+            <p>For secure authentication, database storage, and app hosting</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">☁️</div>
+          <div class="content">
+            <strong>Cloudinary</strong>
+            <p>For video, photo, and story storage and delivery</p>
+          </div>
+        </div>
+      </div>
+
+      <h2 id="use-en">3. How We Use Your Information</h2>
+      <p>We use your information for the following purposes:</p>
+      
+      <h3>3.1 Core Features</h3>
+      <ul>
+        <li>Create and manage your ReelHub account</li>
+        <li>Display your content to other users based on your privacy settings</li>
+        <li>Enable communication features like chats, groups, and comments</li>
+        <li>Send notifications about activity related to your account</li>
+        <li>Provide personalized content recommendations</li>
+      </ul>
+      
+      <h3>3.2 Safety & Security</h3>
+      <ul>
+        <li>Detect and prevent fraud, abuse, and violations of our Terms</li>
+        <li>Investigate reports and take action against policy violations</li>
+        <li>Protect the safety of our users and community</li>
+        <li>Comply with legal obligations and law enforcement requests</li>
+      </ul>
+      
+      <h3>3.3 Improvement & Support</h3>
+      <ul>
+        <li>Improve ReelHub's features and user experience</li>
+        <li>Analyze usage patterns to make better decisions</li>
+        <li>Respond to your support requests and feedback</li>
+        <li>Send you important updates about the Service</li>
+      </ul>
+
+      <h2 id="dont-en">4. What We Don't Do</h2>
+      <div class="box success">
+        <strong>✅ Our Commitment to You:</strong>
+        <ul>
+          <li>❌ We <strong>never sell</strong> your personal information to third parties</li>
+          <li>❌ We <strong>never share</strong> your password with anyone (it's encrypted)</li>
+          <li>❌ We <strong>don't read</strong> your private messages</li>
+          <li>❌ We <strong>don't track</strong> your activity outside ReelHub</li>
+          <li>❌ We <strong>don't use</strong> third-party advertising trackers</li>
+          <li>❌ We <strong>don't access</strong> your camera or microphone without permission</li>
+        </ul>
+      </div>
+
+      <h2 id="share-en">5. Sharing Your Information</h2>
+      
+      <h3>5.1 With Other Users</h3>
+      <p>Your profile information (name, username, profile photo, and bio) is visible to other ReelHub users. Your posts, stories, and comments are visible based on your account privacy settings:</p>
+      <ul>
+        <li><strong>Public Account:</strong> Anyone on ReelHub can see your content</li>
+        <li><strong>Private Account:</strong> Only approved followers can see your content</li>
+      </ul>
+      
+      <h3>5.2 With Service Providers</h3>
+      <p>We share data with trusted service providers who help us run ReelHub. These providers:</p>
+      <ul>
+        <li>Only access data needed to perform their specific services</li>
+        <li>Are bound by confidentiality agreements</li>
+        <li>Must comply with applicable data protection laws</li>
+      </ul>
+      
+      <h3>5.3 For Legal Reasons</h3>
+      <p>We may share your information if required by law, court order, or to protect the rights, safety, or property of ReelHub, our users, or others. This includes cooperating with law enforcement when necessary.</p>
+
+      <h2>6. Your Privacy Settings</h2>
+      <p>You have full control over your data through these settings:</p>
+      
+      <div class="info-list">
+        <div class="info-list-item">
+          <div class="icon">🔒</div>
+          <div class="content">
+            <strong>Private Account</strong>
+            <p>Only approved followers can see your posts and stories</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">🚫</div>
+          <div class="content">
+            <strong>Block Users</strong>
+            <p>Block anyone from viewing your profile or messaging you</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">🔔</div>
+          <div class="content">
+            <strong>Notification Settings</strong>
+            <p>Control which notifications you want to receive</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">💬</div>
+          <div class="content">
+            <strong>Chat Privacy</strong>
+            <p>Your messages are only visible to chat participants</p>
+          </div>
+        </div>
+      </div>
+
+      <h2 id="security-en">7. Data Security</h2>
+      <p>We take data security seriously and implement multiple layers of protection:</p>
+      <ul>
+        <li>Passwords are hashed using industry-standard encryption</li>
+        <li>All data transmission is encrypted using HTTPS/TLS</li>
+        <li>Access to user data is strictly limited to authorized personnel</li>
+        <li>Regular security audits and vulnerability testing</li>
+        <li>Automatic logout from inactive sessions</li>
+        <li>Two-factor authentication support (recommended)</li>
+      </ul>
+      
+      <div class="box warn">
+        <strong>⚠️ Important Notice:</strong>
+        No method of transmission over the internet is 100% secure. While we strive to protect your data using commercially acceptable means, we cannot guarantee absolute security. Please use a strong, unique password and keep your account credentials private.
+      </div>
+
+      <h2>8. Data Retention</h2>
+      <p>We keep your personal data as long as your account is active or as needed to provide services. When you delete your account:</p>
+      <ul>
+        <li>Your profile is immediately removed from ReelHub</li>
+        <li>Your posts, stories, and comments are deleted</li>
+        <li>Some data may remain in encrypted backups for up to 90 days</li>
+        <li>Data required for legal or tax compliance may be retained longer</li>
+        <li>Anonymized, aggregated data may be retained for analytics</li>
+      </ul>
+
+      <h2 id="rights-en">9. Your Rights</h2>
+      <p>Depending on your location, you may have the following rights:</p>
+      
+      <div class="info-list">
+        <div class="info-list-item">
+          <div class="icon">👁️</div>
+          <div class="content">
+            <strong>Right to Access</strong>
+            <p>Request a copy of all personal data we hold about you</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">✏️</div>
+          <div class="content">
+            <strong>Right to Correct</strong>
+            <p>Update or correct your information through profile settings</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">🗑️</div>
+          <div class="content">
+            <strong>Right to Delete</strong>
+            <p>Delete your account and all associated data</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">📤</div>
+          <div class="content">
+            <strong>Right to Export</strong>
+            <p>Request your data in a portable, machine-readable format</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">🚫</div>
+          <div class="content">
+            <strong>Right to Object</strong>
+            <p>Object to certain types of data processing</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">📩</div>
+          <div class="content">
+            <strong>Right to Complain</strong>
+            <p>File a complaint with your local data protection authority</p>
+          </div>
+        </div>
+      </div>
+      
+      <p>To exercise these rights, please contact us using the email below.</p>
+
+      <h2>10. Children's Privacy</h2>
+      <p>ReelHub is <strong>not intended for children under 13 years of age</strong>. We do not knowingly collect personal information from children under 13.</p>
+      <p>If you are a parent or guardian and discover that your child under 13 has created a ReelHub account, please contact us immediately. We will delete the account and all associated data.</p>
+      <p>Users between 13 and 18 years old should have parental consent before using ReelHub.</p>
+
+      <h2>11. Cookies & Local Storage</h2>
+      <p>We use minimal tracking technologies:</p>
+      <ul>
+        <li><strong>Local Storage:</strong> To remember your preferences (dark mode, settings, session)</li>
+        <li><strong>Session Storage:</strong> To keep you logged in during your visit</li>
+        <li><strong>No Third-Party Cookies:</strong> We do not use advertising or tracking cookies</li>
+      </ul>
+      <p>You can clear these at any time through your browser settings, but you may need to log in again.</p>
+
+      <h2>12. Third-Party Links</h2>
+      <p>ReelHub may contain links to external websites or services that are not operated by us. We are not responsible for the privacy practices of these third-party sites. We strongly recommend reading their privacy policies before providing any personal information.</p>
+
+      <h2>13. International Data Transfers</h2>
+      <p>Your data may be transferred to and processed in countries other than your own (such as servers in the United States or European Union). We ensure appropriate safeguards are in place for such transfers, in compliance with applicable data protection laws.</p>
+
+      <h2>14. Content Moderation</h2>
+      <p>To keep ReelHub a safe space for everyone, we may:</p>
+      <ul>
+        <li>Review content that has been reported by users</li>
+        <li>Remove content that violates our Terms of Service</li>
+        <li>Suspend or permanently ban accounts that repeatedly violate our rules</li>
+        <li>Cooperate with law enforcement regarding illegal content</li>
+      </ul>
+      <p>We do <strong>not</strong> actively monitor all content. Our moderation is primarily reactive based on user reports.</p>
+
+      <h2>15. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time. When we make significant changes, we will:</p>
+      <ul>
+        <li>Post the updated policy on this page</li>
+        <li>Update the "Last Updated" date at the top</li>
+        <li>Send you a notification within the app for major changes</li>
+      </ul>
+      <p>Your continued use of ReelHub after changes are posted means you accept the updated Privacy Policy.</p>
+
+      <h2>16. Legal Compliance</h2>
+      <p>ReelHub complies with applicable data protection laws including:</p>
+      <ul>
+        <li><strong>India:</strong> Information Technology Act, 2000 and rules thereunder</li>
+        <li><strong>EU:</strong> General Data Protection Regulation (GDPR)</li>
+        <li><strong>California:</strong> California Consumer Privacy Act (CCPA)</li>
+        <li><strong>General:</strong> Other applicable local laws in your jurisdiction</li>
+      </ul>
+
+      <h2 id="contact-en">17. Contact Us</h2>
+      <p>If you have any questions, concerns, or requests regarding this Privacy Policy or how we handle your personal data, please contact us:</p>
+
+      <div class="contact-box">
+        <h3>📧 Get in Touch</h3>
+        <p>We typically respond within 24-48 hours on business days.</p>
+        <a href="mailto:reehubreelhub@gmail.com" class="contact-email">
+          <span>📩</span>
+          <span>reehubreelhub@gmail.com</span>
+        </a>
+      </div>
+
+      <div class="box info" style="margin-top: 40px;">
+        <strong>✅ Your Acknowledgment</strong>
+        By using ReelHub, you acknowledge that you have read, understood, and agree to be bound by this Privacy Policy.
+      </div>
+
     </div>
 
-    <!-- ================= 5. SHARING YOUR INFORMATION ================= -->
-    <h2 id="share">5. Sharing Your Information</h2>
-    
-    <h3>5.1 With Other Users</h3>
-    <p>
-      Your profile information (name, username, profile photo, and bio) is visible to other ReelHub users. Your posts, stories, and comments are visible based on your account privacy settings:
-    </p>
-    <ul>
-      <li><strong>Public Account:</strong> Anyone on ReelHub can see your content</li>
-      <li><strong>Private Account:</strong> Only approved followers can see your content</li>
-    </ul>
-    
-    <h3>5.2 With Service Providers</h3>
-    <p>
-      We share data with trusted service providers who help us run ReelHub. These providers:
-    </p>
-    <ul>
-      <li>Only access data needed to perform their specific services</li>
-      <li>Are bound by confidentiality agreements</li>
-      <li>Must comply with applicable data protection laws</li>
-    </ul>
-    
-    <h3>5.3 For Legal Reasons</h3>
-    <p>
-      We may share your information if required by law, court order, or to protect the rights, safety, or property of ReelHub, our users, or others. This includes cooperating with law enforcement when necessary.
-    </p>
+    <!-- ============================================================
+         HINDI VERSION
+         ============================================================ -->
+    <div data-lang="hi">
 
-    <!-- ================= 6. YOUR PRIVACY SETTINGS ================= -->
-    <h2>6. Your Privacy Settings</h2>
-    <p>You have full control over your data through these settings:</p>
-    
-    <div class="info-list">
-      <div class="info-list-item">
-        <div class="icon">🔒</div>
-        <div class="content">
-          <strong>Private Account</strong>
-          <p>Only approved followers can see your posts and stories</p>
+      <h1>गोपनीयता नीति</h1>
+      <div class="updated">
+        <strong>अंतिम अपडेट:</strong> <span id="lastUpdatedHi">जनवरी 2026</span>
+      </div>
+
+      <nav class="quick-nav">
+        <div class="quick-nav-title">जल्दी नेविगेशन</div>
+        <ul>
+          <li><a href="#intro-hi">परिचय</a></li>
+          <li><a href="#collect-hi">हम क्या जमा करते हैं</a></li>
+          <li><a href="#use-hi">कैसे उपयोग करते हैं</a></li>
+          <li><a href="#dont-hi">हम क्या नहीं करते</a></li>
+          <li><a href="#share-hi">डेटा शेयरिंग</a></li>
+          <li><a href="#security-hi">डेटा सुरक्षा</a></li>
+          <li><a href="#rights-hi">आपके अधिकार</a></li>
+          <li><a href="#contact-hi">संपर्क करें</a></li>
+        </ul>
+      </nav>
+
+      <div class="box info">
+        <strong>📌 आसान शब्दों में:</strong>
+        हम सिर्फ ReelHub चलाने के लिए ज़रूरी जानकारी जमा करते हैं। हम आपका डेटा कभी नहीं बेचते। आपके private messages private रहते हैं। आप कभी भी अपना account delete कर सकते हैं।
+      </div>
+
+      <h2 id="intro-hi">1. परिचय</h2>
+      <p>ReelHub में आपका स्वागत है ("हम", "हमारा")। यह गोपनीयता नीति बताती है कि हम आपकी व्यक्तिगत जानकारी कैसे इकट्ठा करते हैं, उपयोग करते हैं और उसकी सुरक्षा करते हैं जब आप हमारे mobile और web application (जिसे "Service" कहा जाता है) का उपयोग करते हैं।</p>
+      <p>ReelHub का उपयोग करके, आप इस नीति के अनुसार जानकारी के संग्रह और उपयोग से सहमत होते हैं। यदि आप इस नीति के किसी भी हिस्से से सहमत नहीं हैं, तो कृपया Service का उपयोग न करें।</p>
+      <p>यह नीति स्थान की परवाह किए बिना ReelHub के सभी उपयोगकर्ताओं पर लागू होती है। हम आपकी गोपनीयता की रक्षा करने और हमारी डेटा प्रथाओं के बारे में पारदर्शी होने के लिए प्रतिबद्ध हैं।</p>
+
+      <h2 id="collect-hi">2. हम कौन सी जानकारी जमा करते हैं</h2>
+      
+      <h3>2.1 जानकारी जो आप प्रदान करते हैं</h3>
+      <p>जब आप account बनाते हैं या ReelHub का उपयोग करते हैं, तो आप प्रदान कर सकते हैं:</p>
+      <ul>
+        <li><strong>Account की जानकारी:</strong> आपका नाम, username, email address और password</li>
+        <li><strong>Profile की जानकारी:</strong> Profile photo, bio और अन्य विवरण जो आप जोड़ना चुनते हैं</li>
+        <li><strong>Content:</strong> Videos, photos, comments, messages और stories जो आप upload या share करते हैं</li>
+        <li><strong>Communications:</strong> Direct messages, group chat messages और voice messages</li>
+        <li><strong>Feedback:</strong> Support से संपर्क करते समय या समस्याओं की रिपोर्ट करते समय आप जो भी जानकारी देते हैं</li>
+      </ul>
+      
+      <h3>2.2 जानकारी जो हम स्वचालित रूप से जमा करते हैं</h3>
+      <p>जब आप ReelHub का उपयोग करते हैं, तो हम कुछ जानकारी स्वचालित रूप से जमा करते हैं:</p>
+      <ul>
+        <li><strong>Device की जानकारी:</strong> Device type, operating system, browser type और version</li>
+        <li><strong>Usage Data:</strong> देखे गए videos, likes, follows, comments और interaction patterns</li>
+        <li><strong>Log Data:</strong> IP address, access times, error logs और देखे गए pages</li>
+        <li><strong>Location Data:</strong> IP address के आधार पर सामान्य स्थान (हम precise GPS location नहीं जमा करते)</li>
+      </ul>
+      
+      <h3>2.3 तीसरे पक्ष से जानकारी</h3>
+      <p>हम ReelHub चलाने के लिए भरोसेमंद third-party services का उपयोग करते हैं:</p>
+      <div class="info-list">
+        <div class="info-list-item">
+          <div class="icon">🔥</div>
+          <div class="content">
+            <strong>Google Firebase</strong>
+            <p>सुरक्षित authentication, database storage और app hosting के लिए</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">☁️</div>
+          <div class="content">
+            <strong>Cloudinary</strong>
+            <p>Video, photo और story storage और delivery के लिए</p>
+          </div>
         </div>
       </div>
-      <div class="info-list-item">
-        <div class="icon">🚫</div>
-        <div class="content">
-          <strong>Block Users</strong>
-          <p>Block anyone from viewing your profile or messaging you</p>
+
+      <h2 id="use-hi">3. हम आपकी जानकारी का उपयोग कैसे करते हैं</h2>
+      <p>हम आपकी जानकारी का उपयोग इन उद्देश्यों के लिए करते हैं:</p>
+      
+      <h3>3.1 मुख्य सुविधाएँ</h3>
+      <ul>
+        <li>आपका ReelHub account बनाना और प्रबंधित करना</li>
+        <li>आपकी privacy settings के आधार पर अन्य उपयोगकर्ताओं को आपका content दिखाना</li>
+        <li>Chats, groups और comments जैसी communication सुविधाएँ सक्षम करना</li>
+        <li>आपके account से संबंधित गतिविधि के बारे में notifications भेजना</li>
+        <li>व्यक्तिगत content recommendations प्रदान करना</li>
+      </ul>
+      
+      <h3>3.2 सुरक्षा</h3>
+      <ul>
+        <li>धोखाधड़ी, दुरुपयोग और हमारी Terms के उल्लंघन का पता लगाना और रोकना</li>
+        <li>Reports की जाँच करना और policy उल्लंघनों के खिलाफ कार्रवाई करना</li>
+        <li>हमारे उपयोगकर्ताओं और community की सुरक्षा करना</li>
+        <li>कानूनी दायित्वों और law enforcement अनुरोधों का पालन करना</li>
+      </ul>
+      
+      <h3>3.3 सुधार और सहायता</h3>
+      <ul>
+        <li>ReelHub की सुविधाओं और user experience में सुधार करना</li>
+        <li>बेहतर निर्णय लेने के लिए usage patterns का विश्लेषण करना</li>
+        <li>आपके support अनुरोधों और feedback का जवाब देना</li>
+        <li>Service के बारे में महत्वपूर्ण updates भेजना</li>
+      </ul>
+
+      <h2 id="dont-hi">4. हम क्या नहीं करते</h2>
+      <div class="box success">
+        <strong>✅ आपके प्रति हमारी प्रतिबद्धता:</strong>
+        <ul>
+          <li>❌ हम आपकी व्यक्तिगत जानकारी तीसरे पक्ष को <strong>कभी नहीं बेचते</strong></li>
+          <li>❌ हम आपका password किसी के साथ <strong>कभी साझा नहीं करते</strong> (यह encrypted है)</li>
+          <li>❌ हम आपके private messages <strong>नहीं पढ़ते</strong></li>
+          <li>❌ हम ReelHub के बाहर आपकी गतिविधि <strong>track नहीं करते</strong></li>
+          <li>❌ हम third-party advertising trackers का <strong>उपयोग नहीं करते</strong></li>
+          <li>❌ हम अनुमति के बिना आपके camera या microphone तक <strong>पहुँच नहीं सकते</strong></li>
+        </ul>
+      </div>
+
+      <h2 id="share-hi">5. आपकी जानकारी साझा करना</h2>
+      
+      <h3>5.1 अन्य उपयोगकर्ताओं के साथ</h3>
+      <p>आपकी profile की जानकारी (नाम, username, profile photo और bio) अन्य ReelHub उपयोगकर्ताओं को दिखाई देती है। आपके posts, stories और comments आपकी account privacy settings के आधार पर दिखाई देते हैं:</p>
+      <ul>
+        <li><strong>Public Account:</strong> ReelHub पर कोई भी आपका content देख सकता है</li>
+        <li><strong>Private Account:</strong> सिर्फ approved followers ही आपका content देख सकते हैं</li>
+      </ul>
+      
+      <h3>5.2 Service Providers के साथ</h3>
+      <p>हम भरोसेमंद service providers के साथ डेटा साझा करते हैं जो हमें ReelHub चलाने में मदद करते हैं। ये providers:</p>
+      <ul>
+        <li>केवल अपनी विशिष्ट सेवाएँ करने के लिए ज़रूरी डेटा तक ही पहुँचते हैं</li>
+        <li>गोपनीयता समझौतों से बंधे हैं</li>
+        <li>लागू data protection कानूनों का पालन करना चाहिए</li>
+      </ul>
+      
+      <h3>5.3 कानूनी कारणों से</h3>
+      <p>हम आपकी जानकारी तब साझा कर सकते हैं जब कानून, court order द्वारा आवश्यक हो, या ReelHub, हमारे उपयोगकर्ताओं या अन्य लोगों के अधिकारों, सुरक्षा या संपत्ति की रक्षा के लिए। इसमें ज़रूरत पड़ने पर law enforcement के साथ सहयोग करना शामिल है।</p>
+
+      <h2>6. आपकी Privacy Settings</h2>
+      <p>इन settings के माध्यम से आपके पास अपने डेटा पर पूरा नियंत्रण है:</p>
+      
+      <div class="info-list">
+        <div class="info-list-item">
+          <div class="icon">🔒</div>
+          <div class="content">
+            <strong>Private Account</strong>
+            <p>सिर्फ approved followers ही आपके posts और stories देख सकते हैं</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">🚫</div>
+          <div class="content">
+            <strong>Users को Block करें</strong>
+            <p>किसी को भी आपकी profile देखने या message करने से रोकें</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">🔔</div>
+          <div class="content">
+            <strong>Notification Settings</strong>
+            <p>नियंत्रित करें कि आप कौन सी notifications प्राप्त करना चाहते हैं</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">💬</div>
+          <div class="content">
+            <strong>Chat Privacy</strong>
+            <p>आपके messages सिर्फ chat participants को दिखाई देते हैं</p>
+          </div>
         </div>
       </div>
-      <div class="info-list-item">
-        <div class="icon">🔔</div>
-        <div class="content">
-          <strong>Notification Settings</strong>
-          <p>Control which notifications you want to receive</p>
+
+      <h2 id="security-hi">7. डेटा सुरक्षा</h2>
+      <p>हम डेटा सुरक्षा को गंभीरता से लेते हैं और कई परतों की सुरक्षा लागू करते हैं:</p>
+      <ul>
+        <li>Passwords industry-standard encryption का उपयोग करके hashed होते हैं</li>
+        <li>सभी data transmission HTTPS/TLS का उपयोग करके encrypted है</li>
+        <li>User data तक पहुँच सख्ती से authorized personnel तक ही सीमित है</li>
+        <li>नियमित security audits और vulnerability testing</li>
+        <li>Inactive sessions से स्वचालित logout</li>
+        <li>Two-factor authentication support (अनुशंसित)</li>
+      </ul>
+      
+      <div class="box warn">
+        <strong>⚠️ महत्वपूर्ण सूचना:</strong>
+        Internet पर transmission का कोई भी तरीका 100% सुरक्षित नहीं है। जबकि हम व्यावसायिक रूप से स्वीकार्य साधनों का उपयोग करके आपके डेटा की रक्षा करने का प्रयास करते हैं, हम पूर्ण सुरक्षा की गारंटी नहीं दे सकते। कृपया एक मजबूत, अद्वितीय password का उपयोग करें और अपने account credentials को private रखें।
+      </div>
+
+      <h2>8. डेटा प्रतिधारण</h2>
+      <p>हम आपका personal data तब तक रखते हैं जब तक आपका account सक्रिय है या सेवाएँ प्रदान करने के लिए आवश्यक है। जब आप अपना account delete करते हैं:</p>
+      <ul>
+        <li>आपकी profile तुरंत ReelHub से हटा दी जाती है</li>
+        <li>आपके posts, stories और comments delete हो जाते हैं</li>
+        <li>कुछ डेटा 90 दिनों तक encrypted backups में रह सकता है</li>
+        <li>कानूनी या tax अनुपालन के लिए आवश्यक डेटा लंबे समय तक रखा जा सकता है</li>
+        <li>Anonymized, aggregated data analytics के लिए रखा जा सकता है</li>
+      </ul>
+
+      <h2 id="rights-hi">9. आपके अधिकार</h2>
+      <p>आपके स्थान के आधार पर, आपके पास निम्नलिखित अधिकार हो सकते हैं:</p>
+      
+      <div class="info-list">
+        <div class="info-list-item">
+          <div class="icon">👁️</div>
+          <div class="content">
+            <strong>Access का अधिकार</strong>
+            <p>आपके बारे में हमारे पास जो भी personal data है उसकी copy मांगें</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">✏️</div>
+          <div class="content">
+            <strong>सही करने का अधिकार</strong>
+            <p>Profile settings के माध्यम से अपनी जानकारी update या सही करें</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">🗑️</div>
+          <div class="content">
+            <strong>Delete करने का अधिकार</strong>
+            <p>अपना account और सभी संबंधित डेटा delete करें</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">📤</div>
+          <div class="content">
+            <strong>Export करने का अधिकार</strong>
+            <p>Portable, machine-readable format में अपना डेटा मांगें</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">🚫</div>
+          <div class="content">
+            <strong>आपत्ति का अधिकार</strong>
+            <p>कुछ प्रकार की data processing पर आपत्ति करें</p>
+          </div>
+        </div>
+        <div class="info-list-item">
+          <div class="icon">📩</div>
+          <div class="content">
+            <strong>शिकायत का अधिकार</strong>
+            <p>अपने स्थानीय data protection authority में शिकायत दर्ज करें</p>
+          </div>
         </div>
       </div>
-      <div class="info-list-item">
-        <div class="icon">💬</div>
-        <div class="content">
-          <strong>Chat Privacy</strong>
-          <p>Your messages are only visible to chat participants</p>
-        </div>
+      
+      <p>इन अधिकारों का प्रयोग करने के लिए, कृपया नीचे दिए गए email का उपयोग करके हमसे संपर्क करें।</p>
+
+      <h2>10. बच्चों की गोपनीयता</h2>
+      <p>ReelHub <strong>13 वर्ष से कम उम्र के बच्चों के लिए नहीं है</strong>। हम जानबूझकर 13 वर्ष से कम उम्र के बच्चों से व्यक्तिगत जानकारी जमा नहीं करते।</p>
+      <p>यदि आप एक माता-पिता या अभिभावक हैं और पाते हैं कि आपके 13 वर्ष से कम उम्र के बच्चे ने ReelHub account बनाया है, तो कृपया तुरंत हमसे संपर्क करें। हम account और सभी संबंधित डेटा delete कर देंगे।</p>
+      <p>13 से 18 वर्ष के उपयोगकर्ताओं को ReelHub का उपयोग करने से पहले माता-पिता की सहमति लेनी चाहिए।</p>
+
+      <h2>11. Cookies और Local Storage</h2>
+      <p>हम न्यूनतम tracking technologies का उपयोग करते हैं:</p>
+      <ul>
+        <li><strong>Local Storage:</strong> आपकी preferences याद रखने के लिए (dark mode, settings, session)</li>
+        <li><strong>Session Storage:</strong> आपकी visit के दौरान आपको logged in रखने के लिए</li>
+        <li><strong>No Third-Party Cookies:</strong> हम advertising या tracking cookies का उपयोग नहीं करते</li>
+      </ul>
+      <p>आप अपने browser settings के माध्यम से इन्हें कभी भी साफ़ कर सकते हैं, लेकिन आपको फिर से log in करना पड़ सकता है।</p>
+
+      <h2>12. Third-Party Links</h2>
+      <p>ReelHub में बाहरी websites या services के links हो सकते हैं जो हमारे द्वारा संचालित नहीं हैं। हम इन third-party sites की privacy practices के लिए ज़िम्मेदार नहीं हैं। हम दृढ़ता से अनुशंसा करते हैं कि कोई भी व्यक्तिगत जानकारी प्रदान करने से पहले उनकी privacy policies पढ़ें।</p>
+
+      <h2>13. अंतर्राष्ट्रीय डेटा ट्रांसफर</h2>
+      <p>आपका डेटा आपके अलावा अन्य देशों (जैसे United States या European Union में servers) में स्थानांतरित और संसाधित किया जा सकता है। हम ऐसे transfers के लिए उचित safeguards सुनिश्चित करते हैं, लागू data protection कानूनों के अनुपालन में।</p>
+
+      <h2>14. Content Moderation</h2>
+      <p>ReelHub को सभी के लिए सुरक्षित जगह बनाए रखने के लिए, हम:</p>
+      <ul>
+        <li>उपयोगकर्ताओं द्वारा report किए गए content की समीक्षा कर सकते हैं</li>
+        <li>हमारी Terms of Service का उल्लंघन करने वाला content हटा सकते हैं</li>
+        <li>हमारे नियमों का बार-बार उल्लंघन करने वाले accounts को suspend या स्थायी रूप से ban कर सकते हैं</li>
+        <li>अवैध content के संबंध में law enforcement के साथ सहयोग कर सकते हैं</li>
+      </ul>
+      <p>हम सभी content की सक्रिय रूप से निगरानी <strong>नहीं</strong> करते। हमारा moderation मुख्य रूप से user reports के आधार पर reactive है।</p>
+
+      <h2>15. इस नीति में परिवर्तन</h2>
+      <p>हम समय-समय पर इस Privacy Policy को update कर सकते हैं। जब हम महत्वपूर्ण परिवर्तन करते हैं, तो हम:</p>
+      <ul>
+        <li>इस पृष्ठ पर updated policy पोस्ट करेंगे</li>
+        <li>शीर्ष पर "Last Updated" तिथि update करेंगे</li>
+        <li>बड़े परिवर्तनों के लिए app के भीतर notification भेजेंगे</li>
+      </ul>
+      <p>परिवर्तन पोस्ट होने के बाद ReelHub का आपका निरंतर उपयोग इसका मतलब है कि आप updated Privacy Policy स्वीकार करते हैं।</p>
+
+      <h2>16. कानूनी अनुपालन</h2>
+      <p>ReelHub लागू data protection कानूनों का पालन करता है जिनमें शामिल हैं:</p>
+      <ul>
+        <li><strong>भारत:</strong> Information Technology Act, 2000 और उसके अंतर्गत नियम</li>
+        <li><strong>EU:</strong> General Data Protection Regulation (GDPR)</li>
+        <li><strong>California:</strong> California Consumer Privacy Act (CCPA)</li>
+        <li><strong>सामान्य:</strong> आपके jurisdiction में अन्य लागू स्थानीय कानून</li>
+      </ul>
+
+      <h2 id="contact-hi">17. संपर्क करें</h2>
+      <p>यदि इस Privacy Policy या हमारे द्वारा आपके personal data को संभालने के तरीके के बारे में आपके कोई प्रश्न, चिंता या अनुरोध हैं, तो कृपया हमसे संपर्क करें:</p>
+
+      <div class="contact-box">
+        <h3>📧 संपर्क करें</h3>
+        <p>हम आमतौर पर business days पर 24-48 घंटों के भीतर जवाब देते हैं।</p>
+        <a href="mailto:reehubreelhub@gmail.com" class="contact-email">
+          <span>📩</span>
+          <span>reehubreelhub@gmail.com</span>
+        </a>
       </div>
-    </div>
 
-    <!-- ================= 7. DATA SECURITY ================= -->
-    <h2 id="security">7. Data Security</h2>
-    <p>We take data security seriously and implement multiple layers of protection:</p>
-    <ul>
-      <li>Passwords are hashed using industry-standard encryption</li>
-      <li>All data transmission is encrypted using HTTPS/TLS</li>
-      <li>Access to user data is strictly limited to authorized personnel</li>
-      <li>Regular security audits and vulnerability testing</li>
-      <li>Automatic logout from inactive sessions</li>
-      <li>Two-factor authentication support (recommended)</li>
-    </ul>
-    
-    <div class="box warn">
-      <strong>⚠️ Important Notice:</strong>
-      No method of transmission over the internet is 100% secure. While we strive to protect your data using commercially acceptable means, we cannot guarantee absolute security. Please use a strong, unique password and keep your account credentials private.
-    </div>
-
-    <!-- ================= 8. DATA RETENTION ================= -->
-    <h2>8. Data Retention</h2>
-    <p>
-      We keep your personal data as long as your account is active or as needed to provide services. When you delete your account:
-    </p>
-    <ul>
-      <li>Your profile is immediately removed from ReelHub</li>
-      <li>Your posts, stories, and comments are deleted</li>
-      <li>Some data may remain in encrypted backups for up to 90 days</li>
-      <li>Data required for legal or tax compliance may be retained longer</li>
-      <li>Anonymized, aggregated data may be retained for analytics</li>
-    </ul>
-
-    <!-- ================= 9. YOUR RIGHTS ================= -->
-    <h2 id="rights">9. Your Rights</h2>
-    <p>Depending on your location, you may have the following rights:</p>
-    
-    <div class="info-list">
-      <div class="info-list-item">
-        <div class="icon">👁️</div>
-        <div class="content">
-          <strong>Right to Access</strong>
-          <p>Request a copy of all personal data we hold about you</p>
-        </div>
+      <div class="box info" style="margin-top: 40px;">
+        <strong>✅ आपकी स्वीकृति</strong>
+        ReelHub का उपयोग करके, आप स्वीकार करते हैं कि आपने इस Privacy Policy को पढ़ा, समझा और इससे बंधे होने के लिए सहमत हैं।
       </div>
-      <div class="info-list-item">
-        <div class="icon">✏️</div>
-        <div class="content">
-          <strong>Right to Correct</strong>
-          <p>Update or correct your information through profile settings</p>
-        </div>
-      </div>
-      <div class="info-list-item">
-        <div class="icon">🗑️</div>
-        <div class="content">
-          <strong>Right to Delete</strong>
-          <p>Delete your account and all associated data</p>
-        </div>
-      </div>
-      <div class="info-list-item">
-        <div class="icon">📤</div>
-        <div class="content">
-          <strong>Right to Export</strong>
-          <p>Request your data in a portable, machine-readable format</p>
-        </div>
-      </div>
-      <div class="info-list-item">
-        <div class="icon">🚫</div>
-        <div class="content">
-          <strong>Right to Object</strong>
-          <p>Object to certain types of data processing</p>
-        </div>
-      </div>
-      <div class="info-list-item">
-        <div class="icon">📩</div>
-        <div class="content">
-          <strong>Right to Complain</strong>
-          <p>File a complaint with your local data protection authority</p>
-        </div>
-      </div>
-    </div>
-    
-    <p>To exercise these rights, please contact us using the email below.</p>
 
-    <!-- ================= 10. CHILDREN'S PRIVACY ================= -->
-    <h2>10. Children's Privacy</h2>
-    <p>
-      ReelHub is <strong>not intended for children under 13 years of age</strong>. We do not knowingly collect personal information from children under 13.
-    </p>
-    <p>
-      If you are a parent or guardian and discover that your child under 13 has created a ReelHub account, please contact us immediately. We will delete the account and all associated data.
-    </p>
-    <p>
-      Users between 13 and 18 years old should have parental consent before using ReelHub.
-    </p>
-
-    <!-- ================= 11. COOKIES & LOCAL STORAGE ================= -->
-    <h2>11. Cookies & Local Storage</h2>
-    <p>We use minimal tracking technologies:</p>
-    <ul>
-      <li><strong>Local Storage:</strong> To remember your preferences (dark mode, settings, session)</li>
-      <li><strong>Session Storage:</strong> To keep you logged in during your visit</li>
-      <li><strong>No Third-Party Cookies:</strong> We do not use advertising or tracking cookies</li>
-    </ul>
-    <p>You can clear these at any time through your browser settings, but you may need to log in again.</p>
-
-    <!-- ================= 12. THIRD-PARTY LINKS ================= -->
-    <h2>12. Third-Party Links</h2>
-    <p>
-      ReelHub may contain links to external websites or services that are not operated by us. We are not responsible for the privacy practices of these third-party sites. We strongly recommend reading their privacy policies before providing any personal information.
-    </p>
-
-    <!-- ================= 13. INTERNATIONAL DATA TRANSFERS ================= -->
-    <h2>13. International Data Transfers</h2>
-    <p>
-      Your data may be transferred to and processed in countries other than your own (such as servers in the United States or European Union). We ensure appropriate safeguards are in place for such transfers, in compliance with applicable data protection laws.
-    </p>
-
-    <!-- ================= 14. CONTENT MODERATION ================= -->
-    <h2>14. Content Moderation</h2>
-    <p>To keep ReelHub a safe space for everyone, we may:</p>
-    <ul>
-      <li>Review content that has been reported by users</li>
-      <li>Remove content that violates our Terms of Service</li>
-      <li>Suspend or permanently ban accounts that repeatedly violate our rules</li>
-      <li>Cooperate with law enforcement regarding illegal content</li>
-    </ul>
-    <p>
-      We do <strong>not</strong> actively monitor all content. Our moderation is primarily reactive based on user reports.
-    </p>
-
-    <!-- ================= 15. CHANGES TO THIS POLICY ================= -->
-    <h2>15. Changes to This Policy</h2>
-    <p>We may update this Privacy Policy from time to time. When we make significant changes, we will:</p>
-    <ul>
-      <li>Post the updated policy on this page</li>
-      <li>Update the "Last Updated" date at the top</li>
-      <li>Send you a notification within the app for major changes</li>
-    </ul>
-    <p>
-      Your continued use of ReelHub after changes are posted means you accept the updated Privacy Policy.
-    </p>
-
-    <!-- ================= 16. LEGAL COMPLIANCE ================= -->
-    <h2>16. Legal Compliance</h2>
-    <p>ReelHub complies with applicable data protection laws including:</p>
-    <ul>
-      <li><strong>India:</strong> Information Technology Act, 2000 and rules thereunder</li>
-      <li><strong>EU:</strong> General Data Protection Regulation (GDPR)</li>
-      <li><strong>California:</strong> California Consumer Privacy Act (CCPA)</li>
-      <li><strong>General:</strong> Other applicable local laws in your jurisdiction</li>
-    </ul>
-
-    <!-- ================= 17. CONTACT US ================= -->
-    <h2 id="contact">17. Contact Us</h2>
-    <p>
-      If you have any questions, concerns, or requests regarding this Privacy Policy or how we handle your personal data, please contact us:
-    </p>
-
-    <div class="contact-box">
-      <h3>📧 Get in Touch</h3>
-      <p>We typically respond within 24-48 hours on business days.</p>
-      <a href="mailto:reehubreelhub@gmail.com" class="contact-email">
-        <span>📩</span>
-        <span>reehubreelhub@gmail.com</span>
-      </a>
-    </div>
-
-    <!-- ================= ACKNOWLEDGMENT ================= -->
-    <div class="box info" style="margin-top: 40px;">
-      <strong>✅ Your Acknowledgment</strong>
-      By using ReelHub, you acknowledge that you have read, understood, and agree to be bound by this Privacy Policy.
     </div>
 
   </main>
 
   <!-- ================= FOOTER ================= -->
   <footer class="footer">
-    <p>
-      © <span id="year">2026</span> ReelHub. All rights reserved.
-    </p>
+    <p>© <span id="year">2026</span> ReelHub. All rights reserved.</p>
     <p style="margin-top: 8px;">
       <a href="index.html">Home</a>
       <span class="dot">•</span>
@@ -857,16 +1151,62 @@
 
   <!-- ================= SCRIPTS ================= -->
   <script>
-    // Auto-update year
+    // ============================================================
+    // LANGUAGE SYSTEM
+    // ============================================================
+    function setLanguage(lang) {
+      // Save preference
+      localStorage.setItem('reelhubPrivacyLang', lang);
+      
+      // Update HTML lang attribute
+      document.documentElement.lang = lang;
+      
+      // Update all lang buttons
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+      });
+      
+      // Show/hide content based on lang
+      document.querySelectorAll('[data-lang]').forEach(el => {
+        el.classList.toggle('active', el.dataset.lang === lang);
+      });
+      
+      // Update page title
+      document.title = lang === 'hi' 
+        ? 'गोपनीयता नीति — ReelHub' 
+        : 'Privacy Policy — ReelHub';
+    }
+
+    // Load saved language on page load
+    (function loadLanguage() {
+      const savedLang = localStorage.getItem('reelhubPrivacyLang');
+      const browserLang = navigator.language.toLowerCase().startsWith('hi') ? 'hi' : 'en';
+      const lang = savedLang || browserLang;
+      setLanguage(lang);
+    })();
+
+    // ============================================================
+    // AUTO-UPDATE YEAR
+    // ============================================================
     document.getElementById('year').textContent = new Date().getFullYear();
-    
-    // Auto-update "Last Updated" to current month/year
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                    'July', 'August', 'September', 'October', 'November', 'December'];
+
+    // ============================================================
+    // AUTO-UPDATE "LAST UPDATED"
+    // ============================================================
+    const monthsEn = ['January', 'February', 'March', 'April', 'May', 'June', 
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthsHi = ['जनवरी', 'फरवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 
+                      'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर'];
     const now = new Date();
-    document.getElementById('lastUpdated').textContent = months[now.getMonth()] + ' ' + now.getFullYear();
     
-    // Smooth scroll for Quick Nav links (in case browser doesn't support CSS smooth)
+    const elEn = document.getElementById('lastUpdatedEn');
+    const elHi = document.getElementById('lastUpdatedHi');
+    if (elEn) elEn.textContent = monthsEn[now.getMonth()] + ' ' + now.getFullYear();
+    if (elHi) elHi.textContent = monthsHi[now.getMonth()] + ' ' + now.getFullYear();
+
+    // ============================================================
+    // SMOOTH SCROLL FOR QUICK NAV
+    // ============================================================
     document.querySelectorAll('.quick-nav a, a[href^="#"]').forEach(link => {
       link.addEventListener('click', (e) => {
         const href = link.getAttribute('href');
@@ -883,7 +1223,8 @@
       });
     });
 
-    console.log('%c🔒 ReelHub Privacy Policy', 'color: #ff2e63; font-size: 16px; font-weight: bold;');
+    console.log('%c🔒 ReelHub Privacy Policy (Bilingual)', 'color: #ff2e63; font-size: 16px; font-weight: bold;');
+    console.log('%cLanguages: English + हिंदी', 'color: #4ea8ff; font-size: 13px;');
   </script>
 
 </body>
