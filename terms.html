@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="description" content="ReelHub Terms of Service - Rules and guidelines for using ReelHub.">
+  <title>Terms of Service — ReelHub</title>
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='50' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='central'>R</text></svg>">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    html { scroll-behavior: smooth; }
+    
+    body {
+      background: #0a0a0a;
+      color: #ddd;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.7;
+      font-size: 15px;
+      min-height: 100vh;
+    }
+    
+    /* ================= HEADER ================= */
+    .header {
+      position: sticky;
+      top: 0;
+      background: rgba(10, 10, 10, 0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid #1e1e28;
+      padding: 14px 20px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo {
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #ff2e63, #ff8a00);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+    
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .back-btn {
+      color: #888;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: 8px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .back-btn:hover {
+      background: #1a1a24;
+      color: #fff;
+    }
+    
+    /* ================= LANGUAGE TOGGLE ================= */
+    .lang-toggle {
+      display: flex;
+      background: #121212;
+      border: 1px solid #262626;
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+    }
+    
+    .lang-btn {
+      padding: 6px 14px;
+      background: transparent;
+      border: none;
+      border-radius: 7px;
+      color: #888;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+    
+    .lang-btn:hover { color: #ccc; }
+    
+    .lang-btn.active {
+      background: linear-gradient(90deg, #ff2e63, #ff8a00);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(255, 46, 99, 0.3);
+    }
+    
+    /* ================= CONTAINER ================= */
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 40px 20px 100px;
+    }
+    
+    /* ================= TITLE ================= */
+    h1 {
+      font-size: 34px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 12px;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+    }
+    
+    .updated {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #1e1e28;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .updated::before {
+      content: '📅';
+      font-size: 14px;
+    }
+    
+    /* ================= HEADINGS ================= */
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 40px;
+      margin-bottom: 14px;
+      padding-top: 8px;
+      line-height: 1.3;
+      letter-spacing: -0.3px;
+    }
+    
+    h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 24px;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    
+    /* ================= TEXT ================= */
+    p {
+      margin-bottom: 14px;
+      color: #c5c5c5;
+    }
+    
+    ul, ol {
+      margin-bottom: 14px;
+      padding-left: 22px;
+    }
+    
+    li {
+      margin-bottom: 8px;
+      color: #c5c5c5;
+      line-height: 1.6;
+    }
+    
+    li::marker { color: #ff2e63; }
+    
+    strong { color: #fff; font-weight: 700; }
+    
+    a {
+      color: #4ea8ff;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    a:hover {
+      color: #7abfff;
+      text-decoration: underline;
+    }
+    
+    /* ================= BOXES ================= */
+    .box {
+      background: #121212;
+      border: 1px solid #1e1e28;
+      border-left: 3px solid #ff2e63;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 20px 0;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    
+    .box.info {
+      border-left-color: #4ea8ff;
+      background: #0e1620;
+    }
+    
+    .box.warn {
+      border-left-color: #ff8a00;
+      background: #1a1408;
+    }
+    
+    .box.success {
+      border-left-color: #16a34a;
+      background: #0e1a12;
+    }
+    
+    .box.danger {
+      border-left-color: #dc2626;
+      background: #1a0e0e;
+    }
+    
+    .box strong {
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+    
+    .box ul {
+      margin-bottom: 0;
+      padding-left: 20px;
+    }
+    
+    .box ul li:last-child { margin-bottom: 0; }
+    
+    /* ================= INFO LIST ================= */
+    .info-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 16px 0;
+    }
+    
+    .info-list-item {
+      background: #121212;
+      border: 1px solid #1e1e28;
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      font-size: 14px;
+    }
+    
+    .info-list-item .icon {
+      font-size: 18px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    
+    .info-list-item .content {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .info-list-item .content strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 14px;
+    }
+    
+    .info-list-item .content p {
+      margin: 0;
+      font-size: 13px;
+      color: #aaa;
+    }
+    
+    /* ================= CONTACT BOX ================= */
+    .contact-box {
+      background: linear-gradient(135deg, #1a1520 0%, #121212 100%);
+      border: 1px solid #ff2e63;
+      border-radius: 16px;
+      padding: 28px 24px;
+      margin-top: 40px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .contact-box::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 46, 99, 0.1) 0%, transparent 70%);
+      animation: rotate 20s linear infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes rotate {
+      to { transform: rotate(360deg); }
+    }
+    
+    .contact-box h3 {
+      color: #fff;
+      font-size: 20px;
+      margin-bottom: 10px;
+      margin-top: 0;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .contact-box p {
+      font-size: 14px;
+      color: #ccc;
+      margin-bottom: 18px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .contact-email {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: linear-gradient(90deg, #ff2e63, #ff8a00);
+      color: #fff;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      transition: transform 0.15s, opacity 0.2s;
+      position: relative;
+      z-index: 1;
+      word-break: break-all;
+    }
+    
+    .contact-email:hover {
+      opacity: 0.9;
+      transform: scale(1.02);
+      text-decoration: none;
+      color: #fff;
+    }
+    
+    /* ================= QUICK NAV ================= */
+    .quick-nav {
+      background: #121212;
+      border: 1px solid #1e1e28;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 30px;
+    }
+    
+    .quick-nav-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    
+    .quick-nav ul {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px 16px;
+      padding: 0;
+      list-style: none;
+      margin: 0;
+    }
+    
+    .quick-nav li { margin: 0; }
+    
+    .quick-nav a {
+      font-size: 13px;
+      color: #ccc;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+      transition: color 0.15s;
+    }
+    
+    .quick-nav a:hover {
+      color: #ff2e63;
+      text-decoration: none;
+    }
+    
+    .quick-nav a::before {
+      content: '→';
+      color: #444;
+      font-size: 12px;
+      transition: color 0.15s, transform 0.15s;
+    }
+    
+    .quick-nav a:hover::before {
+      color: #ff2e63;
+      transform: translateX(2px);
+    }
+    
+    /* ================= FOOTER ================= */
+    .footer {
+      text-align: center;
+      padding: 30px 20px;
+      color: #555;
+      font-size: 12px;
+      border-top: 1px solid #1e1e28;
+      margin-top: 50px;
+      line-height: 1.8;
+    }
+    
+    .footer a {
+      color: #888;
+      text-decoration: none;
+    }
+    
+    .footer a:hover {
+      color: #fff;
+      text-decoration: none;
+    }
+    
+    .footer .dot {
+      color: #333;
+      margin: 0 8px;
+    }
+    
+    /* ================= LANGUAGE CONTENT ================= */
+    [data-lang] { display: none; }
+    [data-lang].active { display: block; }
+    
+    span[data-lang] { display: none; }
+    span[data-lang].active { display: inline; }
+    
+    /* ================= MOBILE ================= */
+    @media (max-width: 480px) {
+      h1 { font-size: 26px; }
+      h2 { font-size: 19px; margin-top: 32px; }
+      h3 { font-size: 16px; }
+      .container { padding: 24px 16px 80px; }
+      .header { padding: 12px 14px; gap: 8px; }
+      .logo { font-size: 18px; }
+      .back-btn { font-size: 12px; padding: 6px 8px; }
+      .back-btn span { display: none; }
+      .lang-btn { padding: 5px 10px; font-size: 11px; }
+      .contact-box { padding: 22px 18px; }
+      .contact-email { font-size: 13px; padding: 10px 16px; }
+      .quick-nav ul { grid-template-columns: 1fr; }
+    }
+    
+    /* ================= SCROLLBAR ================= */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: #262626; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #333; }
+    
+    ::selection { background: #ff2e63; color: #fff; }
+  </style>
+</head>
+
+<body>
+
+  <!-- ================= HEADER ================= -->
+  <header class="header">
+    <div class="header-left">
+      <a href="index.html" class="logo">ReelHub</a>
+    </div>
+    <div class="header-right">
+      <div class="lang-toggle">
+        <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+        <button class="lang-btn" data-lang="hi" onclick="setLanguage('hi')">हिं</button>
+      </div>
+      <a href="index.html" class="back-btn">← <span>Back</span></a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- ============================================================
+         ENGLISH VERSION
+         ============================================================ -->
+    <div data-lang="en" class="active">
+
+      <h1>Terms of Service</h1>
+      <div class="updated">
+        <strong>Last Updated:</strong> <span id="lastUpdatedEn">January 2026</span>
+      </div>
+
+      <nav class="quick-nav">
+        <div class="quick-nav-title">Quick Navigation</div>
+        <ul>
+          <li><a href="#accept-en">Acceptance</a></li>
+          <li><a href="#eligibility-en">Eligibility</a></li>
+          <li><a href="#account-en">Your Account</a></li>
+          <li><a href="#content-en">Content Rules</a></li>
+          <li><a href="#prohibited-en">Prohibited</a></li>
+          <li><a href="#ip-en">Intellectual Property</a></li>
+          <li><a href="#termination-en">Termination</a></li>
+          <li><a href="#contact-en">Contact Us</a></li>
+        </ul>
+      </nav>
+
+      <div class="box info">
+        <strong>📌 In Simple Words:</strong>
+        Be respectful, don't post illegal content, don't spam, and follow the rules. If you break the rules, we may suspend or ban your account.
+      </div>
+
+      <h2 id="accept-en">1. Acceptance of Terms</h2>
+      <p>Welcome to <strong>ReelHub</strong> ("we", "our", "us"). By accessing or using our Service (the "Service"), you agree to be bound by these Terms of Service ("Terms").</p>
+      <p>If you do not agree with any part of these Terms, you must <strong>not</strong> use ReelHub. Your continued use of the Service means you accept these Terms.</p>
+      <p>These Terms apply to all users, visitors, and others who access the Service. Please read them carefully.</p>
+
+      <h2 id="eligibility-en">2. Eligibility</h2>
+      <p>To use ReelHub, you must meet the following requirements:</p>
+      <ul>
+        <li>You must be at least <strong>13 years old</strong></li>
+        <li>If you are between 13 and 18, you must have parental/guardian consent</li>
+        <li>You must not be banned from using ReelHub</li>
+        <li>You must provide accurate and complete registration information</li>
+        <li>You must not impersonate anyone else</li>
+      </ul>
+      <div class="box warn">
+        <strong>⚠️ Age Restriction:</strong>
+        ReelHub is not intended for children under 13. If we discover you are under 13, we will immediately delete your account.
+      </div>
+
+      <h2 id="account-en">3. Your Account</h2>
+      
+      <h3>3.1 Account Creation</h3>
+      <p>When you create a ReelHub account, you agree to:</p>
+      <ul>
+        <li>Provide <strong>accurate, current, and complete</strong> information</li>
+        <li>Keep your account information up to date</li>
+        <li>Use a strong, unique password</li>
+        <li>Keep your password confidential and secure</li>
+        <li>Notify us immediately of any unauthorized access</li>
+      </ul>
+      
+      <h3>3.2 Account Responsibility</h3>
+      <p>You are <strong>fully responsible</strong> for:</p>
+      <ul>
+        <li>All activity that occurs under your account</li>
+        <li>Anything posted, sent, or shared through your account</li>
+        <li>Any consequences of using your account credentials</li>
+      </ul>
+      
+      <h3>3.3 One Account Per Person</h3>
+      <p>You agree to maintain only <strong>one account</strong>. Creating multiple accounts to bypass bans or restrictions is prohibited and will result in all accounts being terminated.</p>
+      
+      <h3>3.4 Account Security</h3>
+      <p>We recommend:</p>
+      <ul>
+        <li>Using a strong password (minimum 6 characters, mix of letters, numbers, symbols)</li>
+        <li>Not sharing your password with anyone</li>
+        <li>Logging out from shared devices</li>
+        <li>Enabling two-factor authentication when available</li>
+      </ul>
+
+      <h2 id="content-en">4. Content & Conduct Rules</h2>
+      
+      <h3>4.1 Your Content</h3>
+      <p>You retain <strong>ownership</strong> of the content you create and share on ReelHub. However, by posting content, you grant us a:</p>
+      <ul>
+        <li><strong>Worldwide, non-exclusive, royalty-free license</strong> to use, display, and distribute your content</li>
+        <li><strong>Right to modify or remove</strong> content that violates these Terms</li>
+        <li><strong>Right to use your content</strong> to improve and promote ReelHub</li>
+      </ul>
+      
+      <h3>4.2 Content You Post</h3>
+      <p>You agree that all content you post:</p>
+      <ul>
+        <li>Is <strong>your own</strong> or you have rights to share it</li>
+        <li>Does <strong>not</strong> violate anyone's copyright, trademark, or privacy</li>
+        <li>Is <strong>not</strong> illegal, harmful, or offensive</li>
+        <li>Is <strong>not</strong> misleading or fraudulent</li>
+        <li>Does <strong>not</strong> contain viruses or malware</li>
+      </ul>
+
+      <h2 id="prohibited-en">5. Prohibited Content & Activities</h2>
+      <p>You <strong>must not</strong> post, share, or engage in:</p>
+      
+      <h3>5.1 Content Restrictions</h3>
+      <div class="box danger">
+        <strong>❌ Strictly Prohibited Content:</strong>
+        <ul>
+          <li>🚫 <strong>Nudity or sexual content</strong> — including pornographic material</li>
+          <li>🚫 <strong>Child sexual abuse material (CSAM)</strong> — we report this to authorities</li>
+          <li>🚫 <strong>Violence or gore</strong> — graphic images of violence, torture, or death</li>
+          <li>🚫 <strong>Hate speech</strong> — attacking people based on race, religion, gender, etc.</li>
+          <li>🚫 <strong>Harassment or bullying</strong> — threatening or intimidating others</li>
+          <li>🚫 <strong>Illegal activities</strong> — drug dealing, weapons, human trafficking</li>
+          <li>🚫 <strong>Copyright infringement</strong> — posting others' content without permission</li>
+          <li>🚫 <strong>Fake news</strong> — deliberately spreading misinformation</li>
+          <li>🚫 <strong>Self-harm content</strong> — promoting suicide or self-injury</li>
+          <li>🚫 <strong>Animal cruelty</strong> — showing harm to animals</li>
+        </ul>
+      </div>
+      
+      <h3>5.2 Activity Restrictions</h3>
+      <div class="box danger">
+        <strong>❌ Strictly Prohibited Activities:</strong>
+        <ul>
+          <li>🚫 <strong>Spam</strong> — sending unwanted messages or repetitive content</li>
+          <li>🚫 <strong>Bot activity</strong> — using automated tools to post or interact</li>
+          <li>🚫 <strong>Hacking</strong> — attempting to access others' accounts or our systems</li>
+          <li>🚫 <strong>Data scraping</strong> — extracting user data without permission</li>
+          <li>🚫 <strong>Fake engagement</strong> — buying followers, likes, or views</li>
+          <li>🚫 <strong>Impersonation</strong> — pretending to be someone else</li>
+          <li>🚫 <strong>Fraud</strong> — scams, phishing, or deceptive practices</li>
+          <li>🚫 <strong>Circumventing bans</strong> — creating new accounts after being banned</li>
+        </ul>
+      </div>
+
+      <h2 id="ip-en">6. Intellectual Property</h2>
+      
+      <h3>6.1 Our Property</h3>
+      <p>All ReelHub branding, logos, designs, code, and features are owned by us and protected by copyright and trademark laws. You may <strong>not</strong>:</p>
+      <ul>
+        <li>Copy, modify, or distribute our code or design</li>
+        <li>Use our logo or branding without permission</li>
+        <li>Reverse engineer our app</li>
+        <li>Claim ReelHub as your own product</li>
+      </ul>
+      
+      <h3>6.2 Your Property</h3>
+      <p>You retain ownership of your content. We only use it as described in these Terms and our Privacy Policy.</p>
+      
+      <h3>6.3 Copyright Complaints</h3>
+      <p>If you believe your copyright has been infringed, contact us at <a href="mailto:reehubreelhub@gmail.com">reehubreelhub@gmail.com</a> with:</p>
+      <ul>
+        <li>Description of the copyrighted work</li>
+        <li>Location of the infringing content on ReelHub</li>
+        <li>Your contact information</li>
+        <li>A statement of good faith belief</li>
+      </ul>
+
+      <h2>7. Content Moderation</h2>
+      <p>We reserve the right to:</p>
+      <ul>
+        <li>Review any content on ReelHub</li>
+        <li>Remove content that violates these Terms</li>
+        <li>Warn users who violate the rules</li>
+        <li>Suspend or ban accounts that repeatedly violate the rules</li>
+        <li>Report illegal content to law enforcement</li>
+      </ul>
+      <p>We are <strong>not obligated</strong> to monitor all content, but we may do so at our discretion.</p>
+
+      <h2 id="termination-en">8. Termination</h2>
+      
+      <h3>8.1 Termination by You</h3>
+      <p>You may delete your ReelHub account at any time through Settings. This will:</p>
+      <ul>
+        <li>Remove your profile and content</li>
+        <li>Delete your data (with some exceptions per Privacy Policy)</li>
+        <li>Prevent you from accessing your account</li>
+      </ul>
+      
+      <h3>8.2 Termination by Us</h3>
+      <p>We may suspend or terminate your account if you:</p>
+      <ul>
+        <li>Violate these Terms</li>
+        <li>Post prohibited content</li>
+        <li>Engage in harmful activities</li>
+        <li>Repeatedly receive valid user reports</li>
+        <li>Attempt to harm ReelHub or our users</li>
+      </ul>
+      <p>In serious cases, termination may be immediate without warning.</p>
+
+      <h2>9. Disclaimers</h2>
+      <div class="box warn">
+        <strong>⚠️ Service Provided "As Is"</strong>
+        <p style="margin-top: 8px;">ReelHub is provided "AS IS" and "AS AVAILABLE" without any warranties, express or implied. We do not guarantee:</p>
+        <ul>
+          <li>The Service will be uninterrupted or error-free</li>
+          <li>Content will be accurate or reliable</li>
+          <li>Data will never be lost</li>
+          <li>The Service will meet all your needs</li>
+        </ul>
+      </div>
+
+      <h2>10. Limitation of Liability</h2>
+      <p>To the maximum extent permitted by law, ReelHub and its operators shall <strong>not be liable</strong> for:</p>
+      <ul>
+        <li>Any indirect, incidental, or consequential damages</li>
+        <li>Loss of data, profits, or revenue</li>
+        <li>Content posted by other users</li>
+        <li>Service interruptions or technical issues</li>
+        <li>Actions of third-party services (Firebase, Cloudinary, etc.)</li>
+        <li>Any damages exceeding the amount you paid us (if any)</li>
+      </ul>
+
+      <h2>11. Indemnification</h2>
+      <p>You agree to indemnify and hold harmless ReelHub and its operators from any claims, damages, or expenses arising from:</p>
+      <ul>
+        <li>Your use of the Service</li>
+        <li>Content you post or share</li>
+        <li>Violation of these Terms</li>
+        <li>Violation of any third-party rights</li>
+      </ul>
+
+      <h2>12. Changes to Terms</h2>
+      <p>We reserve the right to modify these Terms at any time. When we make significant changes:</p>
+      <ul>
+        <li>We will post the updated Terms on this page</li>
+        <li>We will update the "Last Updated" date</li>
+        <li>We will notify you within the app for major changes</li>
+      </ul>
+      <p>Your continued use of ReelHub after changes means you accept the new Terms.</p>
+
+      <h2>13. Governing Law</h2>
+      <p>These Terms shall be governed by and construed in accordance with the laws of <strong>India</strong>, without regard to its conflict of law provisions. Any disputes shall be resolved in the courts of India.</p>
+
+      <h2>14. Severability</h2>
+      <p>If any provision of these Terms is found to be unenforceable, the remaining provisions will continue to be in full force and effect.</p>
+
+      <h2>15. Entire Agreement</h2>
+      <p>These Terms, together with our Privacy Policy, constitute the entire agreement between you and ReelHub regarding the use of the Service.</p>
+
+      <h2 id="contact-en">16. Contact Us</h2>
+      <p>If you have any questions about these Terms of Service, please contact us:</p>
+
+      <div class="contact-box">
+        <h3>📧 Get in Touch</h3>
+        <p>We typically respond within 24-48 hours on business days.</p>
+        <a href="mailto:reehubreelhub@gmail.com" class="contact-email">
+          <span>📩</span>
+          <span>reehubreelhub@gmail.com</span>
+        </a>
+      </div>
+
+      <div class="box info" style="margin-top: 40px;">
+        <strong>✅ Your Acknowledgment</strong>
+        By using ReelHub, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
+      </div>
+
+    </div>
+
+    <!-- ============================================================
+         HINDI VERSION
+         ============================================================ -->
+    <div data-lang="hi">
+
+      <h1>सेवा की शर्तें</h1>
+      <div class="updated">
+        <strong>अंतिम अपडेट:</strong> <span id="lastUpdatedHi">जनवरी 2026</span>
+      </div>
+
+      <nav class="quick-nav">
+        <div class="quick-nav-title">जल्दी नेविगेशन</div>
+        <ul>
+          <li><a href="#accept-hi">शर्तों की स्वीकृति</a></li>
+          <li><a href="#eligibility-hi">पात्रता</a></li>
+          <li><a href="#account-hi">आपका Account</a></li>
+          <li><a href="#content-hi">Content नियम</a></li>
+          <li><a href="#prohibited-hi">निषिद्ध</a></li>
+          <li><a href="#ip-hi">बौद्धिक संपदा</a></li>
+          <li><a href="#termination-hi">समाप्ति</a></li>
+          <li><a href="#contact-hi">संपर्क करें</a></li>
+        </ul>
+      </nav>
+
+      <div class="box info">
+        <strong>📌 आसान शब्दों में:</strong>
+        सम्मानजनक रहें, अवैध content पोस्ट न करें, spam न करें, और नियमों का पालन करें। यदि आप नियम तोड़ते हैं, तो हम आपका account suspend या ban कर सकते हैं।
+      </div>
+
+      <h2 id="accept-hi">1. शर्तों की स्वीकृति</h2>
+      <p>ReelHub में आपका स्वागत है ("हम", "हमारा")। हमारी Service (जिसे "Service" कहा जाता है) का उपयोग या उस तक पहुँच कर, आप इन सेवा की शर्तों ("शर्तें") से बंधे होने के लिए सहमत होते हैं।</p>
+      <p>यदि आप इन शर्तों के किसी भी हिस्से से सहमत नहीं हैं, तो आपको ReelHub का उपयोग <strong>नहीं</strong> करना चाहिए। Service का आपका निरंतर उपयोग इसका मतलब है कि आप इन शर्तों को स्वीकार करते हैं।</p>
+      <p>ये शर्तें सभी उपयोगकर्ताओं, आगंतुकों और Service तक पहुँचने वाले अन्य लोगों पर लागू होती हैं। कृपया इन्हें ध्यान से पढ़ें।</p>
+
+      <h2 id="eligibility-hi">2. पात्रता</h2>
+      <p>ReelHub का उपयोग करने के लिए, आपको इन आवश्यकताओं को पूरा करना होगा:</p>
+      <ul>
+        <li>आपकी उम्र कम से कम <strong>13 वर्ष</strong> होनी चाहिए</li>
+        <li>यदि आप 13 से 18 वर्ष के बीच हैं, तो आपके पास माता-पिता/अभिभावक की सहमति होनी चाहिए</li>
+        <li>आप ReelHub का उपयोग करने से प्रतिबंधित नहीं होने चाहिए</li>
+        <li>आपको सटीक और पूरी registration जानकारी प्रदान करनी होगी</li>
+        <li>आप किसी और का impersonation नहीं कर सकते</li>
+      </ul>
+      <div class="box warn">
+        <strong>⚠️ आयु प्रतिबंध:</strong>
+        ReelHub 13 वर्ष से कम उम्र के बच्चों के लिए नहीं है। यदि हमें पता चलता है कि आपकी उम्र 13 वर्ष से कम है, तो हम तुरंत आपका account delete कर देंगे।
+      </div>
+
+      <h2 id="account-hi">3. आपका Account</h2>
+      
+      <h3>3.1 Account बनाना</h3>
+      <p>जब आप ReelHub account बनाते हैं, तो आप सहमत होते हैं:</p>
+      <ul>
+        <li><strong>सटीक, वर्तमान और पूरी</strong> जानकारी प्रदान करने के लिए</li>
+        <li>अपनी account जानकारी को up-to-date रखने के लिए</li>
+        <li>मजबूत, अद्वितीय password का उपयोग करने के लिए</li>
+        <li>अपने password को गोपनीय और सुरक्षित रखने के लिए</li>
+        <li>किसी भी अनधिकृत पहुँच के बारे में हमें तुरंत सूचित करने के लिए</li>
+      </ul>
+      
+      <h3>3.2 Account की ज़िम्मेदारी</h3>
+      <p>आप <strong>पूरी तरह ज़िम्मेदार</strong> हैं:</p>
+      <ul>
+        <li>आपके account के तहत होने वाली सभी गतिविधियों के लिए</li>
+        <li>आपके account के माध्यम से पोस्ट, भेजी या साझा की गई किसी भी चीज़ के लिए</li>
+        <li>आपके account credentials का उपयोग करने के किसी भी परिणाम के लिए</li>
+      </ul>
+      
+      <h3>3.3 एक व्यक्ति, एक Account</h3>
+      <p>आप सिर्फ <strong>एक account</strong> बनाए रखने के लिए सहमत हैं। Bans या restrictions को bypass करने के लिए कई accounts बनाना प्रतिबंधित है और इसके परिणामस्वरूप सभी accounts समाप्त कर दिए जाएँगे।</p>
+      
+      <h3>3.4 Account सुरक्षा</h3>
+      <p>हम अनुशंसा करते हैं:</p>
+      <ul>
+        <li>मजबूत password का उपयोग करना (कम से कम 6 अक्षर, letters, numbers, symbols का मिश्रण)</li>
+        <li>अपना password किसी के साथ साझा न करना</li>
+        <li>Shared devices से logout करना</li>
+        <li>उपलब्ध होने पर two-factor authentication सक्षम करना</li>
+      </ul>
+
+      <h2 id="content-hi">4. Content और आचरण के नियम</h2>
+      
+      <h3>4.1 आपका Content</h3>
+      <p>ReelHub पर आप जो content बनाते और share करते हैं उसका <strong>स्वामित्व</strong> आपके पास रहता है। हालाँकि, content पोस्ट करके, आप हमें देते हैं:</p>
+      <ul>
+        <li>आपके content का उपयोग, प्रदर्शन और वितरण करने का <strong>विश्वव्यापी, गैर-अनन्य, royalty-free license</strong></li>
+        <li>इन शर्तों का उल्लंघन करने वाले content को <strong>संशोधित या हटाने का अधिकार</strong></li>
+        <li>ReelHub को बेहतर बनाने और बढ़ावा देने के लिए आपके content का <strong>उपयोग करने का अधिकार</strong></li>
+      </ul>
+      
+      <h3>4.2 आप जो Content पोस्ट करते हैं</h3>
+      <p>आप सहमत हैं कि आपके द्वारा पोस्ट किया गया सभी content:</p>
+      <ul>
+        <li><strong>आपका अपना</strong> है या आपके पास इसे share करने का अधिकार है</li>
+        <li>किसी के copyright, trademark या privacy का <strong>उल्लंघन नहीं</strong> करता</li>
+        <li>अवैध, हानिकारक या आपत्तिजनक <strong>नहीं</strong> है</li>
+        <li>भ्रामक या धोखाधड़ी वाला <strong>नहीं</strong> है</li>
+        <li>वायरस या malware <strong>नहीं</strong> रखता</li>
+      </ul>
+
+      <h2 id="prohibited-hi">5. निषिद्ध Content और गतिविधियाँ</h2>
+      <p>आपको <strong>नहीं</strong> करना चाहिए, पोस्ट करना चाहिए या शामिल होना चाहिए:</p>
+      
+      <h3>5.1 Content प्रतिबंध</h3>
+      <div class="box danger">
+        <strong>❌ सख्ती से निषिद्ध Content:</strong>
+        <ul>
+          <li>🚫 <strong>नग्नता या यौन content</strong> — अश्लील सामग्री सहित</li>
+          <li>🚫 <strong>बाल यौन शोषण सामग्री (CSAM)</strong> — हम इसे authorities को रिपोर्ट करते हैं</li>
+          <li>🚫 <strong>हिंसा या रक्तपात</strong> — हिंसा, यातना या मृत्यु की ग्राफिक छवियाँ</li>
+          <li>🚫 <strong>Hate speech</strong> — नस्ल, धर्म, लिंग आदि के आधार पर लोगों पर हमला</li>
+          <li>🚫 <strong>Harassment या bullying</strong> — दूसरों को धमकाना या डराना</li>
+          <li>🚫 <strong>अवैध गतिविधियाँ</strong> — ड्रग डीलिंग, हथियार, मानव तस्करी</li>
+          <li>🚫 <strong>Copyright उल्लंघन</strong> — अनुमति के बिना दूसरों का content पोस्ट करना</li>
+          <li>🚫 <strong>Fake news</strong> — जानबूझकर गलत जानकारी फैलाना</li>
+          <li>🚫 <strong>Self-harm content</strong> — आत्महत्या या स्वयं को नुकसान पहुँचाने को बढ़ावा देना</li>
+          <li>🚫 <strong>पशु क्रूरता</strong> — जानवरों को नुकसान दिखाना</li>
+        </ul>
+      </div>
+      
+      <h3>5.2 गतिविधि प्रतिबंध</h3>
+      <div class="box danger">
+        <strong>❌ सख्ती से निषिद्ध गतिविधियाँ:</strong>
+        <ul>
+          <li>🚫 <strong>Spam</strong> — अवांछित messages या दोहराव वाला content भेजना</li>
+          <li>🚫 <strong>Bot गतिविधि</strong> — पोस्ट या बातचीत के लिए automated tools का उपयोग</li>
+          <li>🚫 <strong>Hacking</strong> — दूसरों के accounts या हमारे systems तक पहुँचने का प्रयास</li>
+          <li>🚫 <strong>Data scraping</strong> — अनुमति के बिना user data निकालना</li>
+          <li>🚫 <strong>Fake engagement</strong> — followers, likes या views खरीदना</li>
+          <li>🚫 <strong>Impersonation</strong> — किसी और का होने का नाटक करना</li>
+          <li>🚫 <strong>धोखाधड़ी</strong> — scams, phishing या भ्रामक प्रथाएँ</li>
+          <li>🚫 <strong>Bans को bypass करना</strong> — ban होने के बाद नए accounts बनाना</li>
+        </ul>
+      </div>
+
+      <h2 id="ip-hi">6. बौद्धिक संपदा</h2>
+      
+      <h3>6.1 हमारी संपत्ति</h3>
+      <p>सभी ReelHub branding, logos, designs, code और features हमारे स्वामित्व में हैं और copyright और trademark कानूनों द्वारा संरक्षित हैं। आप <strong>नहीं</strong> कर सकते:</p>
+      <ul>
+        <li>हमारे code या design को copy, modify या distribute करना</li>
+        <li>अनुमति के बिना हमारे logo या branding का उपयोग करना</li>
+        <li>हमारे app को reverse engineer करना</li>
+        <li>ReelHub को अपने उत्पाद के रूप में दावा करना</li>
+      </ul>
+      
+      <h3>6.2 आपकी संपत्ति</h3>
+      <p>आप अपने content का स्वामित्व बनाए रखते हैं। हम इसका उपयोग केवल इन शर्तों और हमारी Privacy Policy में वर्णित तरीके से करते हैं।</p>
+      
+      <h3>6.3 Copyright शिकायतें</h3>
+      <p>यदि आपको लगता है कि आपके copyright का उल्लंघन हुआ है, तो <a href="mailto:reehubreelhub@gmail.com">reehubreelhub@gmail.com</a> पर संपर्क करें:</p>
+      <ul>
+        <li>Copyright किए गए काम का विवरण</li>
+        <li>ReelHub पर उल्लंघनकारी content का स्थान</li>
+        <li>आपकी संपर्क जानकारी</li>
+        <li>सद्भावना विश्वास का बयान</li>
+      </ul>
+
+      <h2>7. Content Moderation</h2>
+      <p>हम अधिकार सुरक्षित रखते हैं:</p>
+      <ul>
+        <li>ReelHub पर किसी भी content की समीक्षा करने का</li>
+        <li>इन शर्तों का उल्लंघन करने वाले content को हटाने का</li>
+        <li>नियमों का उल्लंघन करने वाले उपयोगकर्ताओं को चेतावनी देने का</li>
+        <li>बार-बार नियमों का उल्लंघन करने वाले accounts को suspend या ban करने का</li>
+        <li>अवैध content को law enforcement को रिपोर्ट करने का</li>
+      </ul>
+      <p>हम सभी content की निगरानी करने के लिए <strong>बाध्य नहीं</strong> हैं, लेकिन हम अपने विवेक से ऐसा कर सकते हैं।</p>
+
+      <h2 id="termination-hi">8. समाप्ति</h2>
+      
+      <h3>8.1 आपके द्वारा समाप्ति</h3>
+      <p>आप कभी भी Settings के माध्यम से अपना ReelHub account delete कर सकते हैं। यह:</p>
+      <ul>
+        <li>आपकी profile और content को हटा देगा</li>
+        <li>आपका data delete कर देगा (Privacy Policy के अनुसार कुछ अपवादों के साथ)</li>
+        <li>आपको अपने account तक पहुँचने से रोक देगा</li>
+      </ul>
+      
+      <h3>8.2 हमारे द्वारा समाप्ति</h3>
+      <p>हम आपका account suspend या समाप्त कर सकते हैं यदि आप:</p>
+      <ul>
+        <li>इन शर्तों का उल्लंघन करते हैं</li>
+        <li>निषिद्ध content पोस्ट करते हैं</li>
+        <li>हानिकारक गतिविधियों में शामिल होते हैं</li>
+        <li>बार-बार वैध user reports प्राप्त करते हैं</li>
+        <li>ReelHub या हमारे उपयोगकर्ताओं को नुकसान पहुँचाने का प्रयास करते हैं</li>
+      </ul>
+      <p>गंभीर मामलों में, समाप्ति बिना चेतावनी के तत्काल हो सकती है।</p>
+
+      <h2>9. अस्वीकरण</h2>
+      <div class="box warn">
+        <strong>⚠️ Service "As Is" प्रदान की गई</strong>
+        <p style="margin-top: 8px;">ReelHub "AS IS" और "AS AVAILABLE" के रूप में प्रदान की जाती है, बिना किसी व्यक्त या निहित वारंटी के। हम गारंटी नहीं देते:</p>
+        <ul>
+          <li>Service बिना रुकावट या त्रुटि के होगी</li>
+          <li>Content सटीक या विश्वसनीय होगा</li>
+          <li>Data कभी नहीं खोया जाएगा</li>
+          <li>Service आपकी सभी ज़रूरतों को पूरा करेगी</li>
+        </ul>
+      </div>
+
+      <h2>10. दायित्व की सीमा</h2>
+      <p>कानून द्वारा अनुमत अधिकतम सीमा तक, ReelHub और इसके संचालक <strong>उत्तरदायी नहीं होंगे</strong>:</p>
+      <ul>
+        <li>किसी अप्रत्यक्ष, आकस्मिक या परिणामी नुकसान के लिए</li>
+        <li>Data, मुनाफे या राजस्व की हानि के लिए</li>
+        <li>अन्य उपयोगकर्ताओं द्वारा पोस्ट किए गए content के लिए</li>
+        <li>Service रुकावटों या तकनीकी समस्याओं के लिए</li>
+        <li>तीसरे पक्ष की services (Firebase, Cloudinary, आदि) की कार्रवाइयों के लिए</li>
+        <li>आपके द्वारा हमें भुगतान की गई राशि से अधिक के किसी भी नुकसान के लिए (यदि कोई हो)</li>
+      </ul>
+
+      <h2>11. क्षतिपूर्ति</h2>
+      <p>आप ReelHub और इसके संचालकों को किसी भी दावे, नुकसान या खर्च से बचाने और हानिरहित रखने के लिए सहमत हैं जो निम्न से उत्पन्न होते हैं:</p>
+      <ul>
+        <li>Service का आपका उपयोग</li>
+        <li>आपके द्वारा पोस्ट या share किया गया content</li>
+        <li>इन शर्तों का उल्लंघन</li>
+        <li>किसी भी तीसरे पक्ष के अधिकारों का उल्लंघन</li>
+      </ul>
+
+      <h2>12. शर्तों में परिवर्तन</h2>
+      <p>हम किसी भी समय इन शर्तों को संशोधित करने का अधिकार सुरक्षित रखते हैं। जब हम महत्वपूर्ण परिवर्तन करते हैं:</p>
+      <ul>
+        <li>हम इस पृष्ठ पर updated शर्तें पोस्ट करेंगे</li>
+        <li>हम "Last Updated" तिथि update करेंगे</li>
+        <li>बड़े परिवर्तनों के लिए हम app के भीतर आपको सूचित करेंगे</li>
+      </ul>
+      <p>परिवर्तनों के बाद ReelHub का आपका निरंतर उपयोग इसका मतलब है कि आप नई शर्तें स्वीकार करते हैं।</p>
+
+      <h2>13. शासी कानून</h2>
+      <p>ये शर्तें <strong>भारत</strong> के कानूनों के अनुसार शासित और व्याख्या की जाएँगी, इसके कानून संघर्ष प्रावधानों की परवाह किए बिना। कोई भी विवाद भारत के न्यायालयों में हल किया जाएगा।</p>
+
+      <h2>14. विभाजनशीलता</h2>
+      <p>यदि इन शर्तों का कोई प्रावधान अप्रवर्तनीय पाया जाता है, तो शेष प्रावधान पूरी ताकत और प्रभाव में बने रहेंगे।</p>
+
+      <h2>15. संपूर्ण समझौता</h2>
+      <p>ये शर्तें, हमारी Privacy Policy के साथ, Service के उपयोग के संबंध में आपके और ReelHub के बीच संपूर्ण समझौता constitute करती हैं।</p>
+
+      <h2 id="contact-hi">16. संपर्क करें</h2>
+      <p>यदि इन सेवा की शर्तों के बारे में आपके कोई प्रश्न हैं, तो कृपया हमसे संपर्क करें:</p>
+
+      <div class="contact-box">
+        <h3>📧 संपर्क करें</h3>
+        <p>हम आमतौर पर business days पर 24-48 घंटों के भीतर जवाब देते हैं।</p>
+        <a href="mailto:reehubreelhub@gmail.com" class="contact-email">
+          <span>📩</span>
+          <span>reehubreelhub@gmail.com</span>
+        </a>
+      </div>
+
+      <div class="box info" style="margin-top: 40px;">
+        <strong>✅ आपकी स्वीकृति</strong>
+        ReelHub का उपयोग करके, आप स्वीकार करते हैं कि आपने इन सेवा की शर्तों को पढ़ा, समझा और इनसे बंधे होने के लिए सहमत हैं।
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="footer">
+    <p>© <span id="year">2026</span> ReelHub. All rights reserved.</p>
+    <p style="margin-top: 8px;">
+      <a href="index.html">Home</a>
+      <span class="dot">•</span>
+      <a href="privacy.html">Privacy</a>
+      <span class="dot">•</span>
+      <a href="terms.html">Terms</a>
+      <span class="dot">•</span>
+      <a href="mailto:reehubreelhub@gmail.com">Contact</a>
+    </p>
+  </footer>
+
+  <!-- ================= SCRIPTS ================= -->
+  <script>
+    // ============================================================
+    // LANGUAGE SYSTEM
+    // ============================================================
+    function setLanguage(lang) {
+      localStorage.setItem('reelhubTermsLang', lang);
+      document.documentElement.lang = lang;
+      
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+      });
+      
+      document.querySelectorAll('[data-lang]').forEach(el => {
+        el.classList.toggle('active', el.dataset.lang === lang);
+      });
+      
+      document.title = lang === 'hi' 
+        ? 'सेवा की शर्तें — ReelHub' 
+        : 'Terms of Service — ReelHub';
+    }
+
+    (function loadLanguage() {
+      const savedLang = localStorage.getItem('reelhubTermsLang');
+      const browserLang = navigator.language.toLowerCase().startsWith('hi') ? 'hi' : 'en';
+      const lang = savedLang || browserLang;
+      setLanguage(lang);
+    })();
+
+    // ============================================================
+    // AUTO-UPDATE YEAR
+    // ============================================================
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // ============================================================
+    // AUTO-UPDATE "LAST UPDATED"
+    // ============================================================
+    const monthsEn = ['January', 'February', 'March', 'April', 'May', 'June', 
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthsHi = ['जनवरी', 'फरवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 
+                      'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर'];
+    const now = new Date();
+    
+    const elEn = document.getElementById('lastUpdatedEn');
+    const elHi = document.getElementById('lastUpdatedHi');
+    if (elEn) elEn.textContent = monthsEn[now.getMonth()] + ' ' + now.getFullYear();
+    if (elHi) elHi.textContent = monthsHi[now.getMonth()] + ' ' + now.getFullYear();
+
+    // ============================================================
+    // SMOOTH SCROLL
+    // ============================================================
+    document.querySelectorAll('.quick-nav a, a[href^="#"]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const href = link.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            const headerOffset = 70;
+            const elementPosition = target.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+          }
+        }
+      });
+    });
+
+    console.log('%c📜 ReelHub Terms of Service (Bilingual)', 'color: #ff2e63; font-size: 16px; font-weight: bold;');
+    console.log('%cLanguages: English + हिंदी', 'color: #4ea8ff; font-size: 13px;');
+  </script>
+
+</body>
+</html>
