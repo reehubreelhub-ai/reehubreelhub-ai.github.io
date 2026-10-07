@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="description" content="ReelHub Privacy Policy - Learn how we collect, use, and protect your data.">
+  <title>Privacy Policy — ReelHub</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='50' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='central'>R</text></svg>">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    html { scroll-behavior: smooth; }
+    
+    body {
+      background: #0a0a0a;
+      color: #ddd;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.7;
+      font-size: 15px;
+      min-height: 100vh;
+    }
+    
+    /* ================= HEADER ================= */
+    .header {
+      position: sticky;
+      top: 0;
+      background: rgba(10, 10, 10, 0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid #1e1e28;
+      padding: 14px 20px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .logo {
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #ff2e63, #ff8a00);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+    
+    .back-btn {
+      color: #888;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 8px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .back-btn:hover {
+      background: #1a1a24;
+      color: #fff;
+    }
+    
+    /* ================= CONTAINER ================= */
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 40px 20px 100px;
+    }
+    
+    /* ================= TITLE ================= */
+    h1 {
+      font-size: 34px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 12px;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+    }
+    
+    .updated {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #1e1e28;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .updated::before {
+      content: '📅';
+      font-size: 14px;
+    }
+    
+    /* ================= HEADINGS ================= */
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 40px;
+      margin-bottom: 14px;
+      padding-top: 8px;
+      line-height: 1.3;
+      letter-spacing: -0.3px;
+    }
+    
+    h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 24px;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    
+    /* ================= TEXT ================= */
+    p {
+      margin-bottom: 14px;
+      color: #c5c5c5;
+    }
+    
+    ul, ol {
+      margin-bottom: 14px;
+      padding-left: 22px;
+    }
+    
+    li {
+      margin-bottom: 8px;
+      color: #c5c5c5;
+      line-height: 1.6;
+    }
+    
+    li::marker {
+      color: #ff2e63;
+    }
+    
+    strong {
+      color: #fff;
+      font-weight: 700;
+    }
+    
+    a {
+      color: #4ea8ff;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    a:hover {
+      color: #7abfff;
+      text-decoration: underline;
+    }
+    
+    /* ================= BOXES ================= */
+    .box {
+      background: #121212;
+      border: 1px solid #1e1e28;
+      border-left: 3px solid #ff2e63;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 20px 0;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    
+    .box.info {
+      border-left-color: #4ea8ff;
+      background: #0e1620;
+    }
+    
+    .box.warn {
+      border-left-color: #ff8a00;
+      background: #1a1408;
+    }
+    
+    .box.success {
+      border-left-color: #16a34a;
+      background: #0e1a12;
+    }
+    
+    .box strong {
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+    
+    .box ul {
+      margin-bottom: 0;
+      padding-left: 20px;
+    }
+    
+    .box ul li:last-child {
+      margin-bottom: 0;
+    }
+    
+    /* ================= INFO LIST ================= */
+    .info-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 16px 0;
+    }
+    
+    .info-list-item {
+      background: #121212;
+      border: 1px solid #1e1e28;
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      font-size: 14px;
+    }
+    
+    .info-list-item .icon {
+      font-size: 18px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    
+    .info-list-item .content {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .info-list-item .content strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 14px;
+    }
+    
+    .info-list-item .content p {
+      margin: 0;
+      font-size: 13px;
+      color: #aaa;
+    }
+    
+    /* ================= CONTACT BOX ================= */
+    .contact-box {
+      background: linear-gradient(135deg, #1a1520 0%, #121212 100%);
+      border: 1px solid #ff2e63;
+      border-radius: 16px;
+      padding: 28px 24px;
+      margin-top: 40px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .contact-box::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 46, 99, 0.1) 0%, transparent 70%);
+      animation: rotate 20s linear infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes rotate {
+      to { transform: rotate(360deg); }
+    }
+    
+    .contact-box h3 {
+      color: #fff;
+      font-size: 20px;
+      margin-bottom: 10px;
+      margin-top: 0;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .contact-box p {
+      font-size: 14px;
+      color: #ccc;
+      margin-bottom: 18px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .contact-email {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: linear-gradient(90deg, #ff2e63, #ff8a00);
+      color: #fff;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      transition: transform 0.15s, opacity 0.2s;
+      position: relative;
+      z-index: 1;
+      word-break: break-all;
+    }
+    
+    .contact-email:hover {
+      opacity: 0.9;
+      transform: scale(1.02);
+      text-decoration: none;
+      color: #fff;
+    }
+    
+    /* ================= QUICK NAV ================= */
+    .quick-nav {
+      background: #121212;
+      border: 1px solid #1e1e28;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 30px;
+    }
+    
+    .quick-nav-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    
+    .quick-nav ul {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px 16px;
+      padding: 0;
+      list-style: none;
+      margin: 0;
+    }
+    
+    .quick-nav li {
+      margin: 0;
+    }
+    
+    .quick-nav a {
+      font-size: 13px;
+      color: #ccc;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+      transition: color 0.15s;
+    }
+    
+    .quick-nav a:hover {
+      color: #ff2e63;
+      text-decoration: none;
+    }
+    
+    .quick-nav a::before {
+      content: '→';
+      color: #444;
+      font-size: 12px;
+      transition: color 0.15s, transform 0.15s;
+    }
+    
+    .quick-nav a:hover::before {
+      color: #ff2e63;
+      transform: translateX(2px);
+    }
+    
+    /* ================= FOOTER ================= */
+    .footer {
+      text-align: center;
+      padding: 30px 20px;
+      color: #555;
+      font-size: 12px;
+      border-top: 1px solid #1e1e28;
+      margin-top: 50px;
+      line-height: 1.8;
+    }
+    
+    .footer a {
+      color: #888;
+      text-decoration: none;
+    }
+    
+    .footer a:hover {
+      color: #fff;
+      text-decoration: none;
+    }
+    
+    .footer .dot {
+      color: #333;
+      margin: 0 8px;
+    }
+    
+    /* ================= BADGE ================= */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 800;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      vertical-align: middle;
+      margin-left: 6px;
+    }
+    
+    .badge.blue {
+      background: rgba(78, 168, 255, 0.15);
+      color: #4ea8ff;
+      border: 1px solid rgba(78, 168, 255, 0.3);
+    }
+    
+    .badge.green {
+      background: rgba(22, 163, 74, 0.15);
+      color: #22c55e;
+      border: 1px solid rgba(22, 163, 74, 0.3);
+    }
+    
+    .badge.orange {
+      background: rgba(255, 138, 0, 0.15);
+      color: #ff8a00;
+      border: 1px solid rgba(255, 138, 0, 0.3);
+    }
+    
+    /* ================= MOBILE ================= */
+    @media (max-width: 480px) {
+      h1 { font-size: 26px; }
+      h2 { font-size: 19px; margin-top: 32px; }
+      h3 { font-size: 16px; }
+      .container { padding: 24px 16px 80px; }
+      .header { padding: 12px 16px; }
+      .logo { font-size: 20px; }
+      .back-btn { font-size: 13px; padding: 6px 10px; }
+      .contact-box { padding: 22px 18px; }
+      .contact-email { font-size: 13px; padding: 10px 18px; }
+      .quick-nav ul { grid-template-columns: 1fr; }
+    }
+    
+    /* ================= SCROLLBAR ================= */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #0a0a0a;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #262626;
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #333;
+    }
+    
+    /* ================= SELECTION ================= */
+    ::selection {
+      background: #ff2e63;
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ================= HEADER ================= -->
+  <header class="header">
+    <a href="index.html" class="logo">ReelHub</a>
+    <a href="index.html" class="back-btn">← Back to App</a>
+  </header>
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <main class="container">
+
+    <h1>Privacy Policy</h1>
+    <div class="updated">
+      <strong>Last Updated:</strong> <span id="lastUpdated">January 2026</span>
+    </div>
+
+    <!-- Quick Nav -->
+    <nav class="quick-nav">
+      <div class="quick-nav-title">Quick Navigation</div>
+      <ul>
+        <li><a href="#intro">Introduction</a></li>
+        <li><a href="#collect">What We Collect</a></li>
+        <li><a href="#use">How We Use It</a></li>
+        <li><a href="#dont">What We Don't Do</a></li>
+        <li><a href="#share">Data Sharing</a></li>
+        <li><a href="#security">Data Security</a></li>
+        <li><a href="#rights">Your Rights</a></li>
+        <li><a href="#contact">Contact Us</a></li>
+      </ul>
+    </nav>
+
+    <!-- Highlight Box -->
+    <div class="box info">
+      <strong>📌 In Simple Words:</strong>
+      We collect only what's needed to run ReelHub. We never sell your data. Your private messages stay private. You can delete your account anytime.
+    </div>
+
+    <!-- ================= 1. INTRODUCTION ================= -->
+    <h2 id="intro">1. Introduction</h2>
+    <p>
+      Welcome to <strong>ReelHub</strong> ("we", "our", "us"). This Privacy Policy explains how we collect, use, and protect your personal information when you use our mobile and web application (the "Service").
+    </p>
+    <p>
+      By using ReelHub, you agree to the collection and use of information in accordance with this policy. If you do not agree with any part of this policy, please do not use the Service.
+    </p>
+    <p>
+      This policy applies to all users of ReelHub, regardless of location. We are committed to protecting your privacy and being transparent about our data practices.
+    </p>
+
+    <!-- ================= 2. INFORMATION WE COLLECT ================= -->
+    <h2 id="collect">2. Information We Collect</h2>
+    
+    <h3>2.1 Information You Provide</h3>
+    <p>When you create an account or use ReelHub, you may provide:</p>
+    <ul>
+      <li><strong>Account Information:</strong> Your name, username, email address, and password</li>
+      <li><strong>Profile Information:</strong> Profile photo, bio, and other details you choose to add</li>
+      <li><strong>Content:</strong> Videos, photos, comments, messages, and stories you upload or share</li>
+      <li><strong>Communications:</strong> Direct messages, group chat messages, and voice messages</li>
+      <li><strong>Feedback:</strong> Any information you provide when contacting support or reporting issues</li>
+    </ul>
+    
+    <h3>2.2 Information We Collect Automatically</h3>
+    <p>When you use ReelHub, we automatically collect some information:</p>
+    <ul>
+      <li><strong>Device Information:</strong> Device type, operating system, browser type, and version</li>
+      <li><strong>Usage Data:</strong> Videos watched, likes, follows, comments, and interaction patterns</li>
+      <li><strong>Log Data:</strong> IP address, access times, error logs, and pages visited</li>
+      <li><strong>Location Data:</strong> General location based on IP address (we do not collect precise GPS location)</li>
+    </ul>
+    
+    <h3>2.3 Information from Third Parties</h3>
+    <p>We use trusted third-party services to run ReelHub:</p>
+    <div class="info-list">
+      <div class="info-list-item">
+        <div class="icon">🔥</div>
+        <div class="content">
+          <strong>Google Firebase</strong>
+          <p>For secure authentication, database storage, and app hosting</p>
+        </div>
+      </div>
+      <div class="info-list-item">
+        <div class="icon">☁️</div>
+        <div class="content">
+          <strong>Cloudinary</strong>
+          <p>For video, photo, and story storage and delivery</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 3. HOW WE USE YOUR INFORMATION ================= -->
+    <h2 id="use">3. How We Use Your Information</h2>
+    <p>We use your information for the following purposes:</p>
+    
+    <h3>3.1 Core Features</h3>
+    <ul>
+      <li>Create and manage your ReelHub account</li>
+      <li>Display your content to other users based on your privacy settings</li>
+      <li>Enable communication features like chats, groups, and comments</li>
+      <li>Send notifications about activity related to your account</li>
+      <li>Provide personalized content recommendations</li>
+    </ul>
+    
+    <h3>3.2 Safety & Security</h3>
+    <ul>
+      <li>Detect and prevent fraud, abuse, and violations of our Terms</li>
+      <li>Investigate reports and take action against policy violations</li>
+      <li>Protect the safety of our users and community</li>
+      <li>Comply with legal obligations and law enforcement requests</li>
+    </ul>
+    
+    <h3>3.3 Improvement & Support</h3>
+    <ul>
+      <li>Improve ReelHub's features and user experience</li>
+      <li>Analyze usage patterns to make better decisions</li>
+      <li>Respond to your support requests and feedback</li>
+      <li>Send you important updates about the Service</li>
+    </ul>
+
+    <!-- ================= 4. WHAT WE DON'T DO ================= -->
+    <h2 id="dont">4. What We Don't Do</h2>
+    <div class="box success">
+      <strong>✅ Our Commitment to You:</strong>
+      <ul>
+        <li>❌ We <strong>never sell</strong> your personal information to third parties</li>
+        <li>❌ We <strong>never share</strong> your password with anyone (it's encrypted)</li>
+        <li>❌ We <strong>don't read</strong> your private messages</li>
+        <li>❌ We <strong>don't track</strong> your activity outside ReelHub</li>
+        <li>❌ We <strong>don't use</strong> third-party advertising trackers</li>
+        <li>❌ We <strong>don't access</strong> your camera or microphone without permission</li>
+      </ul>
+    </div>
+
+    <!-- ================= 5. SHARING YOUR INFORMATION ================= -->
+    <h2 id="share">5. Sharing Your Information</h2>
+    
+    <h3>5.1 With Other Users</h3>
+    <p>
+      Your profile information (name, username, profile photo, and bio) is visible to other ReelHub users. Your posts, stories, and comments are visible based on your account privacy settings:
+    </p>
+    <ul>
+      <li><strong>Public Account:</strong> Anyone on ReelHub can see your content</li>
+      <li><strong>Private Account:</strong> Only approved followers can see your content</li>
+    </ul>
+    
+    <h3>5.2 With Service Providers</h3>
+    <p>
+      We share data with trusted service providers who help us run ReelHub. These providers:
+    </p>
+    <ul>
+      <li>Only access data needed to perform their specific services</li>
+      <li>Are bound by confidentiality agreements</li>
+      <li>Must comply with applicable data protection laws</li>
+    </ul>
+    
+    <h3>5.3 For Legal Reasons</h3>
+    <p>
+      We may share your information if required by law, court order, or to protect the rights, safety, or property of ReelHub, our users, or others. This includes cooperating with law enforcement when necessary.
+    </p>
+
+    <!-- ================= 6. YOUR PRIVACY SETTINGS ================= -->
+    <h2>6. Your Privacy Settings</h2>
+    <p>You have full control over your data through these settings:</p>
+    
+    <div class="info-list">
+      <div class="info-list-item">
+        <div class="icon">🔒</div>
+        <div class="content">
+          <strong>Private Account</strong>
+          <p>Only approved followers can see your posts and stories</p>
+        </div>
+      </div>
+      <div class="info-list-item">
+        <div class="icon">🚫</div>
+        <div class="content">
+          <strong>Block Users</strong>
+          <p>Block anyone from viewing your profile or messaging you</p>
+        </div>
+      </div>
+      <div class="info-list-item">
+        <div class="icon">🔔</div>
+        <div class="content">
+          <strong>Notification Settings</strong>
+          <p>Control which notifications you want to receive</p>
+        </div>
+      </div>
+      <div class="info-list-item">
+        <div class="icon">💬</div>
+        <div class="content">
+          <strong>Chat Privacy</strong>
+          <p>Your messages are only visible to chat participants</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 7. DATA SECURITY ================= -->
+    <h2 id="security">7. Data Security</h2>
+    <p>We take data security seriously and implement multiple layers of protection:</p>
+    <ul>
+      <li>Passwords are hashed using industry-standard encryption</li>
+      <li>All data transmission is encrypted using HTTPS/TLS</li>
+      <li>Access to user data is strictly limited to authorized personnel</li>
+      <li>Regular security audits and vulnerability testing</li>
+      <li>Automatic logout from inactive sessions</li>
+      <li>Two-factor authentication support (recommended)</li>
+    </ul>
+    
+    <div class="box warn">
+      <strong>⚠️ Important Notice:</strong>
+      No method of transmission over the internet is 100% secure. While we strive to protect your data using commercially acceptable means, we cannot guarantee absolute security. Please use a strong, unique password and keep your account credentials private.
+    </div>
+
+    <!-- ================= 8. DATA RETENTION ================= -->
+    <h2>8. Data Retention</h2>
+    <p>
+      We keep your personal data as long as your account is active or as needed to provide services. When you delete your account:
+    </p>
+    <ul>
+      <li>Your profile is immediately removed from ReelHub</li>
+      <li>Your posts, stories, and comments are deleted</li>
+      <li>Some data may remain in encrypted backups for up to 90 days</li>
+      <li>Data required for legal or tax compliance may be retained longer</li>
+      <li>Anonymized, aggregated data may be retained for analytics</li>
+    </ul>
+
+    <!-- ================= 9. YOUR RIGHTS ================= -->
+    <h2 id="rights">9. Your Rights</h2>
+    <p>Depending on your location, you may have the following rights:</p>
+    
+    <div class="info-list">
+      <div class="info-list-item">
+        <div class="icon">👁️</div>
+        <div class="content">
+          <strong>Right to Access</strong>
+          <p>Request a copy of all personal data we hold about you</p>
+        </div>
+      </div>
+      <div class="info-list-item">
+        <div class="icon">✏️</div>
+        <div class="content">
+          <strong>Right to Correct</strong>
+          <p>Update or correct your information through profile settings</p>
+        </div>
+      </div>
+      <div class="info-list-item">
+        <div class="icon">🗑️</div>
+        <div class="content">
+          <strong>Right to Delete</strong>
+          <p>Delete your account and all associated data</p>
+        </div>
+      </div>
+      <div class="info-list-item">
+        <div class="icon">📤</div>
+        <div class="content">
+          <strong>Right to Export</strong>
+          <p>Request your data in a portable, machine-readable format</p>
+        </div>
+      </div>
+      <div class="info-list-item">
+        <div class="icon">🚫</div>
+        <div class="content">
+          <strong>Right to Object</strong>
+          <p>Object to certain types of data processing</p>
+        </div>
+      </div>
+      <div class="info-list-item">
+        <div class="icon">📩</div>
+        <div class="content">
+          <strong>Right to Complain</strong>
+          <p>File a complaint with your local data protection authority</p>
+        </div>
+      </div>
+    </div>
+    
+    <p>To exercise these rights, please contact us using the email below.</p>
+
+    <!-- ================= 10. CHILDREN'S PRIVACY ================= -->
+    <h2>10. Children's Privacy</h2>
+    <p>
+      ReelHub is <strong>not intended for children under 13 years of age</strong>. We do not knowingly collect personal information from children under 13.
+    </p>
+    <p>
+      If you are a parent or guardian and discover that your child under 13 has created a ReelHub account, please contact us immediately. We will delete the account and all associated data.
+    </p>
+    <p>
+      Users between 13 and 18 years old should have parental consent before using ReelHub.
+    </p>
+
+    <!-- ================= 11. COOKIES & LOCAL STORAGE ================= -->
+    <h2>11. Cookies & Local Storage</h2>
+    <p>We use minimal tracking technologies:</p>
+    <ul>
+      <li><strong>Local Storage:</strong> To remember your preferences (dark mode, settings, session)</li>
+      <li><strong>Session Storage:</strong> To keep you logged in during your visit</li>
+      <li><strong>No Third-Party Cookies:</strong> We do not use advertising or tracking cookies</li>
+    </ul>
+    <p>You can clear these at any time through your browser settings, but you may need to log in again.</p>
+
+    <!-- ================= 12. THIRD-PARTY LINKS ================= -->
+    <h2>12. Third-Party Links</h2>
+    <p>
+      ReelHub may contain links to external websites or services that are not operated by us. We are not responsible for the privacy practices of these third-party sites. We strongly recommend reading their privacy policies before providing any personal information.
+    </p>
+
+    <!-- ================= 13. INTERNATIONAL DATA TRANSFERS ================= -->
+    <h2>13. International Data Transfers</h2>
+    <p>
+      Your data may be transferred to and processed in countries other than your own (such as servers in the United States or European Union). We ensure appropriate safeguards are in place for such transfers, in compliance with applicable data protection laws.
+    </p>
+
+    <!-- ================= 14. CONTENT MODERATION ================= -->
+    <h2>14. Content Moderation</h2>
+    <p>To keep ReelHub a safe space for everyone, we may:</p>
+    <ul>
+      <li>Review content that has been reported by users</li>
+      <li>Remove content that violates our Terms of Service</li>
+      <li>Suspend or permanently ban accounts that repeatedly violate our rules</li>
+      <li>Cooperate with law enforcement regarding illegal content</li>
+    </ul>
+    <p>
+      We do <strong>not</strong> actively monitor all content. Our moderation is primarily reactive based on user reports.
+    </p>
+
+    <!-- ================= 15. CHANGES TO THIS POLICY ================= -->
+    <h2>15. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. When we make significant changes, we will:</p>
+    <ul>
+      <li>Post the updated policy on this page</li>
+      <li>Update the "Last Updated" date at the top</li>
+      <li>Send you a notification within the app for major changes</li>
+    </ul>
+    <p>
+      Your continued use of ReelHub after changes are posted means you accept the updated Privacy Policy.
+    </p>
+
+    <!-- ================= 16. LEGAL COMPLIANCE ================= -->
+    <h2>16. Legal Compliance</h2>
+    <p>ReelHub complies with applicable data protection laws including:</p>
+    <ul>
+      <li><strong>India:</strong> Information Technology Act, 2000 and rules thereunder</li>
+      <li><strong>EU:</strong> General Data Protection Regulation (GDPR)</li>
+      <li><strong>California:</strong> California Consumer Privacy Act (CCPA)</li>
+      <li><strong>General:</strong> Other applicable local laws in your jurisdiction</li>
+    </ul>
+
+    <!-- ================= 17. CONTACT US ================= -->
+    <h2 id="contact">17. Contact Us</h2>
+    <p>
+      If you have any questions, concerns, or requests regarding this Privacy Policy or how we handle your personal data, please contact us:
+    </p>
+
+    <div class="contact-box">
+      <h3>📧 Get in Touch</h3>
+      <p>We typically respond within 24-48 hours on business days.</p>
+      <a href="mailto:reehubreelhub@gmail.com" class="contact-email">
+        <span>📩</span>
+        <span>reehubreelhub@gmail.com</span>
+      </a>
+    </div>
+
+    <!-- ================= ACKNOWLEDGMENT ================= -->
+    <div class="box info" style="margin-top: 40px;">
+      <strong>✅ Your Acknowledgment</strong>
+      By using ReelHub, you acknowledge that you have read, understood, and agree to be bound by this Privacy Policy.
+    </div>
+
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="footer">
+    <p>
+      © <span id="year">2026</span> ReelHub. All rights reserved.
+    </p>
+    <p style="margin-top: 8px;">
+      <a href="index.html">Home</a>
+      <span class="dot">•</span>
+      <a href="privacy.html">Privacy</a>
+      <span class="dot">•</span>
+      <a href="terms.html">Terms</a>
+      <span class="dot">•</span>
+      <a href="mailto:reehubreelhub@gmail.com">Contact</a>
+    </p>
+  </footer>
+
+  <!-- ================= SCRIPTS ================= -->
+  <script>
+    // Auto-update year
+    document.getElementById('year').textContent = new Date().getFullYear();
+    
+    // Auto-update "Last Updated" to current month/year
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                    'July', 'August', 'September', 'October', 'November', 'December'];
+    const now = new Date();
+    document.getElementById('lastUpdated').textContent = months[now.getMonth()] + ' ' + now.getFullYear();
+    
+    // Smooth scroll for Quick Nav links (in case browser doesn't support CSS smooth)
+    document.querySelectorAll('.quick-nav a, a[href^="#"]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const href = link.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            const headerOffset = 70;
+            const elementPosition = target.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+          }
+        }
+      });
+    });
+
+    console.log('%c🔒 ReelHub Privacy Policy', 'color: #ff2e63; font-size: 16px; font-weight: bold;');
+  </script>
+
+</body>
+</html>
