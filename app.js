@@ -618,7 +618,7 @@ function renderPage(page) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 2/4) — FINAL with Verified Badge
+   ReelHub — app.js (PART 2/4) — FINAL with Verified Badge + Congrats Animation
    Helpers, Home Feed, Stories Bar, Double-Tap, Story Upload
    ============================================================ */
 
@@ -887,7 +887,7 @@ async function handleDoubleTapLikeUniversal(post, cardEl) {
     if (!post.likes) post.likes = [];
     if (!post.likes.includes(currentUser.uid)) post.likes.push(currentUser.uid);
 
-    // ✅ Send notification to post owner
+    // Send notification
     if (post.userId && post.userId !== currentUser.uid) {
       try {
         await addDoc(collection(db, 'notifications'), {
@@ -936,6 +936,201 @@ function showHeartAnimation(container, event) {
 
   container.appendChild(heart);
   setTimeout(() => heart.remove(), 900);
+}
+
+/* ============================================================
+   🎉 CONGRATULATIONS ANIMATION — For Admin Accept
+   ============================================================ */
+function showCongratsAnimation(userName, userEmail) {
+  document.querySelectorAll('.congrats-overlay').forEach(el => el.remove());
+
+  const overlay = document.createElement('div');
+  overlay.className = 'congrats-overlay';
+
+  // Confetti pieces
+  const colors = ['#ff2e63', '#ff8a00', '#4ea8ff', '#4ade80', '#ffd700', '#ff1493'];
+  let confettiHTML = '';
+  for (let i = 0; i < 50; i++) {
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const left = Math.random() * 100;
+    const delay = Math.random() * 2;
+    const duration = 2.5 + Math.random() * 2;
+    const size = 6 + Math.random() * 8;
+    const shape = Math.random() > 0.5 ? '50%' : '2px';
+    confettiHTML += `
+      <div class="confetti-piece" style="
+        left: ${left}%;
+        width: ${size}px;
+        height: ${size}px;
+        background: ${color};
+        border-radius: ${shape};
+        animation-delay: ${delay}s;
+        animation-duration: ${duration}s;
+      "></div>
+    `;
+  }
+
+  // Sparkles
+  const sparkleEmojis = ['✨', '⭐', '🌟', '💫', '🎉', '🎊'];
+  let sparklesHTML = '';
+  for (let i = 0; i < 12; i++) {
+    const emoji = sparkleEmojis[Math.floor(Math.random() * sparkleEmojis.length)];
+    const left = Math.random() * 90 + 5;
+    const top = Math.random() * 80 + 10;
+    const delay = 0.3 + Math.random() * 1.5;
+    const duration = 2 + Math.random() * 1.5;
+    sparklesHTML += `
+      <div class="congrats-sparkle" style="
+        left: ${left}%;
+        top: ${top}%;
+        animation-delay: ${delay}s;
+        animation-duration: ${duration}s;
+      ">${emoji}</div>
+    `;
+  }
+
+  overlay.innerHTML = `
+    ${confettiHTML}
+    ${sparklesHTML}
+
+    <div class="congrats-icon">👑</div>
+
+    <div class="congrats-check">
+      <svg viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="35"/>
+        <polyline points="35 50 45 60 65 40"/>
+      </svg>
+    </div>
+
+    <div class="congrats-title">Congratulations!</div>
+
+    <div class="congrats-subtitle">
+      You are now an official <b style="color:#ff2e63;">ReelHub Admin</b>! 🎊<br>
+      You can manage users, videos, and reports from the admin panel.
+    </div>
+
+    <div class="congrats-user">
+      Logged in as <b>${escapeHtml(userName || 'Admin')}</b><br>
+      <span style="font-size:12px;">${escapeHtml(userEmail || '')}</span>
+    </div>
+
+    <button class="congrats-btn" id="congratsContinueBtn">
+      <svg viewBox="0 0 24 24">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      Awesome! Let's Go
+    </button>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // Button click
+  document.getElementById('congratsContinueBtn').addEventListener('click', () => {
+    overlay.classList.add('closing');
+    setTimeout(() => {
+      overlay.remove();
+      showAdminPanelRedirect();
+    }, 600);
+  });
+
+  // Vibration
+  if (navigator.vibrate) {
+    navigator.vibrate([100, 50, 100, 50, 200]);
+  }
+}
+
+/* ============================================================
+   ADMIN PANEL REDIRECT POPUP
+   ============================================================ */
+function showAdminPanelRedirect() {
+  document.querySelectorAll('.admin-redirect-modal').forEach(el => el.remove());
+
+  const modal = document.createElement('div');
+  modal.className = 'admin-redirect-modal';
+  modal.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 99998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: congratsFadeIn 0.3s ease;
+  `;
+
+  modal.innerHTML = `
+    <div style="
+      background: #121212;
+      border: 1px solid #1e1e28;
+      border-radius: 20px;
+      padding: 30px 24px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    ">
+      <div style="font-size: 60px; margin-bottom: 16px;">🎯</div>
+      <div style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 10px;">
+        Open Admin Panel
+      </div>
+      <div style="font-size: 14px; color: #888; line-height: 1.5; margin-bottom: 24px;">
+        Open the admin panel and login with your email to start managing ReelHub.
+      </div>
+      <div style="
+        background: #1a1a24;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-bottom: 20px;
+        font-size: 13px;
+        color: #ccc;
+        word-break: break-all;
+      ">
+        <div style="font-size: 11px; color: #666; margin-bottom: 4px;">Your admin email</div>
+        <b>${escapeHtml(currentUser?.email || '')}</b>
+      </div>
+      <button id="openAdminPanelBtn" style="
+        width: 100%;
+        height: 50px;
+        background: linear-gradient(90deg, #ff2e63, #ff8a00);
+        border: none;
+        border-radius: 12px;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        margin-bottom: 10px;
+      ">
+        Open Admin Panel →
+      </button>
+      <button id="closeAdminRedirectBtn" style="
+        width: 100%;
+        height: 44px;
+        background: transparent;
+        border: 1px solid #333;
+        border-radius: 12px;
+        color: #888;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+      ">
+        Maybe Later
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document.getElementById('openAdminPanelBtn').addEventListener('click', () => {
+    window.open('admin.html', '_blank');
+    modal.remove();
+  });
+
+  document.getElementById('closeAdminRedirectBtn').addEventListener('click', () => {
+    modal.remove();
+  });
 }
 
 /* ============================================================
@@ -998,7 +1193,6 @@ async function loadHomeFeedPosts() {
 
     const myFollowing = currentProfile?.following || [];
 
-    // Batch fetch private users
     const uniqueUserIds = [...new Set(posts.map(p => p.userId))].filter(id => id && id !== currentUser.uid);
     const privateUsers = new Set();
 
@@ -1022,7 +1216,6 @@ async function loadHomeFeedPosts() {
       return true;
     });
 
-    // Feed order
     const settings = typeof getSettings === 'function' ? getSettings() : { feedOrder: 'newest' };
     if (settings.feedOrder === 'trending') {
       posts.sort((a, b) => ((b.likes?.length || 0) + (b.views || 0)) - ((a.likes?.length || 0) + (a.views || 0)));
@@ -1520,7 +1713,7 @@ storySubmitBtn.addEventListener('click', async () => {
       userName: currentProfile.name,
       userHandle: currentProfile.user,
       userPhoto: currentProfile.photo || '',
-      userVerified: currentProfile.verified || false,   // ✅ Verified badge
+      userVerified: currentProfile.verified || false,
       type: currentStoryType,
       url: result.secure_url,
       thumbnail: currentStoryType === 'video' ? buildThumbnailUrl(result.secure_url, 'video') : result.secure_url,
@@ -2548,7 +2741,7 @@ async function deleteComment(commentId) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 4/4) — FINAL with Verified Badge
+   ReelHub — app.js (PART 4/4) — FINAL with Verified Badge + Congrats
    Chat, Groups, Profile, Upload, Notifications, Search, Settings
    ============================================================ */
 
@@ -3170,7 +3363,7 @@ async function sendGroupMessage(msgData) {
     from: currentUser.uid,
     fromName: currentProfile?.name || 'User',
     fromPhoto: currentProfile?.photo || '',
-    fromVerified: currentProfile?.verified || false,   // ✅ Verified badge
+    fromVerified: currentProfile?.verified || false,
     type: msgData.type || 'text',
     text: msgData.text || null,
     voiceData: msgData.voiceData || null,
@@ -3261,7 +3454,6 @@ async function sendMessage(msgData) {
       await updateDoc(chatRef, chatData);
     }
 
-    // ✅ Send notification to receiver
     try {
       await addDoc(collection(db, 'notifications'), {
         userId: activeChatUser.uid,
@@ -4572,7 +4764,7 @@ uploadSubmitBtn.addEventListener('click', async () => {
       userName: currentProfile.name,
       userHandle: currentProfile.user,
       userPhoto: currentProfile.photo || '',
-      userVerified: currentProfile.verified || false,   // ✅ Verified badge
+      userVerified: currentProfile.verified || false,
       type: currentUploadType,
       url: result.secure_url,
       thumbnail: buildThumbnailUrl(result.secure_url, currentUploadType),
@@ -4767,7 +4959,6 @@ async function toggleFollow(targetUid, btnEl) {
       currentProfile.following.push(targetUid);
       if (btnEl) { btnEl.textContent = 'Following'; btnEl.className = 'unfollow'; }
 
-      // ✅ Send follow notification
       try {
         await addDoc(collection(db, 'notifications'), {
           userId: targetUid,
@@ -4870,6 +5061,7 @@ function paintNotifications(list) {
 
 /* ============================================================
    ADMIN INVITE — Accept / Reject Handler
+   ✅ UPDATED: Now uses showCongratsAnimation() instead of alert()
    ============================================================ */
 async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
   if (!currentUser || !currentUser.email) {
@@ -4940,8 +5132,12 @@ async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
 
       showToast('✅ You are now an admin!');
 
+      // 🎉 CONGRATULATIONS ANIMATION
       setTimeout(() => {
-        alert('🎉 Congratulations!\n\nYou are now a ReelHub Admin.\n\nOpen the admin panel and login with your email:\n' + currentUser.email);
+        showCongratsAnimation(
+          currentProfile?.name || 'User',
+          currentUser.email
+        );
       }, 500);
 
     } else if (action === 'reject') {
@@ -5331,4 +5527,4 @@ initSettingsListeners();
   applySetting('privateAccount', s.privateAccount);
 })();
 
-console.log('✅ app.js loaded — FINAL VERSION with Verified Badge (4 Parts)');
+console.log('✅ app.js loaded — FINAL VERSION with Verified Badge + Congrats Animation (4 Parts)');
