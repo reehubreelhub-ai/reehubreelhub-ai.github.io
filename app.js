@@ -1,5 +1,5 @@
 /* ============================================================
-   ReelHub — app.js (PART 1/4) — FINAL VERSION
+   ReelHub — app.js (PART 1/4) — FIXED VERSION
    Imports, Config, DOM, State, Auth
    ============================================================ */
 
@@ -11,6 +11,7 @@ import {
   onAuthStateChanged,
   signOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
   EmailAuthProvider,
   reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
@@ -30,8 +31,6 @@ import {
   arrayUnion,
   arrayRemove,
   limit,
-  orderBy,
-  startAfter,
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
@@ -71,116 +70,118 @@ const CLOUDINARY_ACCOUNTS = {
 /* ============================================================
    DOM SHORTCUTS
    ============================================================ */
-const authScreen     = document.getElementById('auth');
-const loadingScreen  = document.getElementById('loadingScreen');
-const appScreen      = document.getElementById('app');
-const loginForm      = document.getElementById('loginForm');
-const signupForm     = document.getElementById('signupForm');
-const loginMsg       = document.getElementById('loginMsg');
-const signupMsg      = document.getElementById('signupMsg');
-const loginBtn       = document.getElementById('loginBtn');
-const signupBtn      = document.getElementById('signupBtn');
-const content        = document.getElementById('content');
+function $id(id) { return document.getElementById(id); }
 
-const editModal      = document.getElementById('editModal');
-const editPreviewImg = document.getElementById('editPreviewImg');
-const editPhotoInput = document.getElementById('editPhoto');
-const editNameInput  = document.getElementById('editName');
-const editUserInput  = document.getElementById('editUser');
-const editBioInput   = document.getElementById('editBio');
-const saveProfileBtn = document.getElementById('saveProfileBtn');
-const editMsg        = document.getElementById('editMsg');
+const authScreen     = $id('auth');
+const loadingScreen  = $id('loadingScreen');
+const appScreen      = $id('app');
+const loginForm      = $id('loginForm');
+const signupForm     = $id('signupForm');
+const loginMsg       = $id('loginMsg');
+const signupMsg      = $id('signupMsg');
+const loginBtn       = $id('loginBtn');
+const signupBtn      = $id('signupBtn');
+const content        = $id('content');
 
-const listModal = document.getElementById('listModal');
-const listTitle = document.getElementById('listTitle');
-const userList  = document.getElementById('userList');
+const editModal      = $id('editModal');
+const editPreviewImg = $id('editPreviewImg');
+const editPhotoInput = $id('editPhoto');
+const editNameInput  = $id('editName');
+const editUserInput  = $id('editUser');
+const editBioInput   = $id('editBio');
+const saveProfileBtn = $id('saveProfileBtn');
+const editMsg        = $id('editMsg');
 
-const forgotModal  = document.getElementById('forgotModal');
-const forgotEmail  = document.getElementById('forgotEmail');
-const forgotMsg    = document.getElementById('forgotMsg');
-const sendResetBtn = document.getElementById('sendResetBtn');
+const listModal = $id('listModal');
+const listTitle = $id('listTitle');
+const userList  = $id('userList');
 
-const notifBtn = document.getElementById('notifBtn');
-const notifDot = document.getElementById('notifDot');
-const searchBtn = document.getElementById('searchBtn');
-const chatsDot = document.getElementById('chatsDot');
-const settingsBtn = document.getElementById('settingsBtn');
+const forgotModal  = $id('forgotModal');
+const forgotEmail  = $id('forgotEmail');
+const forgotMsg    = $id('forgotMsg');
+const sendResetBtn = $id('sendResetBtn');
 
-const uploadModal        = document.getElementById('uploadModal');
-const uploadFileInput    = document.getElementById('uploadFileInput');
-const uploadCaption      = document.getElementById('uploadCaption');
-const uploadSubmitBtn    = document.getElementById('uploadSubmitBtn');
-const uploadMsg          = document.getElementById('uploadMsg');
-const uploadPreview      = document.getElementById('uploadPreview');
-const uploadPreviewWrap  = document.getElementById('uploadPreviewWrap');
-const uploadPreviewInfo  = document.getElementById('uploadPreviewInfo');
-const uploadPhotoPreview = document.getElementById('uploadPhotoPreview');
-const uploadPhotoPreviewWrap = document.getElementById('uploadPhotoPreviewWrap');
-const uploadPickerWrap   = document.getElementById('uploadPickerWrap');
-const pickerTitle        = document.getElementById('pickerTitle');
-const pickerSubtitle     = document.getElementById('pickerSubtitle');
-const pickerLabel        = document.getElementById('pickerLabel');
-const uploadProgressWrap = document.getElementById('uploadProgressWrap');
-const uploadProgressBar  = document.getElementById('uploadProgressBar');
-const uploadProgressText = document.getElementById('uploadProgressText');
+const notifBtn    = $id('notifBtn');
+const notifDot    = $id('notifDot');
+const searchBtn   = $id('searchBtn');
+const chatsDot    = $id('chatsDot');
+const settingsBtn = $id('settingsBtn');
 
-const playerModal   = document.getElementById('playerModal');
-const playerTitle   = document.getElementById('playerTitle');
-const playerContent = document.getElementById('playerContent');
+const uploadModal            = $id('uploadModal');
+const uploadFileInput        = $id('uploadFileInput');
+const uploadCaption          = $id('uploadCaption');
+const uploadSubmitBtn        = $id('uploadSubmitBtn');
+const uploadMsg              = $id('uploadMsg');
+const uploadPreview          = $id('uploadPreview');
+const uploadPreviewWrap      = $id('uploadPreviewWrap');
+const uploadPreviewInfo      = $id('uploadPreviewInfo');
+const uploadPhotoPreview     = $id('uploadPhotoPreview');
+const uploadPhotoPreviewWrap = $id('uploadPhotoPreviewWrap');
+const uploadPickerWrap       = $id('uploadPickerWrap');
+const pickerTitle            = $id('pickerTitle');
+const pickerSubtitle         = $id('pickerSubtitle');
+const pickerLabel            = $id('pickerLabel');
+const uploadProgressWrap     = $id('uploadProgressWrap');
+const uploadProgressBar      = $id('uploadProgressBar');
+const uploadProgressText     = $id('uploadProgressText');
 
-const commentsModal      = document.getElementById('commentsModal');
-const commentsTitle      = document.getElementById('commentsTitle');
-const commentsList       = document.getElementById('commentsList');
-const commentInput       = document.getElementById('commentInput');
-const postCommentBtn     = document.getElementById('postCommentBtn');
-const myAvatarForComment = document.getElementById('myAvatarForComment');
-const replyIndicator     = document.getElementById('replyIndicator');
-const replyIndicatorText = document.getElementById('replyIndicatorText');
-const cancelReplyBtn     = document.getElementById('cancelReplyBtn');
+const playerModal   = $id('playerModal');
+const playerTitle   = $id('playerTitle');
+const playerContent = $id('playerContent');
 
-const newChatModal = document.getElementById('newChatModal');
-const newChatSearch = document.getElementById('newChatSearch');
-const newChatResults = document.getElementById('newChatResults');
-const chatWindowModal = document.getElementById('chatWindowModal');
-const chatHeaderAvatar = document.getElementById('chatHeaderAvatar');
-const chatHeaderName = document.getElementById('chatHeaderName');
-const chatHeaderHandle = document.getElementById('chatHeaderHandle');
-const chatHeaderInfo = document.getElementById('chatHeaderInfo');
-const chatMessages = document.getElementById('chatMessages');
-const chatMessageInput = document.getElementById('chatMessageInput');
-const sendTextBtn = document.getElementById('sendTextBtn');
-const micBtn = document.getElementById('micBtn');
-const recordingIndicator = document.getElementById('recordingIndicator');
-const recordingTimer = document.getElementById('recordingTimer');
-const cancelRecordingBtn = document.getElementById('cancelRecordingBtn');
+const commentsModal      = $id('commentsModal');
+const commentsTitle      = $id('commentsTitle');
+const commentsList       = $id('commentsList');
+const commentInput       = $id('commentInput');
+const postCommentBtn     = $id('postCommentBtn');
+const myAvatarForComment = $id('myAvatarForComment');
+const replyIndicator     = $id('replyIndicator');
+const replyIndicatorText = $id('replyIndicatorText');
+const cancelReplyBtn     = $id('cancelReplyBtn');
 
-const storyUploadModal = document.getElementById('storyUploadModal');
-const storyFileInput = document.getElementById('storyFileInput');
-const storyPickerWrap = document.getElementById('storyPickerWrap');
-const storyPickerTitle = document.getElementById('storyPickerTitle');
-const storyPickerSubtitle = document.getElementById('storyPickerSubtitle');
-const storyPickerLabel = document.getElementById('storyPickerLabel');
-const storyPreviewWrap = document.getElementById('storyPreviewWrap');
-const storyPreviewImg = document.getElementById('storyPreviewImg');
-const storyVideoPreviewWrap = document.getElementById('storyVideoPreviewWrap');
-const storyPreviewVideo = document.getElementById('storyPreviewVideo');
-const storyPreviewInfo = document.getElementById('storyPreviewInfo');
-const storySubmitBtn = document.getElementById('storySubmitBtn');
-const storyUploadMsg = document.getElementById('storyUploadMsg');
-const storyProgressWrap = document.getElementById('storyProgressWrap');
-const storyProgressBar = document.getElementById('storyProgressBar');
-const storyProgressText = document.getElementById('storyProgressText');
+const newChatModal      = $id('newChatModal');
+const newChatSearch     = $id('newChatSearch');
+const newChatResults    = $id('newChatResults');
+const chatWindowModal   = $id('chatWindowModal');
+const chatHeaderAvatar  = $id('chatHeaderAvatar');
+const chatHeaderName    = $id('chatHeaderName');
+const chatHeaderHandle  = $id('chatHeaderHandle');
+const chatHeaderInfo    = $id('chatHeaderInfo');
+const chatMessages      = $id('chatMessages');
+const chatMessageInput  = $id('chatMessageInput');
+const sendTextBtn       = $id('sendTextBtn');
+const micBtn            = $id('micBtn');
+const recordingIndicator = $id('recordingIndicator');
+const recordingTimer    = $id('recordingTimer');
+const cancelRecordingBtn = $id('cancelRecordingBtn');
 
-const storyViewer = document.getElementById('storyViewer');
-const storyProgressBars = document.getElementById('storyProgressBars');
-const storyUserAvatar = document.getElementById('storyUserAvatar');
-const storyUserName = document.getElementById('storyUserName');
-const storyTime = document.getElementById('storyTime');
-const storyDeleteBtn = document.getElementById('storyDeleteBtn');
-const storyCloseBtn = document.getElementById('storyCloseBtn');
-const storyMedia = document.getElementById('storyMedia');
-const storyTapLeft = document.getElementById('storyTapLeft');
-const storyTapRight = document.getElementById('storyTapRight');
+const storyUploadModal     = $id('storyUploadModal');
+const storyFileInput       = $id('storyFileInput');
+const storyPickerWrap      = $id('storyPickerWrap');
+const storyPickerTitle     = $id('storyPickerTitle');
+const storyPickerSubtitle  = $id('storyPickerSubtitle');
+const storyPickerLabel     = $id('storyPickerLabel');
+const storyPreviewWrap     = $id('storyPreviewWrap');
+const storyPreviewImg      = $id('storyPreviewImg');
+const storyVideoPreviewWrap = $id('storyVideoPreviewWrap');
+const storyPreviewVideo    = $id('storyPreviewVideo');
+const storyPreviewInfo     = $id('storyPreviewInfo');
+const storySubmitBtn       = $id('storySubmitBtn');
+const storyUploadMsg       = $id('storyUploadMsg');
+const storyProgressWrap    = $id('storyProgressWrap');
+const storyProgressBar     = $id('storyProgressBar');
+const storyProgressText    = $id('storyProgressText');
+
+const storyViewer      = $id('storyViewer');
+const storyProgressBars = $id('storyProgressBars');
+const storyUserAvatar  = $id('storyUserAvatar');
+const storyUserName    = $id('storyUserName');
+const storyTime        = $id('storyTime');
+const storyDeleteBtn   = $id('storyDeleteBtn');
+const storyCloseBtn    = $id('storyCloseBtn');
+const storyMedia       = $id('storyMedia');
+const storyTapLeft     = $id('storyTapLeft');
+const storyTapRight    = $id('storyTapRight');
 
 /* ============================================================
    STATE
@@ -234,26 +235,43 @@ let currentStoryMediaEl = null;
 let viewedPostsSession = new Set();
 let shortsSoundEnabled = localStorage.getItem('shortsSound') === 'true';
 
+/* 🔧 FIX: Track whether auth action was performed by user (not by listener) */
+let authActionInProgress = false;
+
 /* ============================================================
    SCREEN SWITCHING
    ============================================================ */
 function showAuth() {
   if (loadingScreen) loadingScreen.style.display = 'none';
-  authScreen.classList.add('show');
-  authScreen.style.display = 'block';
-  appScreen.classList.remove('show');
-  appScreen.style.display = 'none';
+  if (authScreen) {
+    authScreen.classList.add('show');
+    authScreen.style.display = 'block';
+  }
+  if (appScreen) {
+    appScreen.classList.remove('show');
+    appScreen.style.display = 'none';
+  }
   stopNotifWatcher();
   stopShortsObserver();
   stopChatListWatcher();
+
+  // 🔧 FIX: Clear any open chat polling
+  if (chatMessagesUnsub) {
+    clearInterval(chatMessagesUnsub);
+    chatMessagesUnsub = null;
+  }
 }
 
 function showApp() {
   if (loadingScreen) loadingScreen.style.display = 'none';
-  authScreen.classList.remove('show');
-  authScreen.style.display = 'none';
-  appScreen.classList.add('show');
-  appScreen.style.display = 'flex';
+  if (authScreen) {
+    authScreen.classList.remove('show');
+    authScreen.style.display = 'none';
+  }
+  if (appScreen) {
+    appScreen.classList.add('show');
+    appScreen.style.display = 'flex';
+  }
   setActiveNav('home');
   renderPage('home');
   startChatListWatcher();
@@ -266,11 +284,31 @@ function setActiveNav(page) {
 }
 
 /* ============================================================
+   🔧 FIX: Notification permission (once per session)
+   ============================================================ */
+function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    Notification.requestPermission().catch(() => {});
+  }
+}
+
+/* ============================================================
+   🔧 FIX: Page visibility — resume notification polling
+   ============================================================ */
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && currentUser) {
+    checkUnreadNotifications();
+    checkChatsUnread();
+  }
+});
+
+/* ============================================================
    PASSWORD EYE TOGGLE
    ============================================================ */
 document.querySelectorAll('.eye').forEach(eye => {
   eye.addEventListener('click', () => {
-    const inp = document.getElementById(eye.dataset.target);
+    const inp = $id(eye.dataset.target);
     if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
   });
 });
@@ -278,61 +316,76 @@ document.querySelectorAll('.eye').forEach(eye => {
 /* ============================================================
    LOGIN <-> SIGNUP TOGGLE
    ============================================================ */
-document.getElementById('goSignup')?.addEventListener('click', () => {
-  loginForm.style.display = 'none';
-  signupForm.style.display = 'block';
-  loginMsg.textContent = '';
-  signupMsg.textContent = '';
+$id('goSignup')?.addEventListener('click', () => {
+  if (loginForm) loginForm.style.display = 'none';
+  if (signupForm) signupForm.style.display = 'block';
+  if (loginMsg) loginMsg.textContent = '';
+  if (signupMsg) signupMsg.textContent = '';
 });
-document.getElementById('goLogin')?.addEventListener('click', () => {
-  signupForm.style.display = 'none';
-  loginForm.style.display = 'block';
-  loginMsg.textContent = '';
-  signupMsg.textContent = '';
+
+$id('goLogin')?.addEventListener('click', () => {
+  if (signupForm) signupForm.style.display = 'none';
+  if (loginForm) loginForm.style.display = 'block';
+  if (loginMsg) loginMsg.textContent = '';
+  if (signupMsg) signupMsg.textContent = '';
 });
 
 /* ============================================================
-   SIGNUP
+   SIGNUP — FIXED
    ============================================================ */
-signupForm.addEventListener('submit', async (e) => {
+signupForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const name  = document.getElementById('signupName').value.trim();
-  const user  = document.getElementById('signupUser').value.trim().toLowerCase();
-  const email = document.getElementById('signupEmail').value.trim().toLowerCase();
-  const pass  = document.getElementById('signupPass').value;
+
+  const name  = $id('signupName').value.trim();
+  const user  = $id('signupUser').value.trim().toLowerCase();
+  const email = $id('signupEmail').value.trim().toLowerCase();
+  const pass  = $id('signupPass').value;
 
   signupMsg.className = 'error-msg';
   signupMsg.textContent = '';
 
-  if (!name || !user || !email || !pass) { signupMsg.textContent = 'Please fill all fields.'; return; }
-  if (!/^[a-z0-9._]{3,20}$/.test(user)) { signupMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _'; return; }
-  if (!/^\S+@\S+\.\S+$/.test(email)) { signupMsg.textContent = 'Please enter a valid email.'; return; }
-  if (pass.length < 6) { signupMsg.textContent = 'Password min 6 characters.'; return; }
+  // Validation
+  if (!name || !user || !email || !pass) {
+    signupMsg.textContent = 'Please fill all fields.';
+    return;
+  }
+  if (!/^[a-z0-9._]{3,20}$/.test(user)) {
+    signupMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
+    return;
+  }
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    signupMsg.textContent = 'Please enter a valid email.';
+    return;
+  }
+  if (pass.length < 6) {
+    signupMsg.textContent = 'Password min 6 characters.';
+    return;
+  }
 
   isSigningUp = true;
+  authActionInProgress = true;  // 🔧 FIX: prevent listener double-fire
   signupBtn.disabled = true;
   signupBtn.textContent = 'Creating...';
 
   let createdAuthUser = null;
 
   try {
-    // STEP 1 — पहले AUTH बनाओ
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    const uid  = cred.user.uid;
-    createdAuthUser = cred.user;
-
-    // STEP 2 — Username check
+    /* 🔧 FIX: Check username BEFORE creating auth user (cleaner rollback) */
     const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('user', '==', user));
-    const snap = await getDocs(q);
+    const uq = query(usersRef, where('user', '==', user));
+    const userSnap = await getDocs(uq);
 
-    if (!snap.empty) {
-      try { await createdAuthUser.delete(); } catch (e) { await signOut(auth); }
+    if (!userSnap.empty) {
       signupMsg.textContent = 'Username already taken. Try another.';
       return;
     }
 
-    // STEP 3 — Firestore profile बनाओ
+    /* STEP 1 — Create auth user */
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    const uid  = cred.user.uid;
+    createdAuthUser = cred.user;
+
+    /* STEP 2 — Create Firestore profile */
     await setDoc(doc(db, 'users', uid), {
       uid: uid,
       name: name,
@@ -351,7 +404,14 @@ signupForm.addEventListener('submit', async (e) => {
       createdAt: serverTimestamp()
     });
 
-    // STEP 4 — State set
+    /* 🔧 FIX: Send email verification */
+    try {
+      await sendEmailVerification(cred.user);
+    } catch (e) {
+      console.warn('Verification email failed:', e);
+    }
+
+    /* STEP 3 — Manual state set (listener skipped due to authActionInProgress) */
     currentUser = cred.user;
     await loadProfile(uid);
 
@@ -359,46 +419,69 @@ signupForm.addEventListener('submit', async (e) => {
     signupMsg.textContent = 'Account created! Welcome 🎉';
     signupForm.reset();
 
+    /* 🔧 FIX: Clear flag BEFORE showApp so listener syncs correctly */
+    authActionInProgress = false;
+
     setTimeout(() => {
       showApp();
       startNotifWatcher();
+      requestNotificationPermission();
     }, 800);
 
   } catch (err) {
     console.error('Signup error:', err);
+
+    /* Rollback */
     if (createdAuthUser && !currentProfile) {
-      try { await createdAuthUser.delete(); } catch (e) { try { await signOut(auth); } catch (e2) {} }
+      try {
+        await createdAuthUser.delete();
+      } catch (e) {
+        try { await signOut(auth); } catch (e2) {}
+      }
     }
+
+    signupMsg.className = 'error-msg';
 
     if (err.code === 'permission-denied' || (err.message && err.message.toLowerCase().includes('permission'))) {
       signupMsg.textContent = '⚠️ Firestore rules block kar rahe hain.';
+    } else if (err.code === 'auth/email-already-in-use') {
+      signupMsg.textContent = 'Email already registered.';
+    } else if (err.code === 'auth/invalid-email') {
+      signupMsg.textContent = 'Invalid email.';
+    } else if (err.code === 'auth/weak-password') {
+      signupMsg.textContent = 'Password too weak.';
+    } else if (err.code === 'auth/network-request-failed') {
+      signupMsg.textContent = 'Network error. Check your connection.';
+    } else {
+      signupMsg.textContent = err.message || 'Signup failed.';
     }
-    else if (err.code === 'auth/email-already-in-use')  signupMsg.textContent = 'Email already registered.';
-    else if (err.code === 'auth/invalid-email')         signupMsg.textContent = 'Invalid email.';
-    else if (err.code === 'auth/weak-password')         signupMsg.textContent = 'Password too weak.';
-    else if (err.code === 'auth/network-request-failed') signupMsg.textContent = 'Network error.';
-    else                                                signupMsg.textContent = err.message || 'Signup failed.';
   } finally {
     isSigningUp = false;
+    authActionInProgress = false;
     signupBtn.disabled = false;
     signupBtn.textContent = 'Sign Up';
   }
 });
 
 /* ============================================================
-   LOGIN
+   LOGIN — FIXED
    ============================================================ */
-loginForm.addEventListener('submit', async (e) => {
+loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-  const pass  = document.getElementById('loginPass').value;
+
+  const email = $id('loginEmail').value.trim().toLowerCase();
+  const pass  = $id('loginPass').value;
 
   loginMsg.className = 'error-msg';
   loginMsg.textContent = '';
 
-  if (!email || !pass) { loginMsg.textContent = 'Please enter email and password.'; return; }
+  if (!email || !pass) {
+    loginMsg.textContent = 'Please enter email and password.';
+    return;
+  }
 
   isLoggingIn = true;
+  authActionInProgress = true;  // 🔧 FIX
   loginBtn.disabled = true;
   loginBtn.textContent = 'Logging in...';
 
@@ -409,53 +492,71 @@ loginForm.addEventListener('submit', async (e) => {
     currentUser = result.user;
     await loadProfile(result.user.uid);
 
-    // BAN CHECK
+    /* BAN CHECK */
     if (currentProfile?.banned) {
-      await signOut(auth);
+      try { await signOut(auth); } catch (e) {}
       currentUser = null;
       currentProfile = null;
       loginMsg.textContent = '🚫 Your account has been banned.';
-      showAuth();
-      return;
+      return;  // 🔧 FIX: don't call showAuth() here — listener will
     }
 
     loginMsg.textContent = '';
+
+    /* 🔧 FIX: Clear flag BEFORE showApp */
+    authActionInProgress = false;
+
     showApp();
     startNotifWatcher();
+    requestNotificationPermission();
+
   } catch (err) {
-    console.error(err);
-    try { await signOut(auth); } catch (e) {}
+    console.error('Login error:', err);
     currentUser = null;
     currentProfile = null;
     loginMsg.className = 'error-msg';
 
-    if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' ||
-        err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials') {
+    if (err.code === 'auth/user-not-found' ||
+        err.code === 'auth/wrong-password' ||
+        err.code === 'auth/invalid-credential' ||
+        err.code === 'auth/invalid-login-credentials') {
       loginMsg.textContent = 'Invalid email or password.';
-    } else if (err.code === 'auth/too-many-requests') loginMsg.textContent = 'Too many attempts.';
-    else if (err.code === 'auth/network-request-failed') loginMsg.textContent = 'Network error.';
-    else loginMsg.textContent = err.message || 'Login failed.';
+    } else if (err.code === 'auth/too-many-requests') {
+      loginMsg.textContent = 'Too many attempts. Try again later.';
+    } else if (err.code === 'auth/network-request-failed') {
+      loginMsg.textContent = 'Network error. Check your connection.';
+    } else if (err.code === 'auth/invalid-email') {
+      loginMsg.textContent = 'Invalid email format.';
+    } else {
+      loginMsg.textContent = err.message || 'Login failed.';
+    }
 
-    showAuth();
+    /* 🔧 FIX: only showAuth if user is actually signed out */
+    if (auth.currentUser) {
+      try { await signOut(auth); } catch (e) {}
+    }
+    // Listener will call showAuth() when it sees null user
+
   } finally {
+    isLoggingIn = false;
+    authActionInProgress = false;
     loginBtn.disabled = false;
     loginBtn.textContent = 'Log In';
-    isLoggingIn = false;
   }
 });
 
 /* ============================================================
    FORGOT PASSWORD
    ============================================================ */
-document.getElementById('forgotLink')?.addEventListener('click', () => {
-  const loginEmailVal = document.getElementById('loginEmail').value.trim();
+$id('forgotLink')?.addEventListener('click', () => {
+  const loginEmailVal = $id('loginEmail').value.trim();
   forgotEmail.value = loginEmailVal;
   forgotMsg.textContent = '';
   forgotMsg.className = 'error-msg';
   forgotModal.classList.add('show');
 });
 
-document.getElementById('closeForgot')?.addEventListener('click', () => {
+$id('closeForgot')?.addEventListener('click', () => {
   forgotModal.classList.remove('show');
 });
 
@@ -478,6 +579,7 @@ sendResetBtn.addEventListener('click', async () => {
     await sendPasswordResetEmail(auth, email);
     forgotMsg.className = 'success-msg';
     forgotMsg.textContent = 'Reset link sent! Check your inbox.';
+
     setTimeout(() => {
       forgotModal.classList.remove('show');
       forgotEmail.value = '';
@@ -485,10 +587,18 @@ sendResetBtn.addEventListener('click', async () => {
     }, 3500);
   } catch (err) {
     forgotMsg.className = 'error-msg';
-    if (err.code === 'auth/user-not-found') forgotMsg.textContent = 'No account with this email.';
-    else if (err.code === 'auth/invalid-email') forgotMsg.textContent = 'Invalid email.';
-    else if (err.code === 'auth/too-many-requests') forgotMsg.textContent = 'Too many attempts.';
-    else forgotMsg.textContent = err.message || 'Failed.';
+
+    if (err.code === 'auth/user-not-found') {
+      forgotMsg.textContent = 'No account with this email.';
+    } else if (err.code === 'auth/invalid-email') {
+      forgotMsg.textContent = 'Invalid email.';
+    } else if (err.code === 'auth/too-many-requests') {
+      forgotMsg.textContent = 'Too many attempts. Try later.';
+    } else if (err.code === 'auth/network-request-failed') {
+      forgotMsg.textContent = 'Network error.';
+    } else {
+      forgotMsg.textContent = err.message || 'Failed to send reset link.';
+    }
   } finally {
     sendResetBtn.disabled = false;
     sendResetBtn.textContent = 'Send Reset Link';
@@ -496,67 +606,103 @@ sendResetBtn.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   LOGOUT
+   LOGOUT — FIXED
    ============================================================ */
-document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-  if (confirm('Log out of ReelHub?')) {
-    stopNotifWatcher();
-    stopShortsObserver();
-    stopChatListWatcher();
+$id('logoutBtn')?.addEventListener('click', async () => {
+  if (!confirm('Log out of ReelHub?')) return;
 
-    if (chatMessagesUnsub) { clearInterval(chatMessagesUnsub); chatMessagesUnsub = null; }
+  /* 🔧 FIX: Full cleanup before signing out */
+  stopNotifWatcher();
+  stopShortsObserver();
+  stopChatListWatcher();
 
-    closeChatWindow();
-    viewedPostsSession.clear();
-    currentUser = null;
-    currentProfile = null;
-    viewingUserId = null;
-
-    try { await signOut(auth); } catch (e) {}
-
-    loginForm.reset();
-    signupForm.reset();
-    document.getElementById('goLogin')?.click();
-    showAuth();
+  if (chatMessagesUnsub) {
+    clearInterval(chatMessagesUnsub);
+    chatMessagesUnsub = null;
   }
+
+  /* 🔧 FIX: Close any open modals */
+  closeChatWindow?.();
+  storyViewer && (storyViewer.style.display = 'none');
+  document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+
+  viewedPostsSession.clear();
+  viewingUserId = null;
+  pinnedMessage = null;
+
+  try {
+    await signOut(auth);
+  } catch (e) {
+    console.warn('Signout error:', e);
+  }
+
+  currentUser = null;
+  currentProfile = null;
+
+  loginForm?.reset();
+  signupForm?.reset();
+  $id('goLogin')?.click();
+
+  /* Listener will call showAuth() */
 });
 
 /* ============================================================
    HEADER BUTTONS
    ============================================================ */
-notifBtn?.addEventListener('click', () => { setActiveNav(null); renderPage('notifications'); });
-searchBtn?.addEventListener('click', () => { setActiveNav(null); renderPage('search'); });
+notifBtn?.addEventListener('click', () => {
+  setActiveNav(null);
+  renderPage('notifications');
+});
+
+searchBtn?.addEventListener('click', () => {
+  setActiveNav(null);
+  renderPage('search');
+});
 
 /* ============================================================
-   AUTH STATE LISTENER
+   AUTH STATE LISTENER — FIXED
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
-  if (isLoggingIn || isSigningUp) return;
+  /* 🔧 FIX: skip if we're manually handling signup/login */
+  if (authActionInProgress) return;
 
   if (user) {
     currentUser = user;
-    try { await loadProfile(user.uid); } catch (e) {}
 
-    // BAN CHECK
+    try {
+      await loadProfile(user.uid);
+    } catch (e) {
+      console.error('Profile load failed:', e);
+    }
+
+    /* BAN CHECK */
     if (currentProfile?.banned) {
-      await signOut(auth);
+      try { await signOut(auth); } catch (e) {}
       currentUser = null;
       currentProfile = null;
-      showAuth();
-      return;
+      return;  // listener will fire again with null
     }
 
     showApp();
     startNotifWatcher();
+    requestNotificationPermission();
+
   } else {
+    /* Signed out */
     currentUser = null;
     currentProfile = null;
     stopNotifWatcher();
     stopShortsObserver();
     stopChatListWatcher();
-    loginForm.reset();
-    signupForm.reset();
-    document.getElementById('goLogin')?.click();
+
+    if (chatMessagesUnsub) {
+      clearInterval(chatMessagesUnsub);
+      chatMessagesUnsub = null;
+    }
+
+    loginForm?.reset();
+    signupForm?.reset();
+    $id('goLogin')?.click();
     showAuth();
   }
 });
@@ -567,20 +713,30 @@ onAuthStateChanged(auth, async (user) => {
 async function loadProfile(uid) {
   try {
     const snap = await getDoc(doc(db, 'users', uid));
+
     if (snap.exists()) {
-      currentProfile = snap.data();
-      if (!Array.isArray(currentProfile.followers)) currentProfile.followers = [];
-      if (!Array.isArray(currentProfile.following)) currentProfile.following = [];
-      if (!Array.isArray(currentProfile.savedPosts)) currentProfile.savedPosts = [];
-      if (!Array.isArray(currentProfile.blockedUsers)) currentProfile.blockedUsers = [];
-      if (typeof currentProfile.videoCount !== 'number') currentProfile.videoCount = 0;
-      if (typeof currentProfile.isPrivate !== 'boolean') currentProfile.isPrivate = false;
-      if (typeof currentProfile.verified !== 'boolean') currentProfile.verified = false;
-      if (typeof currentProfile.banned !== 'boolean') currentProfile.banned = false;
+      const data = snap.data();
+
+      /* Normalize arrays */
+      if (!Array.isArray(data.followers))   data.followers = [];
+      if (!Array.isArray(data.following))   data.following = [];
+      if (!Array.isArray(data.savedPosts))  data.savedPosts = [];
+      if (!Array.isArray(data.blockedUsers)) data.blockedUsers = [];
+
+      /* Normalize booleans/numbers */
+      if (typeof data.videoCount !== 'number') data.videoCount = 0;
+      if (typeof data.isPrivate  !== 'boolean') data.isPrivate = false;
+      if (typeof data.verified   !== 'boolean') data.verified = false;
+      if (typeof data.banned     !== 'boolean') data.banned = false;
+
+      currentProfile = data;
     } else {
       currentProfile = null;
     }
-  } catch (e) { console.error('loadProfile error:', e); }
+  } catch (e) {
+    console.error('loadProfile error:', e);
+    currentProfile = null;
+  }
 }
 
 /* ============================================================
@@ -610,18 +766,20 @@ document.querySelector('.upload-btn')?.addEventListener('click', () => {
 });
 
 function renderPage(page) {
-  if (page === 'profile') renderProfile();
-  else if (page === 'home') renderHomeFeed();
-  else if (page === 'shorts') renderShortsFeed();
-  else if (page === 'messages') renderChatsPage();
+  if (page === 'profile')            renderProfile();
+  else if (page === 'home')          renderHomeFeed();
+  else if (page === 'shorts')        renderShortsFeed();
+  else if (page === 'messages')      renderChatsPage();
   else if (page === 'notifications') renderNotifications();
-  else if (page === 'search') renderSearch();
+  else if (page === 'search')        renderSearch();
   else if (page === 'upload') {
-    content.innerHTML = `<div class="page-placeholder"><div class="page-title">${pages[page]}</div></div>`;
+    if (content) {
+      content.innerHTML = `<div class="page-placeholder"><div class="page-title">${pages[page]}</div></div>`;
+    }
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 2/4) — FINAL VERSION
+   ReelHub — app.js (PART 2/4) — FIXED VERSION
    Helpers, Home Feed, Stories Bar, Double-Tap, Story Upload,
    Verified Badge, Congratulations Animation
    ============================================================ */
@@ -632,7 +790,7 @@ let feedAutoplayObserver = null;
    HELPERS
    ============================================================ */
 function isPostSaved(postId) {
-  if (!currentProfile) return false;
+  if (!currentProfile || !postId) return false;
   return (currentProfile.savedPosts || []).includes(postId);
 }
 
@@ -729,15 +887,18 @@ async function renderSavedPosts(containerId) {
         if (snap.exists()) posts.push({ id: snap.id, ...snap.data() });
       } catch (e) {}
     }
+
     if (posts.length === 0) {
       container.innerHTML = `<div class="saved-empty"><h3>No saved posts available</h3></div>`;
       return;
     }
+
     posts.sort((a, b) => {
       const ta = a.createdAt?.toDate?.()?.getTime() || 0;
       const tb = b.createdAt?.toDate?.()?.getTime() || 0;
       return tb - ta;
     });
+
     container.innerHTML = '';
     posts.forEach(post => container.appendChild(makeGridItem(post)));
   } catch (e) {
@@ -753,6 +914,7 @@ async function trackPostView(postId) {
     const viewDocId = `${currentUser.uid}_${postId}`;
     const viewRef = doc(db, 'postViews', viewDocId);
     const viewSnap = await getDoc(viewRef);
+
     if (!viewSnap.exists()) {
       await setDoc(viewRef, {
         userId: currentUser.uid,
@@ -766,9 +928,14 @@ async function trackPostView(postId) {
         await updateDoc(postRef, { views: currentViews + 1 });
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    // Silently ignore — view tracking should never break UX
+  }
 }
 
+/* ============================================================
+   STORY VIEWERS LIST
+   ============================================================ */
 async function showStoryViewers(story) {
   if (!story) return;
   const viewers = story.viewers || [];
@@ -790,8 +957,10 @@ async function showStoryViewers(story) {
     </div>
   `;
   document.body.appendChild(sheet);
+
   sheet.querySelector('.story-viewers-close').addEventListener('click', () => sheet.remove());
   sheet.addEventListener('click', (e) => { if (e.target === sheet) sheet.remove(); });
+
   if (viewers.length > 0) await loadStoryViewersList(viewers, 'storyViewersList');
 }
 
@@ -805,10 +974,12 @@ async function loadStoryViewersList(uids, containerId) {
       if (snap.exists()) users.push({ uid, ...snap.data() });
     } catch (e) {}
   }
+
   if (users.length === 0) {
     container.innerHTML = `<div class="story-viewers-empty">Users not found</div>`;
     return;
   }
+
   container.innerHTML = '';
   users.forEach(u => {
     const row = document.createElement('div');
@@ -829,7 +1000,8 @@ async function loadStoryViewersList(uids, containerId) {
 }
 
 /* ============================================================
-   DOUBLE TAP LIKE — Universal Helper
+   ✅ DOUBLE TAP LIKE — FIXED
+   Passes event for accurate heart position + respects notif settings
    ============================================================ */
 function attachDoubleTapLike(element, post, onSingleTap) {
   if (!element || !post) return;
@@ -852,7 +1024,8 @@ function attachDoubleTapLike(element, post, onSingleTap) {
     if (now - lastTap < TAP_DELAY) {
       clearTimeout(tapTimer);
       lastTap = 0;
-      handleDoubleTapLikeUniversal(post, element);
+      /* 🔧 FIX: pass event for heart positioning */
+      handleDoubleTapLikeUniversal(post, element, e);
     } else {
       lastTap = now;
       clearTimeout(tapTimer);
@@ -864,12 +1037,13 @@ function attachDoubleTapLike(element, post, onSingleTap) {
   });
 }
 
-async function handleDoubleTapLikeUniversal(post, cardEl) {
+async function handleDoubleTapLikeUniversal(post, cardEl, event) {
   if (!currentUser || !post) return;
 
   const alreadyLiked = (post.likes || []).includes(currentUser.uid);
 
-  showHeartAnimation(cardEl);
+  /* 🔧 FIX: pass event for heart position */
+  showHeartAnimation(cardEl, event);
   if (navigator.vibrate) navigator.vibrate(40);
 
   if (alreadyLiked) return;
@@ -891,8 +1065,12 @@ async function handleDoubleTapLikeUniversal(post, cardEl) {
     if (!post.likes) post.likes = [];
     if (!post.likes.includes(currentUser.uid)) post.likes.push(currentUser.uid);
 
-    // Send notification
-    if (post.userId && post.userId !== currentUser.uid) {
+    /* 🔧 FIX: respect notification settings */
+    const s = typeof getSettings === 'function'
+      ? getSettings()
+      : { notifLikes: true, pushNotif: true };
+
+    if (post.userId && post.userId !== currentUser.uid && s.pushNotif && s.notifLikes) {
       try {
         await addDoc(collection(db, 'notifications'), {
           userId: post.userId,
@@ -919,17 +1097,21 @@ async function handleDoubleTapLikeUniversal(post, cardEl) {
   }
 }
 
+/* 🔧 FIX: heart positioned at tap point when event provided */
 function showHeartAnimation(container, event) {
   if (!container) return;
 
   container.querySelectorAll('.heart-pop').forEach(h => h.remove());
-  container.style.position = container.style.position || 'relative';
+
+  if (!container.style.position || container.style.position === 'static') {
+    container.style.position = 'relative';
+  }
 
   const heart = document.createElement('div');
   heart.className = 'heart-pop' + (container.classList.contains('grid-item') ? ' small' : '');
   heart.innerHTML = '❤️';
 
-  if (event && container.getBoundingClientRect) {
+  if (event && event.clientX !== undefined && container.getBoundingClientRect) {
     const rect = container.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
@@ -943,7 +1125,7 @@ function showHeartAnimation(container, event) {
 }
 
 /* ============================================================
-   🎉 CONGRATULATIONS ANIMATION — For Admin Accept
+   🎉 CONGRATULATIONS ANIMATION — (unchanged, works well)
    ============================================================ */
 function showCongratsAnimation(userName, userEmail) {
   document.querySelectorAll('.congrats-overlay').forEach(el => el.remove());
@@ -951,7 +1133,6 @@ function showCongratsAnimation(userName, userEmail) {
   const overlay = document.createElement('div');
   overlay.className = 'congrats-overlay';
 
-  // Confetti pieces
   const colors = ['#ff2e63', '#ff8a00', '#4ea8ff', '#4ade80', '#ffd700', '#ff1493'];
   let confettiHTML = '';
   for (let i = 0; i < 50; i++) {
@@ -974,7 +1155,6 @@ function showCongratsAnimation(userName, userEmail) {
     `;
   }
 
-  // Sparkles
   const sparkleEmojis = ['✨', '⭐', '🌟', '💫', '🎉', '🎊'];
   let sparklesHTML = '';
   for (let i = 0; i < 12; i++) {
@@ -1042,7 +1222,7 @@ function showCongratsAnimation(userName, userEmail) {
 }
 
 /* ============================================================
-   ADMIN PANEL REDIRECT POPUP
+   ADMIN PANEL REDIRECT POPUP — (unchanged)
    ============================================================ */
 function showAdminPanelRedirect() {
   document.querySelectorAll('.admin-redirect-modal').forEach(el => el.remove());
@@ -1159,7 +1339,9 @@ async function renderHomeFeed() {
       </div>
     </div>
   `;
+
   document.getElementById('addStoryBtn')?.addEventListener('click', openStoryUploadModal);
+
   await loadStoriesBar();
   await loadHomeFeedPosts();
 }
@@ -1167,7 +1349,11 @@ async function renderHomeFeed() {
 async function loadHomeFeedPosts() {
   const container = document.getElementById('feedContainer');
   if (!container) return;
-  if (!currentUser) { container.innerHTML = `<div class="feed-empty"><h3>Please log in</h3></div>`; return; }
+
+  if (!currentUser) {
+    container.innerHTML = `<div class="feed-empty"><h3>Please log in</h3></div>`;
+    return;
+  }
 
   try {
     const postsRef = collection(db, 'posts');
@@ -1195,11 +1381,15 @@ async function loadHomeFeedPosts() {
 
     const myFollowing = currentProfile?.following || [];
 
-    const uniqueUserIds = [...new Set(posts.map(p => p.userId))].filter(id => id && id !== currentUser.uid);
+    /* 🔧 FIX: Efficient batch fetch of private status */
+    const uniqueUserIds = [...new Set(posts.map(p => p.userId))]
+      .filter(id => id && id !== currentUser.uid);
+
     const privateUsers = new Set();
 
-    for (let i = 0; i < uniqueUserIds.length; i += 10) {
-      const batch = uniqueUserIds.slice(i, i + 10);
+    /* Firestore `in` allows max 30 per query — use 30-chunk */
+    for (let i = 0; i < uniqueUserIds.length; i += 30) {
+      const batch = uniqueUserIds.slice(i, i + 30);
       if (batch.length === 0) continue;
       try {
         const usersQ = query(collection(db, 'users'), where('uid', 'in', batch));
@@ -1208,7 +1398,9 @@ async function loadHomeFeedPosts() {
           const u = d.data();
           if (u.isPrivate) privateUsers.add(u.uid);
         });
-      } catch (e) { console.warn('Batch user fetch failed:', e); }
+      } catch (e) {
+        console.warn('Batch user fetch failed:', e);
+      }
     }
 
     posts = posts.filter(p => {
@@ -1218,18 +1410,33 @@ async function loadHomeFeedPosts() {
       return true;
     });
 
+    /* Sort */
     const settings = typeof getSettings === 'function' ? getSettings() : { feedOrder: 'newest' };
+
     if (settings.feedOrder === 'trending') {
-      posts.sort((a, b) => ((b.likes?.length || 0) + (b.views || 0)) - ((a.likes?.length || 0) + (a.views || 0)));
+      posts.sort((a, b) =>
+        ((b.likes?.length || 0) + (b.views || 0)) -
+        ((a.likes?.length || 0) + (a.views || 0))
+      );
     } else if (settings.feedOrder === 'following') {
-      posts = posts.filter(p => myFollowing.includes(p.userId) || p.userId === currentUser.uid);
-      posts.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
+      posts = posts.filter(p =>
+        myFollowing.includes(p.userId) || p.userId === currentUser.uid
+      );
+      posts.sort((a, b) =>
+        (b.createdAt?.toDate?.()?.getTime() || 0) -
+        (a.createdAt?.toDate?.()?.getTime() || 0)
+      );
     } else {
-      posts.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
+      posts.sort((a, b) =>
+        (b.createdAt?.toDate?.()?.getTime() || 0) -
+        (a.createdAt?.toDate?.()?.getTime() || 0)
+      );
     }
 
     container.innerHTML = '';
     posts.forEach(post => container.appendChild(makeFeedPost(post)));
+
+    /* 🔧 FIX: setup autoplay AFTER DOM is populated */
     setupFeedAutoplay();
   } catch (e) {
     console.error('Home feed error:', e);
@@ -1283,6 +1490,7 @@ function makeShortCard(post) {
     await showPostMenu(e.currentTarget, post);
   });
 
+  /* ✅ Pass openPostPlayer as single-tap — no separate click listener */
   attachDoubleTapLike(card, post, () => openPostPlayer(post));
 
   trackPostView(post.id);
@@ -1290,7 +1498,8 @@ function makeShortCard(post) {
 }
 
 /* ============================================================
-   LONG VIDEO / PHOTO CARD
+   LONG VIDEO / PHOTO CARD — FIXED
+   Removed duplicate thumb click; singleTap = openPostPlayer
    ============================================================ */
 function makeLongCard(post) {
   const card = document.createElement('div');
@@ -1307,7 +1516,9 @@ function makeLongCard(post) {
 
   card.innerHTML = `
     <div class="long-card-thumb">
-      ${post.type === 'photo' ? `<img src="${post.url}" alt="" loading="lazy">` : `<img src="${thumbUrl}" alt="" loading="lazy">`}
+      ${post.type === 'photo'
+        ? `<img src="${post.url}" alt="" loading="lazy">`
+        : `<img src="${thumbUrl}" alt="" loading="lazy">`}
       ${post.type !== 'photo' ? `
         <div class="long-card-badge">${post.type === 'long' ? 'LONG' : 'VIDEO'}</div>
         <div class="long-card-play-icon">
@@ -1352,7 +1563,8 @@ function makeLongCard(post) {
     await showPostMenu(e.currentTarget, post);
   });
 
-  card.querySelector('.long-card-thumb').addEventListener('click', () => openPostPlayer(post));
+  /* 🔧 FIX: REMOVED duplicate .long-card-thumb click listener —
+     openPostPlayer is now passed as single-tap to attachDoubleTapLike */
 
   card.querySelector('.like-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
@@ -1377,7 +1589,10 @@ function makeLongCard(post) {
     });
   }
 
-  attachDoubleTapLike(card.querySelector('.long-card-thumb'), post, null);
+  /* ✅ Single-tap on thumb → open player; double-tap → like */
+  attachDoubleTapLike(card.querySelector('.long-card-thumb'), post, () => openPostPlayer(post));
+
+  /* Info block: double-tap likes, no single-tap action */
   attachDoubleTapLike(card.querySelector('.long-card-info'), post, null);
 
   trackPostView(post.id);
@@ -1385,10 +1600,11 @@ function makeLongCard(post) {
 }
 
 /* ============================================================
-   Post Player
+   POST PLAYER
    ============================================================ */
 function openPostPlayer(post) {
   playerTitle.textContent = post.caption || (post.type === 'photo' ? 'Photo' : 'Video');
+
   if (post.type === 'photo') {
     playerContent.innerHTML = `<img src="${post.url}" alt="">`;
   } else if (post.type === 'short') {
@@ -1408,6 +1624,7 @@ function openPostPlayer(post) {
       </div>
     `;
   }
+
   playerModal.classList.add('show');
 
   const playerInner = playerContent.firstElementChild;
@@ -1459,8 +1676,12 @@ async function showPostMenu(anchorEl, post) {
   let top = rect.bottom + 5;
   let left = rect.right - menuRect.width;
   if (left < 10) left = 10;
-  if (left + menuRect.width > window.innerWidth - 10) left = window.innerWidth - menuRect.width - 10;
-  if (top + menuRect.height > window.innerHeight - 10) top = rect.top - menuRect.height - 5;
+  if (left + menuRect.width > window.innerWidth - 10) {
+    left = window.innerWidth - menuRect.width - 10;
+  }
+  if (top + menuRect.height > window.innerHeight - 10) {
+    top = rect.top - menuRect.height - 5;
+  }
 
   menu.style.top = top + 'px';
   menu.style.left = left + 'px';
@@ -1471,10 +1692,10 @@ async function showPostMenu(anchorEl, post) {
       const action = btn.dataset.action;
       menu.remove();
 
-      if (action === 'report') await reportPost(post);
-      else if (action === 'block') await blockUser(post.userId, post.userHandle);
-      else if (action === 'unblock') await unblockUser(post.userId, post.userHandle);
-      else if (action === 'delete') await deletePost(post.id);
+      if (action === 'report')        await reportPost(post);
+      else if (action === 'block')    await blockUser(post.userId, post.userHandle);
+      else if (action === 'unblock')  await unblockUser(post.userId, post.userHandle);
+      else if (action === 'delete')   await deletePost(post.id);
     });
   });
 
@@ -1502,19 +1723,29 @@ async function deletePost(postId) {
     currentProfile.videoCount = Math.max(0, (currentProfile.videoCount || 1) - 1);
     showToast('🗑️ Post deleted');
     renderHomeFeed();
-  } catch (e) { showToast('❌ Could not delete'); }
+  } catch (e) {
+    showToast('❌ Could not delete');
+  }
 }
 
 /* ============================================================
-   Auto Play
+   AUTO PLAY — FIXED
+   Disconnects existing observer, respects dataSaver, cleanup helper
    ============================================================ */
 function setupFeedAutoplay() {
-  const settings = typeof getSettings === 'function' ? getSettings() : { autoPlay: true };
-  if (!settings.autoPlay) return;
+  const settings = typeof getSettings === 'function'
+    ? getSettings()
+    : { autoPlay: true };
 
-  if (feedAutoplayObserver) { feedAutoplayObserver.disconnect(); feedAutoplayObserver = null; }
+  /* 🔧 FIX: disconnect any previous observer to avoid leaks */
+  stopFeedAutoplay();
+
+  /* 🔧 FIX: dataSaver forces autoplay off */
+  if (!settings.autoPlay || settings.dataSaver) return;
 
   const videos = document.querySelectorAll('.long-card-feed video, .feed-post-media video');
+  if (videos.length === 0) return;
+
   feedAutoplayObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const video = entry.target;
@@ -1527,7 +1758,19 @@ function setupFeedAutoplay() {
       }
     });
   }, { threshold: [0, 0.6, 1] });
+
   videos.forEach(v => feedAutoplayObserver.observe(v));
+}
+
+/* 🔧 FIX: new cleanup helper */
+function stopFeedAutoplay() {
+  if (feedAutoplayObserver) {
+    feedAutoplayObserver.disconnect();
+    feedAutoplayObserver = null;
+  }
+  document.querySelectorAll('.long-card-feed video, .feed-post-media video').forEach(v => {
+    try { v.pause(); } catch (e) {}
+  });
 }
 
 /* ============================================================
@@ -1536,6 +1779,7 @@ function setupFeedAutoplay() {
 async function loadStoriesBar() {
   const bar = document.getElementById('storiesBar');
   if (!bar) return;
+
   bar.querySelectorAll('.story-item:not(#addStoryBtn)').forEach(el => el.remove());
 
   try {
@@ -1543,6 +1787,7 @@ async function loadStoriesBar() {
     const storiesRef = collection(db, 'stories');
     const q = query(storiesRef, limit(100));
     const snap = await getDocs(q);
+
     const allStories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     const blocked = currentProfile?.blockedUsers || [];
 
@@ -1550,18 +1795,29 @@ async function loadStoriesBar() {
       const t = s.createdAt?.toDate?.();
       return t && t.getTime() > cutoffTime.getTime() && !blocked.includes(s.userId);
     });
+
     if (validStories.length === 0) return;
 
     const grouped = {};
     validStories.forEach(s => {
       if (!grouped[s.userId]) {
-        grouped[s.userId] = { userId: s.userId, userName: s.userName, userHandle: s.userHandle, userPhoto: s.userPhoto, userVerified: s.userVerified, stories: [] };
+        grouped[s.userId] = {
+          userId: s.userId,
+          userName: s.userName,
+          userHandle: s.userHandle,
+          userPhoto: s.userPhoto,
+          userVerified: s.userVerified,
+          stories: []
+        };
       }
       grouped[s.userId].stories.push(s);
     });
 
     Object.values(grouped).forEach(u => {
-      u.stories.sort((a, b) => (a.createdAt?.toDate?.()?.getTime() || 0) - (b.createdAt?.toDate?.()?.getTime() || 0));
+      u.stories.sort((a, b) =>
+        (a.createdAt?.toDate?.()?.getTime() || 0) -
+        (b.createdAt?.toDate?.()?.getTime() || 0)
+      );
     });
 
     const userArray = Object.values(grouped);
@@ -1578,8 +1834,12 @@ async function loadStoriesBar() {
     userArray.forEach(userGroup => {
       const item = document.createElement('div');
       item.className = 'story-item';
-      const allViewed = userGroup.stories.every(s => (s.viewers || []).includes(currentUser.uid));
+
+      const allViewed = userGroup.stories.every(s =>
+        (s.viewers || []).includes(currentUser.uid)
+      );
       const avatar = userGroup.userPhoto || defaultAvatar(userGroup.userName);
+
       item.innerHTML = `
         <div class="story-ring ${allViewed ? 'viewed' : ''}">
           <img src="${avatar}" alt="">
@@ -1588,20 +1848,32 @@ async function loadStoriesBar() {
           ${userGroup.userId === currentUser.uid ? 'Your story' : escapeHtml(userGroup.userName)}
         </div>
       `;
+
       item.addEventListener('click', () => openStoryViewer(userGroup.userId));
       bar.appendChild(item);
     });
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Stories bar error:', e);
+  }
 }
 
 /* ============================================================
-   STORY UPLOAD MODAL
+   STORY UPLOAD MODAL — FIXED (blob URL cleanup)
    ============================================================ */
+let storyPreviewBlobUrl = null;  // 🔧 FIX: track for revoke
+
 function openStoryUploadModal() {
   currentStoryType = 'photo';
   currentStoryFile = null;
   currentStoryVideoDuration = 0;
   storyFileInput.value = '';
+
+  /* 🔧 FIX: revoke any previous preview URL */
+  if (storyPreviewBlobUrl) {
+    try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {}
+    storyPreviewBlobUrl = null;
+  }
+
   storyPreviewImg.src = '';
   storyPreviewVideo.src = '';
   storyPreviewWrap.style.display = 'none';
@@ -1612,6 +1884,7 @@ function openStoryUploadModal() {
   storyProgressWrap.style.display = 'none';
   storyProgressBar.style.width = '0%';
   storyProgressText.textContent = '0%';
+
   document.querySelectorAll('.story-upload-tab').forEach(t => t.classList.remove('active'));
   document.querySelector('.story-upload-tab[data-type="photo"]')?.classList.add('active');
   updateStoryPickerText();
@@ -1632,8 +1905,23 @@ function updateStoryPickerText() {
   }
 }
 
-document.getElementById('closeStoryUpload')?.addEventListener('click', () => storyUploadModal.classList.remove('show'));
-storyUploadModal.addEventListener('click', (e) => { if (e.target === storyUploadModal) storyUploadModal.classList.remove('show'); });
+document.getElementById('closeStoryUpload')?.addEventListener('click', () => {
+  storyUploadModal.classList.remove('show');
+  if (storyPreviewBlobUrl) {
+    try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {}
+    storyPreviewBlobUrl = null;
+  }
+});
+
+storyUploadModal.addEventListener('click', (e) => {
+  if (e.target === storyUploadModal) {
+    storyUploadModal.classList.remove('show');
+    if (storyPreviewBlobUrl) {
+      try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {}
+      storyPreviewBlobUrl = null;
+    }
+  }
+});
 
 document.querySelectorAll('.story-upload-tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -1650,6 +1938,13 @@ document.querySelectorAll('.story-upload-tab').forEach(tab => {
     storyPickerWrap.style.display = 'flex';
     storySubmitBtn.disabled = true;
     storyUploadMsg.textContent = '';
+
+    /* 🔧 FIX: revoke blob URL on type change */
+    if (storyPreviewBlobUrl) {
+      try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {}
+      storyPreviewBlobUrl = null;
+    }
+
     updateStoryPickerText();
   });
 });
@@ -1657,14 +1952,22 @@ document.querySelectorAll('.story-upload-tab').forEach(tab => {
 storyFileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
+
   storyUploadMsg.className = 'error-msg';
   storyUploadMsg.textContent = '';
 
   if (currentStoryType === 'photo') {
-    if (!file.type.startsWith('image/')) { storyUploadMsg.textContent = 'Choose image file.'; return; }
-    if (file.size > 5 * 1024 * 1024) { storyUploadMsg.textContent = 'Max 5 MB.'; return; }
+    if (!file.type.startsWith('image/')) {
+      storyUploadMsg.textContent = 'Choose image file.';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      storyUploadMsg.textContent = 'Max 5 MB.';
+      return;
+    }
     currentStoryFile = file;
     const url = URL.createObjectURL(file);
+    storyPreviewBlobUrl = url;
     storyPreviewImg.src = url;
     storyPreviewWrap.style.display = 'block';
     storyPickerWrap.style.display = 'none';
@@ -1672,8 +1975,14 @@ storyFileInput.addEventListener('change', async (e) => {
     return;
   }
 
-  if (!file.type.startsWith('video/')) { storyUploadMsg.textContent = 'Choose video file.'; return; }
-  if (file.size > 20 * 1024 * 1024) { storyUploadMsg.textContent = 'Max 20 MB.'; return; }
+  if (!file.type.startsWith('video/')) {
+    storyUploadMsg.textContent = 'Choose video file.';
+    return;
+  }
+  if (file.size > 20 * 1024 * 1024) {
+    storyUploadMsg.textContent = 'Max 20 MB.';
+    return;
+  }
 
   const url = URL.createObjectURL(file);
   const tempVideo = document.createElement('video');
@@ -1682,22 +1991,42 @@ storyFileInput.addEventListener('change', async (e) => {
 
   tempVideo.onloadedmetadata = () => {
     const duration = tempVideo.duration;
-    if (!isFinite(duration) || duration <= 0) { storyUploadMsg.textContent = 'Could not read duration.'; return; }
-    if (duration > 15.5) { storyUploadMsg.textContent = `Max 15 sec. Yours ${Math.round(duration)}s.`; return; }
+    if (!isFinite(duration) || duration <= 0) {
+      storyUploadMsg.textContent = 'Could not read duration.';
+      URL.revokeObjectURL(url);
+      return;
+    }
+    if (duration > 15.5) {
+      storyUploadMsg.textContent = `Max 15 sec. Yours ${Math.round(duration)}s.`;
+      URL.revokeObjectURL(url);
+      return;
+    }
     currentStoryFile = file;
     currentStoryVideoDuration = duration;
+    storyPreviewBlobUrl = url;
     storyPreviewVideo.src = url;
     storyVideoPreviewWrap.style.display = 'block';
-    storyPreviewInfo.textContent = `${Math.round(duration)}s · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+    storyPreviewInfo.textContent =
+      `${Math.round(duration)}s · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
     storyPickerWrap.style.display = 'none';
     storySubmitBtn.disabled = false;
   };
-  tempVideo.onerror = () => { storyUploadMsg.textContent = 'Could not load video.'; };
+
+  tempVideo.onerror = () => {
+    storyUploadMsg.textContent = 'Could not load video.';
+    URL.revokeObjectURL(url);
+  };
 });
 
 storySubmitBtn.addEventListener('click', async () => {
-  if (!currentUser || !currentProfile) { storyUploadMsg.textContent = 'Login required.'; return; }
-  if (!currentStoryFile) { storyUploadMsg.textContent = 'Select a file.'; return; }
+  if (!currentUser || !currentProfile) {
+    storyUploadMsg.textContent = 'Login required.';
+    return;
+  }
+  if (!currentStoryFile) {
+    storyUploadMsg.textContent = 'Select a file.';
+    return;
+  }
 
   storySubmitBtn.disabled = true;
   storySubmitBtn.textContent = 'Uploading...';
@@ -1718,19 +2047,28 @@ storySubmitBtn.addEventListener('click', async () => {
       userVerified: currentProfile.verified || false,
       type: currentStoryType,
       url: result.secure_url,
-      thumbnail: currentStoryType === 'video' ? buildThumbnailUrl(result.secure_url, 'video') : result.secure_url,
+      thumbnail: currentStoryType === 'video'
+        ? buildThumbnailUrl(result.secure_url, 'video')
+        : result.secure_url,
       duration: currentStoryType === 'photo' ? 5 : currentStoryVideoDuration,
       viewers: [],
       createdAt: serverTimestamp()
     };
 
     await addDoc(collection(db, 'stories'), storyData);
+
     storyUploadMsg.className = 'success-msg';
     storyUploadMsg.textContent = '✅ Story posted!';
 
     setTimeout(() => {
       storyUploadModal.classList.remove('show');
-      if (document.querySelector('.nav-item[data-page="home"]')?.classList.contains('active')) renderHomeFeed();
+      if (storyPreviewBlobUrl) {
+        try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {}
+        storyPreviewBlobUrl = null;
+      }
+      if (document.querySelector('.nav-item[data-page="home"]')?.classList.contains('active')) {
+        renderHomeFeed();
+      }
     }, 1200);
   } catch (err) {
     storyUploadMsg.className = 'error-msg';
@@ -1757,21 +2095,37 @@ function uploadToCloudinaryStory(file, onProgress) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
     xhr.timeout = 120000;
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); };
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const res = JSON.parse(xhr.responseText);
-          if (!res.secure_url) { reject(new Error('No URL returned')); return; }
+          if (!res.secure_url) {
+            reject(new Error('No URL returned'));
+            return;
+          }
           resolve(res);
-        } catch (e) { reject(new Error('Invalid response')); }
+        } catch (e) {
+          reject(new Error('Invalid response'));
+        }
       } else {
         let errMsg = 'Upload failed';
-        try { const errData = JSON.parse(xhr.responseText); if (errData.error?.message) errMsg = errData.error.message; }
-        catch (e) { errMsg = 'HTTP ' + xhr.status; }
+        try {
+          const errData = JSON.parse(xhr.responseText);
+          if (errData.error?.message) errMsg = errData.error.message;
+        } catch (e) {
+          errMsg = 'HTTP ' + xhr.status;
+        }
         reject(new Error(errMsg));
       }
     };
+
     xhr.onerror = () => reject(new Error('Network error'));
     xhr.ontimeout = () => reject(new Error('Timeout'));
     xhr.send(formData);
@@ -1798,34 +2152,53 @@ function uploadToCloudinaryGroupFile(file, onProgress) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
     xhr.timeout = 180000;
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); };
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        try { const res = JSON.parse(xhr.responseText); if (!res.secure_url) { reject(new Error('No URL')); return; } resolve(res); }
-        catch (e) { reject(new Error('Invalid')); }
+        try {
+          const res = JSON.parse(xhr.responseText);
+          if (!res.secure_url) {
+            reject(new Error('No URL'));
+            return;
+          }
+          resolve(res);
+        } catch (e) {
+          reject(new Error('Invalid'));
+        }
       } else {
         let errMsg = 'Upload failed';
-        try { const d = JSON.parse(xhr.responseText); if (d.error?.message) errMsg = d.error.message; } catch (e) {}
+        try {
+          const d = JSON.parse(xhr.responseText);
+          if (d.error?.message) errMsg = d.error.message;
+        } catch (e) {}
         reject(new Error(errMsg));
       }
     };
+
     xhr.onerror = () => reject(new Error('Network error'));
     xhr.ontimeout = () => reject(new Error('Timeout'));
     xhr.send(formData);
   });
 }
 /* ============================================================
-   ReelHub — app.js (PART 3/4) — FINAL VERSION
+   ReelHub — app.js (PART 3/4) — FIXED VERSION
    Story Viewer, Shorts, Like/Unlike, Comments
    ============================================================ */
 
 /* ============================================================
-   STORY VIEWER
+   STORY VIEWER — FIXED
    ============================================================ */
 function openStoryViewer(userId) {
   const userIndex = storiesByUser.findIndex(u => u.userId === userId);
   if (userIndex === -1) return;
 
+  /* 🔧 FIX: Pause shorts videos (only when opening a story) */
   document.querySelectorAll('.short-item video').forEach(v => {
     try { v.pause(); } catch (e) {}
   });
@@ -1839,8 +2212,10 @@ function openStoryViewer(userId) {
 
 function renderCurrentStory() {
   clearStoryTimers();
+
   const userGroup = storiesByUser[currentStoryUserIndex];
   if (!userGroup) { closeStoryViewer(); return; }
+
   const story = userGroup.stories[currentStoryIndex];
   if (!story) {
     if (currentStoryUserIndex < storiesByUser.length - 1) {
@@ -1852,24 +2227,31 @@ function renderCurrentStory() {
   }
 
   storyUserAvatar.src = userGroup.userPhoto || defaultAvatar(userGroup.userName);
-  storyUserName.innerHTML = `${escapeHtml(userGroup.userName || 'User')}${verifiedBadgeHTML(userGroup.userVerified)}`;
+  storyUserName.innerHTML =
+    `${escapeHtml(userGroup.userName || 'User')}${verifiedBadgeHTML(userGroup.userVerified)}`;
+
   const time = story.createdAt?.toDate?.();
   storyTime.textContent = time ? timeAgo(time) : 'just now';
 
   const isOwnStory = userGroup.userId === currentUser.uid;
   storyDeleteBtn.style.display = isOwnStory ? 'block' : 'none';
 
+  /* Viewers button (own story only) */
   const viewersBtn = document.getElementById('storyViewersBtn');
   const viewersCountEl = document.getElementById('storyViewersCount');
+
   if (viewersBtn) {
     if (isOwnStory) {
       viewersBtn.style.display = 'inline-flex';
-      if (viewersCountEl) viewersCountEl.textContent = (story.viewers || []).length;
+      if (viewersCountEl) {
+        viewersCountEl.textContent = (story.viewers || []).length;
+      }
     } else {
       viewersBtn.style.display = 'none';
     }
   }
 
+  /* Progress bars */
   storyProgressBars.innerHTML = '';
   userGroup.stories.forEach((s, idx) => {
     const seg = document.createElement('div');
@@ -1881,7 +2263,9 @@ function renderCurrentStory() {
     storyProgressBars.appendChild(seg);
   });
 
+  /* Media */
   storyMedia.innerHTML = '';
+
   if (story.type === 'photo') {
     const img = document.createElement('img');
     img.src = story.url;
@@ -1916,10 +2300,12 @@ function renderCurrentStory() {
 function startPhotoStoryProgress(duration, currentFill) {
   if (!currentFill) return;
   const startTime = Date.now();
+
   storyProgressInterval = setInterval(() => {
     const elapsed = Date.now() - startTime;
     const percent = Math.min((elapsed / duration) * 100, 100);
     currentFill.style.width = percent + '%';
+
     if (percent >= 100) {
       clearInterval(storyProgressInterval);
       storyProgressInterval = null;
@@ -1936,12 +2322,14 @@ function startVideoStoryProgress(video, currentFill) {
     const percent = Math.min((video.currentTime / video.duration) * 100, 100);
     currentFill.style.width = percent + '%';
   };
+
   const onEnded = () => nextStory();
   const onLoaded = () => { video.play().catch(() => {}); };
 
   video.addEventListener('timeupdate', onTimeUpdate);
   video.addEventListener('ended', onEnded);
   video.addEventListener('loadedmetadata', onLoaded);
+
   if (video.readyState >= 1) onLoaded();
 
   video._cleanup = () => {
@@ -1952,8 +2340,14 @@ function startVideoStoryProgress(video, currentFill) {
 }
 
 function clearStoryTimers() {
-  if (storyProgressInterval) { clearInterval(storyProgressInterval); storyProgressInterval = null; }
-  if (storyAutoAdvanceTimeout) { clearTimeout(storyAutoAdvanceTimeout); storyAutoAdvanceTimeout = null; }
+  if (storyProgressInterval) {
+    clearInterval(storyProgressInterval);
+    storyProgressInterval = null;
+  }
+  if (storyAutoAdvanceTimeout) {
+    clearTimeout(storyAutoAdvanceTimeout);
+    storyAutoAdvanceTimeout = null;
+  }
   if (currentStoryMediaEl) {
     if (currentStoryMediaEl._cleanup) {
       try { currentStoryMediaEl._cleanup(); } catch (e) {}
@@ -1967,8 +2361,10 @@ function clearStoryTimers() {
 
 function nextStory() {
   clearStoryTimers();
+
   const userGroup = storiesByUser[currentStoryUserIndex];
   if (!userGroup) { closeStoryViewer(); return; }
+
   if (currentStoryIndex < userGroup.stories.length - 1) {
     currentStoryIndex++;
     renderCurrentStory();
@@ -1983,6 +2379,7 @@ function nextStory() {
 
 function prevStory() {
   clearStoryTimers();
+
   if (currentStoryIndex > 0) {
     currentStoryIndex--;
     renderCurrentStory();
@@ -2005,22 +2402,30 @@ function closeStoryViewer() {
   storyMedia.innerHTML = '';
   document.body.style.overflow = '';
   currentStoryMediaEl = null;
+
+  /* 🔧 FIX: Also remove viewers sheet on close */
   document.getElementById('storyViewersSheet')?.remove();
 }
 
 async function markStoryViewed(storyId) {
-  if (!currentUser) return;
+  if (!currentUser || !storyId) return;
   try {
     const storyRef = doc(db, 'stories', storyId);
     const snap = await getDoc(storyRef);
     if (!snap.exists()) return;
+
     const data = snap.data();
     const viewers = data.viewers || [];
+
     if (!viewers.includes(currentUser.uid)) {
       await updateDoc(storyRef, { viewers: arrayUnion(currentUser.uid) });
 
-      // ✅ Notify story owner
-      if (data.userId && data.userId !== currentUser.uid) {
+      /* 🔧 FIX: Respect notification settings */
+      const s = typeof getSettings === 'function'
+        ? getSettings()
+        : { pushNotif: true, notifFollows: true };
+
+      if (data.userId && data.userId !== currentUser.uid && s.pushNotif) {
         try {
           await addDoc(collection(db, 'notifications'), {
             userId: data.userId,
@@ -2035,9 +2440,12 @@ async function markStoryViewed(storyId) {
         } catch (e) {}
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('markStoryViewed error:', e);
+  }
 }
 
+/* Story viewer event bindings */
 storyCloseBtn.addEventListener('click', closeStoryViewer);
 storyTapLeft.addEventListener('click', prevStory);
 storyTapRight.addEventListener('click', nextStory);
@@ -2053,25 +2461,40 @@ document.getElementById('storyViewersBtn')?.addEventListener('click', (e) => {
 
 storyDeleteBtn.addEventListener('click', async () => {
   if (!confirm('Delete this story?')) return;
+
   const userGroup = storiesByUser[currentStoryUserIndex];
   if (!userGroup) return;
+
   const story = userGroup.stories[currentStoryIndex];
   if (!story) return;
 
   try {
     await deleteDoc(doc(db, 'stories', story.id));
     showToast('Story deleted');
+
     userGroup.stories.splice(currentStoryIndex, 1);
+
     if (userGroup.stories.length === 0) {
       storiesByUser.splice(currentStoryUserIndex, 1);
-      if (storiesByUser.length === 0) { closeStoryViewer(); renderHomeFeed(); return; }
-      if (currentStoryUserIndex >= storiesByUser.length) currentStoryUserIndex = storiesByUser.length - 1;
+
+      if (storiesByUser.length === 0) {
+        closeStoryViewer();
+        renderHomeFeed();
+        return;
+      }
+
+      if (currentStoryUserIndex >= storiesByUser.length) {
+        currentStoryUserIndex = storiesByUser.length - 1;
+      }
       currentStoryIndex = 0;
     } else if (currentStoryIndex >= userGroup.stories.length) {
       currentStoryIndex = userGroup.stories.length - 1;
     }
+
     renderCurrentStory();
-  } catch (e) { showToast('❌ Could not delete'); }
+  } catch (e) {
+    showToast('❌ Could not delete');
+  }
 });
 
 /* ============================================================
@@ -2083,6 +2506,7 @@ async function renderShortsFeed() {
       <div class="shorts-empty"><div class="page-title">Loading shorts...</div></div>
     </div>
   `;
+
   const wrap = document.getElementById('shortsWrap');
   if (!wrap) return;
 
@@ -2120,6 +2544,7 @@ async function renderShortsFeed() {
 
     wrap.innerHTML = '';
     shorts.forEach(short => wrap.appendChild(makeShortItem(short)));
+
     setupShortsAutoplay(wrap);
 
     if (shortsSoundEnabled) {
@@ -2138,8 +2563,8 @@ async function renderShortsFeed() {
     if (!shortsSoundEnabled) {
       showTapToUnmuteOverlay(wrap);
     }
-
   } catch (e) {
+    console.error('Shorts load error:', e);
     wrap.innerHTML = `<div class="shorts-empty"><h3>Could not load shorts</h3></div>`;
   }
 }
@@ -2191,6 +2616,10 @@ function getCurrentVisibleVideo(wrap) {
   return videos[0];
 }
 
+/* ============================================================
+   SHORT ITEM — FIXED
+   Deferred mute toggle so double-tap doesn't unmute first
+   ============================================================ */
 function makeShortItem(short) {
   const item = document.createElement('div');
   item.className = 'short-item';
@@ -2254,14 +2683,17 @@ function makeShortItem(short) {
   const videoEl = item.querySelector('video');
   const userImg = item.querySelector('.short-user-row img');
   if (userImg) userImg.addEventListener('click', () => openUserProfile(short.userId));
+
   item.querySelector('.like-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     await toggleLike(short.id, e.currentTarget);
   });
+
   item.querySelector('.comment-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     openComments(short.id, short.caption || 'Comments');
   });
+
   const saveBtn = item.querySelector('.save-btn');
   if (saveBtn) {
     saveBtn.addEventListener('click', async (e) => {
@@ -2269,18 +2701,28 @@ function makeShortItem(short) {
       await toggleSavePost(short.id, e.currentTarget);
     });
   }
+
   item.querySelector('.share-btn-short').addEventListener('click', async (e) => {
     e.stopPropagation();
     await sharePost(short);
   });
 
+  /* 🔧 FIXED: Deferred mute toggle so double-tap doesn't unmute first */
+  let shortTapTimer = null;
   videoEl.addEventListener('click', (e) => {
-    if (e.detail >= 2) return;
-    videoEl.muted = !videoEl.muted;
-    shortsSoundEnabled = !videoEl.muted;
-    localStorage.setItem('shortsSound', shortsSoundEnabled ? 'true' : 'false');
-    showToast(videoEl.muted ? '🔇 Sound OFF' : '🔊 Sound ON');
-    if (!videoEl.muted) videoEl.play().catch(() => {});
+    if (e.detail >= 2) {
+      /* Second tap of a double-tap — cancel any pending mute toggle */
+      clearTimeout(shortTapTimer);
+      return;
+    }
+    clearTimeout(shortTapTimer);
+    shortTapTimer = setTimeout(() => {
+      videoEl.muted = !videoEl.muted;
+      shortsSoundEnabled = !videoEl.muted;
+      localStorage.setItem('shortsSound', shortsSoundEnabled ? 'true' : 'false');
+      showToast(videoEl.muted ? '🔇 Sound OFF' : '🔊 Sound ON');
+      if (!videoEl.muted) videoEl.play().catch(() => {});
+    }, 280);
   });
 
   attachDoubleTapLike(item, short, null);
@@ -2289,14 +2731,18 @@ function makeShortItem(short) {
 }
 
 function setupShortsAutoplay(wrap) {
-  const settings = typeof getSettings === 'function' ? getSettings() : { autoPlay: true };
+  const settings = typeof getSettings === 'function'
+    ? getSettings()
+    : { autoPlay: true };
+
   stopShortsObserver();
+
   const videos = wrap.querySelectorAll('.short-item video');
   shortsObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const video = entry.target;
       if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
-        if (settings.autoPlay) {
+        if (settings.autoPlay && !settings.dataSaver) {
           video.muted = !shortsSoundEnabled;
           video.play().catch(() => {
             video.muted = true;
@@ -2308,16 +2754,22 @@ function setupShortsAutoplay(wrap) {
       }
     });
   }, { threshold: [0, 0.6, 1] });
+
   videos.forEach(v => shortsObserver.observe(v));
 }
 
 function stopShortsObserver() {
-  if (shortsObserver) { shortsObserver.disconnect(); shortsObserver = null; }
-  document.querySelectorAll('.short-item video').forEach(v => { try { v.pause(); } catch (e) {} });
+  if (shortsObserver) {
+    shortsObserver.disconnect();
+    shortsObserver = null;
+  }
+  document.querySelectorAll('.short-item video').forEach(v => {
+    try { v.pause(); } catch (e) {}
+  });
 }
 
 /* ============================================================
-   ✅ LIKE / UNLIKE SYSTEM — Both work + Notifications
+   ✅ LIKE / UNLIKE — FIXED (respect notif settings)
    ============================================================ */
 async function toggleLike(postId, btnEl) {
   if (!currentUser) return;
@@ -2330,7 +2782,7 @@ async function toggleLike(postId, btnEl) {
   btnEl.disabled = true;
 
   if (isCurrentlyLiked) {
-    // 💔 UNLIKE
+    /* 💔 UNLIKE */
     btnEl.classList.remove('liked');
     if (countSpan) countSpan.textContent = Math.max(0, currentCount - 1);
 
@@ -2347,7 +2799,7 @@ async function toggleLike(postId, btnEl) {
       showToast('❌ Could not unlike');
     }
   } else {
-    // ❤️ LIKE
+    /* ❤️ LIKE */
     btnEl.classList.add('liked');
     if (countSpan) countSpan.textContent = currentCount + 1;
 
@@ -2364,11 +2816,16 @@ async function toggleLike(postId, btnEl) {
       showToast('❤️ Liked');
       if (navigator.vibrate) navigator.vibrate(30);
 
-      // ✅ Send notification to post owner
+      /* 🔧 FIX: Respect notification settings */
       try {
+        const s = typeof getSettings === 'function'
+          ? getSettings()
+          : { notifLikes: true, pushNotif: true };
+
         const postRef = doc(db, 'posts', postId);
         const postSnap = await getDoc(postRef);
-        if (postSnap.exists()) {
+
+        if (postSnap.exists() && s.pushNotif && s.notifLikes) {
           const postData = postSnap.data();
           if (postData.userId && postData.userId !== currentUser.uid) {
             await addDoc(collection(db, 'notifications'), {
@@ -2400,30 +2857,45 @@ async function toggleLike(postId, btnEl) {
    ============================================================ */
 async function sharePost(post) {
   const appUrl = window.location.origin;
-  const shareText = `🎬 Check out this post on ReelHub!\n\n@${post.userHandle}\n\n${appUrl}`;
+  const shareText = `🎬 Check out this post on ReelHub!\n\n@${post.userHandle || 'user'}\n\n${appUrl}`;
+
   if (navigator.share) {
-    try { await navigator.share({ title: 'ReelHub Post', text: shareText, url: appUrl }); return; }
-    catch (err) { if (err.name === 'AbortError') return; }
+    try {
+      await navigator.share({ title: 'ReelHub Post', text: shareText, url: appUrl });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
   }
-  try { await navigator.clipboard.writeText(shareText); showToast('✅ Link copied!'); }
-  catch (err) { showToast('❌ Could not share'); }
+
+  try {
+    await navigator.clipboard.writeText(shareText);
+    showToast('✅ Link copied!');
+  } catch (err) {
+    showToast('❌ Could not share');
+  }
 }
 
 /* ============================================================
-   COMMENTS
+   COMMENTS — FIXED
    ============================================================ */
 async function openComments(postId, title) {
   if (!currentUser) return;
+
   activeCommentPostId = postId;
   activeReplyTo = null;
   allCommentsForPost = [];
+
   commentsTitle.textContent = title || 'Comments';
   myAvatarForComment.src = currentProfile?.photo || defaultAvatar(currentProfile?.name || '?');
   commentInput.value = '';
   postCommentBtn.disabled = true;
+
   hideReplyIndicator();
+
   commentsList.innerHTML = `<div class="empty-msg">Loading comments...</div>`;
   commentsModal.classList.add('show');
+
   await loadComments();
 }
 
@@ -2432,6 +2904,7 @@ document.getElementById('closeComments')?.addEventListener('click', () => {
   activeCommentPostId = null;
   activeReplyTo = null;
 });
+
 commentsModal.addEventListener('click', (e) => {
   if (e.target === commentsModal) {
     commentsModal.classList.remove('show');
@@ -2442,29 +2915,37 @@ commentsModal.addEventListener('click', (e) => {
 
 async function loadComments() {
   if (!activeCommentPostId) return;
+
   try {
     const commentsRef = collection(db, 'comments');
     const q = query(commentsRef, where('postId', '==', activeCommentPostId));
     const snap = await getDocs(q);
+
     const allComments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     const topLevel = allComments.filter(c => !c.parentId);
     const replies = allComments.filter(c => c.parentId);
+
     topLevel.sort((a, b) => {
       const ta = a.createdAt?.toDate?.()?.getTime() || 0;
       const tb = b.createdAt?.toDate?.()?.getTime() || 0;
       return ta - tb;
     });
+
     topLevel.forEach(c => {
-      c.replies = replies.filter(r => r.parentId === c.id).sort((a, b) => {
-        const ta = a.createdAt?.toDate?.()?.getTime() || 0;
-        const tb = b.createdAt?.toDate?.()?.getTime() || 0;
-        return ta - tb;
-      });
+      c.replies = replies
+        .filter(r => r.parentId === c.id)
+        .sort((a, b) => {
+          const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+          const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+          return ta - tb;
+        });
     });
+
     allCommentsForPost = topLevel;
     paintComments(topLevel);
   } catch (e) {
-    commentsList.innerHTML = `<div class="comments-empty">Could not load</div>`;
+    console.error('Load comments error:', e);
+    commentsList.innerHTML = `<div class="comments-empty">Could not load comments</div>`;
   }
 }
 
@@ -2479,6 +2960,7 @@ function paintComments(comments) {
       </div>`;
     return;
   }
+
   commentsList.innerHTML = '';
   comments.forEach(comment => commentsList.appendChild(makeCommentItem(comment, false)));
 }
@@ -2487,14 +2969,18 @@ function makeCommentItem(comment, isReply) {
   const item = document.createElement('div');
   item.className = isReply ? 'comment-item reply-item' : 'comment-item';
   item.dataset.commentId = comment.id;
+
   const avatar = comment.userPhoto || defaultAvatar(comment.userName);
   const isLiked = (comment.likes || []).includes(currentUser.uid);
   const likesCount = (comment.likes || []).length;
   const isOwner = comment.userId === currentUser.uid;
   const time = comment.createdAt?.toDate?.();
   const timeStr = time ? timeAgo(time) : 'just now';
+
   let replyToHtml = '';
-  if (comment.replyToHandle) replyToHtml = `<span class="mention">@${escapeHtml(comment.replyToHandle)}</span> `;
+  if (comment.replyToHandle) {
+    replyToHtml = `<span class="mention">@${escapeHtml(comment.replyToHandle)}</span> `;
+  }
 
   let repliesHtml = '';
   if (!isReply && comment.replies && comment.replies.length > 0) {
@@ -2543,26 +3029,39 @@ function makeCommentItem(comment, isReply) {
 
   item.querySelector('.comment-avatar')?.addEventListener('click', () => openUserProfile(comment.userId));
   item.querySelector('.comment-name')?.addEventListener('click', () => openUserProfile(comment.userId));
+
   item.querySelector('.like-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     await toggleCommentLike(comment.id, e.currentTarget);
   });
+
   const replyBtn = item.querySelector('.reply-btn');
-  if (replyBtn) replyBtn.addEventListener('click', () => showReplyIndicator(comment.id, comment.userName, comment.userHandle));
+  if (replyBtn) {
+    replyBtn.addEventListener('click', () =>
+      showReplyIndicator(comment.id, comment.userName, comment.userHandle)
+    );
+  }
+
   const deleteBtn = item.querySelector('.comment-delete-btn');
-  if (deleteBtn) deleteBtn.addEventListener('click', async () => {
-    const settings = typeof getSettings === 'function' ? getSettings() : { confirmDelete: true };
-    if (settings.confirmDelete && !confirm('Delete?')) return;
-    await deleteComment(comment.id);
-  });
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async () => {
+      const settings = typeof getSettings === 'function' ? getSettings() : { confirmDelete: true };
+      if (settings.confirmDelete && !confirm('Delete this comment?')) return;
+      await deleteComment(comment.id);
+    });
+  }
+
   const toggleBtn = item.querySelector('.replies-toggle');
   if (toggleBtn) {
     toggleBtn.addEventListener('click', () => {
       const repliesList = item.querySelector('.replies-list');
       const isHidden = repliesList.classList.contains('replies-hidden');
+
       if (isHidden) {
         repliesList.innerHTML = '';
-        (comment.replies || []).forEach(reply => repliesList.appendChild(makeCommentItem(reply, true)));
+        (comment.replies || []).forEach(reply =>
+          repliesList.appendChild(makeCommentItem(reply, true))
+        );
         repliesList.classList.remove('replies-hidden');
         toggleBtn.innerHTML = `
           <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
@@ -2577,17 +3076,21 @@ function makeCommentItem(comment, isReply) {
       }
     });
   }
+
   return item;
 }
 
-commentInput.addEventListener('input', () => { postCommentBtn.disabled = !commentInput.value.trim(); });
+commentInput.addEventListener('input', () => {
+  postCommentBtn.disabled = !commentInput.value.trim();
+});
 
 /* ============================================================
-   POST COMMENT — With notifications + verified badge
+   POST COMMENT — FIXED (respect notif settings for both targets)
    ============================================================ */
 postCommentBtn.addEventListener('click', async () => {
   const text = commentInput.value.trim();
   if (!text || !activeCommentPostId || !currentUser) return;
+
   postCommentBtn.disabled = true;
   postCommentBtn.textContent = '...';
 
@@ -2606,20 +3109,31 @@ postCommentBtn.addEventListener('click', async () => {
       replyToHandle: activeReplyTo ? activeReplyTo.userHandle : null,
       createdAt: serverTimestamp()
     };
+
     await addDoc(collection(db, 'comments'), commentData);
 
     try {
       const postRef = doc(db, 'posts', activeCommentPostId);
       const postSnap = await getDoc(postRef);
+
       if (postSnap.exists()) {
         const currentCount = postSnap.data().commentsCount || 0;
+
         await updateDoc(postRef, { commentsCount: currentCount + 1 });
+
         document.querySelectorAll(`.comment-btn[data-post="${activeCommentPostId}"] span`)
           .forEach(el => { el.textContent = currentCount + 1; });
 
-        // ✅ Send notification to post owner
+        /* 🔧 FIX: Respect notification settings */
+        const s = typeof getSettings === 'function'
+          ? getSettings()
+          : { notifComments: true, pushNotif: true };
+
         const postData = postSnap.data();
-        if (postData.userId && postData.userId !== currentUser.uid) {
+        const shouldNotify = s.pushNotif && s.notifComments;
+
+        /* Notify post owner */
+        if (postData.userId && postData.userId !== currentUser.uid && shouldNotify) {
           try {
             await addDoc(collection(db, 'notifications'), {
               userId: postData.userId,
@@ -2634,14 +3148,17 @@ postCommentBtn.addEventListener('click', async () => {
           } catch (e) {}
         }
 
-        // ✅ If reply, notify the user being replied to
-        if (activeReplyTo && activeReplyTo.commentId) {
+        /* Notify reply target */
+        if (activeReplyTo && activeReplyTo.commentId && shouldNotify) {
           try {
             const parentRef = doc(db, 'comments', activeReplyTo.commentId);
             const parentSnap = await getDoc(parentRef);
+
             if (parentSnap.exists()) {
               const parentData = parentSnap.data();
-              if (parentData.userId && parentData.userId !== currentUser.uid) {
+              if (parentData.userId &&
+                  parentData.userId !== currentUser.uid &&
+                  parentData.userId !== postData.userId) {
                 await addDoc(collection(db, 'notifications'), {
                   userId: parentData.userId,
                   type: 'reply',
@@ -2657,28 +3174,43 @@ postCommentBtn.addEventListener('click', async () => {
           } catch (e) {}
         }
       }
-    } catch (e) { console.warn('Count update failed:', e); }
+    } catch (e) {
+      console.warn('Comment count / notif failed:', e);
+    }
 
     commentInput.value = '';
     hideReplyIndicator();
     postCommentBtn.textContent = 'Post';
     postCommentBtn.disabled = true;
+
     await loadComments();
+
+    /* 🔧 FIX: Scroll input into view after posting */
+    setTimeout(() => {
+      commentInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
   } catch (e) {
     console.error('Post comment error:', e);
     postCommentBtn.textContent = 'Post';
     postCommentBtn.disabled = false;
-    showToast('❌ Could not post');
+    showToast('❌ Could not post comment');
   }
 });
 
 function showReplyIndicator(commentId, userName, userHandle) {
   activeReplyTo = { commentId, userName, userHandle };
+
   replyIndicatorText.textContent = `Replying to @${userHandle}`;
   replyIndicator.classList.add('show');
   replyIndicator.style.display = 'flex';
+
   commentInput.focus();
   commentInput.placeholder = `Reply to @${userHandle}...`;
+
+  /* 🔧 FIX: Scroll input into view when showing reply indicator */
+  setTimeout(() => {
+    commentInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
 }
 
 function hideReplyIndicator() {
@@ -2692,20 +3224,29 @@ cancelReplyBtn.addEventListener('click', hideReplyIndicator);
 
 async function toggleCommentLike(commentId, btnEl) {
   if (!currentUser) return;
+
   try {
     const ref = doc(db, 'comments', commentId);
     const snap = await getDoc(ref);
     if (!snap.exists()) return;
+
     const data = snap.data();
     const likes = data.likes || [];
     const isLiked = likes.includes(currentUser.uid);
-    if (isLiked) await updateDoc(ref, { likes: arrayRemove(currentUser.uid) });
-    else await updateDoc(ref, { likes: arrayUnion(currentUser.uid) });
+
+    if (isLiked) {
+      await updateDoc(ref, { likes: arrayRemove(currentUser.uid) });
+    } else {
+      await updateDoc(ref, { likes: arrayUnion(currentUser.uid) });
+    }
+
     const newCount = isLiked ? likes.length - 1 : likes.length + 1;
     const countEl = btnEl.querySelector('.comment-like-count');
     if (countEl) countEl.textContent = newCount > 0 ? newCount : '';
     btnEl.classList.toggle('liked', !isLiked);
-  } catch (e) {}
+  } catch (e) {
+    console.error('Comment like error:', e);
+  }
 }
 
 async function deleteComment(commentId) {
@@ -2715,38 +3256,64 @@ async function deleteComment(commentId) {
     const isReply = commentSnap.exists() && commentSnap.data().parentId;
 
     await deleteDoc(commentRef);
+
+    /* Delete replies to this comment */
     const repliesQ = query(collection(db, 'comments'), where('parentId', '==', commentId));
     const repliesSnap = await getDocs(repliesQ);
     const repliesCount = repliesSnap.size;
-    for (const replyDoc of repliesSnap.docs) await deleteDoc(doc(db, 'comments', replyDoc.id));
+
+    for (const replyDoc of repliesSnap.docs) {
+      await deleteDoc(doc(db, 'comments', replyDoc.id));
+    }
 
     const totalDeleted = 1 + repliesCount;
+
     if (activeCommentPostId) {
       try {
         const postRef = doc(db, 'posts', activeCommentPostId);
         const postSnap = await getDoc(postRef);
+
         if (postSnap.exists()) {
           const currentCount = postSnap.data().commentsCount || 0;
           const newCount = Math.max(0, currentCount - totalDeleted);
+
           await updateDoc(postRef, { commentsCount: newCount });
+
           document.querySelectorAll(`.comment-btn[data-post="${activeCommentPostId}"] span`)
             .forEach(el => { el.textContent = newCount; });
         }
-      } catch (e) { console.warn('Count decrement failed:', e); }
+      } catch (e) {
+        console.warn('Count decrement failed:', e);
+      }
     }
 
     showToast('Comment deleted');
     await loadComments();
   } catch (e) {
     console.error('Delete comment error:', e);
-    showToast('❌ Could not delete');
+    showToast('❌ Could not delete comment');
   }
 }
+
 /* ============================================================
-   ReelHub — app.js (PART 4/4) — FINAL VERSION
+   🔧 FIX: formatVoiceDuration guard — safe for undefined/null/negative
+   ============================================================ */
+function formatVoiceDuration(seconds) {
+  if (seconds === undefined || seconds === null || isNaN(seconds) || seconds < 0) {
+    return '0:00';
+  }
+  const total = Math.floor(seconds);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s < 10 ? '0' + s : s}`;
+}
+/* ============================================================
+   ReelHub — app.js (PART 4/4) — FIXED VERSION
    Chat, Groups, Profile, Upload, Notifications, Search, Settings,
    Delete Account, Privacy/Terms Links
    ============================================================ */
+
+/* ⚠️ NOTE: formatVoiceDuration is defined in PART 3 — do NOT redefine here */
 
 /* ============================================================
    CHATS PAGE
@@ -2783,6 +3350,7 @@ async function renderChatsPage() {
       <div class="chats-list" id="chatsList"><div class="empty-msg">Loading chats...</div></div>
     </div>
   `;
+
   document.getElementById('openNewChatBtn')?.addEventListener('click', openNewChatModal);
   document.getElementById('openNewGroupBtn')?.addEventListener('click', openNewGroupModal);
 
@@ -2811,6 +3379,7 @@ async function loadChatsList(filter = 'all') {
       const chatsRef = collection(db, 'chats');
       const q = query(chatsRef, where('members', 'array-contains', currentUser.uid));
       const snap = await getDocs(q);
+
       for (const docSnap of snap.docs) {
         const chat = { id: docSnap.id, ...docSnap.data() };
         if (chat.type === 'group') continue;
@@ -2818,7 +3387,9 @@ async function loadChatsList(filter = 'all') {
         if (!otherUid) continue;
         try {
           const userSnap = await getDoc(doc(db, 'users', otherUid));
-          if (userSnap.exists()) dms.push({ ...chat, otherUser: { uid: otherUid, ...userSnap.data() } });
+          if (userSnap.exists()) {
+            dms.push({ ...chat, otherUser: { uid: otherUid, ...userSnap.data() } });
+          }
         } catch (e) {}
       }
     }
@@ -2831,7 +3402,10 @@ async function loadChatsList(filter = 'all') {
     }
 
     const all = [...dms, ...groups];
-    all.sort((a, b) => (b.lastMessageTime?.toDate?.()?.getTime() || 0) - (a.lastMessageTime?.toDate?.()?.getTime() || 0));
+    all.sort((a, b) =>
+      (b.lastMessageTime?.toDate?.()?.getTime() || 0) -
+      (a.lastMessageTime?.toDate?.()?.getTime() || 0)
+    );
 
     if (all.length === 0) {
       wrap.innerHTML = `
@@ -2850,23 +3424,27 @@ async function loadChatsList(filter = 'all') {
     });
   } catch (e) {
     console.error('Chats load error:', e);
-    wrap.innerHTML = `<div class="empty-msg">Could not load</div>`;
+    wrap.innerHTML = `<div class="empty-msg">Could not load chats</div>`;
   }
 }
 
 function makeChatItem(chat) {
   const item = document.createElement('div');
   item.className = 'chat-item';
+
   const otherUser = chat.otherUser;
   const avatar = otherUser.photo || defaultAvatar(otherUser.name);
   const time = chat.lastMessageTime?.toDate?.();
   const timeStr = time ? timeAgoShort(time) : '';
-  const hasUnread = chat.lastMessageBy !== currentUser.uid && (chat.unreadBy || []).includes(currentUser.uid);
+  const hasUnread = chat.lastMessageBy !== currentUser.uid &&
+                    (chat.unreadBy || []).includes(currentUser.uid);
 
   let lastMsgHtml = '';
-  if (chat.lastMessageType === 'voice') lastMsgHtml = `<div class="last-msg voice ${hasUnread ? 'unread' : ''}">🎤 Voice message</div>`;
-  else if (chat.lastMessageType === 'file') lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">📎 File</div>`;
-  else {
+  if (chat.lastMessageType === 'voice') {
+    lastMsgHtml = `<div class="last-msg voice ${hasUnread ? 'unread' : ''}">🎤 Voice message</div>`;
+  } else if (chat.lastMessageType === 'file') {
+    lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">📎 File</div>`;
+  } else {
     const preview = (chat.lastMessage || '').substring(0, 40);
     lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">${escapeHtml(preview)}${chat.lastMessage && chat.lastMessage.length > 40 ? '...' : ''}</div>`;
   }
@@ -2882,6 +3460,7 @@ function makeChatItem(chat) {
       ${hasUnread ? `<div class="unread-badge">●</div>` : ''}
     </div>
   `;
+
   item.addEventListener('click', () => openChatWindow(otherUser));
   return item;
 }
@@ -2889,15 +3468,19 @@ function makeChatItem(chat) {
 function makeGroupChatItem(group) {
   const item = document.createElement('div');
   item.className = 'chat-item';
+
   const avatar = group.photo || defaultGroupAvatar(group.name);
   const time = group.lastMessageTime?.toDate?.();
   const timeStr = time ? timeAgoShort(time) : '';
-  const hasUnread = group.lastMessageBy !== currentUser.uid && (group.unreadBy || []).includes(currentUser.uid);
+  const hasUnread = group.lastMessageBy !== currentUser.uid &&
+                    (group.unreadBy || []).includes(currentUser.uid);
 
   let lastMsgHtml = '';
-  if (group.lastMessageType === 'voice') lastMsgHtml = `<div class="last-msg voice ${hasUnread ? 'unread' : ''}">🎤 Voice message</div>`;
-  else if (group.lastMessageType === 'file') lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">📎 ${escapeHtml(group.lastFileName || 'File')}</div>`;
-  else {
+  if (group.lastMessageType === 'voice') {
+    lastMsgHtml = `<div class="last-msg voice ${hasUnread ? 'unread' : ''}">🎤 Voice message</div>`;
+  } else if (group.lastMessageType === 'file') {
+    lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">📎 ${escapeHtml(group.lastFileName || 'File')}</div>`;
+  } else {
     const preview = (group.lastMessage || '').substring(0, 40);
     lastMsgHtml = `<div class="last-msg ${hasUnread ? 'unread' : ''}">${escapeHtml(preview)}</div>`;
   }
@@ -2913,6 +3496,7 @@ function makeGroupChatItem(group) {
       ${hasUnread ? `<div class="unread-badge">●</div>` : ''}
     </div>
   `;
+
   item.addEventListener('click', () => openGroupChatWindow(group));
   return item;
 }
@@ -2934,8 +3518,13 @@ function openNewChatModal() {
   newChatSearch.focus();
 }
 
-document.getElementById('closeNewChat')?.addEventListener('click', () => newChatModal.classList.remove('show'));
-newChatModal.addEventListener('click', (e) => { if (e.target === newChatModal) newChatModal.classList.remove('show'); });
+document.getElementById('closeNewChat')?.addEventListener('click', () =>
+  newChatModal.classList.remove('show')
+);
+
+newChatModal.addEventListener('click', (e) => {
+  if (e.target === newChatModal) newChatModal.classList.remove('show');
+});
 
 let newChatDebounce = null;
 newChatSearch.addEventListener('input', (e) => {
@@ -2944,19 +3533,33 @@ newChatSearch.addEventListener('input', (e) => {
 });
 
 async function searchUsersForChat(term) {
-  if (!term) { newChatResults.innerHTML = `<div class="search-empty">Start typing...</div>`; return; }
+  if (!term) {
+    newChatResults.innerHTML = `<div class="search-empty">Start typing...</div>`;
+    return;
+  }
+
   newChatResults.innerHTML = `<div class="search-empty">Searching...</div>`;
+
   try {
     const usersRef = collection(db, 'users');
     const snap = await getDocs(usersRef);
     const lowerTerm = term.toLowerCase();
     const blocked = currentProfile?.blockedUsers || [];
+
     const matches = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .filter(u => u.id !== currentUser.uid && !blocked.includes(u.id))
-      .filter(u => (u.name || '').toLowerCase().includes(lowerTerm) || (u.user || '').toLowerCase().includes(lowerTerm))
+      .filter(u =>
+        (u.name || '').toLowerCase().includes(lowerTerm) ||
+        (u.user || '').toLowerCase().includes(lowerTerm)
+      )
       .slice(0, 20);
-    if (matches.length === 0) { newChatResults.innerHTML = `<div class="search-empty">No users found</div>`; return; }
+
+    if (matches.length === 0) {
+      newChatResults.innerHTML = `<div class="search-empty">No users found</div>`;
+      return;
+    }
+
     newChatResults.innerHTML = '';
     matches.forEach(u => {
       const row = document.createElement('div');
@@ -2966,10 +3569,15 @@ async function searchUsersForChat(term) {
         <div class="info"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}${u.isPrivate ? ' 🔒' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
         <button class="follow">Chat</button>
       `;
-      row.addEventListener('click', () => { newChatModal.classList.remove('show'); openChatWindow(u); });
+      row.addEventListener('click', () => {
+        newChatModal.classList.remove('show');
+        openChatWindow(u);
+      });
       newChatResults.appendChild(row);
     });
-  } catch (e) { newChatResults.innerHTML = `<div class="search-empty">Search failed</div>`; }
+  } catch (e) {
+    newChatResults.innerHTML = `<div class="search-empty">Search failed</div>`;
+  }
 }
 
 /* ============================================================
@@ -2978,17 +3586,25 @@ async function searchUsersForChat(term) {
 function openNewGroupModal() {
   selectedGroupMembers = [];
   currentGroupFile = null;
+
   const modal = document.getElementById('newGroupModal');
   modal.classList.add('show');
   document.getElementById('groupNameInput').value = '';
   document.getElementById('groupSearchInput').value = '';
-  document.getElementById('groupSearchResults').innerHTML = `<div class="search-empty">Start typing to add members...</div>`;
-  document.getElementById('selectedMembersList').innerHTML = `<div class="empty-msg" style="padding:8px;font-size:12px;">No members selected</div>`;
+  document.getElementById('groupSearchResults').innerHTML =
+    `<div class="search-empty">Start typing to add members...</div>`;
+  document.getElementById('selectedMembersList').innerHTML =
+    `<div class="empty-msg" style="padding:8px;font-size:12px;">No members selected</div>`;
   document.getElementById('createGroupBtn').disabled = true;
 }
 
-document.getElementById('closeNewGroup')?.addEventListener('click', () => document.getElementById('newGroupModal').classList.remove('show'));
-document.getElementById('newGroupModal')?.addEventListener('click', (e) => { if (e.target.id === 'newGroupModal') e.target.classList.remove('show'); });
+document.getElementById('closeNewGroup')?.addEventListener('click', () =>
+  document.getElementById('newGroupModal').classList.remove('show')
+);
+
+document.getElementById('newGroupModal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'newGroupModal') e.target.classList.remove('show');
+});
 
 let groupSearchDebounce = null;
 document.getElementById('groupSearchInput')?.addEventListener('input', (e) => {
@@ -2997,10 +3613,14 @@ document.getElementById('groupSearchInput')?.addEventListener('input', (e) => {
 });
 
 document.getElementById('groupNameInput')?.addEventListener('input', checkCreateGroupBtn);
+
 document.getElementById('groupPhotoInput')?.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  if (file.size > 500 * 1024) { showToast('❌ Max 500 KB'); return; }
+  if (file.size > 500 * 1024) {
+    showToast('❌ Max 500 KB');
+    return;
+  }
   currentGroupFile = file;
   const preview = document.getElementById('groupPhotoPreview');
   if (preview) preview.src = URL.createObjectURL(file);
@@ -3014,21 +3634,34 @@ function checkCreateGroupBtn() {
 
 async function searchUsersForGroup(term) {
   const results = document.getElementById('groupSearchResults');
-  if (!term) { results.innerHTML = `<div class="search-empty">Start typing...</div>`; return; }
+  if (!term) {
+    results.innerHTML = `<div class="search-empty">Start typing...</div>`;
+    return;
+  }
+
   results.innerHTML = `<div class="search-empty">Searching...</div>`;
+
   try {
     const usersRef = collection(db, 'users');
     const snap = await getDocs(usersRef);
     const lowerTerm = term.toLowerCase();
     const blocked = currentProfile?.blockedUsers || [];
+
     const matches = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .filter(u => u.id !== currentUser.uid && !blocked.includes(u.id))
       .filter(u => !selectedGroupMembers.includes(u.id))
-      .filter(u => (u.name || '').toLowerCase().includes(lowerTerm) || (u.user || '').toLowerCase().includes(lowerTerm))
+      .filter(u =>
+        (u.name || '').toLowerCase().includes(lowerTerm) ||
+        (u.user || '').toLowerCase().includes(lowerTerm)
+      )
       .slice(0, 20);
 
-    if (matches.length === 0) { results.innerHTML = `<div class="search-empty">No users found</div>`; return; }
+    if (matches.length === 0) {
+      results.innerHTML = `<div class="search-empty">No users found</div>`;
+      return;
+    }
+
     results.innerHTML = '';
     matches.forEach(u => {
       const row = document.createElement('div');
@@ -3047,12 +3680,15 @@ async function searchUsersForGroup(term) {
       });
       results.appendChild(row);
     });
-  } catch (e) { results.innerHTML = `<div class="search-empty">Search failed</div>`; }
+  } catch (e) {
+    results.innerHTML = `<div class="search-empty">Search failed</div>`;
+  }
 }
 
 function addSelectedMemberChip(user) {
   const list = document.getElementById('selectedMembersList');
   if (list.querySelector('.empty-msg')) list.innerHTML = '';
+
   const chip = document.createElement('div');
   chip.className = 'member-chip';
   chip.dataset.uid = user.id;
@@ -3061,6 +3697,7 @@ function addSelectedMemberChip(user) {
     <span>${escapeHtml(user.name)}</span>
     <button class="chip-remove">✕</button>
   `;
+
   chip.querySelector('.chip-remove').addEventListener('click', () => {
     selectedGroupMembers = selectedGroupMembers.filter(id => id !== user.id);
     chip.remove();
@@ -3069,11 +3706,13 @@ function addSelectedMemberChip(user) {
     }
     checkCreateGroupBtn();
   });
+
   list.appendChild(chip);
 }
 
 document.getElementById('createGroupBtn')?.addEventListener('click', async () => {
   const name = document.getElementById('groupNameInput').value.trim();
+
   if (!name) { showToast('❌ Enter group name'); return; }
   if (selectedGroupMembers.length === 0) { showToast('❌ Add at least 1 member'); return; }
 
@@ -3087,7 +3726,9 @@ document.getElementById('createGroupBtn')?.addEventListener('click', async () =>
       try {
         const uploadRes = await uploadToCloudinaryGroupFile(currentGroupFile, () => {});
         photoUrl = uploadRes.secure_url;
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Group photo upload failed:', e);
+      }
     }
 
     await addDoc(collection(db, 'groups'), {
@@ -3117,9 +3758,11 @@ document.getElementById('createGroupBtn')?.addEventListener('click', async () =>
 });
 
 /* ============================================================
-   DM CHAT WINDOW
+   DM CHAT WINDOW — FIXED (removed undefined markChatRead)
    ============================================================ */
-function getChatId(uid1, uid2) { return [uid1, uid2].sort().join('_'); }
+function getChatId(uid1, uid2) {
+  return [uid1, uid2].sort().join('_');
+}
 
 async function openChatWindow(otherUser) {
   if (!otherUser || otherUser.uid === currentUser.uid) return;
@@ -3137,7 +3780,11 @@ async function openChatWindow(otherUser) {
     }
   }
 
-  if (chatMessagesUnsub) { clearInterval(chatMessagesUnsub); chatMessagesUnsub = null; }
+  if (chatMessagesUnsub) {
+    clearInterval(chatMessagesUnsub);
+    chatMessagesUnsub = null;
+  }
+
   removePinnedBanner();
   stopVoicePlayback();
 
@@ -3149,25 +3796,38 @@ async function openChatWindow(otherUser) {
   chatHeaderAvatar.src = otherUser.photo || defaultAvatar(otherUser.name);
   chatHeaderName.innerHTML = `${escapeHtml(otherUser.name || 'User')}${verifiedBadgeHTML(otherUser.verified)}`;
   chatHeaderHandle.textContent = '@' + (otherUser.user || '');
-  chatHeaderInfo.onclick = () => { closeChatWindow(); openUserProfile(otherUser.uid); };
+  chatHeaderInfo.onclick = () => {
+    closeChatWindow();
+    openUserProfile(otherUser.uid);
+  };
+
   chatMessages.innerHTML = `<div class="empty-msg">Loading messages...</div>`;
   chatMessageInput.value = '';
   updateSendTextBtn();
   chatWindowModal.classList.add('show');
+
+  /* ✅ FIXED: markChatRead() removed — markMessagesAsRead runs inside fetchAndPaintMessages */
   await loadChatMessages();
-  await markChatRead();
+  // ❌ REMOVED: await markChatRead();
 }
 
 function closeChatWindow() {
   chatWindowModal.classList.remove('show');
-  if (chatMessagesUnsub) { clearInterval(chatMessagesUnsub); chatMessagesUnsub = null; }
+
+  if (chatMessagesUnsub) {
+    clearInterval(chatMessagesUnsub);
+    chatMessagesUnsub = null;
+  }
+
   removePinnedBanner();
   document.querySelectorAll('.msg-actions-menu, .edit-msg-modal').forEach(el => el.remove());
+
   activeChatId = null;
   activeChatUser = null;
   activeGroupId = null;
   activeGroupData = null;
   pinnedMessage = null;
+
   stopVoicePlayback();
 }
 
@@ -3179,7 +3839,11 @@ document.getElementById('closeChatWindow')?.addEventListener('click', closeChatW
 async function openGroupChatWindow(group) {
   if (!group || !group.members.includes(currentUser.uid)) return;
 
-  if (chatMessagesUnsub) { clearInterval(chatMessagesUnsub); chatMessagesUnsub = null; }
+  if (chatMessagesUnsub) {
+    clearInterval(chatMessagesUnsub);
+    chatMessagesUnsub = null;
+  }
+
   removePinnedBanner();
   stopVoicePlayback();
 
@@ -3192,10 +3856,12 @@ async function openGroupChatWindow(group) {
   chatHeaderName.textContent = group.name || 'Group';
   chatHeaderHandle.textContent = group.members.length + ' members';
   chatHeaderInfo.onclick = () => showGroupInfo(group);
+
   chatMessages.innerHTML = `<div class="empty-msg">Loading messages...</div>`;
   chatMessageInput.value = '';
   updateSendTextBtn();
   chatWindowModal.classList.add('show');
+
   await loadGroupMessages();
   await markGroupRead();
 }
@@ -3205,6 +3871,7 @@ async function loadGroupMessages() {
   try {
     await fetchAndPaintGroupMessages();
     await loadPinnedMessage();
+
     if (chatMessagesUnsub) clearInterval(chatMessagesUnsub);
     chatMessagesUnsub = setInterval(async () => {
       if (!activeGroupId) return;
@@ -3219,6 +3886,7 @@ async function fetchAndPaintGroupMessages() {
     const msgsRef = collection(db, 'groups', activeGroupId, 'messages');
     const snap = await getDocs(msgsRef);
     const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
     messages.sort((a, b) => {
       let ta = 0, tb = 0;
       if (a.time?.toDate) ta = a.time.toDate().getTime();
@@ -3227,23 +3895,35 @@ async function fetchAndPaintGroupMessages() {
       else if (b.time?.seconds) tb = b.time.seconds * 1000;
       return ta - tb;
     });
+
     paintGroupMessages(messages);
     await markGroupMessagesAsRead();
   } catch (e) {}
 }
 
 function paintGroupMessages(messages) {
-  if (messages.length === 0) { chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`; return; }
-  const currentIds = Array.from(chatMessages.querySelectorAll('.msg-row')).map(el => el.dataset.msgId).join(',');
-  const newIds = messages.map(m => m.id).join(',');
-  if (currentIds === newIds) return;
+  if (messages.length === 0) {
+    chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
+    return;
+  }
+
+  /* 🔧 FIX: Compare content signature so edits/deletes trigger repaint */
+  const signature = messages.map(m =>
+    `${m.id}:${m.deleted ? 'D' : ''}:${m.edited ? 'E' : ''}:${(m.text || '').slice(0, 20)}`
+  ).join('|');
+
+  if (chatMessages.dataset.signature === signature) return;
+  chatMessages.dataset.signature = signature;
 
   const wasAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 150;
+
   chatMessages.innerHTML = '';
   let lastDateStr = '';
+
   messages.forEach(msg => {
     const msgDate = msg.time?.toDate?.();
     const dateStr = msgDate ? formatDate(msgDate) : '';
+
     if (dateStr && dateStr !== lastDateStr) {
       const sep = document.createElement('div');
       sep.className = 'msg-date-sep';
@@ -3251,9 +3931,13 @@ function paintGroupMessages(messages) {
       chatMessages.appendChild(sep);
       lastDateStr = dateStr;
     }
+
     chatMessages.appendChild(makeGroupMessageBubble(msg));
   });
-  if (wasAtBottom) setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
+
+  if (wasAtBottom) setTimeout(() => {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }, 50);
 }
 
 function makeGroupMessageBubble(msg) {
@@ -3264,7 +3948,9 @@ function makeGroupMessageBubble(msg) {
 
   const time = msg.time?.toDate?.();
   const timeStr = time ? formatTime(time) : '';
-  const senderName = !isMe ? `<div class="msg-sender-name">${escapeHtml(msg.fromName || 'User')}${verifiedBadgeHTML(msg.fromVerified)}</div>` : '';
+  const senderName = !isMe
+    ? `<div class="msg-sender-name">${escapeHtml(msg.fromName || 'User')}${verifiedBadgeHTML(msg.fromVerified)}</div>`
+    : '';
 
   if (msg.deleted) {
     row.innerHTML = `
@@ -3282,6 +3968,7 @@ function makeGroupMessageBubble(msg) {
     if (fileType.startsWith('image/')) fileIcon = '🖼️';
     else if (fileType.startsWith('video/')) fileIcon = '🎬';
     else if (fileType === 'application/pdf') fileIcon = '📄';
+
     row.innerHTML = `
       ${isMe ? buildDotsButton(msg) : ''}
       <div class="msg-bubble file-bubble" data-msg="${msg.id}">
@@ -3305,6 +3992,10 @@ function makeGroupMessageBubble(msg) {
     const duration = msg.voiceDuration || 0;
     const bars = [];
     for (let i = 0; i < 22; i++) bars.push(30 + Math.floor(Math.random() * 70));
+
+    /* 🔧 FIX: Support both voiceData (base64) and voiceUrl (Cloudinary) */
+    const voiceSrc = msg.voiceUrl || msg.voiceData;
+
     row.innerHTML = `
       ${isMe ? buildDotsButton(msg) : ''}
       <div class="msg-bubble voice-bubble" data-msg="${msg.id}">
@@ -3319,10 +4010,12 @@ function makeGroupMessageBubble(msg) {
       ${!isMe ? buildDotsButton(msg) : ''}
     `;
     const playBtn = row.querySelector('.voice-play-btn');
-    if (playBtn) playBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      await playVoiceMessage(msg, row.querySelector('.voice-waveform'), playBtn);
-    });
+    if (playBtn) {
+      playBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await playVoiceMessage({ ...msg, voiceData: voiceSrc }, row.querySelector('.voice-waveform'), playBtn);
+      });
+    }
     if (isMe) attachDotsButton(row, msg);
     return row;
   }
@@ -3344,20 +4037,24 @@ function makeGroupMessageBubble(msg) {
 async function markGroupMessagesAsRead() {
   if (!currentUser || !activeGroupId) return;
   try {
-    await updateDoc(doc(db, 'groups', activeGroupId), { unreadBy: arrayRemove(currentUser.uid) });
+    await updateDoc(doc(db, 'groups', activeGroupId), {
+      unreadBy: arrayRemove(currentUser.uid)
+    });
   } catch (e) {}
 }
 
 async function markGroupRead() {
   if (!activeGroupId) return;
   try {
-    await updateDoc(doc(db, 'groups', activeGroupId), { unreadBy: arrayRemove(currentUser.uid) });
+    await updateDoc(doc(db, 'groups', activeGroupId), {
+      unreadBy: arrayRemove(currentUser.uid)
+    });
     checkChatsUnread();
   } catch (e) {}
 }
 
 /* ============================================================
-   SEND MESSAGE
+   SEND MESSAGE — FIXED
    ============================================================ */
 async function sendGroupMessage(msgData) {
   if (!activeGroupId) return;
@@ -3370,6 +4067,7 @@ async function sendGroupMessage(msgData) {
     type: msgData.type || 'text',
     text: msgData.text || null,
     voiceData: msgData.voiceData || null,
+    voiceUrl: msgData.voiceUrl || null,     /* 🔧 NEW: Cloudinary URL */
     voiceDuration: msgData.voiceDuration || null,
     fileName: msgData.fileName || null,
     fileUrl: msgData.fileUrl || null,
@@ -3381,6 +4079,7 @@ async function sendGroupMessage(msgData) {
   try {
     const tempId = 'temp_' + Date.now();
     const tempMsg = { id: tempId, ...message, time: { toDate: () => new Date() } };
+
     if (chatMessages.querySelector('.chat-empty')) chatMessages.innerHTML = '';
     chatMessages.appendChild(makeGroupMessageBubble(tempMsg));
     chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -3389,8 +4088,13 @@ async function sendGroupMessage(msgData) {
 
     const otherMembers = (activeGroupData?.members || []).filter(m => m !== currentUser.uid);
     const groupRef = doc(db, 'groups', activeGroupId);
+
     await updateDoc(groupRef, {
-      lastMessage: msgData.type === 'voice' ? '🎤 Voice message' : (msgData.type === 'file' ? '📎 ' + (msgData.fileName || 'File') : (msgData.text || '')),
+      lastMessage: msgData.type === 'voice'
+        ? '🎤 Voice message'
+        : (msgData.type === 'file'
+            ? '📎 ' + (msgData.fileName || 'File')
+            : (msgData.text || '')),
       lastMessageType: msgData.type || 'text',
       lastFileName: msgData.fileName || '',
       lastMessageTime: serverTimestamp(),
@@ -3398,6 +4102,8 @@ async function sendGroupMessage(msgData) {
       unreadBy: otherMembers
     });
 
+    /* 🔧 FIX: Force repaint after sending (bypass signature check) */
+    chatMessages.dataset.signature = '';
     setTimeout(() => fetchAndPaintGroupMessages(), 800);
   } catch (e) {
     console.error('Group send error:', e);
@@ -3414,6 +4120,7 @@ async function sendMessage(msgData) {
     type: msgData.type || 'text',
     text: msgData.text || null,
     voiceData: msgData.voiceData || null,
+    voiceUrl: msgData.voiceUrl || null,     /* 🔧 NEW */
     voiceDuration: msgData.voiceDuration || null,
     fileName: msgData.fileName || null,
     fileUrl: msgData.fileUrl || null,
@@ -3429,6 +4136,7 @@ async function sendMessage(msgData) {
   try {
     const tempId = 'temp_' + Date.now();
     const tempMsg = { id: tempId, ...message, time: { toDate: () => new Date() } };
+
     if (chatMessages.querySelector('.chat-empty')) chatMessages.innerHTML = '';
     chatMessages.appendChild(makeMessageBubble(tempMsg));
     chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -3443,7 +4151,11 @@ async function sendMessage(msgData) {
 
     const chatData = {
       members: [currentUser.uid, activeChatUser.uid],
-      lastMessage: msgData.type === 'voice' ? '🎤 Voice message' : (msgData.type === 'file' ? '📎 ' + (msgData.fileName || 'File') : (msgData.text || '')),
+      lastMessage: msgData.type === 'voice'
+        ? '🎤 Voice message'
+        : (msgData.type === 'file'
+            ? '📎 ' + (msgData.fileName || 'File')
+            : (msgData.text || '')),
       lastMessageType: msgData.type || 'text',
       lastMessageTime: serverTimestamp(),
       lastMessageBy: currentUser.uid,
@@ -3457,20 +4169,28 @@ async function sendMessage(msgData) {
       await updateDoc(chatRef, chatData);
     }
 
-    // Send notification
-    try {
-      await addDoc(collection(db, 'notifications'), {
-        userId: activeChatUser.uid,
-        type: 'message',
-        title: '💬 New Message',
-        message: `${currentProfile?.name || 'Someone'}: ${(msgData.text || 'Sent you a message').substring(0, 50)}`,
-        fromUserId: currentUser.uid,
-        chatId: activeChatId,
-        read: false,
-        createdAt: serverTimestamp()
-      });
-    } catch (e) {}
+    /* 🔧 FIX: Respect notif settings */
+    const s = typeof getSettings === 'function'
+      ? getSettings()
+      : { notifMessages: true, pushNotif: true };
 
+    if (s.pushNotif && s.notifMessages) {
+      try {
+        await addDoc(collection(db, 'notifications'), {
+          userId: activeChatUser.uid,
+          type: 'message',
+          title: '💬 New Message',
+          message: `${currentProfile?.name || 'Someone'}: ${(msgData.text || 'Sent you a message').substring(0, 50)}`,
+          fromUserId: currentUser.uid,
+          chatId: activeChatId,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {}
+    }
+
+    /* 🔧 FIX: Force repaint after sending */
+    chatMessages.dataset.signature = '';
     setTimeout(() => fetchAndPaintMessages(), 800);
   } catch (e) {
     console.error('Send error:', e);
@@ -3486,13 +4206,14 @@ async function loadChatMessages() {
   try {
     await fetchAndPaintMessages();
     await loadPinnedMessage();
+
     if (chatMessagesUnsub) clearInterval(chatMessagesUnsub);
     chatMessagesUnsub = setInterval(async () => {
       if (!activeChatId) return;
       await fetchAndPaintMessages();
     }, 3000);
   } catch (e) {
-    chatMessages.innerHTML = `<div class="chat-empty">Could not load</div>`;
+    chatMessages.innerHTML = `<div class="chat-empty">Could not load messages</div>`;
   }
 }
 
@@ -3502,6 +4223,7 @@ async function fetchAndPaintMessages() {
     const msgsRef = collection(db, 'chats', activeChatId, 'messages');
     const snap = await getDocs(msgsRef);
     const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
     messages.sort((a, b) => {
       let ta = 0, tb = 0;
       if (a.time?.toDate) ta = a.time.toDate().getTime();
@@ -3510,23 +4232,35 @@ async function fetchAndPaintMessages() {
       else if (b.time?.seconds) tb = b.time.seconds * 1000;
       return ta - tb;
     });
+
     paintChatMessages(messages);
     await markMessagesAsRead(messages);
   } catch (e) {}
 }
 
 function paintChatMessages(messages) {
-  if (messages.length === 0) { chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`; return; }
-  const currentIds = Array.from(chatMessages.querySelectorAll('.msg-row')).map(el => el.dataset.msgId).join(',');
-  const newIds = messages.map(m => m.id).join(',');
-  if (currentIds === newIds) return;
+  if (messages.length === 0) {
+    chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
+    return;
+  }
+
+  /* 🔧 FIX: Content signature so edit/delete triggers repaint */
+  const signature = messages.map(m =>
+    `${m.id}:${m.deleted ? 'D' : ''}:${m.edited ? 'E' : ''}:${m.read ? 'R' : ''}:${m.delivered ? 'V' : ''}:${(m.text || '').slice(0, 20)}`
+  ).join('|');
+
+  if (chatMessages.dataset.signature === signature) return;
+  chatMessages.dataset.signature = signature;
 
   const wasAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 150;
+
   chatMessages.innerHTML = '';
   let lastDateStr = '';
+
   messages.forEach(msg => {
     const msgDate = msg.time?.toDate?.();
     const dateStr = msgDate ? formatDate(msgDate) : '';
+
     if (dateStr && dateStr !== lastDateStr) {
       const sep = document.createElement('div');
       sep.className = 'msg-date-sep';
@@ -3534,9 +4268,13 @@ function paintChatMessages(messages) {
       chatMessages.appendChild(sep);
       lastDateStr = dateStr;
     }
+
     chatMessages.appendChild(makeMessageBubble(msg));
   });
-  if (wasAtBottom) setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 50);
+
+  if (wasAtBottom) setTimeout(() => {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }, 50);
 }
 
 function makeMessageBubble(msg) {
@@ -3587,6 +4325,10 @@ function makeMessageBubble(msg) {
     const duration = msg.voiceDuration || 0;
     const bars = [];
     for (let i = 0; i < 22; i++) bars.push(30 + Math.floor(Math.random() * 70));
+
+    /* 🔧 FIX: Support voiceUrl (Cloudinary) or legacy voiceData */
+    const voiceSrc = msg.voiceUrl || msg.voiceData;
+
     row.innerHTML = `
       ${isMe ? buildDotsButton(msg) : ''}
       <div class="msg-bubble voice-bubble" data-msg="${msg.id}">
@@ -3600,10 +4342,12 @@ function makeMessageBubble(msg) {
       ${!isMe ? buildDotsButton(msg) : ''}
     `;
     const playBtn = row.querySelector('.voice-play-btn');
-    if (playBtn) playBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      await playVoiceMessage(msg, row.querySelector('.voice-waveform'), playBtn);
-    });
+    if (playBtn) {
+      playBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await playVoiceMessage({ ...msg, voiceData: voiceSrc }, row.querySelector('.voice-waveform'), playBtn);
+      });
+    }
     if (isMe) attachDotsButton(row, msg);
     return row;
   }
@@ -3644,8 +4388,10 @@ function attachDotsButton(row, msg) {
 
 function showMessageActionsMenu(anchorEl, msg) {
   document.querySelectorAll('.msg-actions-menu').forEach(el => el.remove());
+
   const menu = document.createElement('div');
   menu.className = 'msg-actions-menu';
+
   const isPinned = pinnedMessage?.id === msg.id;
   let menuHTML = '';
 
@@ -3658,6 +4404,7 @@ function showMessageActionsMenu(anchorEl, msg) {
   if (!msg.deleted) {
     menuHTML += `<button data-action="pin"><svg viewBox="0 0 24 24"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.5-7.5L19 5l-7 1-7-1 1.5 4.5z"/></svg>${isPinned ? 'Unpin' : 'Pin'}</button>`;
   }
+
   menuHTML += `<div class="menu-divider"></div><button data-action="delete" class="danger"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete</button>`;
 
   menu.innerHTML = menuHTML;
@@ -3665,11 +4412,18 @@ function showMessageActionsMenu(anchorEl, msg) {
 
   const rect = anchorEl.getBoundingClientRect();
   const menuRect = menu.getBoundingClientRect();
+
   let top = rect.bottom + 5;
   let left = rect.left - menuRect.width + rect.width;
+
   if (left < 10) left = 10;
-  if (left + menuRect.width > window.innerWidth - 10) left = window.innerWidth - menuRect.width - 10;
-  if (top + menuRect.height > window.innerHeight - 10) top = rect.top - menuRect.height - 5;
+  if (left + menuRect.width > window.innerWidth - 10) {
+    left = window.innerWidth - menuRect.width - 10;
+  }
+  if (top + menuRect.height > window.innerHeight - 10) {
+    top = rect.top - menuRect.height - 5;
+  }
+
   menu.style.top = top + 'px';
   menu.style.left = left + 'px';
 
@@ -3678,12 +4432,15 @@ function showMessageActionsMenu(anchorEl, msg) {
       e.stopPropagation();
       const action = btn.dataset.action;
       menu.remove();
-      if (action === 'edit') await openEditMessageModal(msg);
-      else if (action === 'copy') await copyMessageText(msg);
-      else if (action === 'pin') await togglePinMessage(msg);
+
+      if (action === 'edit')        await openEditMessageModal(msg);
+      else if (action === 'copy')   await copyMessageText(msg);
+      else if (action === 'pin')    await togglePinMessage(msg);
       else if (action === 'delete') {
         const settings = typeof getSettings === 'function' ? getSettings() : { confirmDelete: true };
-        if (!settings.confirmDelete || confirm('Delete this message?')) await deleteMessage(msg.id);
+        if (!settings.confirmDelete || confirm('Delete this message?')) {
+          await deleteMessage(msg.id);
+        }
       }
     });
   });
@@ -3703,74 +4460,142 @@ function showMessageActionsMenu(anchorEl, msg) {
 
 async function openEditMessageModal(msg) {
   document.querySelectorAll('.edit-msg-modal').forEach(el => el.remove());
+
   const modal = document.createElement('div');
   modal.className = 'edit-msg-modal';
-  modal.innerHTML = `<div class="edit-msg-box"><h3>✏️ Edit Message</h3><textarea id="editMsgText" maxlength="1000">${escapeHtml(msg.text || '')}</textarea><div class="edit-msg-actions"><button class="cancel-btn" id="cancelEditBtn">Cancel</button><button class="save-btn" id="saveEditBtn">Save</button></div></div>`;
+  modal.innerHTML = `
+    <div class="edit-msg-box">
+      <h3>✏️ Edit Message</h3>
+      <textarea id="editMsgText" maxlength="1000">${escapeHtml(msg.text || '')}</textarea>
+      <div class="edit-msg-actions">
+        <button class="cancel-btn" id="cancelEditBtn">Cancel</button>
+        <button class="save-btn" id="saveEditBtn">Save</button>
+      </div>
+    </div>
+  `;
   document.body.appendChild(modal);
+
   const textarea = modal.querySelector('#editMsgText');
   textarea.focus();
   textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
   modal.querySelector('#cancelEditBtn').addEventListener('click', () => modal.remove());
   modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
   modal.querySelector('#saveEditBtn').addEventListener('click', async () => {
     const newText = textarea.value.trim();
     if (!newText) { showToast('❌ Cannot be empty'); return; }
     if (newText === msg.text) { modal.remove(); return; }
+
     await editMessage(msg.id, newText);
     modal.remove();
   });
 }
 
+/* 🔧 FIXED: Force repaint after edit */
 async function editMessage(msgId, newText) {
   if (!activeChatId || !currentUser) return;
   try {
     const col = activeGroupId ? 'groups' : 'chats';
-    await updateDoc(doc(db, col, activeChatId, 'messages', msgId), { text: newText, edited: true, editedAt: serverTimestamp() });
+    await updateDoc(doc(db, col, activeChatId, 'messages', msgId), {
+      text: newText,
+      edited: true,
+      editedAt: serverTimestamp()
+    });
+
+    /* Clear signature to force repaint */
+    chatMessages.dataset.signature = '';
+    if (activeGroupId) await fetchAndPaintGroupMessages();
+    else await fetchAndPaintMessages();
+
     showToast('✏️ Edited');
-  } catch (e) { showToast('❌ Could not edit'); }
+  } catch (e) {
+    showToast('❌ Could not edit');
+  }
 }
 
 async function copyMessageText(msg) {
   if (!msg.text) return;
-  try { await navigator.clipboard.writeText(msg.text); showToast('📋 Copied'); }
-  catch (e) { showToast('❌ Failed'); }
+  try {
+    await navigator.clipboard.writeText(msg.text);
+    showToast('📋 Copied');
+  } catch (e) {
+    showToast('❌ Failed to copy');
+  }
 }
 
 function buildTicksHTML(msg) {
   if (msg.from !== currentUser.uid) return '';
+
   const settings = typeof getSettings === 'function' ? getSettings() : { readReceipts: true };
   if (settings.readReceipts === false) return '';
-  if (msg.read) return `<span class="msg-ticks read"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
-  if (msg.delivered) return `<span class="msg-ticks delivered"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
+
+  if (msg.read) {
+    return `<span class="msg-ticks read"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
+  }
+  if (msg.delivered) {
+    return `<span class="msg-ticks delivered"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
+  }
   return `<span class="msg-ticks sent"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
 }
 
 async function markMessagesAsRead(messages) {
   if (!currentUser || !activeChatId || activeGroupId) return;
   try {
-    const unreadFromOther = messages.filter(m => m.to === currentUser.uid && !m.read && !m.deleted).slice(0, 20);
-    const undeliveredFromMe = messages.filter(m => m.from === currentUser.uid && !m.delivered && !m.deleted).slice(0, 20);
+    const unreadFromOther = messages
+      .filter(m => m.to === currentUser.uid && !m.read && !m.deleted)
+      .slice(0, 20);
+
+    const undeliveredFromMe = messages
+      .filter(m => m.from === currentUser.uid && !m.delivered && !m.deleted)
+      .slice(0, 20);
 
     const updates = [];
+
     for (const msg of unreadFromOther) {
-      updates.push(updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), { read: true, readAt: serverTimestamp() }).catch(() => {}));
+      updates.push(
+        updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), {
+          read: true,
+          readAt: serverTimestamp()
+        }).catch(() => {})
+      );
     }
+
     for (const msg of undeliveredFromMe) {
-      updates.push(updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), { delivered: true }).catch(() => {}));
+      updates.push(
+        updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), {
+          delivered: true
+        }).catch(() => {})
+      );
     }
+
     if (updates.length > 0) await Promise.all(updates);
   } catch (e) {}
 }
 
+/* 🔧 FIXED: Force repaint after delete */
 async function deleteMessage(msgId) {
   if (!activeChatId) return;
   try {
     const col = activeGroupId ? 'groups' : 'chats';
     await updateDoc(doc(db, col, activeChatId, 'messages', msgId), {
-      deleted: true, deletedAt: serverTimestamp(), text: null, voiceData: null, fileUrl: null
+      deleted: true,
+      deletedAt: serverTimestamp(),
+      text: null,
+      voiceData: null,
+      voiceUrl: null,
+      fileUrl: null
     });
+
+    /* Clear signature to force repaint */
+    chatMessages.dataset.signature = '';
+    if (activeGroupId) await fetchAndPaintGroupMessages();
+    else await fetchAndPaintMessages();
+
     showToast('🗑️ Deleted');
-  } catch (e) { showToast('❌ Failed'); }
+  } catch (e) {
+    showToast('❌ Failed to delete');
+  }
 }
 
 /* ============================================================
@@ -3783,7 +4608,9 @@ async function togglePinMessage(msg) {
     const ref = doc(db, col, activeChatId);
     const snap = await getDoc(ref);
     if (!snap.exists()) return;
+
     const currentPin = snap.data().pinnedMessage || null;
+
     if (currentPin === msg.id) {
       await updateDoc(ref, { pinnedMessage: null });
       pinnedMessage = null;
@@ -3793,6 +4620,7 @@ async function togglePinMessage(msg) {
       pinnedMessage = msg;
       showToast('📌 Pinned');
     }
+
     await loadPinnedMessage();
   } catch (e) {}
 }
@@ -3803,11 +4631,27 @@ async function loadPinnedMessage() {
     const col = activeGroupId ? 'groups' : 'chats';
     const ref = doc(db, col, activeChatId);
     const snap = await getDoc(ref);
-    if (!snap.exists()) { pinnedMessage = null; removePinnedBanner(); return; }
+
+    if (!snap.exists()) {
+      pinnedMessage = null;
+      removePinnedBanner();
+      return;
+    }
+
     const pinId = snap.data().pinnedMessage;
-    if (!pinId) { pinnedMessage = null; removePinnedBanner(); return; }
+    if (!pinId) {
+      pinnedMessage = null;
+      removePinnedBanner();
+      return;
+    }
+
     const msgSnap = await getDoc(doc(db, col, activeChatId, 'messages', pinId));
-    if (!msgSnap.exists()) { pinnedMessage = null; removePinnedBanner(); return; }
+    if (!msgSnap.exists()) {
+      pinnedMessage = null;
+      removePinnedBanner();
+      return;
+    }
+
     pinnedMessage = { id: pinId, ...msgSnap.data() };
     renderPinnedBanner(pinnedMessage);
   } catch (e) {}
@@ -3815,16 +4659,32 @@ async function loadPinnedMessage() {
 
 function renderPinnedBanner(msg) {
   removePinnedBanner();
+
   const chatWindow = document.getElementById('chatWindow');
   if (!chatWindow) return;
+
   const banner = document.createElement('div');
   banner.className = 'pinned-banner';
   banner.id = 'pinnedBanner';
-  const previewText = msg.deleted ? '🚫 Deleted' : (msg.type === 'voice' ? '🎤 Voice' : (msg.type === 'file' ? '📎 ' + (msg.fileName || 'File') : (msg.text || '')));
-  banner.innerHTML = `<svg viewBox="0 0 24 24"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.5-7.5L19 5l-7 1-7-1 1.5 4.5z"/></svg><div class="pin-text"><b>📌 Pinned</b>${escapeHtml(previewText).substring(0, 60)}</div><button class="pin-close" id="unpinBtn">✕</button>`;
+
+  const previewText = msg.deleted
+    ? '🚫 Deleted'
+    : (msg.type === 'voice'
+        ? '🎤 Voice'
+        : (msg.type === 'file'
+            ? '📎 ' + (msg.fileName || 'File')
+            : (msg.text || '')));
+
+  banner.innerHTML = `
+    <svg viewBox="0 0 24 24"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.5-7.5L19 5l-7 1-7-1 1.5 4.5z"/></svg>
+    <div class="pin-text"><b>📌 Pinned</b>${escapeHtml(previewText).substring(0, 60)}</div>
+    <button class="pin-close" id="unpinBtn">✕</button>
+  `;
+
   const chatHeader = chatWindow.querySelector('.chat-header');
   if (chatHeader) chatHeader.insertAdjacentElement('afterend', banner);
   chatMessages.classList.add('has-pinned');
+
   banner.querySelector('#unpinBtn').addEventListener('click', async () => {
     const col = activeGroupId ? 'groups' : 'chats';
     try {
@@ -3851,21 +4711,27 @@ function updateSendTextBtn() {
 }
 
 chatMessageInput.addEventListener('input', updateSendTextBtn);
+
 sendTextBtn.addEventListener('click', async () => {
   const text = chatMessageInput.value.trim();
   if (!text) return;
   chatMessageInput.value = '';
   updateSendTextBtn();
+
   if (activeGroupId) await sendGroupMessage({ type: 'text', text });
   else await sendMessage({ type: 'text', text });
 });
 
 chatMessageInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTextBtn.click(); }
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendTextBtn.click();
+  }
 });
 
 document.querySelector('.chat-attach-btn')?.addEventListener('click', () => {
   if (!activeChatId) return;
+
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*,video/*,application/pdf';
@@ -3878,8 +4744,13 @@ document.querySelector('.chat-attach-btn')?.addEventListener('click', () => {
 });
 
 async function sendFileMessage(file) {
-  if (file.size > 25 * 1024 * 1024) { showToast('❌ Max 25 MB'); return; }
+  if (file.size > 25 * 1024 * 1024) {
+    showToast('❌ Max 25 MB');
+    return;
+  }
+
   showToast('📤 Uploading file...');
+
   try {
     const res = await uploadToCloudinaryGroupFile(file, () => {});
     const payload = {
@@ -3889,6 +4760,7 @@ async function sendFileMessage(file) {
       fileType: file.type || 'application/octet-stream',
       fileSize: file.size
     };
+
     if (activeGroupId) await sendGroupMessage(payload);
     else await sendMessage(payload);
   } catch (e) {
@@ -3898,30 +4770,48 @@ async function sendFileMessage(file) {
 }
 
 /* ============================================================
-   VOICE RECORDING
+   VOICE RECORDING — FIXED (upload to Cloudinary)
    ============================================================ */
 micBtn.addEventListener('mousedown', startVoiceRecording);
-micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startVoiceRecording(); }, { passive: false });
+micBtn.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  startVoiceRecording();
+}, { passive: false });
+
 micBtn.addEventListener('mouseup', stopVoiceRecordingAndSend);
-micBtn.addEventListener('mouseleave', () => { if (isRecording) stopVoiceRecordingAndSend(); });
-micBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopVoiceRecordingAndSend(); }, { passive: false });
+micBtn.addEventListener('mouseleave', () => {
+  if (isRecording) stopVoiceRecordingAndSend();
+});
+micBtn.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  stopVoiceRecordingAndSend();
+}, { passive: false });
+
 cancelRecordingBtn.addEventListener('click', cancelVoiceRecording);
 
 async function startVoiceRecording() {
   if (isRecording) return;
+
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
     let mimeType = 'audio/webm';
     if (!MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/mp4';
+
     mediaRecorder = new MediaRecorder(stream, { mimeType });
     audioChunks = [];
-    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+
     mediaRecorder.start();
     isRecording = true;
     voiceSeconds = 0;
     recordingTimer.textContent = '0:00';
     recordingIndicator.classList.add('show');
     recordingIndicator.style.display = 'flex';
+
     voiceTimerInterval = setInterval(() => {
       voiceSeconds++;
       recordingTimer.textContent = `0:${voiceSeconds < 10 ? '0' + voiceSeconds : voiceSeconds}`;
@@ -3935,39 +4825,79 @@ async function startVoiceRecording() {
 
 async function stopVoiceRecordingAndSend() {
   if (!isRecording || !mediaRecorder) return;
+
   isRecording = false;
   clearInterval(voiceTimerInterval);
   recordingIndicator.classList.remove('show');
   recordingIndicator.style.display = 'none';
+
   const finalSeconds = voiceSeconds;
+
   return new Promise((resolve) => {
     mediaRecorder.onstop = async () => {
       mediaRecorder.stream.getTracks().forEach(t => t.stop());
-      if (finalSeconds < 1) { showToast('Too short'); resolve(); return; }
+
+      if (finalSeconds < 1) {
+        showToast('Too short');
+        resolve();
+        return;
+      }
+
       const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
-      if (audioBlob.size > 500 * 1024) { showToast('Too large'); resolve(); return; }
-      const base64 = await blobToBase64(audioBlob);
-      if (activeGroupId) await sendGroupMessage({ type: 'voice', voiceData: base64, voiceDuration: finalSeconds });
-      else await sendMessage({ type: 'voice', voiceData: base64, voiceDuration: finalSeconds });
+
+      /* 🔧 FIX: Max 5 MB after blob (Cloudinary will handle it) */
+      if (audioBlob.size > 5 * 1024 * 1024) {
+        showToast('❌ Recording too large');
+        resolve();
+        return;
+      }
+
+      try {
+        /* 🔧 FIX: Upload to Cloudinary instead of base64 (avoids Firestore 1MB limit) */
+        showToast('📤 Uploading voice...');
+        const file = new File([audioBlob], `voice_${Date.now()}.webm`, { type: audioBlob.type });
+        const res = await uploadToCloudinaryGroupFile(file, () => {});
+
+        const payload = {
+          type: 'voice',
+          voiceUrl: res.secure_url,
+          voiceDuration: finalSeconds
+        };
+
+        if (activeGroupId) await sendGroupMessage(payload);
+        else await sendMessage(payload);
+      } catch (e) {
+        console.error('Voice upload failed:', e);
+        showToast('❌ Voice upload failed');
+      }
+
       resolve();
     };
-    try { mediaRecorder.stop(); } catch (e) { resolve(); }
+
+    try {
+      mediaRecorder.stop();
+    } catch (e) {
+      resolve();
+    }
   });
 }
 
 function cancelVoiceRecording() {
   if (!isRecording || !mediaRecorder) return;
+
   isRecording = false;
   clearInterval(voiceTimerInterval);
   recordingIndicator.classList.remove('show');
   recordingIndicator.style.display = 'none';
+
   try {
     mediaRecorder.onstop = () => mediaRecorder.stream.getTracks().forEach(t => t.stop());
     mediaRecorder.stop();
   } catch (e) {}
+
   audioChunks = [];
   voiceSeconds = 0;
-  showToast('Cancelled');
+  showToast('Recording cancelled');
 }
 
 function blobToBase64(blob) {
@@ -3980,23 +4910,41 @@ function blobToBase64(blob) {
 }
 
 async function playVoiceMessage(msg, waveformEl, btnEl) {
-  if (currentPlayingAudio && currentPlayingBtn === btnEl) { stopVoicePlayback(); return; }
+  if (currentPlayingAudio && currentPlayingBtn === btnEl) {
+    stopVoicePlayback();
+    return;
+  }
+
   stopVoicePlayback();
-  if (!msg.voiceData) return;
+
+  const src = msg.voiceUrl || msg.voiceData;
+  if (!src) return;
+
   try {
-    const audio = new Audio(msg.voiceData);
+    const audio = new Audio(src);
     currentPlayingAudio = audio;
     currentPlayingBtn = btnEl;
+
     waveformEl.classList.add('playing');
     btnEl.innerHTML = `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" fill="currentColor" stroke="none"/><rect x="14" y="4" width="4" height="16" fill="currentColor" stroke="none"/></svg>`;
+
     audio.onended = () => stopVoicePlayback();
-    audio.onerror = () => { stopVoicePlayback(); showToast('❌ Play failed'); };
+    audio.onerror = () => {
+      stopVoicePlayback();
+      showToast('❌ Play failed');
+    };
+
     await audio.play();
-  } catch (e) { stopVoicePlayback(); }
+  } catch (e) {
+    stopVoicePlayback();
+  }
 }
 
 function stopVoicePlayback() {
-  if (currentPlayingAudio) { try { currentPlayingAudio.pause(); } catch (e) {} currentPlayingAudio = null; }
+  if (currentPlayingAudio) {
+    try { currentPlayingAudio.pause(); } catch (e) {}
+    currentPlayingAudio = null;
+  }
   if (currentPlayingBtn) {
     currentPlayingBtn.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>`;
     currentPlayingBtn = null;
@@ -4009,6 +4957,7 @@ function stopVoicePlayback() {
    ============================================================ */
 function showGroupInfo(group) {
   document.querySelectorAll('.group-info-modal').forEach(el => el.remove());
+
   const modal = document.createElement('div');
   modal.className = 'modal-overlay group-info-modal show';
   modal.innerHTML = `
@@ -4036,30 +4985,47 @@ function showGroupInfo(group) {
   document.body.appendChild(modal);
 
   const list = modal.querySelector('#groupMembersList');
+
   (async () => {
     for (const uid of group.members) {
       try {
         const snap = await getDoc(doc(db, 'users', uid));
         if (!snap.exists()) continue;
+
         const u = snap.data();
         const isAdmin = group.admins?.includes(uid);
+
         const row = document.createElement('div');
         row.className = 'user-row';
         row.innerHTML = `
           <img src="${u.photo || defaultAvatar(u.name)}" alt="">
           <div class="meta"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)} ${isAdmin ? '👑' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
-          ${uid !== currentUser.uid && group.admins?.includes(currentUser.uid) ? `<button class="unfollow" data-remove="${uid}" style="color:#ff4d4d;">Remove</button>` : ''}
+          ${uid !== currentUser.uid && group.admins?.includes(currentUser.uid)
+            ? `<button class="unfollow" data-remove="${uid}" style="color:#ff4d4d;">Remove</button>`
+            : ''}
         `;
-        row.querySelector('img').addEventListener('click', () => { modal.remove(); openUserProfile(uid); });
-        row.querySelector('.meta').addEventListener('click', () => { modal.remove(); openUserProfile(uid); });
+
+        row.querySelector('img').addEventListener('click', () => {
+          modal.remove();
+          openUserProfile(uid);
+        });
+        row.querySelector('.meta').addEventListener('click', () => {
+          modal.remove();
+          openUserProfile(uid);
+        });
+
         row.querySelector('[data-remove]')?.addEventListener('click', async (e) => {
           e.stopPropagation();
           if (!confirm('Remove this member?')) return;
-          await updateDoc(doc(db, 'groups', group.id), { members: arrayRemove(uid), admins: arrayRemove(uid) });
+          await updateDoc(doc(db, 'groups', group.id), {
+            members: arrayRemove(uid),
+            admins: arrayRemove(uid)
+          });
           showToast('Member removed');
           modal.remove();
           renderChatsPage();
         });
+
         list.appendChild(row);
       } catch (e) {}
     }
@@ -4070,7 +5036,10 @@ function showGroupInfo(group) {
 
   modal.querySelector('#leaveGroupBtn')?.addEventListener('click', async () => {
     if (!confirm('Leave this group?')) return;
-    await updateDoc(doc(db, 'groups', group.id), { members: arrayRemove(currentUser.uid), admins: arrayRemove(currentUser.uid) });
+    await updateDoc(doc(db, 'groups', group.id), {
+      members: arrayRemove(currentUser.uid),
+      admins: arrayRemove(currentUser.uid)
+    });
     showToast('Left group');
     modal.remove();
     closeChatWindow();
@@ -4094,6 +5063,7 @@ function showGroupInfo(group) {
 
 async function openAddMemberModal(group) {
   document.querySelectorAll('.add-member-modal').forEach(el => el.remove());
+
   const modal = document.createElement('div');
   modal.className = 'modal-overlay add-member-modal show';
   modal.innerHTML = `
@@ -4110,6 +5080,7 @@ async function openAddMemberModal(group) {
     </div>
   `;
   document.body.appendChild(modal);
+
   modal.querySelector('#closeAddMember').addEventListener('click', () => modal.remove());
   modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 
@@ -4119,17 +5090,32 @@ async function openAddMemberModal(group) {
     t = setTimeout(async () => {
       const term = e.target.value.trim().toLowerCase();
       const results = modal.querySelector('#addMemberResults');
-      if (!term) { results.innerHTML = '<div class="search-empty">Start typing...</div>'; return; }
+
+      if (!term) {
+        results.innerHTML = '<div class="search-empty">Start typing...</div>';
+        return;
+      }
+
       results.innerHTML = '<div class="search-empty">Searching...</div>';
+
       try {
         const usersRef = collection(db, 'users');
         const snap = await getDocs(usersRef);
+
         const notInGroup = snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(u => u.id !== currentUser.uid && !group.members.includes(u.id))
-          .filter(u => (u.name || '').toLowerCase().includes(term) || (u.user || '').toLowerCase().includes(term))
+          .filter(u =>
+            (u.name || '').toLowerCase().includes(term) ||
+            (u.user || '').toLowerCase().includes(term)
+          )
           .slice(0, 20);
-        if (notInGroup.length === 0) { results.innerHTML = '<div class="search-empty">No users found</div>'; return; }
+
+        if (notInGroup.length === 0) {
+          results.innerHTML = '<div class="search-empty">No users found</div>';
+          return;
+        }
+
         results.innerHTML = '';
         notInGroup.forEach(u => {
           const row = document.createElement('div');
@@ -4149,7 +5135,9 @@ async function openAddMemberModal(group) {
           });
           results.appendChild(row);
         });
-      } catch (e) { results.innerHTML = '<div class="search-empty">Failed</div>'; }
+      } catch (e) {
+        results.innerHTML = '<div class="search-empty">Search failed</div>';
+      }
     }, 300);
   });
 }
@@ -4164,7 +5152,10 @@ function startChatListWatcher() {
 }
 
 function stopChatListWatcher() {
-  if (chatListInterval) { clearInterval(chatListInterval); chatListInterval = null; }
+  if (chatListInterval) {
+    clearInterval(chatListInterval);
+    chatListInterval = null;
+  }
   if (chatsDot) chatsDot.style.display = 'none';
 }
 
@@ -4172,19 +5163,26 @@ async function checkChatsUnread() {
   if (!currentUser) return;
   try {
     let hasUnread = false;
+
     const q = query(collection(db, 'chats'), where('members', 'array-contains', currentUser.uid));
     const snap = await getDocs(q);
     snap.forEach(d => {
       const data = d.data();
       if (data.type === 'group') return;
-      if (data.lastMessageBy !== currentUser.uid && (data.unreadBy || []).includes(currentUser.uid)) hasUnread = true;
+      if (data.lastMessageBy !== currentUser.uid && (data.unreadBy || []).includes(currentUser.uid)) {
+        hasUnread = true;
+      }
     });
+
     const gq = query(collection(db, 'groups'), where('members', 'array-contains', currentUser.uid));
     const gsnap = await getDocs(gq);
     gsnap.forEach(d => {
       const data = d.data();
-      if (data.lastMessageBy !== currentUser.uid && (data.unreadBy || []).includes(currentUser.uid)) hasUnread = true;
+      if (data.lastMessageBy !== currentUser.uid && (data.unreadBy || []).includes(currentUser.uid)) {
+        hasUnread = true;
+      }
     });
+
     if (chatsDot) chatsDot.style.display = hasUnread ? 'block' : 'none';
   } catch (e) {}
 }
@@ -4197,6 +5195,7 @@ async function renderProfile() {
     content.innerHTML = `<div class="page-placeholder"><div class="page-title">Loading...</div></div>`;
     return;
   }
+
   const p = currentProfile;
   const avatarSrc = p.photo || defaultAvatar(p.name);
 
@@ -4257,9 +5256,14 @@ async function renderProfile() {
     tab.addEventListener('click', async () => {
       profileTabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
+
       const grid = document.getElementById('myPostsGrid');
-      if (tab.dataset.tab === 'saved') await renderSavedPosts('myPostsGrid');
-      else { grid.innerHTML = `<div class="grid-empty">Loading...</div>`; await renderUserPosts(currentUser.uid, 'myPostsGrid'); }
+      if (tab.dataset.tab === 'saved') {
+        await renderSavedPosts('myPostsGrid');
+      } else {
+        grid.innerHTML = `<div class="grid-empty">Loading...</div>`;
+        await renderUserPosts(currentUser.uid, 'myPostsGrid');
+      }
     });
   });
 
@@ -4269,33 +5273,47 @@ async function renderProfile() {
 async function renderUserPosts(uid, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
+
   try {
     const q = query(collection(db, 'posts'), where('userId', '==', uid), limit(60));
     const snap = await getDocs(q);
+
     if (snap.empty) {
       container.innerHTML = `<div class="grid-empty"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><div>No posts yet</div></div>`;
       return;
     }
+
     const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    posts.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
+    posts.sort((a, b) =>
+      (b.createdAt?.toDate?.()?.getTime() || 0) -
+      (a.createdAt?.toDate?.()?.getTime() || 0)
+    );
+
     container.innerHTML = '';
     posts.forEach(post => container.appendChild(makeGridItem(post)));
-  } catch (e) {}
+  } catch (e) {
+    console.error('renderUserPosts error:', e);
+  }
 }
 
 function makeGridItem(post) {
   const item = document.createElement('div');
   item.className = 'grid-item';
   item.style.aspectRatio = post.type === 'long' ? '16 / 9' : '9 / 16';
+
   const thumbUrl = post.thumbnail || (post.type === 'photo' ? post.url : '');
   let inner = '';
-  if (post.type === 'photo') inner = `<img src="${post.url}" alt="">`;
-  else inner = `<video src="${post.url}" muted playsinline preload="metadata" ${thumbUrl ? `poster="${thumbUrl}"` : ''}></video>`;
+
+  if (post.type === 'photo') {
+    inner = `<img src="${post.url}" alt="">`;
+  } else {
+    inner = `<video src="${post.url}" muted playsinline preload="metadata" ${thumbUrl ? `poster="${thumbUrl}"` : ''}></video>`;
+  }
+
   const badgeText = post.type === 'photo' ? 'PHOTO' : (post.type === 'long' ? 'LONG' : 'SHORT');
   item.innerHTML = `${inner}<div class="type-badge">${badgeText}</div>${post.type !== 'photo' ? `<div class="play-icon">▶</div>` : ''}`;
 
   attachDoubleTapLike(item, post, () => openPlayer(post));
-
   return item;
 }
 
@@ -4304,10 +5322,18 @@ function makeGridItem(post) {
    ============================================================ */
 async function openUserProfile(userId) {
   if (!userId) return;
-  if (userId === currentUser.uid) { setActiveNav('profile'); renderPage('profile'); return; }
+
+  if (userId === currentUser.uid) {
+    setActiveNav('profile');
+    renderPage('profile');
+    return;
+  }
 
   const blocked = currentProfile?.blockedUsers || [];
-  if (blocked.includes(userId)) { showToast('🚫 You blocked this user'); return; }
+  if (blocked.includes(userId)) {
+    showToast('🚫 You blocked this user');
+    return;
+  }
 
   viewingUserId = userId;
   setActiveNav(null);
@@ -4315,7 +5341,11 @@ async function openUserProfile(userId) {
 
   try {
     const snap = await getDoc(doc(db, 'users', userId));
-    if (!snap.exists()) { content.innerHTML = `<div class="page-placeholder"><div class="page-title">User not found</div></div>`; return; }
+    if (!snap.exists()) {
+      content.innerHTML = `<div class="page-placeholder"><div class="page-title">User not found</div></div>`;
+      return;
+    }
+
     const user = snap.data();
     const followers = Array.isArray(user.followers) ? user.followers : [];
     const following = Array.isArray(user.following) ? user.following : [];
@@ -4323,6 +5353,7 @@ async function openUserProfile(userId) {
     const avatarSrc = user.photo || defaultAvatar(user.name);
     const isFollowing = currentProfile?.following?.includes(userId) || false;
 
+    /* Private + not following */
     if (user.isPrivate && !isFollowing) {
       content.innerHTML = `
         <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
@@ -4358,11 +5389,18 @@ async function openUserProfile(userId) {
           </div>
         </div>
       `;
-      document.getElementById('backFromProfileBtn').addEventListener('click', () => { viewingUserId = null; setActiveNav(null); renderPage('home'); });
+
+      document.getElementById('backFromProfileBtn').addEventListener('click', () => {
+        viewingUserId = null;
+        setActiveNav(null);
+        renderPage('home');
+      });
+
       document.getElementById('profileMenuBtn').addEventListener('click', async (e) => {
         e.stopPropagation();
         await showProfileMenu(e.currentTarget, userId, user.user);
       });
+
       document.getElementById('pubFollowBtn').addEventListener('click', async (e) => {
         await toggleFollow(userId, e.currentTarget);
         if (currentProfile.following.includes(userId)) {
@@ -4373,6 +5411,7 @@ async function openUserProfile(userId) {
       return;
     }
 
+    /* Public profile */
     content.innerHTML = `
       <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
         <button id="backFromProfileBtn">
@@ -4417,7 +5456,11 @@ async function openUserProfile(userId) {
       </div>
     `;
 
-    document.getElementById('backFromProfileBtn').addEventListener('click', () => { viewingUserId = null; setActiveNav(null); renderPage('home'); });
+    document.getElementById('backFromProfileBtn').addEventListener('click', () => {
+      viewingUserId = null;
+      setActiveNav(null);
+      renderPage('home');
+    });
 
     document.getElementById('profileMenuBtn').addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -4428,6 +5471,7 @@ async function openUserProfile(userId) {
     followBtn.addEventListener('click', async () => {
       await toggleFollow(userId, null);
       const isNowFollowing = currentProfile.following.includes(userId);
+
       if (isNowFollowing) {
         followBtn.classList.add('following');
         followBtn.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Following`;
@@ -4439,21 +5483,33 @@ async function openUserProfile(userId) {
 
     document.getElementById('pubMessageBtn')?.addEventListener('click', () => openChatWindow(user));
     document.getElementById('pubShareBtn')?.addEventListener('click', () => shareUser(user));
+
     await renderUserPosts(userId, 'pubPostsGrid');
   } catch (e) {
-    content.innerHTML = `<div class="page-placeholder"><div class="page-title">Could not load</div></div>`;
+    console.error('openUserProfile error:', e);
+    content.innerHTML = `<div class="page-placeholder"><div class="page-title">Could not load profile</div></div>`;
   }
 }
 
 async function shareUser(user) {
   const appUrl = window.location.origin;
   const shareText = `🎬 Check out ${user.name}'s profile on ReelHub!\n\n@${user.user}\n\n${appUrl}`;
+
   if (navigator.share) {
-    try { await navigator.share({ title: `${user.name} on ReelHub`, text: shareText, url: appUrl }); return; }
-    catch (err) { if (err.name === 'AbortError') return; }
+    try {
+      await navigator.share({ title: `${user.name} on ReelHub`, text: shareText, url: appUrl });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
   }
-  try { await navigator.clipboard.writeText(shareText); showToast('✅ Link copied!'); }
-  catch (err) { showToast('❌ Failed'); }
+
+  try {
+    await navigator.clipboard.writeText(shareText);
+    showToast('✅ Link copied!');
+  } catch (err) {
+    showToast('❌ Could not share');
+  }
 }
 
 /* ============================================================
@@ -4461,8 +5517,10 @@ async function shareUser(user) {
    ============================================================ */
 async function showProfileMenu(anchorEl, userId, userHandle) {
   document.querySelectorAll('.post-menu-dropdown').forEach(el => el.remove());
+
   const menu = document.createElement('div');
   menu.className = 'post-menu-dropdown';
+
   const isBlocked = (currentProfile?.blockedUsers || []).includes(userId);
 
   menu.innerHTML = `
@@ -4477,13 +5535,20 @@ async function showProfileMenu(anchorEl, userId, userHandle) {
   `;
 
   document.body.appendChild(menu);
+
   const rect = anchorEl.getBoundingClientRect();
   const menuRect = menu.getBoundingClientRect();
+
   let top = rect.bottom + 5;
   let left = rect.right - menuRect.width;
   if (left < 10) left = 10;
-  if (left + menuRect.width > window.innerWidth - 10) left = window.innerWidth - menuRect.width - 10;
-  if (top + menuRect.height > window.innerHeight - 10) top = rect.top - menuRect.height - 5;
+  if (left + menuRect.width > window.innerWidth - 10) {
+    left = window.innerWidth - menuRect.width - 10;
+  }
+  if (top + menuRect.height > window.innerHeight - 10) {
+    top = rect.top - menuRect.height - 5;
+  }
+
   menu.style.top = top + 'px';
   menu.style.left = left + 'px';
 
@@ -4492,8 +5557,9 @@ async function showProfileMenu(anchorEl, userId, userHandle) {
       e.stopPropagation();
       const action = btn.dataset.action;
       menu.remove();
-      if (action === 'block') await blockUser(userId, userHandle);
-      else if (action === 'unblock') await unblockUser(userId, userHandle);
+
+      if (action === 'block')           await blockUser(userId, userHandle);
+      else if (action === 'unblock')    await unblockUser(userId, userHandle);
       else if (action === 'report-user') await reportUser(userId, userHandle);
     });
   });
@@ -4512,59 +5578,135 @@ async function showProfileMenu(anchorEl, userId, userHandle) {
 }
 
 async function blockUser(userId, userHandle) {
-  if (userId === currentUser.uid) { showToast('❌ Cannot block yourself'); return; }
+  if (userId === currentUser.uid) {
+    showToast('❌ Cannot block yourself');
+    return;
+  }
+
   if (!confirm(`Block @${userHandle}?\n\nThey won't be able to message you or see your profile.`)) return;
+
   try {
-    await updateDoc(doc(db, 'users', currentUser.uid), { blockedUsers: arrayUnion(userId) });
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      blockedUsers: arrayUnion(userId)
+    });
+
     if (!currentProfile.blockedUsers) currentProfile.blockedUsers = [];
-    if (!currentProfile.blockedUsers.includes(userId)) currentProfile.blockedUsers.push(userId);
-    if (currentProfile.following.includes(userId)) await toggleFollow(userId, null);
+    if (!currentProfile.blockedUsers.includes(userId)) {
+      currentProfile.blockedUsers.push(userId);
+    }
+
+    if (currentProfile.following.includes(userId)) {
+      await toggleFollow(userId, null);
+    }
+
     showToast(`🚫 Blocked @${userHandle}`);
     renderHomeFeed();
-  } catch (e) { showToast('❌ Could not block'); }
+  } catch (e) {
+    showToast('❌ Could not block user');
+  }
 }
 
 async function unblockUser(userId, userHandle) {
   if (!confirm(`Unblock @${userHandle}?`)) return;
+
   try {
-    await updateDoc(doc(db, 'users', currentUser.uid), { blockedUsers: arrayRemove(userId) });
-    if (currentProfile) currentProfile.blockedUsers = (currentProfile.blockedUsers || []).filter(id => id !== userId);
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      blockedUsers: arrayRemove(userId)
+    });
+
+    if (currentProfile) {
+      currentProfile.blockedUsers = (currentProfile.blockedUsers || [])
+        .filter(id => id !== userId);
+    }
+
     showToast(`✅ Unblocked @${userHandle}`);
     closeBlockedUsersModal();
+
     if (viewingUserId === userId) openUserProfile(userId);
-  } catch (e) { showToast('❌ Could not unblock'); }
+  } catch (e) {
+    showToast('❌ Could not unblock user');
+  }
 }
 
 async function reportPost(post) {
-  const reasons = ['Spam or misleading','Nudity or sexual content','Hate speech or symbols','Violence or dangerous','Harassment or bullying','False information','Other'];
-  const reasonStr = prompt('🚨 Report this post\n\n' + reasons.map((r, i) => `${i + 1}. ${r}`).join('\n') + '\n\nType number (1-7):');
+  const reasons = [
+    'Spam or misleading',
+    'Nudity or sexual content',
+    'Hate speech or symbols',
+    'Violence or dangerous',
+    'Harassment or bullying',
+    'False information',
+    'Other'
+  ];
+
+  const reasonStr = prompt(
+    '🚨 Report this post\n\n' +
+    reasons.map((r, i) => `${i + 1}. ${r}`).join('\n') +
+    '\n\nType number (1-7):'
+  );
+
   if (!reasonStr) return;
   const idx = parseInt(reasonStr) - 1;
-  if (idx < 0 || idx >= reasons.length) { showToast('❌ Invalid'); return; }
+  if (idx < 0 || idx >= reasons.length) {
+    showToast('❌ Invalid choice');
+    return;
+  }
+
   try {
     await addDoc(collection(db, 'reports'), {
-      type: 'post', postId: post.id, postUserId: post.userId,
-      reportedBy: currentUser.uid, reportedByHandle: currentProfile?.user || '',
-      reason: reasons[idx], status: 'pending', createdAt: serverTimestamp()
+      type: 'post',
+      postId: post.id,
+      postUserId: post.userId,
+      reportedBy: currentUser.uid,
+      reportedByHandle: currentProfile?.user || '',
+      reason: reasons[idx],
+      status: 'pending',
+      createdAt: serverTimestamp()
     });
     showToast('✅ Report submitted');
-  } catch (e) { showToast('❌ Could not report'); }
+  } catch (e) {
+    showToast('❌ Could not submit report');
+  }
 }
 
 async function reportUser(userId, userHandle) {
-  const reasons = ['Fake account','Impersonation','Harassment','Spam','Inappropriate content','Other'];
-  const reasonStr = prompt('🚨 Report @' + userHandle + '\n\n' + reasons.map((r, i) => `${i + 1}. ${r}`).join('\n') + '\n\nType number (1-6):');
+  const reasons = [
+    'Fake account',
+    'Impersonation',
+    'Harassment',
+    'Spam',
+    'Inappropriate content',
+    'Other'
+  ];
+
+  const reasonStr = prompt(
+    '🚨 Report @' + userHandle + '\n\n' +
+    reasons.map((r, i) => `${i + 1}. ${r}`).join('\n') +
+    '\n\nType number (1-6):'
+  );
+
   if (!reasonStr) return;
   const idx = parseInt(reasonStr) - 1;
-  if (idx < 0 || idx >= reasons.length) { showToast('❌ Invalid'); return; }
+  if (idx < 0 || idx >= reasons.length) {
+    showToast('❌ Invalid choice');
+    return;
+  }
+
   try {
     await addDoc(collection(db, 'reports'), {
-      type: 'user', reportedUserId: userId, reportedUserHandle: userHandle,
-      reportedBy: currentUser.uid, reportedByHandle: currentProfile?.user || '',
-      reason: reasons[idx], status: 'pending', createdAt: serverTimestamp()
+      type: 'user',
+      reportedUserId: userId,
+      reportedUserHandle: userHandle,
+      reportedBy: currentUser.uid,
+      reportedByHandle: currentProfile?.user || '',
+      reason: reasons[idx],
+      status: 'pending',
+      createdAt: serverTimestamp()
     });
     showToast('✅ Report submitted');
-  } catch (e) { showToast('❌ Could not report'); }
+  } catch (e) {
+    showToast('❌ Could not submit report');
+  }
 }
 
 async function openBlockedUsersModal() {
@@ -4572,15 +5714,26 @@ async function openBlockedUsersModal() {
   const list = document.getElementById('blockedUsersList');
   modal.classList.add('show');
   list.innerHTML = '<div class="empty-msg">Loading...</div>';
+
   const blockedIds = currentProfile?.blockedUsers || [];
-  if (blockedIds.length === 0) { list.innerHTML = '<div class="empty-msg">No blocked users</div>'; return; }
+
+  if (blockedIds.length === 0) {
+    list.innerHTML = '<div class="empty-msg">No blocked users</div>';
+    return;
+  }
+
   try {
     const users = [];
     for (const uid of blockedIds) {
       const snap = await getDoc(doc(db, 'users', uid));
       if (snap.exists()) users.push({ uid, ...snap.data() });
     }
-    if (users.length === 0) { list.innerHTML = '<div class="empty-msg">No blocked users</div>'; return; }
+
+    if (users.length === 0) {
+      list.innerHTML = '<div class="empty-msg">No blocked users</div>';
+      return;
+    }
+
     list.innerHTML = '';
     users.forEach(u => {
       const row = document.createElement('div');
@@ -4590,15 +5743,21 @@ async function openBlockedUsersModal() {
         <div class="meta"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}</b><span>@${escapeHtml(u.user)}</span></div>
         <button class="unblock" data-uid="${u.uid}" style="background:#ff4d4d;color:#fff;">Unblock</button>
       `;
+
       row.querySelector('button').addEventListener('click', async (e) => {
         e.stopPropagation();
         await unblockUser(u.uid, u.user);
         row.remove();
-        if (!list.querySelector('.user-row')) list.innerHTML = '<div class="empty-msg">No blocked users</div>';
+        if (!list.querySelector('.user-row')) {
+          list.innerHTML = '<div class="empty-msg">No blocked users</div>';
+        }
       });
+
       list.appendChild(row);
     });
-  } catch (e) { list.innerHTML = '<div class="empty-msg">Could not load</div>'; }
+  } catch (e) {
+    list.innerHTML = '<div class="empty-msg">Could not load blocked users</div>';
+  }
 }
 
 function closeBlockedUsersModal() {
@@ -4610,7 +5769,11 @@ function updateBlockedUsersCount() {
   const count = (currentProfile?.blockedUsers || []).length;
   const el = document.getElementById('blockedUsersCount');
   if (el) {
-    el.textContent = count === 0 ? 'No users blocked' : count === 1 ? '1 user blocked' : `${count} users blocked`;
+    el.textContent = count === 0
+      ? 'No users blocked'
+      : count === 1
+        ? '1 user blocked'
+        : `${count} users blocked`;
   }
 }
 
@@ -4639,8 +5802,10 @@ function openUploadModal() {
   uploadProgressWrap.style.display = 'none';
   uploadProgressBar.style.width = '0%';
   uploadProgressText.textContent = '0%';
+
   document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
   document.querySelector('.upload-tab[data-type="short"]')?.classList.add('active');
+
   updatePickerText();
   uploadModal.classList.add('show');
 }
@@ -4664,8 +5829,13 @@ function updatePickerText() {
   }
 }
 
-document.getElementById('closeUpload')?.addEventListener('click', () => uploadModal.classList.remove('show'));
-uploadModal.addEventListener('click', (e) => { if (e.target === uploadModal) uploadModal.classList.remove('show'); });
+document.getElementById('closeUpload')?.addEventListener('click', () =>
+  uploadModal.classList.remove('show')
+);
+
+uploadModal.addEventListener('click', (e) => {
+  if (e.target === uploadModal) uploadModal.classList.remove('show');
+});
 
 document.querySelectorAll('.upload-tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -4689,12 +5859,19 @@ document.querySelectorAll('.upload-tab').forEach(tab => {
 uploadFileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
+
   uploadMsg.className = 'error-msg';
   uploadMsg.textContent = '';
 
   if (currentUploadType === 'photo') {
-    if (!file.type.startsWith('image/')) { uploadMsg.textContent = 'Choose an image.'; return; }
-    if (file.size > 5 * 1024 * 1024) { uploadMsg.textContent = 'Max 5 MB.'; return; }
+    if (!file.type.startsWith('image/')) {
+      uploadMsg.textContent = 'Choose an image.';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      uploadMsg.textContent = 'Max 5 MB.';
+      return;
+    }
     selectedFile = file;
     uploadPhotoPreview.src = URL.createObjectURL(file);
     uploadPhotoPreviewWrap.style.display = 'block';
@@ -4703,39 +5880,70 @@ uploadFileInput.addEventListener('change', async (e) => {
     return;
   }
 
-  if (!file.type.startsWith('video/')) { uploadMsg.textContent = 'Choose a video.'; return; }
-  if (file.size > 500 * 1024 * 1024) { uploadMsg.textContent = 'Max 500 MB.'; return; }
+  if (!file.type.startsWith('video/')) {
+    uploadMsg.textContent = 'Choose a video.';
+    return;
+  }
+
+  if (file.size > 500 * 1024 * 1024) {
+    uploadMsg.textContent = 'Max 500 MB.';
+    return;
+  }
 
   const url = URL.createObjectURL(file);
   const tempVideo = document.createElement('video');
   tempVideo.preload = 'metadata';
   tempVideo.src = url;
+
   tempVideo.onloadedmetadata = () => {
     const duration = tempVideo.duration;
-    if (!isFinite(duration) || duration <= 0) { uploadMsg.textContent = 'Could not read duration.'; return; }
+
+    if (!isFinite(duration) || duration <= 0) {
+      uploadMsg.textContent = 'Could not read duration.';
+      return;
+    }
+
     selectedFile = file;
     selectedFileDuration = duration;
+
     if (currentUploadType === 'short' && duration > 60.5) {
       uploadMsg.textContent = `⚠️ Switching to Long...`;
-      setTimeout(() => { switchUploadType('long'); uploadFileInput.value = ''; selectedFile = null; uploadMsg.textContent = 'Select again as Long.'; }, 1500);
+      setTimeout(() => {
+        switchUploadType('long');
+        uploadFileInput.value = '';
+        selectedFile = null;
+        uploadMsg.textContent = 'Select again as Long.';
+      }, 1500);
       return;
     }
+
     if (currentUploadType === 'long' && duration <= 30.5) {
       uploadMsg.textContent = `⚠️ Switching to Short...`;
-      setTimeout(() => { switchUploadType('short'); uploadFileInput.value = ''; selectedFile = null; uploadMsg.textContent = 'Select again as Short.'; }, 1500);
+      setTimeout(() => {
+        switchUploadType('short');
+        uploadFileInput.value = '';
+        selectedFile = null;
+        uploadMsg.textContent = 'Select again as Short.';
+      }, 1500);
       return;
     }
+
     uploadPreview.src = url;
     uploadPreviewWrap.style.display = 'block';
     uploadPickerWrap.style.display = 'none';
     uploadPreviewInfo.textContent = `${Math.round(duration)}s · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
     uploadSubmitBtn.disabled = false;
   };
-  tempVideo.onerror = () => { uploadMsg.textContent = 'Could not load.'; };
+
+  tempVideo.onerror = () => {
+    uploadMsg.textContent = 'Could not load video.';
+  };
 });
 
 function switchUploadType(type) {
-  document.querySelectorAll('.upload-tab').forEach(t => t.classList.toggle('active', t.dataset.type === type));
+  document.querySelectorAll('.upload-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.type === type)
+  );
   currentUploadType = type;
   updatePickerText();
   uploadPreview.src = '';
@@ -4747,9 +5955,17 @@ function switchUploadType(type) {
 }
 
 uploadSubmitBtn.addEventListener('click', async () => {
-  if (!currentUser || !currentProfile) { uploadMsg.textContent = 'Login required.'; return; }
-  if (!selectedFile) { uploadMsg.textContent = 'Select a file.'; return; }
+  if (!currentUser || !currentProfile) {
+    uploadMsg.textContent = 'Login required.';
+    return;
+  }
+  if (!selectedFile) {
+    uploadMsg.textContent = 'Select a file.';
+    return;
+  }
+
   const caption = uploadCaption.value.trim();
+
   uploadSubmitBtn.disabled = true;
   uploadSubmitBtn.textContent = 'Uploading...';
   uploadMsg.textContent = '';
@@ -4782,14 +5998,19 @@ uploadSubmitBtn.addEventListener('click', async () => {
     };
 
     await addDoc(collection(db, 'posts'), postData);
-    await updateDoc(doc(db, 'users', currentUser.uid), { videoCount: (currentProfile.videoCount || 0) + 1 });
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      videoCount: (currentProfile.videoCount || 0) + 1
+    });
     currentProfile.videoCount = (currentProfile.videoCount || 0) + 1;
 
     uploadMsg.className = 'success-msg';
     uploadMsg.textContent = '✅ Uploaded!';
+
     setTimeout(() => {
       uploadModal.classList.remove('show');
-      if (document.querySelector('.nav-item[data-page="profile"]')?.classList.contains('active')) renderProfile();
+      if (document.querySelector('.nav-item[data-page="profile"]')?.classList.contains('active')) {
+        renderProfile();
+      }
     }, 1500);
   } catch (err) {
     uploadMsg.className = 'error-msg';
@@ -4804,6 +6025,7 @@ function uploadToCloudinary(file, onProgress) {
     const resourceType = currentUploadType === 'photo' ? 'image' : 'video';
     const acc = CLOUDINARY_ACCOUNTS.videos;
     const url = `https://api.cloudinary.com/v1_1/${acc.cloudName}/${resourceType}/upload`;
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', acc.preset);
@@ -4812,17 +6034,35 @@ function uploadToCloudinary(file, onProgress) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
     xhr.timeout = 120000;
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); };
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        try { const res = JSON.parse(xhr.responseText); if (!res.secure_url) { reject(new Error('No URL')); return; } resolve(res); }
-        catch (e) { reject(new Error('Invalid')); }
+        try {
+          const res = JSON.parse(xhr.responseText);
+          if (!res.secure_url) {
+            reject(new Error('No URL returned'));
+            return;
+          }
+          resolve(res);
+        } catch (e) {
+          reject(new Error('Invalid response'));
+        }
       } else {
         let errMsg = 'Upload failed';
-        try { const d = JSON.parse(xhr.responseText); if (d.error?.message) errMsg = d.error.message; } catch (e) {}
+        try {
+          const d = JSON.parse(xhr.responseText);
+          if (d.error?.message) errMsg = d.error.message;
+        } catch (e) {}
         reject(new Error(errMsg));
       }
     };
+
     xhr.onerror = () => reject(new Error('Network error'));
     xhr.ontimeout = () => reject(new Error('Timeout'));
     xhr.send(formData);
@@ -4831,28 +6071,49 @@ function uploadToCloudinary(file, onProgress) {
 
 function buildThumbnailUrl(videoUrl, type) {
   if (!videoUrl) return '';
+
   try {
-    if (type === 'photo') return videoUrl.replace('/image/upload/', '/image/upload/w_400,q_auto,f_auto/');
-    if (videoUrl.includes('/video/upload/')) return videoUrl.replace('/video/upload/', '/video/upload/so_0,w_400,c_fill,q_auto,f_auto/');
+    if (type === 'photo') {
+      return videoUrl.replace('/image/upload/', '/image/upload/w_400,q_auto,f_auto/');
+    }
+    if (videoUrl.includes('/video/upload/')) {
+      return videoUrl.replace('/video/upload/', '/video/upload/so_0,w_400,c_fill,q_auto,f_auto/');
+    }
   } catch (e) {}
+
   return '';
 }
 
 function openPlayer(post) {
   playerTitle.textContent = post.caption || (post.type === 'photo' ? 'Photo' : 'Video');
-  if (post.type === 'photo') playerContent.innerHTML = `<img src="${post.url}" alt="">`;
-  else playerContent.innerHTML = `<video src="${post.url}" controls playsinline autoplay class="aspect-${post.type === 'long' ? '16-9' : '9-16'}" style="background:#000;"></video>`;
+
+  if (post.type === 'photo') {
+    playerContent.innerHTML = `<img src="${post.url}" alt="">`;
+  } else {
+    playerContent.innerHTML = `<video src="${post.url}" controls playsinline autoplay class="aspect-${post.type === 'long' ? '16-9' : '9-16'}" style="background:#000;"></video>`;
+  }
+
   playerModal.classList.add('show');
 }
 
-document.getElementById('closePlayer')?.addEventListener('click', () => { playerModal.classList.remove('show'); playerContent.innerHTML = ''; });
-playerModal.addEventListener('click', (e) => { if (e.target === playerModal) { playerModal.classList.remove('show'); playerContent.innerHTML = ''; } });
+document.getElementById('closePlayer')?.addEventListener('click', () => {
+  playerModal.classList.remove('show');
+  playerContent.innerHTML = '';
+});
+
+playerModal.addEventListener('click', (e) => {
+  if (e.target === playerModal) {
+    playerModal.classList.remove('show');
+    playerContent.innerHTML = '';
+  }
+});
 
 /* ============================================================
    EDIT PROFILE MODAL
    ============================================================ */
 function openEditModal() {
   if (!currentProfile) return;
+
   selectedPhotoBase64 = null;
   editNameInput.value = currentProfile.name || '';
   editUserInput.value = currentProfile.user || '';
@@ -4862,13 +6123,24 @@ function openEditModal() {
   editModal.classList.add('show');
 }
 
-document.getElementById('closeEdit')?.addEventListener('click', () => editModal.classList.remove('show'));
-editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.classList.remove('show'); });
+document.getElementById('closeEdit')?.addEventListener('click', () =>
+  editModal.classList.remove('show')
+);
+
+editModal.addEventListener('click', (e) => {
+  if (e.target === editModal) editModal.classList.remove('show');
+});
 
 editPhotoInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  if (file.size > 500 * 1024) { editMsg.className = 'error-msg'; editMsg.textContent = 'Max 500 KB.'; return; }
+
+  if (file.size > 500 * 1024) {
+    editMsg.className = 'error-msg';
+    editMsg.textContent = 'Max 500 KB.';
+    return;
+  }
+
   const base64 = await fileToBase64(file);
   selectedPhotoBase64 = base64;
   editPreviewImg.src = base64;
@@ -4876,30 +6148,55 @@ editPhotoInput.addEventListener('change', async (e) => {
 
 saveProfileBtn.addEventListener('click', async () => {
   if (!currentUser) return;
+
   const newName = editNameInput.value.trim();
   const newUser = editUserInput.value.trim().toLowerCase();
   const newBio = editBioInput.value.trim();
+
   editMsg.className = 'error-msg';
   editMsg.textContent = '';
-  if (!newName) { editMsg.textContent = 'Name required.'; return; }
-  if (!/^[a-z0-9._]{3,20}$/.test(newUser)) { editMsg.textContent = 'Username: 3-20 chars.'; return; }
-  if (newBio.length > 150) { editMsg.textContent = 'Bio max 150.'; return; }
+
+  if (!newName) {
+    editMsg.textContent = 'Name required.';
+    return;
+  }
+  if (!/^[a-z0-9._]{3,20}$/.test(newUser)) {
+    editMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
+    return;
+  }
+  if (newBio.length > 150) {
+    editMsg.textContent = 'Bio max 150 characters.';
+    return;
+  }
 
   saveProfileBtn.disabled = true;
   saveProfileBtn.textContent = 'Saving...';
+
   try {
     if (newUser !== currentProfile.user) {
       const q = query(collection(db, 'users'), where('user', '==', newUser));
       const snap = await getDocs(q);
-      if (!snap.empty) { editMsg.textContent = 'Username taken.'; saveProfileBtn.disabled = false; saveProfileBtn.textContent = 'Save Changes'; return; }
+      if (!snap.empty) {
+        editMsg.textContent = 'Username already taken.';
+        saveProfileBtn.disabled = false;
+        saveProfileBtn.textContent = 'Save Changes';
+        return;
+      }
     }
+
     const updateData = { name: newName, user: newUser, bio: newBio };
     if (selectedPhotoBase64) updateData.photo = selectedPhotoBase64;
+
     await updateDoc(doc(db, 'users', currentUser.uid), updateData);
     Object.assign(currentProfile, updateData);
+
     editMsg.className = 'success-msg';
     editMsg.textContent = 'Profile updated!';
-    setTimeout(() => { editModal.classList.remove('show'); renderProfile(); }, 500);
+
+    setTimeout(() => {
+      editModal.classList.remove('show');
+      renderProfile();
+    }, 500);
   } catch (err) {
     editMsg.className = 'error-msg';
     editMsg.textContent = err.message || 'Update failed.';
@@ -4914,68 +6211,118 @@ saveProfileBtn.addEventListener('click', async () => {
    ============================================================ */
 function openListModal(type) {
   if (!currentProfile) return;
+
   const isFollowers = type === 'followers';
   listTitle.textContent = isFollowers ? 'Followers' : 'Following';
   userList.innerHTML = '<div class="empty-msg">Loading...</div>';
   listModal.classList.add('show');
+
   const uids = isFollowers ? currentProfile.followers : currentProfile.following;
+
   if (!uids || uids.length === 0) {
     userList.innerHTML = `<div class="empty-msg">No ${isFollowers ? 'followers' : 'following'} yet.</div>`;
     return;
   }
+
   loadUsersByIds(uids).then(users => {
-    if (users.length === 0) { userList.innerHTML = `<div class="empty-msg">No users found.</div>`; return; }
+    if (users.length === 0) {
+      userList.innerHTML = `<div class="empty-msg">No users found.</div>`;
+      return;
+    }
+
     userList.innerHTML = '';
     users.forEach(u => {
       const row = document.createElement('div');
       row.className = 'user-row';
+      const isFollowing = currentProfile.following.includes(u.uid);
+
       row.innerHTML = `
         <img src="${u.photo || defaultAvatar(u.name)}" alt="">
         <div class="meta"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}${u.isPrivate ? ' 🔒' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
-        <button class="${currentProfile.following.includes(u.uid) ? 'unfollow' : 'follow'}">${currentProfile.following.includes(u.uid) ? 'Following' : 'Follow'}</button>
+        <button class="${isFollowing ? 'unfollow' : 'follow'}">${isFollowing ? 'Following' : 'Follow'}</button>
       `;
-      row.querySelector('img').addEventListener('click', () => { listModal.classList.remove('show'); openUserProfile(u.uid); });
-      row.querySelector('.meta').addEventListener('click', () => { listModal.classList.remove('show'); openUserProfile(u.uid); });
-      row.querySelector('button').addEventListener('click', async (e) => { e.stopPropagation(); await toggleFollow(u.uid, e.target); });
+
+      row.querySelector('img').addEventListener('click', () => {
+        listModal.classList.remove('show');
+        openUserProfile(u.uid);
+      });
+      row.querySelector('.meta').addEventListener('click', () => {
+        listModal.classList.remove('show');
+        openUserProfile(u.uid);
+      });
+      row.querySelector('button').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await toggleFollow(u.uid, e.target);
+      });
+
       userList.appendChild(row);
     });
   });
 }
 
-document.getElementById('closeList')?.addEventListener('click', () => listModal.classList.remove('show'));
-listModal.addEventListener('click', (e) => { if (e.target === listModal) listModal.classList.remove('show'); });
+document.getElementById('closeList')?.addEventListener('click', () =>
+  listModal.classList.remove('show')
+);
 
+listModal.addEventListener('click', (e) => {
+  if (e.target === listModal) listModal.classList.remove('show');
+});
+
+/* 🔧 FIXED: Respect notifFollows + pushNotif */
 async function toggleFollow(targetUid, btnEl) {
   if (!currentUser || !currentProfile) return;
   if (targetUid === currentUser.uid) return;
+
   const isFollowing = currentProfile.following.includes(targetUid);
+
   try {
     const myRef = doc(db, 'users', currentUser.uid);
     const targetRef = doc(db, 'users', targetUid);
+
     if (isFollowing) {
       await updateDoc(myRef, { following: arrayRemove(targetUid) });
       await updateDoc(targetRef, { followers: arrayRemove(currentUser.uid) });
+
       currentProfile.following = currentProfile.following.filter(id => id !== targetUid);
-      if (btnEl) { btnEl.textContent = 'Follow'; btnEl.className = 'follow'; }
+
+      if (btnEl) {
+        btnEl.textContent = 'Follow';
+        btnEl.className = 'follow';
+      }
     } else {
       await updateDoc(myRef, { following: arrayUnion(targetUid) });
       await updateDoc(targetRef, { followers: arrayUnion(currentUser.uid) });
-      currentProfile.following.push(targetUid);
-      if (btnEl) { btnEl.textContent = 'Following'; btnEl.className = 'unfollow'; }
 
-      try {
-        await addDoc(collection(db, 'notifications'), {
-          userId: targetUid,
-          type: 'follow',
-          title: '👤 New Follower',
-          message: `${currentProfile.name || 'Someone'} started following you`,
-          fromUserId: currentUser.uid,
-          read: false,
-          createdAt: serverTimestamp()
-        });
-      } catch (e) {}
+      currentProfile.following.push(targetUid);
+
+      if (btnEl) {
+        btnEl.textContent = 'Following';
+        btnEl.className = 'unfollow';
+      }
+
+      /* 🔧 FIX: Respect notification settings */
+      const s = typeof getSettings === 'function'
+        ? getSettings()
+        : { notifFollows: true, pushNotif: true };
+
+      if (s.pushNotif && s.notifFollows) {
+        try {
+          await addDoc(collection(db, 'notifications'), {
+            userId: targetUid,
+            type: 'follow',
+            title: '👤 New Follower',
+            message: `${currentProfile.name || 'Someone'} started following you`,
+            fromUserId: currentUser.uid,
+            read: false,
+            createdAt: serverTimestamp()
+          });
+        } catch (e) {}
+      }
     }
-  } catch (err) { showToast('Could not update follow.'); }
+  } catch (err) {
+    console.error('toggleFollow error:', err);
+    showToast('Could not update follow.');
+  }
 }
 
 /* ============================================================
@@ -4983,28 +6330,43 @@ async function toggleFollow(targetUid, btnEl) {
    ============================================================ */
 async function renderNotifications() {
   if (!currentUser) return;
+
   content.innerHTML = `
     <div class="notif-page">
       <div class="page-title" style="margin-bottom:16px;text-align:left;padding:0 4px;">Notifications</div>
       <div id="notifList"><div class="empty-notif">Loading...</div></div>
     </div>
   `;
+
   try {
-    const q = query(collection(db, 'notifications'), where('userId', '==', currentUser.uid), limit(50));
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', currentUser.uid),
+      limit(50)
+    );
     const snap = await getDocs(q);
     const notifications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    notifications.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
+
+    notifications.sort((a, b) =>
+      (b.createdAt?.toDate?.()?.getTime() || 0) -
+      (a.createdAt?.toDate?.()?.getTime() || 0)
+    );
+
     paintNotifications(notifications);
 
+    /* Mark read (except invites which need action) */
     for (const n of notifications) {
       if (!n.read && n.type !== 'admin_invite') {
-        try { await updateDoc(doc(db, 'notifications', n.id), { read: true }); } catch (e) {}
+        try {
+          await updateDoc(doc(db, 'notifications', n.id), { read: true });
+        } catch (e) {}
       }
     }
+
     updateNotifDot(0);
   } catch (e) {
     const el = document.getElementById('notifList');
-    if (el) el.innerHTML = `<div class="empty-notif">Could not load.</div>`;
+    if (el) el.innerHTML = `<div class="empty-notif">Could not load notifications.</div>`;
   }
 }
 
@@ -5026,8 +6388,8 @@ function paintNotifications(list) {
   list.forEach(n => {
     const item = document.createElement('div');
     item.className = 'notif-item' + (n.read ? '' : ' unread');
-    const time = n.createdAt?.toDate?.();
 
+    const time = n.createdAt?.toDate?.();
     const isInvite = n.type === 'admin_invite';
     const isHandled = n.handled === true;
 
@@ -5036,7 +6398,9 @@ function paintNotifications(list) {
         <button class="accept" data-invite-action="accept" data-invite-id="${n.inviteId || ''}" data-notif-id="${n.id}">✓ Accept</button>
         <button class="reject" data-invite-action="reject" data-invite-id="${n.inviteId || ''}" data-notif-id="${n.id}">✕ Decline</button>
       </div>
-    ` : (isInvite && isHandled ? `<div style="font-size:11px;color:#888;margin-top:8px;">✅ Handled</div>` : '');
+    ` : (isInvite && isHandled
+        ? `<div style="font-size:11px;color:#888;margin-top:8px;">✅ Handled</div>`
+        : '');
 
     item.innerHTML = `
       <div class="notif-header">
@@ -5051,10 +6415,12 @@ function paintNotifications(list) {
       item.querySelectorAll('[data-invite-action]').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
-          const action = btn.dataset.inviteAction;
-          const inviteId = btn.dataset.inviteId;
-          const notifId = btn.dataset.notifId;
-          await handleAdminInviteAction(action, inviteId, notifId, item);
+          await handleAdminInviteAction(
+            btn.dataset.inviteAction,
+            btn.dataset.inviteId,
+            btn.dataset.notifId,
+            item
+          );
         });
       });
     }
@@ -5065,13 +6431,15 @@ function paintNotifications(list) {
 
 /* ============================================================
    ADMIN INVITE — Accept / Reject with Congrats Animation
+   ⚠️ NOTE: Writing to admin_config/emails from client is NOT
+   secure. Move this to a Cloud Function or admin-only ruleset
+   in production.
    ============================================================ */
 async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
   if (!currentUser || !currentUser.email) {
     showToast('❌ Please login first');
     return;
   }
-
   if (!inviteId) {
     showToast('❌ Invalid invitation');
     return;
@@ -5087,10 +6455,13 @@ async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
     }
 
     const inviteData = inviteSnap.data();
+
     if (inviteData.status !== 'pending') {
       showToast('⚠️ Invitation already ' + inviteData.status);
       if (notifId) {
-        try { await updateDoc(doc(db, 'notifications', notifId), { handled: true, read: true }); } catch (e) {}
+        try {
+          await updateDoc(doc(db, 'notifications', notifId), { handled: true, read: true });
+        } catch (e) {}
       }
       return;
     }
@@ -5119,7 +6490,12 @@ async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
       }
 
       if (notifId) {
-        try { await updateDoc(doc(db, 'notifications', notifId), { read: true, handled: true }); } catch (e) {}
+        try {
+          await updateDoc(doc(db, 'notifications', notifId), {
+            read: true,
+            handled: true
+          });
+        } catch (e) {}
       }
 
       if (itemEl) {
@@ -5135,14 +6511,12 @@ async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
 
       showToast('✅ You are now an admin!');
 
-      // 🎉 CONGRATULATIONS ANIMATION
       setTimeout(() => {
         showCongratsAnimation(
           currentProfile?.name || 'User',
           currentUser.email
         );
       }, 500);
-
     } else if (action === 'reject') {
       if (!confirm('Decline admin invitation?')) return;
 
@@ -5152,7 +6526,12 @@ async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
       });
 
       if (notifId) {
-        try { await updateDoc(doc(db, 'notifications', notifId), { read: true, handled: true }); } catch (e) {}
+        try {
+          await updateDoc(doc(db, 'notifications', notifId), {
+            read: true,
+            handled: true
+          });
+        } catch (e) {}
       }
 
       if (itemEl) {
@@ -5168,7 +6547,6 @@ async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
 
       showToast('Invitation declined');
     }
-
   } catch (err) {
     console.error('Admin invite error:', err);
     showToast('❌ ' + (err.message || 'Failed'));
@@ -5182,16 +6560,29 @@ function startNotifWatcher() {
 }
 
 function stopNotifWatcher() {
-  if (notifIntervalId) { clearInterval(notifIntervalId); notifIntervalId = null; }
+  if (notifIntervalId) {
+    clearInterval(notifIntervalId);
+    notifIntervalId = null;
+  }
   updateNotifDot(0);
 }
 
+/* 🔧 FIXED: Better cap handling for large counts */
 async function checkUnreadNotifications() {
   if (!currentUser) return;
   try {
     const settings = typeof getSettings === 'function' ? getSettings() : { pushNotif: true };
-    if (settings.pushNotif === false) { updateNotifDot(0); return; }
-    const q = query(collection(db, 'notifications'), where('userId', '==', currentUser.uid), where('read', '==', false), limit(20));
+    if (settings.pushNotif === false) {
+      updateNotifDot(0);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', currentUser.uid),
+      where('read', '==', false),
+      limit(100)
+    );
     const snap = await getDocs(q);
     updateNotifDot(snap.size);
   } catch (e) {}
@@ -5199,7 +6590,17 @@ async function checkUnreadNotifications() {
 
 function updateNotifDot(count) {
   if (!notifDot) return;
-  notifDot.style.display = count > 0 ? 'block' : 'none';
+  if (count > 0) {
+    notifDot.style.display = 'block';
+    /* 🔧 FIX: Show "20+" cap for display */
+    if (count > 20) {
+      notifDot.textContent = '20+';
+    } else {
+      notifDot.textContent = '';
+    }
+  } else {
+    notifDot.style.display = 'none';
+  }
 }
 
 /* ============================================================
@@ -5215,60 +6616,106 @@ async function renderSearch() {
       <div class="search-results" id="searchResults"><div class="search-empty">Start typing...</div></div>
     </div>
   `;
+
   const input = document.getElementById('searchInput');
   let debounceTimer = null;
+
   input.addEventListener('input', (e) => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => performSearch(e.target.value.trim()), 300);
   });
+
   input.focus();
 }
 
 async function performSearch(searchTerm) {
   const results = document.getElementById('searchResults');
   if (!results) return;
-  if (!searchTerm) { results.innerHTML = `<div class="search-empty">Start typing...</div>`; return; }
+
+  if (!searchTerm) {
+    results.innerHTML = `<div class="search-empty">Start typing...</div>`;
+    return;
+  }
+
   results.innerHTML = `<div class="search-empty">Searching...</div>`;
+
   try {
     const usersRef = collection(db, 'users');
     const snap = await getDocs(usersRef);
     const term = searchTerm.toLowerCase();
     const blocked = currentProfile?.blockedUsers || [];
+
     const matches = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .filter(u => u.id !== currentUser.uid && !blocked.includes(u.id))
-      .filter(u => (u.name || '').toLowerCase().includes(term) || (u.user || '').toLowerCase().includes(term))
+      .filter(u =>
+        (u.name || '').toLowerCase().includes(term) ||
+        (u.user || '').toLowerCase().includes(term)
+      )
       .slice(0, 30);
 
-    if (matches.length === 0) { results.innerHTML = `<div class="search-empty">No users found</div>`; return; }
+    if (matches.length === 0) {
+      results.innerHTML = `<div class="search-empty">No users found</div>`;
+      return;
+    }
+
     results.innerHTML = '';
     matches.forEach(u => {
       const row = document.createElement('div');
       row.className = 'search-user';
       const isFollowing = currentProfile?.following?.includes(u.id);
+
       row.innerHTML = `
         <img src="${u.photo || defaultAvatar(u.name)}" alt="">
         <div class="info"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}${u.isPrivate ? ' 🔒' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
         <button class="${isFollowing ? 'unfollow' : 'follow'}">${isFollowing ? 'Following' : 'Follow'}</button>
       `;
-      row.querySelector('img').addEventListener('click', (e) => { e.stopPropagation(); openUserProfile(u.id); });
-      row.querySelector('.info').addEventListener('click', (e) => { e.stopPropagation(); openUserProfile(u.id); });
-      row.querySelector('button').addEventListener('click', async (e) => { e.stopPropagation(); await toggleFollow(u.id, e.target); });
+
+      row.querySelector('img').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openUserProfile(u.id);
+      });
+      row.querySelector('.info').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openUserProfile(u.id);
+      });
+      row.querySelector('button').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await toggleFollow(u.id, e.target);
+      });
+
       results.appendChild(row);
     });
-  } catch (e) { results.innerHTML = `<div class="search-empty">Search failed</div>`; }
+  } catch (e) {
+    results.innerHTML = `<div class="search-empty">Search failed</div>`;
+  }
 }
 
 async function shareProfile() {
   if (!currentProfile) return;
+
   const appUrl = window.location.origin;
   const shareText = `🎬 Check out ${currentProfile.name}'s profile on ReelHub!\n\n@${currentProfile.user}\n\n${appUrl}`;
+
   if (navigator.share) {
-    try { await navigator.share({ title: `${currentProfile.name} on ReelHub`, text: shareText, url: appUrl }); return; }
-    catch (err) { if (err.name === 'AbortError') return; }
+    try {
+      await navigator.share({
+        title: `${currentProfile.name} on ReelHub`,
+        text: shareText,
+        url: appUrl
+      });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
   }
-  try { await navigator.clipboard.writeText(shareText); showToast('✅ Link copied!'); }
-  catch (err) { showToast('❌ Failed'); }
+
+  try {
+    await navigator.clipboard.writeText(shareText);
+    showToast('✅ Link copied!');
+  } catch (err) {
+    showToast('❌ Could not share');
+  }
 }
 
 /* ============================================================
@@ -5277,12 +6724,18 @@ async function shareProfile() {
 function showToast(message) {
   const existing = document.getElementById('toast');
   if (existing) existing.remove();
+
   const toast = document.createElement('div');
   toast.id = 'toast';
   toast.textContent = message;
   toast.style.cssText = `position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1e1e28;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:10000;box-shadow:0 8px 20px rgba(0,0,0,0.6);border:1px solid #333;`;
   document.body.appendChild(toast);
-  setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 2500);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
 }
 
 function fileToBase64(file) {
@@ -5302,20 +6755,28 @@ function defaultAvatar(name) {
 }
 
 function escapeHtml(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 async function loadUsersByIds(uids) {
   const results = [];
   for (const uid of uids) {
-    try { const snap = await getDoc(doc(db, 'users', uid)); if (snap.exists()) results.push(snap.data()); } catch (e) {}
+    try {
+      const snap = await getDoc(doc(db, 'users', uid));
+      if (snap.exists()) results.push(snap.data());
+    } catch (e) {}
   }
   return results;
 }
 
 function formatFileSize(bytes) {
-  if (!bytes) return '0 B';
+  if (!bytes || bytes < 0) return '0 B';
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
   return (bytes / 1024 / 1024).toFixed(1) + ' MB';
@@ -5345,7 +6806,8 @@ function timeAgoShort(date) {
 }
 
 function formatTime(date) {
-  const h = date.getHours(); const m = date.getMinutes();
+  const h = date.getHours();
+  const m = date.getMinutes();
   const ampm = h >= 12 ? 'PM' : 'AM';
   const hr = h % 12 || 12;
   return `${hr}:${m < 10 ? '0' + m : m} ${ampm}`;
@@ -5353,21 +6815,18 @@ function formatTime(date) {
 
 function formatDate(date) {
   const today = new Date();
-  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
   if (date.toDateString() === today.toDateString()) return 'Today';
   if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
   return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function formatVoiceDuration(seconds) {
-  if (!seconds) return '0:00';
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s < 10 ? '0' + s : s}`;
-}
+/* ⚠️ NOTE: formatVoiceDuration is defined in PART 3 — do not redefine */
 
 /* ============================================================
-   DELETE ACCOUNT — Complete System
+   DELETE ACCOUNT — Complete System (FIXED)
    ============================================================ */
 function openDeleteAccountModal() {
   document.querySelectorAll('.delete-modal-overlay').forEach(el => el.remove());
@@ -5379,7 +6838,7 @@ function openDeleteAccountModal() {
   overlay.innerHTML = `
     <div class="delete-modal">
       <div class="delete-modal-icon">⚠️</div>
-      
+
       <h3>Delete Your Account?</h3>
       <p>This action is <strong style="color:#ff4d4d;">permanent and cannot be undone</strong>.</p>
 
@@ -5388,8 +6847,8 @@ function openDeleteAccountModal() {
           <li>Your profile will be removed</li>
           <li>All your posts and videos will be deleted</li>
           <li>Your stories will be deleted</li>
-          <li>Your comments will be removed</li>
-          <li>Your messages will be deleted</li>
+          <li>Your comments and replies will be removed</li>
+          <li>Your messages in DMs and groups will be deleted</li>
           <li>You'll be removed from all groups</li>
           <li>You'll lose all followers</li>
         </ul>
@@ -5481,12 +6940,12 @@ async function deleteUserAccount(password) {
     const credential = EmailAuthProvider.credential(currentUser.email, password);
     await reauthenticateWithCredential(currentUser, credential);
 
-    /* STEP 2 — Delete Posts + Comments on them */
+    /* STEP 2 — Delete posts + their comments */
     progressText.textContent = 'Deleting your posts...';
     try {
       const postsQ = query(collection(db, 'posts'), where('userId', '==', uid));
       const postsSnap = await getDocs(postsQ);
-      
+
       for (const postDoc of postsSnap.docs) {
         try {
           const commentsQ = query(collection(db, 'comments'), where('postId', '==', postDoc.id));
@@ -5494,25 +6953,40 @@ async function deleteUserAccount(password) {
           if (commentsSnap.size > 0) {
             await batchDeleteDocs(commentsSnap.docs.map(d => d.ref));
           }
-        } catch (e) { console.warn('Post comments delete:', e); }
+        } catch (e) {}
       }
-      
+
       if (postsSnap.size > 0) {
         await batchDeleteDocs(postsSnap.docs.map(d => d.ref));
       }
     } catch (e) { console.warn('Posts delete:', e); }
 
-    /* STEP 3 — Delete User's Comments */
-    progressText.textContent = 'Deleting your comments...';
+    /* STEP 3 — Delete user's comments + orphaned replies */
+    progressText.textContent = 'Deleting your comments and replies...';
     try {
-      const commentsQ = query(collection(db, 'comments'), where('userId', '==', uid));
-      const commentsSnap = await getDocs(commentsQ);
-      if (commentsSnap.size > 0) {
-        await batchDeleteDocs(commentsSnap.docs.map(d => d.ref));
+      /* 3a — Get user's comment IDs */
+      const myCommentsQ = query(collection(db, 'comments'), where('userId', '==', uid));
+      const myCommentsSnap = await getDocs(myCommentsQ);
+      const myCommentIds = myCommentsSnap.docs.map(d => d.id);
+
+      /* 3b — Delete replies that point to user's comments */
+      for (const cid of myCommentIds) {
+        try {
+          const repliesQ = query(collection(db, 'comments'), where('parentId', '==', cid));
+          const repliesSnap = await getDocs(repliesQ);
+          if (repliesSnap.size > 0) {
+            await batchDeleteDocs(repliesSnap.docs.map(d => d.ref));
+          }
+        } catch (e) {}
+      }
+
+      /* 3c — Delete user's own comments */
+      if (myCommentsSnap.size > 0) {
+        await batchDeleteDocs(myCommentsSnap.docs.map(d => d.ref));
       }
     } catch (e) { console.warn('Comments delete:', e); }
 
-    /* STEP 4 — Delete Stories */
+    /* STEP 4 — Delete stories */
     progressText.textContent = 'Deleting your stories...';
     try {
       const storiesQ = query(collection(db, 'stories'), where('userId', '==', uid));
@@ -5522,7 +6996,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Stories delete:', e); }
 
-    /* STEP 5 — Delete Notifications */
+    /* STEP 5 — Delete notifications */
     progressText.textContent = 'Deleting notifications...';
     try {
       const notifQ = query(collection(db, 'notifications'), where('userId', '==', uid));
@@ -5532,11 +7006,29 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Notifications delete:', e); }
 
-    /* STEP 6 — Leave all Groups */
+    /* 🔧 NEW STEP 5.5 — Delete user's messages inside groups */
+    progressText.textContent = 'Deleting your group messages...';
+    try {
+      const myGroupsQ = query(collection(db, 'groups'), where('members', 'array-contains', uid));
+      const myGroupsSnap = await getDocs(myGroupsQ);
+
+      for (const gDoc of myGroupsSnap.docs) {
+        try {
+          const msgsSnap = await getDocs(collection(db, 'groups', gDoc.id, 'messages'));
+          const myMsgs = msgsSnap.docs.filter(d => d.data().from === uid);
+          if (myMsgs.length > 0) {
+            await batchDeleteDocs(myMsgs.map(d => d.ref));
+          }
+        } catch (e) {}
+      }
+    } catch (e) { console.warn('Group messages delete:', e); }
+
+    /* STEP 6 — Leave groups */
     progressText.textContent = 'Leaving groups...';
     try {
       const groupsQ = query(collection(db, 'groups'), where('members', 'array-contains', uid));
       const groupsSnap = await getDocs(groupsQ);
+
       for (const groupDoc of groupsSnap.docs) {
         await updateDoc(groupDoc.ref, {
           members: arrayRemove(uid),
@@ -5546,11 +7038,12 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Groups leave:', e); }
 
-    /* STEP 7 — Delete Chats */
+    /* STEP 7 — Delete DM chats + messages */
     progressText.textContent = 'Deleting messages...';
     try {
       const chatsQ = query(collection(db, 'chats'), where('members', 'array-contains', uid));
       const chatsSnap = await getDocs(chatsQ);
+
       for (const chatDoc of chatsSnap.docs) {
         try {
           const msgsSnap = await getDocs(collection(db, 'chats', chatDoc.id, 'messages'));
@@ -5562,31 +7055,34 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Chats delete:', e); }
 
-    /* STEP 8 — Remove from Followers/Following */
+    /* STEP 8 — Remove from followers/following of others */
     progressText.textContent = 'Updating followers...';
     try {
       const usersSnap = await getDocs(collection(db, 'users'));
       const updates = [];
+
       for (const userDoc of usersSnap.docs) {
         if (userDoc.id === uid) continue;
+
         const userData = userDoc.data();
         const updatesNeeded = {};
-        
+
         if ((userData.followers || []).includes(uid)) {
           updatesNeeded.followers = arrayRemove(uid);
         }
         if ((userData.following || []).includes(uid)) {
           updatesNeeded.following = arrayRemove(uid);
         }
-        
+
         if (Object.keys(updatesNeeded).length > 0) {
           updates.push(updateDoc(userDoc.ref, updatesNeeded).catch(() => {}));
         }
       }
+
       if (updates.length > 0) await Promise.all(updates);
     } catch (e) { console.warn('Followers update:', e); }
 
-    /* STEP 9 — Delete User Profile */
+    /* STEP 9 — Delete user profile */
     progressText.textContent = 'Deleting profile...';
     try {
       await deleteDoc(doc(db, 'users', uid));
@@ -5594,11 +7090,11 @@ async function deleteUserAccount(password) {
       console.warn('Profile delete:', e);
     }
 
-    /* STEP 10 — Delete Firebase Auth User */
+    /* STEP 10 — Delete Firebase Auth user */
     progressText.textContent = 'Finalizing...';
     await currentUser.delete();
 
-    /* STEP 11 — Cleanup & Success */
+    /* STEP 11 — Cleanup */
     progressText.textContent = '✅ Account deleted successfully!';
 
     setTimeout(() => {
@@ -5606,7 +7102,7 @@ async function deleteUserAccount(password) {
       stopShortsObserver();
       stopChatListWatcher();
       if (chatMessagesUnsub) clearInterval(chatMessagesUnsub);
-      
+
       currentUser = null;
       currentProfile = null;
       viewedPostsSession.clear();
@@ -5621,10 +7117,9 @@ async function deleteUserAccount(password) {
         showAuth();
       }, 800);
     }, 1200);
-
   } catch (err) {
     console.error('Delete account failed:', err);
-    
+
     if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
       throw new Error('Incorrect password. Please try again.');
     } else if (err.code === 'auth/requires-recent-login') {
@@ -5662,8 +7157,12 @@ const DEFAULT_SETTINGS = {
 };
 
 function getSettings() {
-  try { const saved = JSON.parse(localStorage.getItem('reelhubSettings') || '{}'); return { ...DEFAULT_SETTINGS, ...saved }; }
-  catch (e) { return { ...DEFAULT_SETTINGS }; }
+  try {
+    const saved = JSON.parse(localStorage.getItem('reelhubSettings') || '{}');
+    return { ...DEFAULT_SETTINGS, ...saved };
+  } catch (e) {
+    return { ...DEFAULT_SETTINGS };
+  }
 }
 
 function saveSetting(key, value) {
@@ -5673,19 +7172,64 @@ function saveSetting(key, value) {
   applySetting(key, value);
 }
 
+/* 🔧 FIXED: Now handles videoQuality, dataSaver, compactMode */
 function applySetting(key, value) {
   switch (key) {
-    case 'darkMode': document.body.classList.toggle('light-mode', !value); break;
+    case 'darkMode':
+      document.body.classList.toggle('light-mode', !value);
+      break;
+
     case 'pushNotif': {
       const subIds = ['settingNotifLikes', 'settingNotifComments', 'settingNotifFollows', 'settingNotifMessages'];
-      subIds.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = !value; });
+      subIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !value;
+      });
       break;
     }
-    case 'compactMode': document.body.classList.toggle('compact-mode', value); break;
-    case 'fontSize': applyFontSize(value); break;
+
+    case 'compactMode':
+      document.body.classList.toggle('compact-mode', value);
+      break;
+
+    case 'fontSize':
+      applyFontSize(value);
+      break;
+
     case 'privateAccount': {
       const d = document.getElementById('privateAccountDesc');
-      if (d) d.textContent = value ? 'Private — Sirf followers dekh sakte hain' : 'Public — Sab dekh sakte hain';
+      if (d) {
+        d.textContent = value
+          ? 'Private — Sirf followers dekh sakte hain'
+          : 'Public — Sab dekh sakte hain';
+      }
+      break;
+    }
+
+    /* 🔧 NEW: dataSaver */
+    case 'dataSaver': {
+      document.body.classList.toggle('data-saver', value);
+
+      if (value) {
+        /* Force disable autoplay when saver is on */
+        const s = getSettings();
+        if (s.autoPlay) {
+          saveSetting('autoPlay', false);
+          const el = document.getElementById('settingAutoPlay');
+          if (el) el.checked = false;
+        }
+      }
+      break;
+    }
+
+    /* 🔧 NEW: videoQuality */
+    case 'videoQuality': {
+      document.querySelectorAll('video').forEach(v => {
+        if (value === 'low') v.setAttribute('data-quality', '360');
+        else if (value === 'medium') v.setAttribute('data-quality', '720');
+        else if (value === 'high') v.setAttribute('data-quality', '1080');
+        else v.removeAttribute('data-quality');
+      });
       break;
     }
   }
@@ -5700,6 +7244,7 @@ function applyFontSize(size) {
 
 function loadSettingsToUI() {
   const s = getSettings();
+
   const checkboxes = {
     settingDarkMode: s.darkMode, settingAutoPlay: s.autoPlay, settingDataSaver: s.dataSaver,
     settingPushNotif: s.pushNotif, settingNotifLikes: s.notifLikes, settingNotifComments: s.notifComments,
@@ -5711,19 +7256,34 @@ function loadSettingsToUI() {
     settingShowViews: s.showViews, settingInfiniteScroll: s.infiniteScroll,
     settingDoubleTapLike: s.doubleTapLike, settingConfirmDelete: s.confirmDelete, settingCompactMode: s.compactMode
   };
-  Object.keys(checkboxes).forEach(id => { const el = document.getElementById(id); if (el) el.checked = checkboxes[id]; });
+
+  Object.keys(checkboxes).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.checked = checkboxes[id];
+  });
 
   const selects = {
     settingVideoQuality: s.videoQuality, settingLanguage: s.language, settingFontSize: s.fontSize,
     settingVideoPreload: s.videoPreload, settingFeedOrder: s.feedOrder
   };
-  Object.keys(selects).forEach(id => { const el = document.getElementById(id); if (el) el.value = selects[id]; });
+
+  Object.keys(selects).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = selects[id];
+  });
 
   const d = document.getElementById('privateAccountDesc');
-  if (d) d.textContent = s.privateAccount ? 'Private — Sirf followers dekh sakte hain' : 'Public — Sab dekh sakte hain';
+  if (d) {
+    d.textContent = s.privateAccount
+      ? 'Private — Sirf followers dekh sakte hain'
+      : 'Public — Sab dekh sakte hain';
+  }
 
   const subIds = ['settingNotifLikes', 'settingNotifComments', 'settingNotifFollows', 'settingNotifMessages'];
-  subIds.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = !s.pushNotif; });
+  subIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !s.pushNotif;
+  });
 
   updateBlockedUsersCount();
 }
@@ -5735,10 +7295,19 @@ function openSettingsModal() {
 
 function initSettingsListeners() {
   if (settingsBtn) {
-    settingsBtn.addEventListener('click', () => { setActiveNav(null); openSettingsModal(); });
+    settingsBtn.addEventListener('click', () => {
+      setActiveNav(null);
+      openSettingsModal();
+    });
   }
-  document.getElementById('closeSettings')?.addEventListener('click', () => document.getElementById('settingsModal').classList.remove('show'));
-  document.getElementById('settingsModal')?.addEventListener('click', (e) => { if (e.target.id === 'settingsModal') e.target.classList.remove('show'); });
+
+  document.getElementById('closeSettings')?.addEventListener('click', () =>
+    document.getElementById('settingsModal').classList.remove('show')
+  );
+
+  document.getElementById('settingsModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'settingsModal') e.target.classList.remove('show');
+  });
 
   function wireToggle(id, key, onMsg, offMsg) {
     const el = document.getElementById(id);
@@ -5748,10 +7317,14 @@ function initSettingsListeners() {
       if (onMsg || offMsg) showToast(e.target.checked ? onMsg : offMsg);
     });
   }
+
   function wireSelect(id, key, prefix) {
     const el = document.getElementById(id);
     if (!el) return;
-    el.addEventListener('change', (e) => { saveSetting(key, e.target.value); showToast(prefix + e.target.value); });
+    el.addEventListener('change', (e) => {
+      saveSetting(key, e.target.value);
+      showToast(prefix + e.target.value);
+    });
   }
 
   wireToggle('settingDarkMode', 'darkMode', '🌙 Dark ON', '☀️ Light ON');
@@ -5769,10 +7342,13 @@ function initSettingsListeners() {
     const isPrivate = e.target.checked;
     saveSetting('privateAccount', isPrivate);
     showToast(isPrivate ? '🔐 Private ON' : '🌐 Public ON');
+
     try {
       await updateDoc(doc(db, 'users', currentUser.uid), { isPrivate: isPrivate });
       if (currentProfile) currentProfile.isPrivate = isPrivate;
-    } catch (err) { showToast('❌ Save failed'); }
+    } catch (err) {
+      showToast('❌ Save failed');
+    }
   });
 
   wireToggle('settingReadReceipts', 'readReceipts', '✓✓ ON', '✓✓ OFF');
@@ -5794,24 +7370,23 @@ function initSettingsListeners() {
   wireToggle('settingDoubleTapLike', 'doubleTapLike', '👆 ON', '👆 OFF');
   wireToggle('settingConfirmDelete', 'confirmDelete', '🗑️ ON', '🗑️ OFF');
   wireToggle('settingCompactMode', 'compactMode', '📐 ON', '📐 OFF');
-  document.getElementById('settingAboutBtn')?.addEventListener('click', () => showToast('📱 ReelHub v1.0.0'));
 
-  // ✅ Privacy Policy Link
+  document.getElementById('settingAboutBtn')?.addEventListener('click', () =>
+    showToast('📱 ReelHub v1.0.0')
+  );
+
   document.getElementById('settingPrivacyBtn')?.addEventListener('click', () => {
     window.open('privacy.html', '_blank');
   });
 
-  // ✅ Terms of Service Link
   document.getElementById('settingTermsBtn')?.addEventListener('click', () => {
     window.open('terms.html', '_blank');
   });
 
-  // ✅ Delete Account
   document.getElementById('deleteAccountBtn')?.addEventListener('click', () => {
     openDeleteAccountModal();
   });
 
-  // Blocked Users
   document.getElementById('settingBlockedUsersBtn')?.addEventListener('click', () => {
     document.getElementById('settingsModal')?.classList.remove('show');
     openBlockedUsersModal();
@@ -5826,25 +7401,24 @@ initSettingsListeners();
   applySetting('fontSize', s.fontSize);
   applySetting('compactMode', s.compactMode);
   applySetting('privateAccount', s.privateAccount);
+  applySetting('dataSaver', s.dataSaver);
+  applySetting('videoQuality', s.videoQuality);
 })();
 
-console.log('✅ app.js loaded — FINAL VERSION with Delete Account + Congrats Animation (4 Parts)');
 /* ============================================================
-   DELETE ACCOUNT — Direct Handler
+   DELETE ACCOUNT — Global Handler
    ============================================================ */
 window.handleDeleteClick = function(event) {
   if (event) {
     event.preventDefault();
     event.stopPropagation();
   }
-  
-  console.log('🔴 Delete button clicked');
-  
+
   if (typeof openDeleteAccountModal === 'function') {
     openDeleteAccountModal();
   } else {
-    alert('❌ openDeleteAccountModal function not found in app.js');
+    console.error('openDeleteAccountModal function not found');
   }
 };
 
-console.log('✅ Delete handler ready');
+console.log('✅ app.js loaded — FULLY FIXED VERSION (4 Parts)');
