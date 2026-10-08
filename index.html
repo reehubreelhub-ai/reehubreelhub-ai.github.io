@@ -10,7 +10,7 @@
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='50' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='central'>R</text></svg>">
   
-  <!-- Preconnect for speed -->
+  <!-- Preconnect -->
   <link rel="preconnect" href="https://www.gstatic.com">
   <link rel="preconnect" href="https://firestore.googleapis.com">
   <link rel="preconnect" href="https://identitytoolkit.googleapis.com">
@@ -104,7 +104,6 @@
   <!-- ================= APP SCREEN ================= -->
   <div id="app">
 
-    <!-- HEADER -->
     <header class="header">
       <div class="logo">ReelHub</div>
       <div class="header-actions">
@@ -130,10 +129,8 @@
       </div>
     </header>
 
-    <!-- CONTENT -->
     <main class="content" id="content"></main>
 
-    <!-- BOTTOM NAV -->
     <div class="bottom-nav-wrap">
       <div class="bottom-nav">
         <button class="nav-item active" data-page="home">
@@ -465,7 +462,7 @@
     </div>
   </div>
 
-  <!-- ================= USER LIST MODAL (Followers/Following) ================= -->
+  <!-- ================= USER LIST MODAL ================= -->
   <div class="modal-overlay" id="listModal">
     <div class="modal" style="max-height:70vh;">
       <div class="modal-header">
@@ -485,7 +482,7 @@
       </div>
       <div class="settings-content">
 
-        <!-- ============ APPEARANCE ============ -->
+        <!-- APPEARANCE -->
         <div class="settings-section">
           <div class="settings-section-title">Appearance</div>
           
@@ -523,7 +520,7 @@
           </div>
         </div>
 
-        <!-- ============ PLAYBACK ============ -->
+        <!-- PLAYBACK -->
         <div class="settings-section">
           <div class="settings-section-title">Playback</div>
           
@@ -584,7 +581,7 @@
           </div>
         </div>
 
-        <!-- ============ NOTIFICATIONS ============ -->
+        <!-- NOTIFICATIONS -->
         <div class="settings-section">
           <div class="settings-section-title">Notifications</div>
           
@@ -640,7 +637,7 @@
           </div>
         </div>
 
-        <!-- ============ PRIVACY ============ -->
+        <!-- PRIVACY -->
         <div class="settings-section">
           <div class="settings-section-title">Privacy & Safety</div>
 
@@ -715,7 +712,7 @@
           </div>
         </div>
 
-        <!-- ============ CONTENT ============ -->
+        <!-- CONTENT -->
         <div class="settings-section">
           <div class="settings-section-title">Content</div>
 
@@ -803,7 +800,7 @@
           </div>
         </div>
 
-        <!-- ============ DATA & STORAGE ============ -->
+        <!-- DATA & STORAGE -->
         <div class="settings-section">
           <div class="settings-section-title">Data & Storage</div>
 
@@ -840,12 +837,12 @@
           </div>
         </div>
 
-        <!-- ============ LINKS & INFO ============ -->
+        <!-- ABOUT & LEGAL -->
         <div class="settings-section">
           <div class="settings-section-title">About & Legal</div>
 
-          <!-- ✅ PRIVACY POLICY LINK -->
-          <div class="settings-item" id="settingPrivacyBtn" style="cursor:pointer;">
+          <!-- ✅ PRIVACY POLICY — Direct onclick -->
+          <div class="settings-item" id="settingPrivacyBtn" style="cursor:pointer;" onclick="window.open('privacy.html','_blank')">
             <div class="settings-item-info">
               <div class="settings-item-label">🔒 Privacy Policy</div>
               <div class="settings-item-desc">How we handle your data</div>
@@ -855,8 +852,8 @@
             </svg>
           </div>
 
-          <!-- ✅ TERMS OF SERVICE LINK -->
-          <div class="settings-item" id="settingTermsBtn" style="cursor:pointer;">
+          <!-- ✅ TERMS OF SERVICE — Direct onclick -->
+          <div class="settings-item" id="settingTermsBtn" style="cursor:pointer;" onclick="window.open('terms.html','_blank')">
             <div class="settings-item-info">
               <div class="settings-item-label">📜 Terms of Service</div>
               <div class="settings-item-desc">Rules for using ReelHub</div>
@@ -866,8 +863,8 @@
             </svg>
           </div>
 
-          <!-- ✅ ABOUT -->
-          <div class="settings-item" id="settingAboutBtn" style="cursor:pointer;">
+          <!-- ABOUT -->
+          <div class="settings-item" id="settingAboutBtn" style="cursor:pointer;" onclick="alert('📱 ReelHub v1.0.0')">
             <div class="settings-item-info">
               <div class="settings-item-label">ℹ️ About ReelHub</div>
               <div class="settings-item-desc">Version 1.0.0</div>
@@ -878,7 +875,7 @@
           </div>
         </div>
 
-        <!-- ============ DANGER ZONE ============ -->
+        <!-- DANGER ZONE -->
         <div class="settings-section">
           <div class="settings-section-title" style="color:#ff4d4d;border-bottom-color:rgba(255,77,77,0.2);">⚠️ Danger Zone</div>
 
@@ -889,7 +886,8 @@
             </div>
           </div>
 
-          <button class="delete-account-btn" id="deleteAccountBtn" style="margin-top:8px;">
+          <!-- ✅ DELETE BUTTON — Direct onclick -->
+          <button class="delete-account-btn" id="deleteAccountBtn" onclick="window.handleDeleteClick ? window.handleDeleteClick(event) : alert('Please refresh the page')" style="margin-top:8px;">
             <svg viewBox="0 0 24 24">
               <polyline points="3 6 5 6 21 6"/>
               <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -900,7 +898,7 @@
           </button>
         </div>
 
-        <!-- ============ LOGOUT ============ -->
+        <!-- LOGOUT -->
         <div class="settings-section" style="margin-top:24px;">
           <button id="logoutBtn" style="width:100%;height:48px;background:#1e1e28;border:1px solid #333;border-radius:12px;color:#ff4d4d;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">
             Log Out
@@ -911,7 +909,6 @@
     </div>
   </div>
 
-  <!-- ================= SCRIPTS ================= -->
   <script type="module" src="app.js"></script>
 
 </body>
