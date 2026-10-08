@@ -110,9 +110,7 @@
       white-space: nowrap;
     }
     
-    .lang-btn:hover {
-      color: #ccc;
-    }
+    .lang-btn:hover { color: #ccc; }
     
     .lang-btn.active {
       background: linear-gradient(90deg, #ff2e63, #ff8a00);
@@ -191,14 +189,9 @@
       line-height: 1.6;
     }
     
-    li::marker {
-      color: #ff2e63;
-    }
+    li::marker { color: #ff2e63; }
     
-    strong {
-      color: #fff;
-      font-weight: 700;
-    }
+    strong { color: #fff; font-weight: 700; }
     
     a {
       color: #4ea8ff;
@@ -248,9 +241,7 @@
       padding-left: 20px;
     }
     
-    .box ul li:last-child {
-      margin-bottom: 0;
-    }
+    .box ul li:last-child { margin-bottom: 0; }
     
     /* ================= INFO LIST ================= */
     .info-list {
@@ -390,9 +381,7 @@
       margin: 0;
     }
     
-    .quick-nav li {
-      margin: 0;
-    }
+    .quick-nav li { margin: 0; }
     
     .quick-nav a {
       font-size: 13px;
@@ -447,23 +436,9 @@
       margin: 0 8px;
     }
     
-    /* ================= LANGUAGE CONTENT ================= */
-    [data-lang] {
-      display: none;
-    }
-    
-    [data-lang].active {
-      display: block;
-    }
-    
-    /* Inline language (for small text) */
-    span[data-lang] {
-      display: none;
-    }
-    
-    span[data-lang].active {
-      display: inline;
-    }
+    /* ================= LANGUAGE CONTENT — FIXED ✅ ================= */
+    [data-content-lang] { display: none; }
+    [data-content-lang].active { display: block; }
     
     /* ================= MOBILE ================= */
     @media (max-width: 480px) {
@@ -512,7 +487,7 @@
     <!-- ============================================================
          ENGLISH VERSION
          ============================================================ -->
-    <div data-lang="en" class="active">
+    <div data-content-lang="en" class="active">
 
       <h1>Privacy Policy</h1>
       <div class="updated">
@@ -824,7 +799,7 @@
     <!-- ============================================================
          HINDI VERSION
          ============================================================ -->
-    <div data-lang="hi">
+    <div data-content-lang="hi">
 
       <h1>गोपनीयता नीति</h1>
       <div class="updated">
@@ -1152,23 +1127,20 @@
   <!-- ================= SCRIPTS ================= -->
   <script>
     // ============================================================
-    // LANGUAGE SYSTEM
+    // LANGUAGE SYSTEM — FIXED ✅
     // ============================================================
     function setLanguage(lang) {
-      // Save preference
       localStorage.setItem('reelhubPrivacyLang', lang);
-      
-      // Update HTML lang attribute
       document.documentElement.lang = lang;
       
-      // Update all lang buttons
+      // Update buttons (data-lang attribute)
       document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === lang);
       });
       
-      // Show/hide content based on lang
-      document.querySelectorAll('[data-lang]').forEach(el => {
-        el.classList.toggle('active', el.dataset.lang === lang);
+      // Update content (data-content-lang attribute)
+      document.querySelectorAll('[data-content-lang]').forEach(el => {
+        el.classList.toggle('active', el.dataset.contentLang === lang);
       });
       
       // Update page title
@@ -1205,7 +1177,7 @@
     if (elHi) elHi.textContent = monthsHi[now.getMonth()] + ' ' + now.getFullYear();
 
     // ============================================================
-    // SMOOTH SCROLL FOR QUICK NAV
+    // SMOOTH SCROLL
     // ============================================================
     document.querySelectorAll('.quick-nav a, a[href^="#"]').forEach(link => {
       link.addEventListener('click', (e) => {
@@ -1224,7 +1196,7 @@
     });
 
     console.log('%c🔒 ReelHub Privacy Policy (Bilingual)', 'color: #ff2e63; font-size: 16px; font-weight: bold;');
-    console.log('%cLanguages: English + हिंदी', 'color: #4ea8ff; font-size: 13px;');
+    console.log('%c✅ Language toggle FIXED', 'color: #4ade80; font-size: 13px;');
   </script>
 
 </body>
