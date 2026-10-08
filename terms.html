@@ -441,12 +441,9 @@
       margin: 0 8px;
     }
     
-    /* ================= LANGUAGE CONTENT ================= */
-    [data-lang] { display: none; }
-    [data-lang].active { display: block; }
-    
-    span[data-lang] { display: none; }
-    span[data-lang].active { display: inline; }
+    /* ================= LANGUAGE CONTENT — FIXED ✅ ================= */
+    [data-content-lang] { display: none; }
+    [data-content-lang].active { display: block; }
     
     /* ================= MOBILE ================= */
     @media (max-width: 480px) {
@@ -495,7 +492,7 @@
     <!-- ============================================================
          ENGLISH VERSION
          ============================================================ -->
-    <div data-lang="en" class="active">
+    <div data-content-lang="en" class="active">
 
       <h1>Terms of Service</h1>
       <div class="updated">
@@ -754,7 +751,7 @@
     <!-- ============================================================
          HINDI VERSION
          ============================================================ -->
-    <div data-lang="hi">
+    <div data-content-lang="hi">
 
       <h1>सेवा की शर्तें</h1>
       <div class="updated">
@@ -1029,18 +1026,20 @@
   <!-- ================= SCRIPTS ================= -->
   <script>
     // ============================================================
-    // LANGUAGE SYSTEM
+    // LANGUAGE SYSTEM — FIXED ✅
     // ============================================================
     function setLanguage(lang) {
       localStorage.setItem('reelhubTermsLang', lang);
       document.documentElement.lang = lang;
       
+      // Update buttons (data-lang attribute)
       document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === lang);
       });
       
-      document.querySelectorAll('[data-lang]').forEach(el => {
-        el.classList.toggle('active', el.dataset.lang === lang);
+      // Update content (data-content-lang attribute)
+      document.querySelectorAll('[data-content-lang]').forEach(el => {
+        el.classList.toggle('active', el.dataset.contentLang === lang);
       });
       
       document.title = lang === 'hi' 
@@ -1094,7 +1093,7 @@
     });
 
     console.log('%c📜 ReelHub Terms of Service (Bilingual)', 'color: #ff2e63; font-size: 16px; font-weight: bold;');
-    console.log('%cLanguages: English + हिंदी', 'color: #4ea8ff; font-size: 13px;');
+    console.log('%c✅ Language toggle FIXED', 'color: #4ade80; font-size: 13px;');
   </script>
 
 </body>
