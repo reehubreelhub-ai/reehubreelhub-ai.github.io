@@ -31,7 +31,8 @@ import {
   arrayUnion,
   arrayRemove,
   limit,
-  writeBatch
+  writeBatch,
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 /* ============================================================
@@ -155,33 +156,33 @@ const recordingIndicator = $id('recordingIndicator');
 const recordingTimer    = $id('recordingTimer');
 const cancelRecordingBtn = $id('cancelRecordingBtn');
 
-const storyUploadModal     = $id('storyUploadModal');
-const storyFileInput       = $id('storyFileInput');
-const storyPickerWrap      = $id('storyPickerWrap');
-const storyPickerTitle     = $id('storyPickerTitle');
-const storyPickerSubtitle  = $id('storyPickerSubtitle');
-const storyPickerLabel     = $id('storyPickerLabel');
-const storyPreviewWrap     = $id('storyPreviewWrap');
-const storyPreviewImg      = $id('storyPreviewImg');
+const storyUploadModal      = $id('storyUploadModal');
+const storyFileInput        = $id('storyFileInput');
+const storyPickerWrap       = $id('storyPickerWrap');
+const storyPickerTitle      = $id('storyPickerTitle');
+const storyPickerSubtitle   = $id('storyPickerSubtitle');
+const storyPickerLabel      = $id('storyPickerLabel');
+const storyPreviewWrap      = $id('storyPreviewWrap');
+const storyPreviewImg       = $id('storyPreviewImg');
 const storyVideoPreviewWrap = $id('storyVideoPreviewWrap');
-const storyPreviewVideo    = $id('storyPreviewVideo');
-const storyPreviewInfo     = $id('storyPreviewInfo');
-const storySubmitBtn       = $id('storySubmitBtn');
-const storyUploadMsg       = $id('storyUploadMsg');
-const storyProgressWrap    = $id('storyProgressWrap');
-const storyProgressBar     = $id('storyProgressBar');
-const storyProgressText    = $id('storyProgressText');
+const storyPreviewVideo     = $id('storyPreviewVideo');
+const storyPreviewInfo      = $id('storyPreviewInfo');
+const storySubmitBtn        = $id('storySubmitBtn');
+const storyUploadMsg        = $id('storyUploadMsg');
+const storyProgressWrap     = $id('storyProgressWrap');
+const storyProgressBar      = $id('storyProgressBar');
+const storyProgressText     = $id('storyProgressText');
 
-const storyViewer      = $id('storyViewer');
+const storyViewer       = $id('storyViewer');
 const storyProgressBars = $id('storyProgressBars');
-const storyUserAvatar  = $id('storyUserAvatar');
-const storyUserName    = $id('storyUserName');
-const storyTime        = $id('storyTime');
-const storyDeleteBtn   = $id('storyDeleteBtn');
-const storyCloseBtn    = $id('storyCloseBtn');
-const storyMedia       = $id('storyMedia');
-const storyTapLeft     = $id('storyTapLeft');
-const storyTapRight    = $id('storyTapRight');
+const storyUserAvatar   = $id('storyUserAvatar');
+const storyUserName     = $id('storyUserName');
+const storyTime         = $id('storyTime');
+const storyDeleteBtn    = $id('storyDeleteBtn');
+const storyCloseBtn     = $id('storyCloseBtn');
+const storyMedia        = $id('storyMedia');
+const storyTapLeft      = $id('storyTapLeft');
+const storyTapRight     = $id('storyTapRight');
 
 /* ============================================================
    STATE
@@ -205,7 +206,7 @@ let allCommentsForPost = [];
 
 let activeChatId = null;
 let activeChatUser = null;
-let chatMessagesUnsub = null;
+let chatMessagesUnsub = null;   // ✅ Ab ye onSnapshot ka unsubscribe function hai (pehle interval tha)
 let chatListInterval = null;
 let pinnedMessage = null;
 
@@ -235,13 +236,40 @@ let currentStoryMediaEl = null;
 let viewedPostsSession = new Set();
 let shortsSoundEnabled = localStorage.getItem('shortsSound') === 'true';
 
-/* 🔧 FIX: Track whether auth action was performed by user (not by listener) */
+/* ✅ FIX: Auth action flag — listener double-fire rokta hai */
 let authActionInProgress = false;
+
+/* ✅ FIX: Loading timeout safety */
+const LOADING_TIMEOUT_MS = 10000;
+let loadingTimeoutId = null;
+
+/* ============================================================
+   🔧 LOADING SCREEN SAFETY
+   ============================================================ */
+function startLoadingTimeout() {
+  clearTimeout(loadingTimeoutId);
+  loadingTimeoutId = setTimeout(() => {
+    const ls = $id('loadingScreen');
+    if (ls && ls.style.display !== 'none') {
+      console.warn('⚠️ Loading timeout — showing auth');
+      ls.style.display = 'none';
+      const authEl = $id('auth');
+      if (authEl) {
+        authEl.classList.add('show');
+        authEl.style.display = 'block';
+      }
+    }
+  }, LOADING_TIMEOUT_MS);
+}
+
+if (loadingScreen) startLoadingTimeout();
 
 /* ============================================================
    SCREEN SWITCHING
    ============================================================ */
 function showAuth() {
+  clearTimeout(loadingTimeoutId);
+
   if (loadingScreen) loadingScreen.style.display = 'none';
   if (authScreen) {
     authScreen.classList.add('show');
@@ -251,18 +279,21 @@ function showAuth() {
     appScreen.classList.remove('show');
     appScreen.style.display = 'none';
   }
+
   stopNotifWatcher();
   stopShortsObserver();
   stopChatListWatcher();
 
-  // 🔧 FIX: Clear any open chat polling
+  /* ✅ FIX: onSnapshot listener band karo */
   if (chatMessagesUnsub) {
-    clearInterval(chatMessagesUnsub);
+    try { chatMessagesUnsub(); } catch (e) {}
     chatMessagesUnsub = null;
   }
 }
 
 function showApp() {
+  clearTimeout(loadingTimeoutId);
+
   if (loadingScreen) loadingScreen.style.display = 'none';
   if (authScreen) {
     authScreen.classList.remove('show');
@@ -272,6 +303,7 @@ function showApp() {
     appScreen.classList.add('show');
     appScreen.style.display = 'flex';
   }
+
   setActiveNav('home');
   renderPage('home');
   startChatListWatcher();
@@ -284,7 +316,7 @@ function setActiveNav(page) {
 }
 
 /* ============================================================
-   🔧 FIX: Notification permission (once per session)
+   🔧 NOTIFICATION PERMISSION
    ============================================================ */
 function requestNotificationPermission() {
   if (!('Notification' in window)) return;
@@ -294,13 +326,24 @@ function requestNotificationPermission() {
 }
 
 /* ============================================================
-   🔧 FIX: Page visibility — resume notification polling
+   🔧 VISIBILITY — polling resume
    ============================================================ */
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && currentUser) {
     checkUnreadNotifications();
     checkChatsUnread();
   }
+});
+
+/* ============================================================
+   🔧 GLOBAL ERROR CATCHER
+   ============================================================ */
+window.addEventListener('error', (e) => {
+  console.error('❌ Global error:', e.error || e.message);
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('❌ Unhandled rejection:', e.reason);
 });
 
 /* ============================================================
@@ -321,6 +364,8 @@ $id('goSignup')?.addEventListener('click', () => {
   if (signupForm) signupForm.style.display = 'block';
   if (loginMsg) loginMsg.textContent = '';
   if (signupMsg) signupMsg.textContent = '';
+  $id('goSignupSwitch') && ($id('goSignupSwitch').style.display = 'block');
+  $id('goSignupWrap') && ($id('goSignupWrap').style.display = 'none');
 });
 
 $id('goLogin')?.addEventListener('click', () => {
@@ -328,6 +373,8 @@ $id('goLogin')?.addEventListener('click', () => {
   if (loginForm) loginForm.style.display = 'block';
   if (loginMsg) loginMsg.textContent = '';
   if (signupMsg) signupMsg.textContent = '';
+  $id('goSignupSwitch') && ($id('goSignupSwitch').style.display = 'none');
+  $id('goSignupWrap') && ($id('goSignupWrap').style.display = 'block');
 });
 
 /* ============================================================
@@ -344,7 +391,7 @@ signupForm?.addEventListener('submit', async (e) => {
   signupMsg.className = 'error-msg';
   signupMsg.textContent = '';
 
-  // Validation
+  /* Validation */
   if (!name || !user || !email || !pass) {
     signupMsg.textContent = 'Please fill all fields.';
     return;
@@ -363,14 +410,14 @@ signupForm?.addEventListener('submit', async (e) => {
   }
 
   isSigningUp = true;
-  authActionInProgress = true;  // 🔧 FIX: prevent listener double-fire
+  authActionInProgress = true; // ✅ FIX
   signupBtn.disabled = true;
   signupBtn.textContent = 'Creating...';
 
   let createdAuthUser = null;
 
   try {
-    /* 🔧 FIX: Check username BEFORE creating auth user (cleaner rollback) */
+    /* ✅ FIX: Username check BEFORE auth user creation */
     const usersRef = collection(db, 'users');
     const uq = query(usersRef, where('user', '==', user));
     const userSnap = await getDocs(uq);
@@ -385,7 +432,7 @@ signupForm?.addEventListener('submit', async (e) => {
     const uid  = cred.user.uid;
     createdAuthUser = cred.user;
 
-    /* STEP 2 — Create Firestore profile */
+    /* STEP 2 — Firestore profile */
     await setDoc(doc(db, 'users', uid), {
       uid: uid,
       name: name,
@@ -404,14 +451,14 @@ signupForm?.addEventListener('submit', async (e) => {
       createdAt: serverTimestamp()
     });
 
-    /* 🔧 FIX: Send email verification */
+    /* ✅ FIX: Send email verification */
     try {
       await sendEmailVerification(cred.user);
     } catch (e) {
       console.warn('Verification email failed:', e);
     }
 
-    /* STEP 3 — Manual state set (listener skipped due to authActionInProgress) */
+    /* STEP 3 — Set state */
     currentUser = cred.user;
     await loadProfile(uid);
 
@@ -419,7 +466,6 @@ signupForm?.addEventListener('submit', async (e) => {
     signupMsg.textContent = 'Account created! Welcome 🎉';
     signupForm.reset();
 
-    /* 🔧 FIX: Clear flag BEFORE showApp so listener syncs correctly */
     authActionInProgress = false;
 
     setTimeout(() => {
@@ -442,7 +488,8 @@ signupForm?.addEventListener('submit', async (e) => {
 
     signupMsg.className = 'error-msg';
 
-    if (err.code === 'permission-denied' || (err.message && err.message.toLowerCase().includes('permission'))) {
+    if (err.code === 'permission-denied' ||
+        (err.message && err.message.toLowerCase().includes('permission'))) {
       signupMsg.textContent = '⚠️ Firestore rules block kar rahe hain.';
     } else if (err.code === 'auth/email-already-in-use') {
       signupMsg.textContent = 'Email already registered.';
@@ -481,7 +528,7 @@ loginForm?.addEventListener('submit', async (e) => {
   }
 
   isLoggingIn = true;
-  authActionInProgress = true;  // 🔧 FIX
+  authActionInProgress = true;
   loginBtn.disabled = true;
   loginBtn.textContent = 'Logging in...';
 
@@ -498,12 +545,10 @@ loginForm?.addEventListener('submit', async (e) => {
       currentUser = null;
       currentProfile = null;
       loginMsg.textContent = '🚫 Your account has been banned.';
-      return;  // 🔧 FIX: don't call showAuth() here — listener will
+      return;
     }
 
     loginMsg.textContent = '';
-
-    /* 🔧 FIX: Clear flag BEFORE showApp */
     authActionInProgress = false;
 
     showApp();
@@ -531,11 +576,9 @@ loginForm?.addEventListener('submit', async (e) => {
       loginMsg.textContent = err.message || 'Login failed.';
     }
 
-    /* 🔧 FIX: only showAuth if user is actually signed out */
     if (auth.currentUser) {
       try { await signOut(auth); } catch (e) {}
     }
-    // Listener will call showAuth() when it sees null user
 
   } finally {
     isLoggingIn = false;
@@ -611,19 +654,19 @@ sendResetBtn.addEventListener('click', async () => {
 $id('logoutBtn')?.addEventListener('click', async () => {
   if (!confirm('Log out of ReelHub?')) return;
 
-  /* 🔧 FIX: Full cleanup before signing out */
   stopNotifWatcher();
   stopShortsObserver();
   stopChatListWatcher();
 
+  /* ✅ FIX: onSnapshot cleanup */
   if (chatMessagesUnsub) {
-    clearInterval(chatMessagesUnsub);
+    try { chatMessagesUnsub(); } catch (e) {}
     chatMessagesUnsub = null;
   }
 
-  /* 🔧 FIX: Close any open modals */
-  closeChatWindow?.();
-  storyViewer && (storyViewer.style.display = 'none');
+  /* Close any open modals */
+  try { closeChatWindow?.(); } catch (e) {}
+  if (storyViewer) storyViewer.style.display = 'none';
   document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
 
   viewedPostsSession.clear();
@@ -642,8 +685,6 @@ $id('logoutBtn')?.addEventListener('click', async () => {
   loginForm?.reset();
   signupForm?.reset();
   $id('goLogin')?.click();
-
-  /* Listener will call showAuth() */
 });
 
 /* ============================================================
@@ -663,7 +704,7 @@ searchBtn?.addEventListener('click', () => {
    AUTH STATE LISTENER — FIXED
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
-  /* 🔧 FIX: skip if we're manually handling signup/login */
+  /* ✅ FIX: skip if manual login/signup in progress */
   if (authActionInProgress) return;
 
   if (user) {
@@ -680,7 +721,7 @@ onAuthStateChanged(auth, async (user) => {
       try { await signOut(auth); } catch (e) {}
       currentUser = null;
       currentProfile = null;
-      return;  // listener will fire again with null
+      return;
     }
 
     showApp();
@@ -688,7 +729,6 @@ onAuthStateChanged(auth, async (user) => {
     requestNotificationPermission();
 
   } else {
-    /* Signed out */
     currentUser = null;
     currentProfile = null;
     stopNotifWatcher();
@@ -696,7 +736,7 @@ onAuthStateChanged(auth, async (user) => {
     stopChatListWatcher();
 
     if (chatMessagesUnsub) {
-      clearInterval(chatMessagesUnsub);
+      try { chatMessagesUnsub(); } catch (e) {}
       chatMessagesUnsub = null;
     }
 
@@ -717,14 +757,12 @@ async function loadProfile(uid) {
     if (snap.exists()) {
       const data = snap.data();
 
-      /* Normalize arrays */
-      if (!Array.isArray(data.followers))   data.followers = [];
-      if (!Array.isArray(data.following))   data.following = [];
-      if (!Array.isArray(data.savedPosts))  data.savedPosts = [];
+      if (!Array.isArray(data.followers))    data.followers = [];
+      if (!Array.isArray(data.following))    data.following = [];
+      if (!Array.isArray(data.savedPosts))   data.savedPosts = [];
       if (!Array.isArray(data.blockedUsers)) data.blockedUsers = [];
 
-      /* Normalize booleans/numbers */
-      if (typeof data.videoCount !== 'number') data.videoCount = 0;
+      if (typeof data.videoCount !== 'number')  data.videoCount = 0;
       if (typeof data.isPrivate  !== 'boolean') data.isPrivate = false;
       if (typeof data.verified   !== 'boolean') data.verified = false;
       if (typeof data.banned     !== 'boolean') data.banned = false;
@@ -780,8 +818,8 @@ function renderPage(page) {
 }
 /* ============================================================
    ReelHub — app.js (PART 2/4) — FIXED VERSION
-   Helpers, Home Feed, Stories Bar, Double-Tap, Story Upload,
-   Verified Badge, Congratulations Animation
+   Helpers, Home Feed (YouTube + Cache), Stories Bar,
+   Double-Tap, Story Upload, Verified Badge, Congrats Animation
    ============================================================ */
 
 let feedAutoplayObserver = null;
@@ -817,8 +855,21 @@ function buildViewsHTML(viewsCount) {
   `;
 }
 
+/* ✅ FIX: Format duration helper (mm:ss or h:mm:ss) */
+function formatDuration(seconds) {
+  if (!seconds || seconds < 0) return '';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  if (m >= 60) {
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    return `${h}:${mm < 10 ? '0' : ''}${mm}:${s < 10 ? '0' : ''}${s}`;
+  }
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
 /* ============================================================
-   ✅ VERIFIED BADGE — Universal Helper
+   ✅ VERIFIED BADGE
    ============================================================ */
 function verifiedBadgeHTML(isVerified, size = 'normal') {
   if (!isVerified) return '';
@@ -928,13 +979,11 @@ async function trackPostView(postId) {
         await updateDoc(postRef, { views: currentViews + 1 });
       }
     }
-  } catch (e) {
-    // Silently ignore — view tracking should never break UX
-  }
+  } catch (e) {}
 }
 
 /* ============================================================
-   STORY VIEWERS LIST
+   STORY VIEWERS SHEET
    ============================================================ */
 async function showStoryViewers(story) {
   if (!story) return;
@@ -1001,7 +1050,6 @@ async function loadStoryViewersList(uids, containerId) {
 
 /* ============================================================
    ✅ DOUBLE TAP LIKE — FIXED
-   Passes event for accurate heart position + respects notif settings
    ============================================================ */
 function attachDoubleTapLike(element, post, onSingleTap) {
   if (!element || !post) return;
@@ -1011,7 +1059,7 @@ function attachDoubleTapLike(element, post, onSingleTap) {
   const TAP_DELAY = 300;
 
   element.addEventListener('click', (e) => {
-    if (e.target.closest('button, a, .post-menu-btn, .msg-dots-btn')) return;
+    if (e.target.closest('button, a, .post-menu-btn, .msg-dots-btn, .yt-menu-btn')) return;
 
     const s = typeof getSettings === 'function' ? getSettings() : { doubleTapLike: true };
     if (s.doubleTapLike === false) {
@@ -1024,7 +1072,6 @@ function attachDoubleTapLike(element, post, onSingleTap) {
     if (now - lastTap < TAP_DELAY) {
       clearTimeout(tapTimer);
       lastTap = 0;
-      /* 🔧 FIX: pass event for heart positioning */
       handleDoubleTapLikeUniversal(post, element, e);
     } else {
       lastTap = now;
@@ -1042,7 +1089,6 @@ async function handleDoubleTapLikeUniversal(post, cardEl, event) {
 
   const alreadyLiked = (post.likes || []).includes(currentUser.uid);
 
-  /* 🔧 FIX: pass event for heart position */
   showHeartAnimation(cardEl, event);
   if (navigator.vibrate) navigator.vibrate(40);
 
@@ -1065,7 +1111,7 @@ async function handleDoubleTapLikeUniversal(post, cardEl, event) {
     if (!post.likes) post.likes = [];
     if (!post.likes.includes(currentUser.uid)) post.likes.push(currentUser.uid);
 
-    /* 🔧 FIX: respect notification settings */
+    /* ✅ FIX: Respect notif settings */
     const s = typeof getSettings === 'function'
       ? getSettings()
       : { notifLikes: true, pushNotif: true };
@@ -1097,7 +1143,6 @@ async function handleDoubleTapLikeUniversal(post, cardEl, event) {
   }
 }
 
-/* 🔧 FIX: heart positioned at tap point when event provided */
 function showHeartAnimation(container, event) {
   if (!container) return;
 
@@ -1125,7 +1170,7 @@ function showHeartAnimation(container, event) {
 }
 
 /* ============================================================
-   🎉 CONGRATULATIONS ANIMATION — (unchanged, works well)
+   🎉 CONGRATULATIONS ANIMATION
    ============================================================ */
 function showCongratsAnimation(userName, userEmail) {
   document.querySelectorAll('.congrats-overlay').forEach(el => el.remove());
@@ -1221,9 +1266,6 @@ function showCongratsAnimation(userName, userEmail) {
   }
 }
 
-/* ============================================================
-   ADMIN PANEL REDIRECT POPUP — (unchanged)
-   ============================================================ */
 function showAdminPanelRedirect() {
   document.querySelectorAll('.admin-redirect-modal').forEach(el => el.remove());
 
@@ -1316,7 +1358,60 @@ function showAdminPanelRedirect() {
 }
 
 /* ============================================================
-   HOME FEED
+   ⚡ CACHE HELPERS — FIXED (Fast Load)
+   ============================================================ */
+function saveFeedCache(posts) {
+  try {
+    const minimal = posts.slice(0, 10).map(p => ({
+      id: p.id,
+      userId: p.userId,
+      userName: p.userName,
+      userHandle: p.userHandle,
+      userPhoto: p.userPhoto,
+      userVerified: p.userVerified,
+      type: p.type,
+      url: p.url,
+      thumbnail: p.thumbnail,
+      caption: p.caption,
+      duration: p.duration,
+      likes: p.likes || [],
+      commentsCount: p.commentsCount || 0,
+      views: p.views || 0,
+      createdAt: p.createdAt?.toDate?.()?.getTime?.() || Date.now()
+    }));
+    localStorage.setItem('reelhub_feed_cache', JSON.stringify(minimal));
+    localStorage.setItem('reelhub_feed_cache_time', Date.now().toString());
+  } catch (e) {
+    console.warn('Cache save failed:', e);
+  }
+}
+
+function loadFeedCache() {
+  try {
+    const cached = localStorage.getItem('reelhub_feed_cache');
+    const time = parseInt(localStorage.getItem('reelhub_feed_cache_time') || '0');
+
+    /* Cache 30 min tak valid */
+    if (Date.now() - time > 30 * 60 * 1000) {
+      localStorage.removeItem('reelhub_feed_cache');
+      return null;
+    }
+
+    if (!cached) return null;
+    const parsed = JSON.parse(cached);
+
+    /* Convert createdAt back to timestamp-like object */
+    return parsed.map(p => ({
+      ...p,
+      createdAt: { toDate: () => new Date(p.createdAt) }
+    }));
+  } catch (e) {
+    return null;
+  }
+}
+
+/* ============================================================
+   HOME FEED — FIXED (YouTube + Cache + Skeleton)
    ============================================================ */
 async function renderHomeFeed() {
   content.innerHTML = `
@@ -1334,9 +1429,7 @@ async function renderHomeFeed() {
           <div class="story-name you">Your story</div>
         </div>
       </div>
-      <div id="feedContainer">
-        <div class="feed-empty"><div class="page-title">Loading feed...</div></div>
-      </div>
+      <div id="feedContainer"></div>
     </div>
   `;
 
@@ -1351,26 +1444,59 @@ async function loadHomeFeedPosts() {
   if (!container) return;
 
   if (!currentUser) {
-    container.innerHTML = `<div class="feed-empty"><h3>Please log in</h3></div>`;
+    container.innerHTML = '';
     return;
   }
 
+  /* ⚡ STEP 1: Instant cache from localStorage */
+  const cached = loadFeedCache();
+  if (cached && cached.length > 0) {
+    container.innerHTML = '';
+    cached.forEach(post => container.appendChild(makeFeedPost(post)));
+  } else {
+    /* Skeleton loader (no "Loading" text) */
+    container.innerHTML = `
+      <div class="yt-skeleton">
+        <div class="yt-skeleton-thumb"></div>
+        <div class="yt-skeleton-info">
+          <div class="yt-skeleton-avatar"></div>
+          <div class="yt-skeleton-lines">
+            <div class="yt-skeleton-line"></div>
+            <div class="yt-skeleton-line short"></div>
+          </div>
+        </div>
+      </div>
+      <div class="yt-skeleton">
+        <div class="yt-skeleton-thumb"></div>
+        <div class="yt-skeleton-info">
+          <div class="yt-skeleton-avatar"></div>
+          <div class="yt-skeleton-lines">
+            <div class="yt-skeleton-line"></div>
+            <div class="yt-skeleton-line short"></div>
+          </div>
+        </div>
+      </div>
+      <div class="yt-skeleton">
+        <div class="yt-skeleton-thumb"></div>
+        <div class="yt-skeleton-info">
+          <div class="yt-skeleton-avatar"></div>
+          <div class="yt-skeleton-lines">
+            <div class="yt-skeleton-line"></div>
+            <div class="yt-skeleton-line short"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /* ⚡ STEP 2: Background fresh fetch */
   try {
     const postsRef = collection(db, 'posts');
-    const q = query(postsRef, limit(15));
+    const q = query(postsRef, limit(8));
     const snap = await getDocs(q);
 
     if (snap.empty) {
-      container.innerHTML = `
-        <div class="feed-empty">
-          <svg viewBox="0 0 24 24">
-            <rect x="3" y="3" width="18" height="18" rx="4"/>
-            <circle cx="9" cy="9" r="2"/>
-            <path d="M21 15l-5-5L5 21"/>
-          </svg>
-          <h3>No posts yet</h3>
-          <p>Be the first to upload a video!</p>
-        </div>`;
+      if (!cached || cached.length === 0) container.innerHTML = '';
       return;
     }
 
@@ -1378,37 +1504,6 @@ async function loadHomeFeedPosts() {
 
     const blocked = currentProfile?.blockedUsers || [];
     posts = posts.filter(p => !blocked.includes(p.userId));
-
-    const myFollowing = currentProfile?.following || [];
-
-    /* 🔧 FIX: Efficient batch fetch of private status */
-    const uniqueUserIds = [...new Set(posts.map(p => p.userId))]
-      .filter(id => id && id !== currentUser.uid);
-
-    const privateUsers = new Set();
-
-    /* Firestore `in` allows max 30 per query — use 30-chunk */
-    for (let i = 0; i < uniqueUserIds.length; i += 30) {
-      const batch = uniqueUserIds.slice(i, i + 30);
-      if (batch.length === 0) continue;
-      try {
-        const usersQ = query(collection(db, 'users'), where('uid', 'in', batch));
-        const usersSnap = await getDocs(usersQ);
-        usersSnap.forEach(d => {
-          const u = d.data();
-          if (u.isPrivate) privateUsers.add(u.uid);
-        });
-      } catch (e) {
-        console.warn('Batch user fetch failed:', e);
-      }
-    }
-
-    posts = posts.filter(p => {
-      if (p.userId === currentUser.uid) return true;
-      if (myFollowing.includes(p.userId)) return true;
-      if (privateUsers.has(p.userId)) return false;
-      return true;
-    });
 
     /* Sort */
     const settings = typeof getSettings === 'function' ? getSettings() : { feedOrder: 'newest' };
@@ -1418,14 +1513,6 @@ async function loadHomeFeedPosts() {
         ((b.likes?.length || 0) + (b.views || 0)) -
         ((a.likes?.length || 0) + (a.views || 0))
       );
-    } else if (settings.feedOrder === 'following') {
-      posts = posts.filter(p =>
-        myFollowing.includes(p.userId) || p.userId === currentUser.uid
-      );
-      posts.sort((a, b) =>
-        (b.createdAt?.toDate?.()?.getTime() || 0) -
-        (a.createdAt?.toDate?.()?.getTime() || 0)
-      );
     } else {
       posts.sort((a, b) =>
         (b.createdAt?.toDate?.()?.getTime() || 0) -
@@ -1433,167 +1520,81 @@ async function loadHomeFeedPosts() {
       );
     }
 
-    container.innerHTML = '';
-    posts.forEach(post => container.appendChild(makeFeedPost(post)));
+    /* ⚡ STEP 3: Save to cache */
+    saveFeedCache(posts);
 
-    /* 🔧 FIX: setup autoplay AFTER DOM is populated */
-    setupFeedAutoplay();
+    /* ⚡ STEP 4: Update UI only if needed */
+    const cacheIds = (cached || []).map(p => p.id).join(',');
+    const newIds = posts.map(p => p.id).join(',');
+
+    if (cacheIds !== newIds) {
+      container.innerHTML = '';
+      posts.forEach(post => container.appendChild(makeFeedPost(post)));
+      setupFeedAutoplay();
+    }
   } catch (e) {
-    console.error('Home feed error:', e);
-    container.innerHTML = `<div class="feed-empty"><h3>Could not load feed</h3><p>Please try again later</p></div>`;
+    console.error('Feed error:', e);
+    if (!cached || cached.length === 0) container.innerHTML = '';
   }
 }
 
+/* ✅ FIX: YouTube-style feed post */
 function makeFeedPost(post) {
-  if (post.type === 'short') return makeShortCard(post);
-  return makeLongCard(post);
-}
-
-/* ============================================================
-   SHORT VIDEO CARD
-   ============================================================ */
-function makeShortCard(post) {
   const card = document.createElement('div');
-  card.className = 'short-card-feed';
+  card.className = 'yt-card';
   card.dataset.postId = post.id;
 
-  const avatar = post.userPhoto || defaultAvatar(post.userName);
-  const thumbUrl = post.thumbnail || post.url;
-  const likesCount = (post.likes || []).length;
-  const viewsCount = post.views || 0;
-
-  card.innerHTML = `
-    <div class="short-card-thumb">
-      <img src="${thumbUrl}" alt="" loading="lazy">
-      <div class="short-card-badge">SHORT</div>
-      <div class="short-card-views">👁 ${viewsCount}</div>
-      <div class="short-card-play">▶</div>
-    </div>
-    <div class="short-card-info">
-      <img class="short-card-avatar" src="${avatar}" alt="">
-      <div class="short-card-meta">
-        <div class="short-card-caption">${escapeHtml(post.caption || post.userName || 'Short video')}</div>
-        <div class="short-card-sub">${escapeHtml(post.userName || 'User')}${verifiedBadgeHTML(post.userVerified)} · ${likesCount} ❤️</div>
-      </div>
-      <button class="post-menu-btn" data-post="${post.id}" data-uid="${post.userId}" title="More">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/>
-          <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
-          <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/>
-        </svg>
-      </button>
-    </div>
-  `;
-
-  card.querySelector('.post-menu-btn').addEventListener('click', async (e) => {
-    e.stopPropagation();
-    await showPostMenu(e.currentTarget, post);
-  });
-
-  /* ✅ Pass openPostPlayer as single-tap — no separate click listener */
-  attachDoubleTapLike(card, post, () => openPostPlayer(post));
-
-  trackPostView(post.id);
-  return card;
-}
-
-/* ============================================================
-   LONG VIDEO / PHOTO CARD — FIXED
-   Removed duplicate thumb click; singleTap = openPostPlayer
-   ============================================================ */
-function makeLongCard(post) {
-  const card = document.createElement('div');
-  card.className = 'long-card-feed';
-  card.dataset.postId = post.id;
-
-  const avatar = post.userPhoto || defaultAvatar(post.userName);
   const thumbUrl = post.thumbnail || (post.type === 'photo' ? post.url : '');
-  const isLiked = (post.likes || []).includes(currentUser.uid);
-  const likesCount = (post.likes || []).length;
-  const commentsCount = post.commentsCount ?? (post.comments || []).length;
+  const avatar = post.userPhoto || defaultAvatar(post.userName);
   const viewsCount = post.views || 0;
-  const settings = typeof getSettings === 'function' ? getSettings() : { showViews: true };
+  const timeAgoStr = post.createdAt?.toDate?.() ? timeAgoShort(post.createdAt.toDate()) : 'now';
+
+  const isShort = post.type === 'short';
+  const duration = post.duration ? formatDuration(post.duration) : '';
 
   card.innerHTML = `
-    <div class="long-card-thumb">
-      ${post.type === 'photo'
-        ? `<img src="${post.url}" alt="" loading="lazy">`
-        : `<img src="${thumbUrl}" alt="" loading="lazy">`}
-      ${post.type !== 'photo' ? `
-        <div class="long-card-badge">${post.type === 'long' ? 'LONG' : 'VIDEO'}</div>
-        <div class="long-card-play-icon">
-          <svg viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        </div>
-        ${settings.showViews !== false ? `<div class="long-card-duration">👁 ${viewsCount}</div>` : ''}
-      ` : ''}
-    </div>
-    <div class="long-card-info">
-      <img class="long-card-avatar" src="${avatar}" alt="">
-      <div class="long-card-meta">
-        <div class="long-card-title">${escapeHtml(post.caption || 'Untitled')}</div>
-        <div class="long-card-channel">${escapeHtml(post.userName || 'User')}${verifiedBadgeHTML(post.userVerified)}</div>
-        <div class="long-card-stats">${settings.showViews !== false ? viewsCount + ' views · ' : ''}${likesCount} likes · ${commentsCount} comments</div>
+    <div class="yt-thumb" data-action="play">
+      <img src="${thumbUrl}" alt="" loading="lazy">
+      ${duration ? `<div class="yt-duration">${duration}</div>` : ''}
+      ${isShort ? `<div class="yt-badge-short">SHORT</div>` : ''}
+      <div class="yt-play-overlay">
+        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="#fff"/></svg>
       </div>
-      <button class="post-menu-btn" data-post="${post.id}" data-uid="${post.userId}" title="More">
+    </div>
+    <div class="yt-info">
+      <img class="yt-avatar" src="${avatar}" alt="" data-action="profile">
+      <div class="yt-meta">
+        <div class="yt-title">${escapeHtml(post.caption || 'Untitled')}</div>
+        <div class="yt-channel">${escapeHtml(post.userName || 'User')}${verifiedBadgeHTML(post.userVerified)}</div>
+        <div class="yt-stats">${viewsCount} views · ${timeAgoStr}</div>
+      </div>
+      <button class="yt-menu-btn" data-action="menu">
         <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/>
-          <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
-          <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="12" cy="5" r="1.5" fill="currentColor"/>
+          <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+          <circle cx="12" cy="19" r="1.5" fill="currentColor"/>
         </svg>
       </button>
     </div>
-    <div class="long-card-actions">
-      <button class="like-btn ${isLiked ? 'liked' : ''}" data-post="${post.id}">
-        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        <span>${likesCount}</span>
-      </button>
-      <button class="comment-btn" data-post="${post.id}">
-        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-        <span>${commentsCount}</span>
-      </button>
-      <button class="share-btn-feed" data-post="${post.id}">
-        <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-      </button>
-      ${buildSaveButtonHTML(post.id)}
-    </div>
   `;
 
-  card.querySelector('.post-menu-btn').addEventListener('click', async (e) => {
+  /* Clicks */
+  card.querySelector('[data-action="play"]').addEventListener('click', () => {
+    openPlayer(post);
+  });
+
+  card.querySelector('[data-action="profile"]').addEventListener('click', (e) => {
+    e.stopPropagation();
+    openUserProfile(post.userId);
+  });
+
+  card.querySelector('.yt-menu-btn').addEventListener('click', async (e) => {
     e.stopPropagation();
     await showPostMenu(e.currentTarget, post);
   });
 
-  /* 🔧 FIX: REMOVED duplicate .long-card-thumb click listener —
-     openPostPlayer is now passed as single-tap to attachDoubleTapLike */
-
-  card.querySelector('.like-btn').addEventListener('click', async (e) => {
-    e.stopPropagation();
-    await toggleLike(post.id, e.currentTarget);
-  });
-
-  card.querySelector('.comment-btn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    openComments(post.id, post.caption || 'Comments');
-  });
-
-  card.querySelector('.share-btn-feed').addEventListener('click', async (e) => {
-    e.stopPropagation();
-    await sharePost(post);
-  });
-
-  const saveBtn = card.querySelector('.save-btn');
-  if (saveBtn) {
-    saveBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      await toggleSavePost(post.id, e.currentTarget);
-    });
-  }
-
-  /* ✅ Single-tap on thumb → open player; double-tap → like */
-  attachDoubleTapLike(card.querySelector('.long-card-thumb'), post, () => openPostPlayer(post));
-
-  /* Info block: double-tap likes, no single-tap action */
-  attachDoubleTapLike(card.querySelector('.long-card-info'), post, null);
+  /* Double-tap like on thumb */
+  attachDoubleTapLike(card.querySelector('.yt-thumb'), post, null);
 
   trackPostView(post.id);
   return card;
@@ -1721,6 +1722,10 @@ async function deletePost(postId) {
       videoCount: Math.max(0, (currentProfile.videoCount || 1) - 1)
     });
     currentProfile.videoCount = Math.max(0, (currentProfile.videoCount || 1) - 1);
+
+    /* Clear cache */
+    localStorage.removeItem('reelhub_feed_cache');
+
     showToast('🗑️ Post deleted');
     renderHomeFeed();
   } catch (e) {
@@ -1729,18 +1734,15 @@ async function deletePost(postId) {
 }
 
 /* ============================================================
-   AUTO PLAY — FIXED
-   Disconnects existing observer, respects dataSaver, cleanup helper
+   AUTO PLAY
    ============================================================ */
 function setupFeedAutoplay() {
   const settings = typeof getSettings === 'function'
     ? getSettings()
     : { autoPlay: true };
 
-  /* 🔧 FIX: disconnect any previous observer to avoid leaks */
   stopFeedAutoplay();
 
-  /* 🔧 FIX: dataSaver forces autoplay off */
   if (!settings.autoPlay || settings.dataSaver) return;
 
   const videos = document.querySelectorAll('.long-card-feed video, .feed-post-media video');
@@ -1762,7 +1764,6 @@ function setupFeedAutoplay() {
   videos.forEach(v => feedAutoplayObserver.observe(v));
 }
 
-/* 🔧 FIX: new cleanup helper */
 function stopFeedAutoplay() {
   if (feedAutoplayObserver) {
     feedAutoplayObserver.disconnect();
@@ -1860,7 +1861,7 @@ async function loadStoriesBar() {
 /* ============================================================
    STORY UPLOAD MODAL — FIXED (blob URL cleanup)
    ============================================================ */
-let storyPreviewBlobUrl = null;  // 🔧 FIX: track for revoke
+let storyPreviewBlobUrl = null;
 
 function openStoryUploadModal() {
   currentStoryType = 'photo';
@@ -1868,7 +1869,6 @@ function openStoryUploadModal() {
   currentStoryVideoDuration = 0;
   storyFileInput.value = '';
 
-  /* 🔧 FIX: revoke any previous preview URL */
   if (storyPreviewBlobUrl) {
     try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {}
     storyPreviewBlobUrl = null;
@@ -1887,6 +1887,7 @@ function openStoryUploadModal() {
 
   document.querySelectorAll('.story-upload-tab').forEach(t => t.classList.remove('active'));
   document.querySelector('.story-upload-tab[data-type="photo"]')?.classList.add('active');
+
   updateStoryPickerText();
   storyUploadModal.classList.add('show');
 }
@@ -1939,7 +1940,6 @@ document.querySelectorAll('.story-upload-tab').forEach(tab => {
     storySubmitBtn.disabled = true;
     storyUploadMsg.textContent = '';
 
-    /* 🔧 FIX: revoke blob URL on type change */
     if (storyPreviewBlobUrl) {
       try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {}
       storyPreviewBlobUrl = null;
@@ -2186,19 +2186,82 @@ function uploadToCloudinaryGroupFile(file, onProgress) {
     xhr.send(formData);
   });
 }
+
+/* ============================================================
+   🔧 CLOUDINARY UPLOAD — VOICE (for chat fix)
+   ============================================================ */
+function uploadToCloudinaryVoice(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const acc = CLOUDINARY_ACCOUNTS.stories;
+    const url = `https://api.cloudinary.com/v1_1/${acc.cloudName}/video/upload`;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', acc.preset);
+    formData.append('api_key', acc.apiKey);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.timeout = 180000;
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const res = JSON.parse(xhr.responseText);
+          if (!res.secure_url) {
+            reject(new Error('No URL'));
+            return;
+          }
+          resolve(res);
+        } catch (e) {
+          reject(new Error('Invalid'));
+        }
+      } else {
+        let errMsg = 'Upload failed';
+        try {
+          const d = JSON.parse(xhr.responseText);
+          if (d.error?.message) errMsg = d.error.message;
+        } catch (e) {}
+        reject(new Error(errMsg));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.ontimeout = () => reject(new Error('Timeout'));
+    xhr.send(formData);
+  });
+}
 /* ============================================================
    ReelHub — app.js (PART 3/4) — FIXED VERSION
    Story Viewer, Shorts, Like/Unlike, Comments
    ============================================================ */
 
 /* ============================================================
-   STORY VIEWER — FIXED
+   🔧 FORMAT VOICE DURATION — Guard helper
+   ============================================================ */
+function formatVoiceDuration(seconds) {
+  if (seconds === undefined || seconds === null || isNaN(seconds) || seconds < 0) {
+    return '0:00';
+  }
+  const total = Math.floor(seconds);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s < 10 ? '0' + s : s}`;
+}
+
+/* ============================================================
+   STORY VIEWER
    ============================================================ */
 function openStoryViewer(userId) {
   const userIndex = storiesByUser.findIndex(u => u.userId === userId);
   if (userIndex === -1) return;
 
-  /* 🔧 FIX: Pause shorts videos (only when opening a story) */
   document.querySelectorAll('.short-item video').forEach(v => {
     try { v.pause(); } catch (e) {}
   });
@@ -2236,7 +2299,6 @@ function renderCurrentStory() {
   const isOwnStory = userGroup.userId === currentUser.uid;
   storyDeleteBtn.style.display = isOwnStory ? 'block' : 'none';
 
-  /* Viewers button (own story only) */
   const viewersBtn = document.getElementById('storyViewersBtn');
   const viewersCountEl = document.getElementById('storyViewersCount');
 
@@ -2403,7 +2465,6 @@ function closeStoryViewer() {
   document.body.style.overflow = '';
   currentStoryMediaEl = null;
 
-  /* 🔧 FIX: Also remove viewers sheet on close */
   document.getElementById('storyViewersSheet')?.remove();
 }
 
@@ -2420,10 +2481,10 @@ async function markStoryViewed(storyId) {
     if (!viewers.includes(currentUser.uid)) {
       await updateDoc(storyRef, { viewers: arrayUnion(currentUser.uid) });
 
-      /* 🔧 FIX: Respect notification settings */
+      /* ✅ FIX: Respect notif settings */
       const s = typeof getSettings === 'function'
         ? getSettings()
-        : { pushNotif: true, notifFollows: true };
+        : { pushNotif: true };
 
       if (data.userId && data.userId !== currentUser.uid && s.pushNotif) {
         try {
@@ -2616,10 +2677,7 @@ function getCurrentVisibleVideo(wrap) {
   return videos[0];
 }
 
-/* ============================================================
-   SHORT ITEM — FIXED
-   Deferred mute toggle so double-tap doesn't unmute first
-   ============================================================ */
+/* ✅ FIX: Deferred mute toggle — double-tap doesn't unmute first */
 function makeShortItem(short) {
   const item = document.createElement('div');
   item.className = 'short-item';
@@ -2707,11 +2765,10 @@ function makeShortItem(short) {
     await sharePost(short);
   });
 
-  /* 🔧 FIXED: Deferred mute toggle so double-tap doesn't unmute first */
+  /* ✅ FIX: Deferred mute toggle */
   let shortTapTimer = null;
   videoEl.addEventListener('click', (e) => {
     if (e.detail >= 2) {
-      /* Second tap of a double-tap — cancel any pending mute toggle */
       clearTimeout(shortTapTimer);
       return;
     }
@@ -2742,6 +2799,7 @@ function setupShortsAutoplay(wrap) {
     entries.forEach(entry => {
       const video = entry.target;
       if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+        /* ✅ FIX: dataSaver check */
         if (settings.autoPlay && !settings.dataSaver) {
           video.muted = !shortsSoundEnabled;
           video.play().catch(() => {
@@ -2806,7 +2864,7 @@ async function toggleLike(postId, btnEl) {
     btnEl.style.transform = 'scale(1.3)';
     setTimeout(() => { btnEl.style.transform = ''; }, 200);
 
-    const card = btnEl.closest('.short-card-feed, .long-card-feed, .short-item, .grid-item');
+    const card = btnEl.closest('.yt-card, .short-item, .grid-item');
     if (card) showHeartAnimation(card);
 
     try {
@@ -2816,7 +2874,7 @@ async function toggleLike(postId, btnEl) {
       showToast('❤️ Liked');
       if (navigator.vibrate) navigator.vibrate(30);
 
-      /* 🔧 FIX: Respect notification settings */
+      /* ✅ FIX: Respect notif settings */
       try {
         const s = typeof getSettings === 'function'
           ? getSettings()
@@ -2877,7 +2935,7 @@ async function sharePost(post) {
 }
 
 /* ============================================================
-   COMMENTS — FIXED
+   COMMENTS
    ============================================================ */
 async function openComments(postId, title) {
   if (!currentUser) return;
@@ -3084,9 +3142,7 @@ commentInput.addEventListener('input', () => {
   postCommentBtn.disabled = !commentInput.value.trim();
 });
 
-/* ============================================================
-   POST COMMENT — FIXED (respect notif settings for both targets)
-   ============================================================ */
+/* ✅ FIX: Respect notif settings for both post owner AND reply target */
 postCommentBtn.addEventListener('click', async () => {
   const text = commentInput.value.trim();
   if (!text || !activeCommentPostId || !currentUser) return;
@@ -3118,13 +3174,12 @@ postCommentBtn.addEventListener('click', async () => {
 
       if (postSnap.exists()) {
         const currentCount = postSnap.data().commentsCount || 0;
-
         await updateDoc(postRef, { commentsCount: currentCount + 1 });
 
         document.querySelectorAll(`.comment-btn[data-post="${activeCommentPostId}"] span`)
           .forEach(el => { el.textContent = currentCount + 1; });
 
-        /* 🔧 FIX: Respect notification settings */
+        /* ✅ FIX: Respect notif settings */
         const s = typeof getSettings === 'function'
           ? getSettings()
           : { notifComments: true, pushNotif: true };
@@ -3148,7 +3203,7 @@ postCommentBtn.addEventListener('click', async () => {
           } catch (e) {}
         }
 
-        /* Notify reply target */
+        /* Notify reply target (only if different from post owner) */
         if (activeReplyTo && activeReplyTo.commentId && shouldNotify) {
           try {
             const parentRef = doc(db, 'comments', activeReplyTo.commentId);
@@ -3185,7 +3240,7 @@ postCommentBtn.addEventListener('click', async () => {
 
     await loadComments();
 
-    /* 🔧 FIX: Scroll input into view after posting */
+    /* ✅ FIX: Scroll input into view after posting */
     setTimeout(() => {
       commentInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 100);
@@ -3207,7 +3262,7 @@ function showReplyIndicator(commentId, userName, userHandle) {
   commentInput.focus();
   commentInput.placeholder = `Reply to @${userHandle}...`;
 
-  /* 🔧 FIX: Scroll input into view when showing reply indicator */
+  /* ✅ FIX: Scroll input into view */
   setTimeout(() => {
     commentInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, 100);
@@ -3257,7 +3312,6 @@ async function deleteComment(commentId) {
 
     await deleteDoc(commentRef);
 
-    /* Delete replies to this comment */
     const repliesQ = query(collection(db, 'comments'), where('parentId', '==', commentId));
     const repliesSnap = await getDocs(repliesQ);
     const repliesCount = repliesSnap.size;
@@ -3294,26 +3348,11 @@ async function deleteComment(commentId) {
     showToast('❌ Could not delete comment');
   }
 }
-
-/* ============================================================
-   🔧 FIX: formatVoiceDuration guard — safe for undefined/null/negative
-   ============================================================ */
-function formatVoiceDuration(seconds) {
-  if (seconds === undefined || seconds === null || isNaN(seconds) || seconds < 0) {
-    return '0:00';
-  }
-  const total = Math.floor(seconds);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${s < 10 ? '0' + s : s}`;
-}
 /* ============================================================
    ReelHub — app.js (PART 4/4) — FIXED VERSION
-   Chat, Groups, Profile, Upload, Notifications, Search, Settings,
-   Delete Account, Privacy/Terms Links
+   Chat (Real-time onSnapshot), Groups, Profile, Upload,
+   Notifications, Search, Settings, Delete Account
    ============================================================ */
-
-/* ⚠️ NOTE: formatVoiceDuration is defined in PART 3 — do NOT redefine here */
 
 /* ============================================================
    CHATS PAGE
@@ -3758,7 +3797,7 @@ document.getElementById('createGroupBtn')?.addEventListener('click', async () =>
 });
 
 /* ============================================================
-   DM CHAT WINDOW — FIXED (removed undefined markChatRead)
+   DM CHAT WINDOW — FIXED (onSnapshot real-time)
    ============================================================ */
 function getChatId(uid1, uid2) {
   return [uid1, uid2].sort().join('_');
@@ -3780,8 +3819,9 @@ async function openChatWindow(otherUser) {
     }
   }
 
+  /* ✅ FIX: onSnapshot listener cleanup */
   if (chatMessagesUnsub) {
-    clearInterval(chatMessagesUnsub);
+    try { chatMessagesUnsub(); } catch (e) {}
     chatMessagesUnsub = null;
   }
 
@@ -3806,16 +3846,15 @@ async function openChatWindow(otherUser) {
   updateSendTextBtn();
   chatWindowModal.classList.add('show');
 
-  /* ✅ FIXED: markChatRead() removed — markMessagesAsRead runs inside fetchAndPaintMessages */
   await loadChatMessages();
-  // ❌ REMOVED: await markChatRead();
 }
 
 function closeChatWindow() {
   chatWindowModal.classList.remove('show');
 
+  /* ✅ FIX: onSnapshot cleanup */
   if (chatMessagesUnsub) {
-    clearInterval(chatMessagesUnsub);
+    try { chatMessagesUnsub(); } catch (e) {}
     chatMessagesUnsub = null;
   }
 
@@ -3834,13 +3873,13 @@ function closeChatWindow() {
 document.getElementById('closeChatWindow')?.addEventListener('click', closeChatWindow);
 
 /* ============================================================
-   GROUP CHAT WINDOW
+   GROUP CHAT WINDOW — FIXED (onSnapshot real-time)
    ============================================================ */
 async function openGroupChatWindow(group) {
   if (!group || !group.members.includes(currentUser.uid)) return;
 
   if (chatMessagesUnsub) {
-    clearInterval(chatMessagesUnsub);
+    try { chatMessagesUnsub(); } catch (e) {}
     chatMessagesUnsub = null;
   }
 
@@ -3866,54 +3905,47 @@ async function openGroupChatWindow(group) {
   await markGroupRead();
 }
 
+/* ✅ FIX: onSnapshot real-time listener */
 async function loadGroupMessages() {
   if (!activeGroupId) return;
-  try {
-    await fetchAndPaintGroupMessages();
-    await loadPinnedMessage();
 
-    if (chatMessagesUnsub) clearInterval(chatMessagesUnsub);
-    chatMessagesUnsub = setInterval(async () => {
-      if (!activeGroupId) return;
-      await fetchAndPaintGroupMessages();
-    }, 3000);
-  } catch (e) {}
-}
+  if (chatMessagesUnsub) {
+    try { chatMessagesUnsub(); } catch (e) {}
+    chatMessagesUnsub = null;
+  }
 
-async function fetchAndPaintGroupMessages() {
-  if (!activeGroupId) return;
   try {
     const msgsRef = collection(db, 'groups', activeGroupId, 'messages');
-    const snap = await getDocs(msgsRef);
-    const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    messages.sort((a, b) => {
-      let ta = 0, tb = 0;
-      if (a.time?.toDate) ta = a.time.toDate().getTime();
-      else if (a.time?.seconds) ta = a.time.seconds * 1000;
-      if (b.time?.toDate) tb = b.time.toDate().getTime();
-      else if (b.time?.seconds) tb = b.time.seconds * 1000;
-      return ta - tb;
+    chatMessagesUnsub = onSnapshot(msgsRef, (snap) => {
+      const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      messages.sort((a, b) => {
+        const ta = a.time?.toDate?.()?.getTime?.() ||
+                   (a.time?.seconds ? a.time.seconds * 1000 : 0);
+        const tb = b.time?.toDate?.()?.getTime?.() ||
+                   (b.time?.seconds ? b.time.seconds * 1000 : 0);
+        return ta - tb;
+      });
+
+      paintGroupMessages(messages);
+      markGroupMessagesAsRead();
+    }, (err) => {
+      console.warn('Group listener error:', err);
     });
 
-    paintGroupMessages(messages);
-    await markGroupMessagesAsRead();
-  } catch (e) {}
+    await loadPinnedMessage();
+  } catch (e) {
+    console.error('loadGroupMessages error:', e);
+  }
 }
 
+/* ✅ FIX: No signature check — onSnapshot only fires on change */
 function paintGroupMessages(messages) {
   if (messages.length === 0) {
     chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
     return;
   }
-
-  /* 🔧 FIX: Compare content signature so edits/deletes trigger repaint */
-  const signature = messages.map(m =>
-    `${m.id}:${m.deleted ? 'D' : ''}:${m.edited ? 'E' : ''}:${(m.text || '').slice(0, 20)}`
-  ).join('|');
-
-  if (chatMessages.dataset.signature === signature) return;
-  chatMessages.dataset.signature = signature;
 
   const wasAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 150;
 
@@ -3937,7 +3969,7 @@ function paintGroupMessages(messages) {
 
   if (wasAtBottom) setTimeout(() => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
-  }, 50);
+  }, 30);
 }
 
 function makeGroupMessageBubble(msg) {
@@ -3993,7 +4025,6 @@ function makeGroupMessageBubble(msg) {
     const bars = [];
     for (let i = 0; i < 22; i++) bars.push(30 + Math.floor(Math.random() * 70));
 
-    /* 🔧 FIX: Support both voiceData (base64) and voiceUrl (Cloudinary) */
     const voiceSrc = msg.voiceUrl || msg.voiceData;
 
     row.innerHTML = `
@@ -4054,7 +4085,7 @@ async function markGroupRead() {
 }
 
 /* ============================================================
-   SEND MESSAGE — FIXED
+   SEND MESSAGE — FIXED (setTimeout hata diya)
    ============================================================ */
 async function sendGroupMessage(msgData) {
   if (!activeGroupId) return;
@@ -4067,7 +4098,7 @@ async function sendGroupMessage(msgData) {
     type: msgData.type || 'text',
     text: msgData.text || null,
     voiceData: msgData.voiceData || null,
-    voiceUrl: msgData.voiceUrl || null,     /* 🔧 NEW: Cloudinary URL */
+    voiceUrl: msgData.voiceUrl || null,
     voiceDuration: msgData.voiceDuration || null,
     fileName: msgData.fileName || null,
     fileUrl: msgData.fileUrl || null,
@@ -4077,13 +4108,6 @@ async function sendGroupMessage(msgData) {
   };
 
   try {
-    const tempId = 'temp_' + Date.now();
-    const tempMsg = { id: tempId, ...message, time: { toDate: () => new Date() } };
-
-    if (chatMessages.querySelector('.chat-empty')) chatMessages.innerHTML = '';
-    chatMessages.appendChild(makeGroupMessageBubble(tempMsg));
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-
     await addDoc(collection(db, 'groups', activeGroupId, 'messages'), message);
 
     const otherMembers = (activeGroupData?.members || []).filter(m => m !== currentUser.uid);
@@ -4102,9 +4126,7 @@ async function sendGroupMessage(msgData) {
       unreadBy: otherMembers
     });
 
-    /* 🔧 FIX: Force repaint after sending (bypass signature check) */
-    chatMessages.dataset.signature = '';
-    setTimeout(() => fetchAndPaintGroupMessages(), 800);
+    /* ✅ FIX: No setTimeout — onSnapshot khud repaint karega */
   } catch (e) {
     console.error('Group send error:', e);
     showToast('❌ Could not send');
@@ -4120,7 +4142,7 @@ async function sendMessage(msgData) {
     type: msgData.type || 'text',
     text: msgData.text || null,
     voiceData: msgData.voiceData || null,
-    voiceUrl: msgData.voiceUrl || null,     /* 🔧 NEW */
+    voiceUrl: msgData.voiceUrl || null,
     voiceDuration: msgData.voiceDuration || null,
     fileName: msgData.fileName || null,
     fileUrl: msgData.fileUrl || null,
@@ -4134,13 +4156,6 @@ async function sendMessage(msgData) {
   };
 
   try {
-    const tempId = 'temp_' + Date.now();
-    const tempMsg = { id: tempId, ...message, time: { toDate: () => new Date() } };
-
-    if (chatMessages.querySelector('.chat-empty')) chatMessages.innerHTML = '';
-    chatMessages.appendChild(makeMessageBubble(tempMsg));
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-
     const settings = typeof getSettings === 'function' ? getSettings() : { vibration: true };
     if (settings.vibration && navigator.vibrate) navigator.vibrate(30);
 
@@ -4169,7 +4184,7 @@ async function sendMessage(msgData) {
       await updateDoc(chatRef, chatData);
     }
 
-    /* 🔧 FIX: Respect notif settings */
+    /* ✅ FIX: Respect notif settings */
     const s = typeof getSettings === 'function'
       ? getSettings()
       : { notifMessages: true, pushNotif: true };
@@ -4189,9 +4204,7 @@ async function sendMessage(msgData) {
       } catch (e) {}
     }
 
-    /* 🔧 FIX: Force repaint after sending */
-    chatMessages.dataset.signature = '';
-    setTimeout(() => fetchAndPaintMessages(), 800);
+    /* ✅ FIX: No setTimeout — onSnapshot khud repaint karega */
   } catch (e) {
     console.error('Send error:', e);
     showToast('❌ Could not send');
@@ -4199,58 +4212,49 @@ async function sendMessage(msgData) {
 }
 
 /* ============================================================
-   DM MESSAGES LOAD / PAINT
+   DM MESSAGES LOAD — FIXED (onSnapshot real-time)
    ============================================================ */
 async function loadChatMessages() {
   if (!activeChatId) return;
-  try {
-    await fetchAndPaintMessages();
-    await loadPinnedMessage();
 
-    if (chatMessagesUnsub) clearInterval(chatMessagesUnsub);
-    chatMessagesUnsub = setInterval(async () => {
-      if (!activeChatId) return;
-      await fetchAndPaintMessages();
-    }, 3000);
+  if (chatMessagesUnsub) {
+    try { chatMessagesUnsub(); } catch (e) {}
+    chatMessagesUnsub = null;
+  }
+
+  try {
+    const msgsRef = collection(db, 'chats', activeChatId, 'messages');
+
+    chatMessagesUnsub = onSnapshot(msgsRef, (snap) => {
+      const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      messages.sort((a, b) => {
+        const ta = a.time?.toDate?.()?.getTime?.() ||
+                   (a.time?.seconds ? a.time.seconds * 1000 : 0);
+        const tb = b.time?.toDate?.()?.getTime?.() ||
+                   (b.time?.seconds ? b.time.seconds * 1000 : 0);
+        return ta - tb;
+      });
+
+      paintChatMessages(messages);
+      markMessagesAsRead(messages);
+    }, (err) => {
+      console.warn('Chat listener error:', err);
+    });
+
+    await loadPinnedMessage();
   } catch (e) {
+    console.error('loadChatMessages error:', e);
     chatMessages.innerHTML = `<div class="chat-empty">Could not load messages</div>`;
   }
 }
 
-async function fetchAndPaintMessages() {
-  if (!activeChatId) return;
-  try {
-    const msgsRef = collection(db, 'chats', activeChatId, 'messages');
-    const snap = await getDocs(msgsRef);
-    const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    messages.sort((a, b) => {
-      let ta = 0, tb = 0;
-      if (a.time?.toDate) ta = a.time.toDate().getTime();
-      else if (a.time?.seconds) ta = a.time.seconds * 1000;
-      if (b.time?.toDate) tb = b.time.toDate().getTime();
-      else if (b.time?.seconds) tb = b.time.seconds * 1000;
-      return ta - tb;
-    });
-
-    paintChatMessages(messages);
-    await markMessagesAsRead(messages);
-  } catch (e) {}
-}
-
+/* ✅ FIX: No signature check */
 function paintChatMessages(messages) {
   if (messages.length === 0) {
     chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
     return;
   }
-
-  /* 🔧 FIX: Content signature so edit/delete triggers repaint */
-  const signature = messages.map(m =>
-    `${m.id}:${m.deleted ? 'D' : ''}:${m.edited ? 'E' : ''}:${m.read ? 'R' : ''}:${m.delivered ? 'V' : ''}:${(m.text || '').slice(0, 20)}`
-  ).join('|');
-
-  if (chatMessages.dataset.signature === signature) return;
-  chatMessages.dataset.signature = signature;
 
   const wasAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 150;
 
@@ -4274,7 +4278,7 @@ function paintChatMessages(messages) {
 
   if (wasAtBottom) setTimeout(() => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
-  }, 50);
+  }, 30);
 }
 
 function makeMessageBubble(msg) {
@@ -4326,7 +4330,6 @@ function makeMessageBubble(msg) {
     const bars = [];
     for (let i = 0; i < 22; i++) bars.push(30 + Math.floor(Math.random() * 70));
 
-    /* 🔧 FIX: Support voiceUrl (Cloudinary) or legacy voiceData */
     const voiceSrc = msg.voiceUrl || msg.voiceData;
 
     row.innerHTML = `
@@ -4492,7 +4495,7 @@ async function openEditMessageModal(msg) {
   });
 }
 
-/* 🔧 FIXED: Force repaint after edit */
+/* ✅ FIX: No manual repaint — onSnapshot khud update karega */
 async function editMessage(msgId, newText) {
   if (!activeChatId || !currentUser) return;
   try {
@@ -4502,14 +4505,9 @@ async function editMessage(msgId, newText) {
       edited: true,
       editedAt: serverTimestamp()
     });
-
-    /* Clear signature to force repaint */
-    chatMessages.dataset.signature = '';
-    if (activeGroupId) await fetchAndPaintGroupMessages();
-    else await fetchAndPaintMessages();
-
     showToast('✏️ Edited');
   } catch (e) {
+    console.error('Edit error:', e);
     showToast('❌ Could not edit');
   }
 }
@@ -4573,7 +4571,7 @@ async function markMessagesAsRead(messages) {
   } catch (e) {}
 }
 
-/* 🔧 FIXED: Force repaint after delete */
+/* ✅ FIX: No manual repaint */
 async function deleteMessage(msgId) {
   if (!activeChatId) return;
   try {
@@ -4586,14 +4584,9 @@ async function deleteMessage(msgId) {
       voiceUrl: null,
       fileUrl: null
     });
-
-    /* Clear signature to force repaint */
-    chatMessages.dataset.signature = '';
-    if (activeGroupId) await fetchAndPaintGroupMessages();
-    else await fetchAndPaintMessages();
-
     showToast('🗑️ Deleted');
   } catch (e) {
+    console.error('Delete error:', e);
     showToast('❌ Failed to delete');
   }
 }
@@ -4770,7 +4763,7 @@ async function sendFileMessage(file) {
 }
 
 /* ============================================================
-   VOICE RECORDING — FIXED (upload to Cloudinary)
+   VOICE RECORDING — FIXED (Cloudinary upload)
    ============================================================ */
 micBtn.addEventListener('mousedown', startVoiceRecording);
 micBtn.addEventListener('touchstart', (e) => {
@@ -4845,7 +4838,6 @@ async function stopVoiceRecordingAndSend() {
 
       const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
 
-      /* 🔧 FIX: Max 5 MB after blob (Cloudinary will handle it) */
       if (audioBlob.size > 5 * 1024 * 1024) {
         showToast('❌ Recording too large');
         resolve();
@@ -4853,10 +4845,10 @@ async function stopVoiceRecordingAndSend() {
       }
 
       try {
-        /* 🔧 FIX: Upload to Cloudinary instead of base64 (avoids Firestore 1MB limit) */
+        /* ✅ FIX: Upload to Cloudinary (no Firestore 1MB limit) */
         showToast('📤 Uploading voice...');
         const file = new File([audioBlob], `voice_${Date.now()}.webm`, { type: audioBlob.type });
-        const res = await uploadToCloudinaryGroupFile(file, () => {});
+        const res = await uploadToCloudinaryVoice(file, () => {});
 
         const payload = {
           type: 'voice',
@@ -5353,7 +5345,6 @@ async function openUserProfile(userId) {
     const avatarSrc = user.photo || defaultAvatar(user.name);
     const isFollowing = currentProfile?.following?.includes(userId) || false;
 
-    /* Private + not following */
     if (user.isPrivate && !isFollowing) {
       content.innerHTML = `
         <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
@@ -5411,7 +5402,6 @@ async function openUserProfile(userId) {
       return;
     }
 
-    /* Public profile */
     content.innerHTML = `
       <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
         <button id="backFromProfileBtn">
@@ -5513,7 +5503,7 @@ async function shareUser(user) {
 }
 
 /* ============================================================
-   BLOCK + REPORT SYSTEM
+   BLOCK + REPORT
    ============================================================ */
 async function showProfileMenu(anchorEl, userId, userHandle) {
   document.querySelectorAll('.post-menu-dropdown').forEach(el => el.remove());
@@ -6003,6 +5993,9 @@ uploadSubmitBtn.addEventListener('click', async () => {
     });
     currentProfile.videoCount = (currentProfile.videoCount || 0) + 1;
 
+    /* Clear cache so next feed load shows new post */
+    localStorage.removeItem('reelhub_feed_cache');
+
     uploadMsg.className = 'success-msg';
     uploadMsg.textContent = '✅ Uploaded!';
 
@@ -6268,7 +6261,7 @@ listModal.addEventListener('click', (e) => {
   if (e.target === listModal) listModal.classList.remove('show');
 });
 
-/* 🔧 FIXED: Respect notifFollows + pushNotif */
+/* ✅ FIX: Respect notifFollows */
 async function toggleFollow(targetUid, btnEl) {
   if (!currentUser || !currentProfile) return;
   if (targetUid === currentUser.uid) return;
@@ -6300,7 +6293,7 @@ async function toggleFollow(targetUid, btnEl) {
         btnEl.className = 'unfollow';
       }
 
-      /* 🔧 FIX: Respect notification settings */
+      /* ✅ FIX: Respect notif settings */
       const s = typeof getSettings === 'function'
         ? getSettings()
         : { notifFollows: true, pushNotif: true };
@@ -6354,7 +6347,6 @@ async function renderNotifications() {
 
     paintNotifications(notifications);
 
-    /* Mark read (except invites which need action) */
     for (const n of notifications) {
       if (!n.read && n.type !== 'admin_invite') {
         try {
@@ -6430,10 +6422,7 @@ function paintNotifications(list) {
 }
 
 /* ============================================================
-   ADMIN INVITE — Accept / Reject with Congrats Animation
-   ⚠️ NOTE: Writing to admin_config/emails from client is NOT
-   secure. Move this to a Cloud Function or admin-only ruleset
-   in production.
+   ADMIN INVITE — Accept / Reject with Congrats
    ============================================================ */
 async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
   if (!currentUser || !currentUser.email) {
@@ -6567,7 +6556,6 @@ function stopNotifWatcher() {
   updateNotifDot(0);
 }
 
-/* 🔧 FIXED: Better cap handling for large counts */
 async function checkUnreadNotifications() {
   if (!currentUser) return;
   try {
@@ -6592,7 +6580,6 @@ function updateNotifDot(count) {
   if (!notifDot) return;
   if (count > 0) {
     notifDot.style.display = 'block';
-    /* 🔧 FIX: Show "20+" cap for display */
     if (count > 20) {
       notifDot.textContent = '20+';
     } else {
@@ -6823,10 +6810,10 @@ function formatDate(date) {
   return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-/* ⚠️ NOTE: formatVoiceDuration is defined in PART 3 — do not redefine */
+/* ⚠️ NOTE: formatVoiceDuration is defined in PART 3 — do NOT redefine here */
 
 /* ============================================================
-   DELETE ACCOUNT — Complete System (FIXED)
+   DELETE ACCOUNT
    ============================================================ */
 function openDeleteAccountModal() {
   document.querySelectorAll('.delete-modal-overlay').forEach(el => el.remove());
@@ -6964,12 +6951,10 @@ async function deleteUserAccount(password) {
     /* STEP 3 — Delete user's comments + orphaned replies */
     progressText.textContent = 'Deleting your comments and replies...';
     try {
-      /* 3a — Get user's comment IDs */
       const myCommentsQ = query(collection(db, 'comments'), where('userId', '==', uid));
       const myCommentsSnap = await getDocs(myCommentsQ);
       const myCommentIds = myCommentsSnap.docs.map(d => d.id);
 
-      /* 3b — Delete replies that point to user's comments */
       for (const cid of myCommentIds) {
         try {
           const repliesQ = query(collection(db, 'comments'), where('parentId', '==', cid));
@@ -6980,7 +6965,6 @@ async function deleteUserAccount(password) {
         } catch (e) {}
       }
 
-      /* 3c — Delete user's own comments */
       if (myCommentsSnap.size > 0) {
         await batchDeleteDocs(myCommentsSnap.docs.map(d => d.ref));
       }
@@ -7006,7 +6990,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Notifications delete:', e); }
 
-    /* 🔧 NEW STEP 5.5 — Delete user's messages inside groups */
+    /* STEP 6 — Delete user's group messages */
     progressText.textContent = 'Deleting your group messages...';
     try {
       const myGroupsQ = query(collection(db, 'groups'), where('members', 'array-contains', uid));
@@ -7023,7 +7007,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Group messages delete:', e); }
 
-    /* STEP 6 — Leave groups */
+    /* STEP 7 — Leave groups */
     progressText.textContent = 'Leaving groups...';
     try {
       const groupsQ = query(collection(db, 'groups'), where('members', 'array-contains', uid));
@@ -7038,7 +7022,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Groups leave:', e); }
 
-    /* STEP 7 — Delete DM chats + messages */
+    /* STEP 8 — Delete DM chats + messages */
     progressText.textContent = 'Deleting messages...';
     try {
       const chatsQ = query(collection(db, 'chats'), where('members', 'array-contains', uid));
@@ -7055,34 +7039,30 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Chats delete:', e); }
 
-    /* STEP 8 — Remove from followers/following of others */
+    /* STEP 9 — Remove from followers/following */
     progressText.textContent = 'Updating followers...';
     try {
-      const usersSnap = await getDocs(collection(db, 'users'));
+      const myProfileSnap = await getDoc(doc(db, 'users', uid));
+      const myProfile = myProfileSnap.exists() ? myProfileSnap.data() : {};
+      const myFollowers = myProfile.followers || [];
+      const myFollowing = myProfile.following || [];
+
+      const affectedUids = [...new Set([...myFollowers, ...myFollowing])];
+
       const updates = [];
-
-      for (const userDoc of usersSnap.docs) {
-        if (userDoc.id === uid) continue;
-
-        const userData = userDoc.data();
-        const updatesNeeded = {};
-
-        if ((userData.followers || []).includes(uid)) {
-          updatesNeeded.followers = arrayRemove(uid);
-        }
-        if ((userData.following || []).includes(uid)) {
-          updatesNeeded.following = arrayRemove(uid);
-        }
-
-        if (Object.keys(updatesNeeded).length > 0) {
-          updates.push(updateDoc(userDoc.ref, updatesNeeded).catch(() => {}));
-        }
+      for (const otherUid of affectedUids) {
+        if (otherUid === uid) continue;
+        updates.push(
+          updateDoc(doc(db, 'users', otherUid), {
+            followers: arrayRemove(uid),
+            following: arrayRemove(uid)
+          }).catch(e => console.warn(`Follow cleanup for ${otherUid}:`, e.message))
+        );
       }
-
       if (updates.length > 0) await Promise.all(updates);
     } catch (e) { console.warn('Followers update:', e); }
 
-    /* STEP 9 — Delete user profile */
+    /* STEP 10 — Delete user profile */
     progressText.textContent = 'Deleting profile...';
     try {
       await deleteDoc(doc(db, 'users', uid));
@@ -7090,22 +7070,26 @@ async function deleteUserAccount(password) {
       console.warn('Profile delete:', e);
     }
 
-    /* STEP 10 — Delete Firebase Auth user */
+    /* STEP 11 — Delete Firebase Auth user */
     progressText.textContent = 'Finalizing...';
     await currentUser.delete();
 
-    /* STEP 11 — Cleanup */
+    /* STEP 12 — Cleanup */
     progressText.textContent = '✅ Account deleted successfully!';
 
     setTimeout(() => {
       stopNotifWatcher();
       stopShortsObserver();
       stopChatListWatcher();
-      if (chatMessagesUnsub) clearInterval(chatMessagesUnsub);
+      if (chatMessagesUnsub) {
+        try { chatMessagesUnsub(); } catch (e) {}
+        chatMessagesUnsub = null;
+      }
 
       currentUser = null;
       currentProfile = null;
       viewedPostsSession.clear();
+      localStorage.removeItem('reelhub_feed_cache');
 
       closeDeleteModal();
       showToast('✅ Account deleted. Goodbye! 👋');
@@ -7172,7 +7156,6 @@ function saveSetting(key, value) {
   applySetting(key, value);
 }
 
-/* 🔧 FIXED: Now handles videoQuality, dataSaver, compactMode */
 function applySetting(key, value) {
   switch (key) {
     case 'darkMode':
@@ -7206,12 +7189,10 @@ function applySetting(key, value) {
       break;
     }
 
-    /* 🔧 NEW: dataSaver */
     case 'dataSaver': {
       document.body.classList.toggle('data-saver', value);
 
       if (value) {
-        /* Force disable autoplay when saver is on */
         const s = getSettings();
         if (s.autoPlay) {
           saveSetting('autoPlay', false);
@@ -7222,7 +7203,6 @@ function applySetting(key, value) {
       break;
     }
 
-    /* 🔧 NEW: videoQuality */
     case 'videoQuality': {
       document.querySelectorAll('video').forEach(v => {
         if (value === 'low') v.setAttribute('data-quality', '360');
