@@ -1,6 +1,6 @@
 /* ============================================================
    ReelHub — style.css (Complete Final Version)
-   Includes: Loading Screen + YouTube Feed + Skeleton Loader
+   Includes: Loading + YouTube Feed + Shorts Shelf + Skeleton
    ============================================================ */
 
 /* ============================================================
@@ -55,9 +55,7 @@
   box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
 }
 
-#loadingScreen .contact-us:active {
-  transform: scale(0.95);
-}
+#loadingScreen .contact-us:active { transform: scale(0.95); }
 
 #loadingScreen .loader-wrap {
   position: relative;
@@ -99,9 +97,7 @@
   z-index: 1;
 }
 
-@keyframes rotateRing {
-  to { transform: rotate(360deg); }
-}
+@keyframes rotateRing { to { transform: rotate(360deg); } }
 
 #loadingScreen .logo-letter {
   width: 78px;
@@ -146,9 +142,7 @@
   animation: gradientShift 3s linear infinite;
 }
 
-@keyframes gradientShift {
-  to { background-position: 200% center; }
-}
+@keyframes gradientShift { to { background-position: 200% center; } }
 
 @keyframes loadingSlideUp {
   from { opacity: 0; transform: translateY(15px); }
@@ -171,9 +165,7 @@
   margin-top: 10px;
 }
 
-#loadingScreen .loading-text {
-  color: #ff2e3b;
-}
+#loadingScreen .loading-text { color: #ff2e3b; }
 
 #loadingScreen .loading-dots {
   display: inline-flex;
@@ -211,8 +203,7 @@
 
 #loadingScreen .progress-fill {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 0; left: 0;
   height: 100%;
   width: 40%;
   background: linear-gradient(90deg, #ff2e63, #ff8a00);
@@ -469,7 +460,6 @@ html, body {
   text-decoration: none;
   font-weight: 600;
 }
-.auth-footer a:hover { text-decoration: underline; }
 
 /* ================= APP LAYOUT ================= */
 #app {
@@ -729,14 +719,32 @@ html, body {
 }
 
 /* ============================================================
-   HOME FEED — YouTube Style
+   HOME FEED
    ============================================================ */
 .home-feed {
   padding: 0 0 80px 0;
   background: #0a0a0a;
 }
 
-/* YouTube-style card */
+.feed-empty {
+  text-align: center;
+  padding: 80px 20px;
+  color: #666;
+}
+.feed-empty h3 {
+  font-size: 16px;
+  color: #888;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.feed-empty p {
+  font-size: 13px;
+  color: #555;
+}
+
+/* ============================================================
+   YOUTUBE-STYLE FEED CARDS
+   ============================================================ */
 .yt-card {
   background: #0a0a0a;
   border-bottom: 1px solid #151515;
@@ -771,19 +779,6 @@ html, body {
   font-size: 11px;
   font-weight: 700;
   padding: 3px 6px;
-  border-radius: 4px;
-  letter-spacing: 0.5px;
-}
-
-.yt-badge-short {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: linear-gradient(90deg, #ff2e63, #ff8a00);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 3px 8px;
   border-radius: 4px;
   letter-spacing: 0.5px;
 }
@@ -842,7 +837,6 @@ html, body {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  letter-spacing: -0.1px;
 }
 
 .yt-channel {
@@ -876,6 +870,146 @@ html, body {
 .yt-menu-btn svg {
   width: 20px;
   height: 20px;
+}
+
+/* ============================================================
+   SHORTS SHELF — YouTube Style
+   ============================================================ */
+.shorts-shelf {
+  padding: 16px 0 12px;
+  border-bottom: 8px solid #050505;
+  margin-bottom: 4px;
+}
+
+.shorts-shelf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 12px;
+}
+
+.shorts-shelf-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+
+.shorts-icon {
+  width: 24px;
+  height: 24px;
+  fill: #ff2e63;
+}
+
+.shorts-shelf-more {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 20px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.shorts-shelf-more:hover {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.shorts-shelf-more svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.shorts-shelf-scroll {
+  display: flex;
+  gap: 10px;
+  padding: 0 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.shorts-shelf-scroll::-webkit-scrollbar { display: none; }
+
+.shorts-shelf-item {
+  flex-shrink: 0;
+  width: 140px;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: transform 0.15s;
+}
+
+.shorts-shelf-item:active { transform: scale(0.96); }
+
+.shorts-shelf-thumb {
+  position: relative;
+  width: 140px;
+  height: 248px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.shorts-shelf-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.shorts-shelf-play {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  background: rgba(0, 0, 0, 0.65);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shorts-shelf-play svg {
+  width: 12px;
+  height: 12px;
+  margin-left: 2px;
+}
+
+.shorts-shelf-title-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 3px;
+  padding: 0 2px;
+}
+
+.shorts-shelf-views {
+  font-size: 11.5px;
+  color: #888;
+  padding: 0 2px;
 }
 
 /* ============================================================
@@ -1008,27 +1142,11 @@ html, body {
   stroke-linejoin: round;
 }
 
-.verified-badge.large {
-  width: 18px;
-  height: 18px;
-}
+.verified-badge.large { width: 18px; height: 18px; }
+.verified-badge.large svg { width: 12px; height: 12px; stroke-width: 3; }
 
-.verified-badge.large svg {
-  width: 12px;
-  height: 12px;
-  stroke-width: 3;
-}
-
-.msg-sender-name .verified-badge {
-  width: 12px;
-  height: 12px;
-  margin-left: 3px;
-}
-
-.msg-sender-name .verified-badge svg {
-  width: 8px;
-  height: 8px;
-}
+.msg-sender-name .verified-badge { width: 12px; height: 12px; margin-left: 3px; }
+.msg-sender-name .verified-badge svg { width: 8px; height: 8px; }
 
 @keyframes verifiedPop {
   0%   { transform: scale(0); }
@@ -1235,10 +1353,7 @@ html, body {
   margin-bottom: 8px;
 }
 
-.shorts-empty p {
-  font-size: 13px;
-  color: #555;
-}
+.shorts-empty p { font-size: 13px; color: #555; }
 
 /* TAP TO UNMUTE */
 .tap-to-unmute-overlay {
@@ -1280,10 +1395,7 @@ html, body {
   margin: 0 auto 16px;
 }
 
-.unmute-icon svg {
-  width: 40px; height: 40px;
-  color: #ff2e63;
-}
+.unmute-icon svg { width: 40px; height: 40px; color: #ff2e63; }
 
 .unmute-text {
   font-size: 16px;
@@ -1463,11 +1575,7 @@ html, body {
   margin-bottom: 8px;
 }
 
-.chats-empty p {
-  font-size: 13px;
-  color: #555;
-  margin-bottom: 20px;
-}
+.chats-empty p { font-size: 13px; color: #555; margin-bottom: 20px; }
 
 .chats-empty .start-btn {
   padding: 10px 20px;
@@ -1618,10 +1726,7 @@ html, body {
 #chatMessages::-webkit-scrollbar-thumb { background: #262626; border-radius: 2px; }
 
 /* FILE BUBBLE */
-.file-bubble {
-  padding: 8px !important;
-  max-width: 280px;
-}
+.file-bubble { padding: 8px !important; max-width: 280px; }
 
 .file-download-wrap {
   display: flex;
@@ -1634,9 +1739,7 @@ html, body {
   transition: background 0.15s;
 }
 
-.file-download-wrap:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
+.file-download-wrap:hover { background: rgba(255, 255, 255, 0.1); }
 
 .file-icon {
   font-size: 28px;
@@ -1661,10 +1764,7 @@ html, body {
   margin-bottom: 2px;
 }
 
-.file-size {
-  font-size: 11px;
-  opacity: 0.75;
-}
+.file-size { font-size: 11px; opacity: 0.75; }
 
 /* MEMBER CHIPS */
 .member-chip {
@@ -2246,10 +2346,8 @@ html, body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color 0.2s;
 }
 .search-user .info span { font-size: 12px; color: #888; }
-.search-user .info:hover b { color: #ff2e63; }
 .search-user button {
   padding: 6px 14px;
   font-size: 12px;
@@ -2660,10 +2758,7 @@ html, body {
   margin-bottom: 8px;
 }
 
-.saved-empty p {
-  font-size: 13px;
-  color: #555;
-}
+.saved-empty p { font-size: 13px; color: #555; }
 
 .profile-tabs.two-tabs .profile-tab { flex: 1; }
 
@@ -2730,16 +2825,9 @@ html, body {
   border-radius: 6px;
 }
 
-.story-viewers-close:hover {
-  background: #1e1e1e;
-  color: #fff;
-}
+.story-viewers-close:hover { background: #1e1e1e; color: #fff; }
 
-.story-viewers-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+.story-viewers-list { display: flex; flex-direction: column; gap: 4px; }
 
 .story-viewer-row {
   display: flex;
@@ -2775,10 +2863,7 @@ html, body {
   text-overflow: ellipsis;
 }
 
-.story-viewer-row .info span {
-  font-size: 12px;
-  color: #888;
-}
+.story-viewer-row .info span { font-size: 12px; color: #888; }
 
 .story-viewers-empty {
   text-align: center;
@@ -2809,9 +2894,7 @@ html, body {
   stroke-width: 2;
 }
 
-.story-viewers-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
+.story-viewers-btn:hover { background: rgba(255, 255, 255, 0.15); }
 
 /* ============================================================
    SETTINGS MODAL
@@ -2823,10 +2906,7 @@ html, body {
 }
 
 .settings-modal::-webkit-scrollbar { width: 4px; }
-.settings-modal::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 2px;
-}
+.settings-modal::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
 .settings-modal .modal-header {
   padding: 16px 20px;
@@ -2979,9 +3059,7 @@ html, body {
   border-color: #ff4d4d;
 }
 
-.delete-account-btn:active {
-  transform: scale(0.98);
-}
+.delete-account-btn:active { transform: scale(0.98); }
 
 .delete-account-btn svg {
   width: 18px;
@@ -3066,11 +3144,7 @@ html, body {
   margin-bottom: 18px;
 }
 
-.delete-modal .warning-list ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
+.delete-modal .warning-list ul { list-style: none; padding: 0; margin: 0; }
 
 .delete-modal .warning-list li {
   font-size: 13px;
@@ -3089,10 +3163,7 @@ html, body {
   line-height: 1;
 }
 
-.delete-modal .confirm-input-wrap {
-  margin-bottom: 18px;
-  text-align: left;
-}
+.delete-modal .confirm-input-wrap { margin-bottom: 18px; text-align: left; }
 
 .delete-modal .confirm-input-wrap label {
   display: block;
@@ -3122,14 +3193,9 @@ html, body {
   transition: border-color 0.2s;
 }
 
-.delete-modal input:focus {
-  border-color: #dc2626;
-}
+.delete-modal input:focus { border-color: #dc2626; }
 
-.delete-modal-actions {
-  display: flex;
-  gap: 10px;
-}
+.delete-modal-actions { display: flex; gap: 10px; }
 
 .delete-modal-actions button {
   flex: 1;
@@ -3149,10 +3215,7 @@ html, body {
   border: 1px solid #333;
 }
 
-.delete-modal-actions .cancel-btn:hover {
-  background: #2a2a34;
-  color: #fff;
-}
+.delete-modal-actions .cancel-btn:hover { background: #2a2a34; color: #fff; }
 
 .delete-modal-actions .confirm-btn {
   background: linear-gradient(90deg, #dc2626, #b91c1c);
@@ -3160,9 +3223,7 @@ html, body {
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
 }
 
-.delete-modal-actions .confirm-btn:hover:not(:disabled) {
-  opacity: 0.9;
-}
+.delete-modal-actions .confirm-btn:hover:not(:disabled) { opacity: 0.9; }
 
 .delete-modal-actions .confirm-btn:disabled {
   opacity: 0.4;
@@ -3178,12 +3239,7 @@ html, body {
   text-align: center;
 }
 
-.delete-progress {
-  display: none;
-  margin-top: 16px;
-  text-align: center;
-}
-
+.delete-progress { display: none; margin-top: 16px; text-align: center; }
 .delete-progress.show { display: block; }
 
 .delete-progress .spinner-small {
@@ -3196,10 +3252,7 @@ html, body {
   margin: 0 auto 8px;
 }
 
-.delete-progress .progress-text {
-  font-size: 12px;
-  color: #888;
-}
+.delete-progress .progress-text { font-size: 12px; color: #888; }
 
 /* ============================================================
    POST MENU DROPDOWN
@@ -3321,9 +3374,7 @@ html, body {
 }
 
 .msg-row:hover .msg-dots-btn,
-.msg-row:focus-within .msg-dots-btn {
-  opacity: 1;
-}
+.msg-row:focus-within .msg-dots-btn { opacity: 1; }
 
 .msg-dots-btn:hover { background: #1a1a24; color: #fff; }
 .msg-dots-btn svg { width: 16px; height: 16px; }
@@ -3374,10 +3425,7 @@ html, body {
 
 .edit-msg-box textarea:focus { border-color: #ff2e63; }
 
-.edit-msg-actions {
-  display: flex;
-  gap: 10px;
-}
+.edit-msg-actions { display: flex; gap: 10px; }
 
 .edit-msg-actions button {
   flex: 1;
@@ -3428,6 +3476,8 @@ html, body {
   flex: 1;
   min-width: 0;
   overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .pinned-banner .pin-text b {
@@ -3438,12 +3488,6 @@ html, body {
   margin-bottom: 2px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-}
-
-.pinned-banner .pin-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .pinned-banner .pin-close {
@@ -3462,6 +3506,9 @@ html, body {
 #chatMessages.has-pinned { padding-top: 8px; }
 
 /* COMPACT MODE */
+body.compact-mode .shorts-shelf-item,
+body.compact-mode .shorts-shelf-thumb { width: 120px; }
+body.compact-mode .shorts-shelf-thumb { height: 214px; }
 body.compact-mode .yt-info { padding: 8px 10px 0; gap: 10px; }
 body.compact-mode .yt-avatar { width: 34px; height: 34px; }
 body.compact-mode .yt-title { font-size: 13px; }
@@ -3481,6 +3528,11 @@ body.light-mode .nav-item.active { color: #000; }
 body.light-mode .home-feed,
 body.light-mode .yt-card { background: #fff; }
 body.light-mode .yt-title { color: #000; }
+body.light-mode .shorts-shelf { border-bottom-color: #e5e5e5; }
+body.light-mode .shorts-shelf-title { color: #000; }
+body.light-mode .shorts-shelf-more { color: #666; }
+body.light-mode .shorts-shelf-more:hover { background: #f0f0f0; color: #000; }
+body.light-mode .shorts-shelf-title-text { color: #000; }
 body.light-mode .settings-modal,
 body.light-mode .modal { background: #fff; color: #000; }
 body.light-mode .settings-item-label { color: #000; }
@@ -3496,12 +3548,14 @@ body.light-mode .modal-close:hover { background: #f0f0f0; color: #000; }
 /* ============================================================
    PERFORMANCE
    ============================================================ */
-.yt-card {
+.yt-card,
+.shorts-shelf-item {
   contain: layout style paint;
 }
 
 .yt-thumb img,
 .yt-avatar,
+.shorts-shelf-thumb img,
 .grid-item img,
 .grid-item video {
   transform: translateZ(0);
@@ -3519,7 +3573,8 @@ body.light-mode .modal-close:hover { background: #f0f0f0; color: #000; }
 #chatMessages,
 #commentsList,
 .shorts-wrap,
-.settings-modal {
+.settings-modal,
+.shorts-shelf-scroll {
   -webkit-overflow-scrolling: touch;
 }
 
