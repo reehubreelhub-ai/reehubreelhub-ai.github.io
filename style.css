@@ -1,7 +1,262 @@
 /* ============================================================
-   ReelHub — style.css (Complete Final Version)
+   ReelHub — style.css (Complete Final Version + Animated Loading)
    ============================================================ */
 
+/* ============================================================
+   LOADING SCREEN — Animated
+   ============================================================ */
+#loadingScreen {
+  position: fixed;
+  inset: 0;
+  background: #0a0a0a;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  overflow: hidden;
+  padding: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+#loadingScreen::before {
+  content: '';
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(255, 46, 99, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: glowPulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes glowPulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50%      { transform: scale(1.3); opacity: 0.7; }
+}
+
+#loadingScreen .contact-us {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  z-index: 2;
+  font-family: inherit;
+  transition: transform 0.2s ease;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+#loadingScreen .contact-us:active {
+  transform: scale(0.95);
+}
+
+#loadingScreen .loader-wrap {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+#loadingScreen .logo-anim {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 10px;
+}
+
+#loadingScreen .logo-anim::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #ff2e63, #ff8a00, #ff2e63, transparent, #ff2e63);
+  animation: rotateRing 2s linear infinite;
+  z-index: 0;
+}
+
+#loadingScreen .logo-anim::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: #0a0a0a;
+  z-index: 1;
+}
+
+@keyframes rotateRing {
+  to { transform: rotate(360deg); }
+}
+
+#loadingScreen .logo-letter {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff2e63, #ff8a00);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: 900;
+  color: #fff;
+  animation: logoPulse 2s ease-in-out infinite;
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes logoPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+#loadingScreen .welcome-line {
+  font-size: 34px;
+  font-weight: 900;
+  color: #ff2e3b;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  animation: loadingSlideUp 0.6s ease-out;
+}
+
+#loadingScreen .brand-line {
+  font-size: 44px;
+  font-weight: 900;
+  background: linear-gradient(90deg, #ff2e63, #ff8a00, #ff2e63);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -1px;
+  line-height: 1;
+  animation: gradientShift 3s linear infinite;
+}
+
+@keyframes gradientShift {
+  to { background-position: 200% center; }
+}
+
+@keyframes loadingSlideUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+#loadingScreen .loading-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  color: #ff2e3b;
+  font-size: 22px;
+  font-weight: 700;
+  padding: 10px 28px;
+  border-radius: 4px;
+  min-width: 200px;
+  font-family: inherit;
+  letter-spacing: 0.5px;
+  margin-top: 10px;
+}
+
+#loadingScreen .loading-text {
+  color: #ff2e3b;
+}
+
+#loadingScreen .loading-dots {
+  display: inline-flex;
+  margin-left: 2px;
+}
+
+#loadingScreen .loading-dots span {
+  display: inline-block;
+  color: #ff2e3b;
+  font-weight: 900;
+  font-size: 22px;
+  opacity: 0.2;
+  animation: dotBounce 1.4s infinite ease-in-out;
+}
+
+#loadingScreen .loading-dots span:nth-child(1) { animation-delay: 0s; }
+#loadingScreen .loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+#loadingScreen .loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+#loadingScreen .loading-dots span:nth-child(4) { animation-delay: 0.45s; }
+
+@keyframes dotBounce {
+  0%, 60%, 100% { opacity: 0.2; transform: translateY(0); }
+  30%           { opacity: 1;   transform: translateY(-4px); }
+}
+
+#loadingScreen .progress-track {
+  width: 200px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 10px;
+  position: relative;
+}
+
+#loadingScreen .progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, #ff2e63, #ff8a00);
+  border-radius: 3px;
+  animation: progressSlide 1.5s ease-in-out infinite;
+}
+
+@keyframes progressSlide {
+  0%   { transform: translateX(-100%); width: 40%; }
+  50%  { width: 60%; }
+  100% { transform: translateX(500%); width: 40%; }
+}
+
+#loadingScreen .footer-line {
+  position: absolute;
+  bottom: 40px;
+  font-size: 26px;
+  font-weight: 900;
+  color: #ff2e3b;
+  line-height: 1.15;
+  text-align: center;
+  z-index: 2;
+  animation: fadeInOut 3s ease-in-out infinite;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0.7; }
+  50%      { opacity: 1; }
+}
+
+@media (max-width: 380px) {
+  #loadingScreen .welcome-line      { font-size: 28px; }
+  #loadingScreen .brand-line        { font-size: 36px; }
+  #loadingScreen .logo-anim         { width: 75px; height: 75px; }
+  #loadingScreen .logo-letter       { width: 65px; height: 65px; font-size: 32px; }
+  #loadingScreen .loading-box       { font-size: 18px; padding: 8px 22px; min-width: 170px; }
+  #loadingScreen .loading-dots span { font-size: 18px; }
+  #loadingScreen .progress-track    { width: 170px; }
+  #loadingScreen .footer-line       { font-size: 22px; bottom: 30px; }
+  #loadingScreen .contact-us        { font-size: 10px; padding: 6px 12px; }
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
 * {
   margin: 0;
   padding: 0;
