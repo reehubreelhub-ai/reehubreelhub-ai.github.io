@@ -817,9 +817,9 @@ function renderPage(page) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 2/4) — FIXED VERSION
-   Helpers, Home Feed (YouTube + Cache), Stories Bar,
-   Double-Tap, Story Upload, Verified Badge, Congrats Animation
+   ReelHub — app.js (PART 2/4) — FIXED + YouTube Style
+   Helpers, Home Feed (Shorts Shelf + Long Cards + Cache),
+   Stories Bar, Double-Tap, Story Upload, Verified Badge
    ============================================================ */
 
 let feedAutoplayObserver = null;
@@ -855,7 +855,7 @@ function buildViewsHTML(viewsCount) {
   `;
 }
 
-/* ✅ FIX: Format duration helper (mm:ss or h:mm:ss) */
+/* ✅ Format duration (mm:ss or h:mm:ss) */
 function formatDuration(seconds) {
   if (!seconds || seconds < 0) return '';
   const m = Math.floor(seconds / 60);
@@ -866,6 +866,14 @@ function formatDuration(seconds) {
     return `${h}:${mm < 10 ? '0' : ''}${mm}:${s < 10 ? '0' : ''}${s}`;
   }
   return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+/* ✅ Format views like YouTube (1.2M, 850K, 1.2K) */
+function formatViews(count) {
+  const n = parseInt(count) || 0;
+  if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'K';
+  return n.toString();
 }
 
 /* ============================================================
@@ -1049,7 +1057,7 @@ async function loadStoryViewersList(uids, containerId) {
 }
 
 /* ============================================================
-   ✅ DOUBLE TAP LIKE — FIXED
+   ✅ DOUBLE TAP LIKE
    ============================================================ */
 function attachDoubleTapLike(element, post, onSingleTap) {
   if (!element || !post) return;
@@ -1059,7 +1067,7 @@ function attachDoubleTapLike(element, post, onSingleTap) {
   const TAP_DELAY = 300;
 
   element.addEventListener('click', (e) => {
-    if (e.target.closest('button, a, .post-menu-btn, .msg-dots-btn, .yt-menu-btn')) return;
+    if (e.target.closest('button, a, .post-menu-btn, .msg-dots-btn, .yt-menu-btn, .shorts-shelf-more')) return;
 
     const s = typeof getSettings === 'function' ? getSettings() : { doubleTapLike: true };
     if (s.doubleTapLike === false) {
@@ -1111,7 +1119,6 @@ async function handleDoubleTapLikeUniversal(post, cardEl, event) {
     if (!post.likes) post.likes = [];
     if (!post.likes.includes(currentUser.uid)) post.likes.push(currentUser.uid);
 
-    /* ✅ FIX: Respect notif settings */
     const s = typeof getSettings === 'function'
       ? getSettings()
       : { notifLikes: true, pushNotif: true };
@@ -1170,7 +1177,7 @@ function showHeartAnimation(container, event) {
 }
 
 /* ============================================================
-   🎉 CONGRATULATIONS ANIMATION
+   🎉 CONGRATS ANIMATION
    ============================================================ */
 function showCongratsAnimation(userName, userEmail) {
   document.querySelectorAll('.congrats-overlay').forEach(el => el.remove());
@@ -1280,7 +1287,6 @@ function showAdminPanelRedirect() {
     align-items: center;
     justify-content: center;
     padding: 20px;
-    animation: fadeIn 0.3s ease;
   `;
 
   modal.innerHTML = `
@@ -1358,11 +1364,11 @@ function showAdminPanelRedirect() {
 }
 
 /* ============================================================
-   ⚡ CACHE HELPERS — FIXED (Fast Load)
+   ⚡ CACHE HELPERS
    ============================================================ */
 function saveFeedCache(posts) {
   try {
-    const minimal = posts.slice(0, 10).map(p => ({
+    const minimal = posts.slice(0, 15).map(p => ({
       id: p.id,
       userId: p.userId,
       userName: p.userName,
@@ -1391,7 +1397,6 @@ function loadFeedCache() {
     const cached = localStorage.getItem('reelhub_feed_cache');
     const time = parseInt(localStorage.getItem('reelhub_feed_cache_time') || '0');
 
-    /* Cache 30 min tak valid */
     if (Date.now() - time > 30 * 60 * 1000) {
       localStorage.removeItem('reelhub_feed_cache');
       return null;
@@ -1400,7 +1405,6 @@ function loadFeedCache() {
     if (!cached) return null;
     const parsed = JSON.parse(cached);
 
-    /* Convert createdAt back to timestamp-like object */
     return parsed.map(p => ({
       ...p,
       createdAt: { toDate: () => new Date(p.createdAt) }
@@ -1411,7 +1415,7 @@ function loadFeedCache() {
 }
 
 /* ============================================================
-   HOME FEED — FIXED (YouTube + Cache + Skeleton)
+   HOME FEED — YouTube Style with Shorts Shelf
    ============================================================ */
 async function renderHomeFeed() {
   content.innerHTML = `
@@ -1448,24 +1452,14 @@ async function loadHomeFeedPosts() {
     return;
   }
 
-  /* ⚡ STEP 1: Instant cache from localStorage */
+  /* ⚡ STEP 1: Instant cache */
   const cached = loadFeedCache();
   if (cached && cached.length > 0) {
     container.innerHTML = '';
-    cached.forEach(post => container.appendChild(makeFeedPost(post)));
+    renderFeedWithShortsShelf(cached, container);
   } else {
-    /* Skeleton loader (no "Loading" text) */
+    /* Skeleton */
     container.innerHTML = `
-      <div class="yt-skeleton">
-        <div class="yt-skeleton-thumb"></div>
-        <div class="yt-skeleton-info">
-          <div class="yt-skeleton-avatar"></div>
-          <div class="yt-skeleton-lines">
-            <div class="yt-skeleton-line"></div>
-            <div class="yt-skeleton-line short"></div>
-          </div>
-        </div>
-      </div>
       <div class="yt-skeleton">
         <div class="yt-skeleton-thumb"></div>
         <div class="yt-skeleton-info">
@@ -1489,10 +1483,10 @@ async function loadHomeFeedPosts() {
     `;
   }
 
-  /* ⚡ STEP 2: Background fresh fetch */
+  /* ⚡ STEP 2: Fresh fetch */
   try {
     const postsRef = collection(db, 'posts');
-    const q = query(postsRef, limit(8));
+    const q = query(postsRef, limit(15));
     const snap = await getDocs(q);
 
     if (snap.empty) {
@@ -1520,17 +1514,16 @@ async function loadHomeFeedPosts() {
       );
     }
 
-    /* ⚡ STEP 3: Save to cache */
+    /* ⚡ Save cache */
     saveFeedCache(posts);
 
-    /* ⚡ STEP 4: Update UI only if needed */
+    /* ⚡ Update UI only if needed */
     const cacheIds = (cached || []).map(p => p.id).join(',');
     const newIds = posts.map(p => p.id).join(',');
 
     if (cacheIds !== newIds) {
       container.innerHTML = '';
-      posts.forEach(post => container.appendChild(makeFeedPost(post)));
-      setupFeedAutoplay();
+      renderFeedWithShortsShelf(posts, container);
     }
   } catch (e) {
     console.error('Feed error:', e);
@@ -1538,7 +1531,97 @@ async function loadHomeFeedPosts() {
   }
 }
 
-/* ✅ FIX: YouTube-style feed post */
+/* ✅ NAYA: Shorts shelf + regular feed */
+function renderFeedWithShortsShelf(posts, container) {
+  const shorts = posts.filter(p => p.type === 'short');
+  const regular = posts.filter(p => p.type !== 'short');
+
+  container.innerHTML = '';
+
+  /* 1️⃣ Shorts Shelf (YouTube style) */
+  if (shorts.length > 0) {
+    const shelf = document.createElement('div');
+    shelf.className = 'shorts-shelf';
+
+    shelf.innerHTML = `
+      <div class="shorts-shelf-header">
+        <div class="shorts-shelf-title">
+          <svg viewBox="0 0 24 24" class="shorts-icon">
+            <path d="M10 14.65v-5.3L15 12l-5 2.65zm7.77-4.33c-.77-.32-1.2-.5-1.2-.5L18 9.06c1.84-.96 2.53-3.23 1.56-5.06s-3.24-2.53-5.07-1.56L6 6.94c-1.29.68-2.07 2.04-2 3.49.07 1.42.93 2.67 2.22 3.25.03.01 1.2.5 1.2.5L6 14.93c-1.83.97-2.53 3.24-1.56 5.07.97 1.83 3.24 2.53 5.07 1.56l8.5-4.5c1.29-.68 2.06-2.04 1.99-3.49-.07-1.42-.94-2.68-2.23-3.25z"/>
+          </svg>
+          Shorts
+        </div>
+        <button class="shorts-shelf-more" id="shortsShelfMore">
+          View all
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div class="shorts-shelf-scroll" id="shortsShelfScroll"></div>
+    `;
+
+    container.appendChild(shelf);
+
+    const scrollWrap = shelf.querySelector('#shortsShelfScroll');
+    shorts.forEach(short => scrollWrap.appendChild(makeShortShelfItem(short)));
+
+    shelf.querySelector('#shortsShelfMore')?.addEventListener('click', () => {
+      setActiveNav('shorts');
+      renderPage('shorts');
+    });
+  }
+
+  /* 2️⃣ Regular feed (Long videos + Photos) */
+  if (regular.length > 0) {
+    regular.forEach(post => container.appendChild(makeFeedPost(post)));
+    setupFeedAutoplay();
+  }
+
+  /* Empty state */
+  if (posts.length === 0) {
+    container.innerHTML = `
+      <div class="feed-empty">
+        <svg viewBox="0 0 24 24" style="width:64px;height:64px;stroke:#333;fill:none;stroke-width:1.5;margin-bottom:16px;">
+          <rect x="3" y="3" width="18" height="18" rx="4"/>
+          <circle cx="9" cy="9" r="2"/>
+          <path d="M21 15l-5-5L5 21"/>
+        </svg>
+        <h3>No posts yet</h3>
+        <p>Be the first to upload!</p>
+      </div>`;
+  }
+}
+
+/* ✅ Short shelf item (vertical 9:16) */
+function makeShortShelfItem(short) {
+  const item = document.createElement('div');
+  item.className = 'shorts-shelf-item';
+  item.dataset.postId = short.id;
+
+  const thumbUrl = short.thumbnail || short.url;
+  const viewsCount = short.views || 0;
+  const viewsText = formatViews(viewsCount);
+
+  item.innerHTML = `
+    <div class="shorts-shelf-thumb">
+      <img src="${thumbUrl}" alt="" loading="lazy">
+      <div class="shorts-shelf-play">
+        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="#fff"/></svg>
+      </div>
+    </div>
+    <div class="shorts-shelf-title-text">${escapeHtml(short.caption || 'Short video')}</div>
+    <div class="shorts-shelf-views">${viewsText} views</div>
+  `;
+
+  item.addEventListener('click', () => {
+    /* Shorts tab mein jao */
+    setActiveNav('shorts');
+    renderShortsFeed();
+  });
+
+  return item;
+}
+
+/* ✅ YouTube-style card for Long/Photo */
 function makeFeedPost(post) {
   const card = document.createElement('div');
   card.className = 'yt-card';
@@ -1547,16 +1630,14 @@ function makeFeedPost(post) {
   const thumbUrl = post.thumbnail || (post.type === 'photo' ? post.url : '');
   const avatar = post.userPhoto || defaultAvatar(post.userName);
   const viewsCount = post.views || 0;
+  const viewsText = formatViews(viewsCount);
   const timeAgoStr = post.createdAt?.toDate?.() ? timeAgoShort(post.createdAt.toDate()) : 'now';
-
-  const isShort = post.type === 'short';
   const duration = post.duration ? formatDuration(post.duration) : '';
 
   card.innerHTML = `
     <div class="yt-thumb" data-action="play">
       <img src="${thumbUrl}" alt="" loading="lazy">
       ${duration ? `<div class="yt-duration">${duration}</div>` : ''}
-      ${isShort ? `<div class="yt-badge-short">SHORT</div>` : ''}
       <div class="yt-play-overlay">
         <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="#fff"/></svg>
       </div>
@@ -1566,7 +1647,7 @@ function makeFeedPost(post) {
       <div class="yt-meta">
         <div class="yt-title">${escapeHtml(post.caption || 'Untitled')}</div>
         <div class="yt-channel">${escapeHtml(post.userName || 'User')}${verifiedBadgeHTML(post.userVerified)}</div>
-        <div class="yt-stats">${viewsCount} views · ${timeAgoStr}</div>
+        <div class="yt-stats">${viewsText} views · ${timeAgoStr}</div>
       </div>
       <button class="yt-menu-btn" data-action="menu">
         <svg viewBox="0 0 24 24">
@@ -1578,7 +1659,6 @@ function makeFeedPost(post) {
     </div>
   `;
 
-  /* Clicks */
   card.querySelector('[data-action="play"]').addEventListener('click', () => {
     openPlayer(post);
   });
@@ -1593,7 +1673,6 @@ function makeFeedPost(post) {
     await showPostMenu(e.currentTarget, post);
   });
 
-  /* Double-tap like on thumb */
   attachDoubleTapLike(card.querySelector('.yt-thumb'), post, null);
 
   trackPostView(post.id);
@@ -1723,7 +1802,6 @@ async function deletePost(postId) {
     });
     currentProfile.videoCount = Math.max(0, (currentProfile.videoCount || 1) - 1);
 
-    /* Clear cache */
     localStorage.removeItem('reelhub_feed_cache');
 
     showToast('🗑️ Post deleted');
@@ -1745,7 +1823,7 @@ function setupFeedAutoplay() {
 
   if (!settings.autoPlay || settings.dataSaver) return;
 
-  const videos = document.querySelectorAll('.long-card-feed video, .feed-post-media video');
+  const videos = document.querySelectorAll('.yt-card video, .feed-post-media video');
   if (videos.length === 0) return;
 
   feedAutoplayObserver = new IntersectionObserver((entries) => {
@@ -1769,7 +1847,7 @@ function stopFeedAutoplay() {
     feedAutoplayObserver.disconnect();
     feedAutoplayObserver = null;
   }
-  document.querySelectorAll('.long-card-feed video, .feed-post-media video').forEach(v => {
+  document.querySelectorAll('.yt-card video, .feed-post-media video').forEach(v => {
     try { v.pause(); } catch (e) {}
   });
 }
@@ -1859,7 +1937,7 @@ async function loadStoriesBar() {
 }
 
 /* ============================================================
-   STORY UPLOAD MODAL — FIXED (blob URL cleanup)
+   STORY UPLOAD MODAL
    ============================================================ */
 let storyPreviewBlobUrl = null;
 
@@ -2188,7 +2266,7 @@ function uploadToCloudinaryGroupFile(file, onProgress) {
 }
 
 /* ============================================================
-   🔧 CLOUDINARY UPLOAD — VOICE (for chat fix)
+   CLOUDINARY UPLOAD — VOICE (for chat)
    ============================================================ */
 function uploadToCloudinaryVoice(file, onProgress) {
   return new Promise((resolve, reject) => {
