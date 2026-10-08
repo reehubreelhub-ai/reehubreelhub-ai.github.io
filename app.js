@@ -5829,3 +5829,22 @@ initSettingsListeners();
 })();
 
 console.log('✅ app.js loaded — FINAL VERSION with Delete Account + Congrats Animation (4 Parts)');
+/* ============================================================
+   DELETE ACCOUNT — Direct Handler
+   ============================================================ */
+window.handleDeleteClick = function(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  console.log('🔴 Delete button clicked');
+  
+  if (typeof openDeleteAccountModal === 'function') {
+    openDeleteAccountModal();
+  } else {
+    alert('❌ openDeleteAccountModal function not found in app.js');
+  }
+};
+
+console.log('✅ Delete handler ready');
