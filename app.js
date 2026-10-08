@@ -10,7 +10,9 @@ import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import {
   getFirestore,
@@ -29,7 +31,8 @@ import {
   arrayRemove,
   limit,
   orderBy,
-  startAfter
+  startAfter,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 /* ============================================================
@@ -289,7 +292,7 @@ document.getElementById('goLogin')?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   SIGNUP — FIXED (AUTH first, then username check)
+   SIGNUP
    ============================================================ */
 signupForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -318,7 +321,7 @@ signupForm.addEventListener('submit', async (e) => {
     const uid  = cred.user.uid;
     createdAuthUser = cred.user;
 
-    // STEP 2 — Username check (user logged-in है)
+    // STEP 2 — Username check
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('user', '==', user));
     const snap = await getDocs(q);
@@ -406,7 +409,7 @@ loginForm.addEventListener('submit', async (e) => {
     currentUser = result.user;
     await loadProfile(result.user.uid);
 
-    // ✅ BAN CHECK
+    // BAN CHECK
     if (currentProfile?.banned) {
       await signOut(auth);
       currentUser = null;
@@ -495,7 +498,7 @@ sendResetBtn.addEventListener('click', async () => {
 /* ============================================================
    LOGOUT
    ============================================================ */
-document.getElementById('logoutBtn').addEventListener('click', async () => {
+document.getElementById('logoutBtn')?.addEventListener('click', async () => {
   if (confirm('Log out of ReelHub?')) {
     stopNotifWatcher();
     stopShortsObserver();
@@ -513,7 +516,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
 
     loginForm.reset();
     signupForm.reset();
-    document.getElementById('goLogin').click();
+    document.getElementById('goLogin')?.click();
     showAuth();
   }
 });
@@ -521,8 +524,8 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
 /* ============================================================
    HEADER BUTTONS
    ============================================================ */
-notifBtn.addEventListener('click', () => { setActiveNav(null); renderPage('notifications'); });
-searchBtn.addEventListener('click', () => { setActiveNav(null); renderPage('search'); });
+notifBtn?.addEventListener('click', () => { setActiveNav(null); renderPage('notifications'); });
+searchBtn?.addEventListener('click', () => { setActiveNav(null); renderPage('search'); });
 
 /* ============================================================
    AUTH STATE LISTENER
@@ -534,7 +537,7 @@ onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     try { await loadProfile(user.uid); } catch (e) {}
 
-    // ✅ BAN CHECK
+    // BAN CHECK
     if (currentProfile?.banned) {
       await signOut(auth);
       currentUser = null;
@@ -553,7 +556,7 @@ onAuthStateChanged(auth, async (user) => {
     stopChatListWatcher();
     loginForm.reset();
     signupForm.reset();
-    document.getElementById('goLogin').click();
+    document.getElementById('goLogin')?.click();
     showAuth();
   }
 });
@@ -618,8 +621,9 @@ function renderPage(page) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 2/4) — FINAL with Verified Badge + Congrats Animation
-   Helpers, Home Feed, Stories Bar, Double-Tap, Story Upload
+   ReelHub — app.js (PART 2/4) — FINAL VERSION
+   Helpers, Home Feed, Stories Bar, Double-Tap, Story Upload,
+   Verified Badge, Congratulations Animation
    ============================================================ */
 
 let feedAutoplayObserver = null;
@@ -1024,7 +1028,6 @@ function showCongratsAnimation(userName, userEmail) {
 
   document.body.appendChild(overlay);
 
-  // Button click
   document.getElementById('congratsContinueBtn').addEventListener('click', () => {
     overlay.classList.add('closing');
     setTimeout(() => {
@@ -1033,7 +1036,6 @@ function showCongratsAnimation(userName, userEmail) {
     }, 600);
   });
 
-  // Vibration
   if (navigator.vibrate) {
     navigator.vibrate([100, 50, 100, 50, 200]);
   }
@@ -1056,7 +1058,7 @@ function showAdminPanelRedirect() {
     align-items: center;
     justify-content: center;
     padding: 20px;
-    animation: congratsFadeIn 0.3s ease;
+    animation: fadeIn 0.3s ease;
   `;
 
   modal.innerHTML = `
@@ -1813,7 +1815,7 @@ function uploadToCloudinaryGroupFile(file, onProgress) {
   });
 }
 /* ============================================================
-   ReelHub — app.js (PART 3/4) — FINAL with Verified Badge
+   ReelHub — app.js (PART 3/4) — FINAL VERSION
    Story Viewer, Shorts, Like/Unlike, Comments
    ============================================================ */
 
@@ -2596,7 +2598,7 @@ postCommentBtn.addEventListener('click', async () => {
       userName: currentProfile?.name || 'User',
       userHandle: currentProfile?.user || '',
       userPhoto: currentProfile?.photo || '',
-      userVerified: currentProfile?.verified || false,   // ✅ Verified badge
+      userVerified: currentProfile?.verified || false,
       text: text,
       likes: [],
       parentId: activeReplyTo ? activeReplyTo.commentId : null,
@@ -2741,8 +2743,9 @@ async function deleteComment(commentId) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 4/4) — FINAL with Verified Badge + Congrats
-   Chat, Groups, Profile, Upload, Notifications, Search, Settings
+   ReelHub — app.js (PART 4/4) — FINAL VERSION
+   Chat, Groups, Profile, Upload, Notifications, Search, Settings,
+   Delete Account, Privacy/Terms Links
    ============================================================ */
 
 /* ============================================================
@@ -3454,6 +3457,7 @@ async function sendMessage(msgData) {
       await updateDoc(chatRef, chatData);
     }
 
+    // Send notification
     try {
       await addDoc(collection(db, 'notifications'), {
         userId: activeChatUser.uid,
@@ -4975,7 +4979,7 @@ async function toggleFollow(targetUid, btnEl) {
 }
 
 /* ============================================================
-   NOTIFICATIONS — Render (with admin invite accept/reject)
+   NOTIFICATIONS
    ============================================================ */
 async function renderNotifications() {
   if (!currentUser) return;
@@ -5060,8 +5064,7 @@ function paintNotifications(list) {
 }
 
 /* ============================================================
-   ADMIN INVITE — Accept / Reject Handler
-   ✅ UPDATED: Now uses showCongratsAnimation() instead of alert()
+   ADMIN INVITE — Accept / Reject with Congrats Animation
    ============================================================ */
 async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
   if (!currentUser || !currentUser.email) {
@@ -5364,6 +5367,288 @@ function formatVoiceDuration(seconds) {
 }
 
 /* ============================================================
+   DELETE ACCOUNT — Complete System
+   ============================================================ */
+function openDeleteAccountModal() {
+  document.querySelectorAll('.delete-modal-overlay').forEach(el => el.remove());
+
+  const overlay = document.createElement('div');
+  overlay.className = 'delete-modal-overlay show';
+  overlay.id = 'deleteAccountModal';
+
+  overlay.innerHTML = `
+    <div class="delete-modal">
+      <div class="delete-modal-icon">⚠️</div>
+      
+      <h3>Delete Your Account?</h3>
+      <p>This action is <strong style="color:#ff4d4d;">permanent and cannot be undone</strong>.</p>
+
+      <div class="warning-list">
+        <ul>
+          <li>Your profile will be removed</li>
+          <li>All your posts and videos will be deleted</li>
+          <li>Your stories will be deleted</li>
+          <li>Your comments will be removed</li>
+          <li>Your messages will be deleted</li>
+          <li>You'll be removed from all groups</li>
+          <li>You'll lose all followers</li>
+        </ul>
+      </div>
+
+      <div class="confirm-input-wrap">
+        <label>Type <strong>DELETE</strong> to confirm:</label>
+        <input type="text" id="deleteConfirmInput" placeholder="Type DELETE" autocomplete="off">
+      </div>
+
+      <div class="confirm-input-wrap">
+        <label>Enter your password:</label>
+        <input type="password" id="deletePasswordInput" placeholder="Your password" autocomplete="current-password">
+      </div>
+
+      <div class="delete-modal-actions">
+        <button class="cancel-btn" id="cancelDeleteBtn">Cancel</button>
+        <button class="confirm-btn" id="confirmDeleteBtn" disabled>Delete Account</button>
+      </div>
+
+      <div class="error-text" id="deleteErrorMsg"></div>
+
+      <div class="delete-progress" id="deleteProgress">
+        <div class="spinner-small"></div>
+        <div class="progress-text" id="deleteProgressText">Deleting your account...</div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const confirmInput = document.getElementById('deleteConfirmInput');
+  const passwordInput = document.getElementById('deletePasswordInput');
+  const confirmBtn = document.getElementById('confirmDeleteBtn');
+  const cancelBtn = document.getElementById('cancelDeleteBtn');
+  const errorMsg = document.getElementById('deleteErrorMsg');
+
+  function checkInputs() {
+    const confirmOk = confirmInput.value.trim() === 'DELETE';
+    const passOk = passwordInput.value.length >= 6;
+    confirmBtn.disabled = !(confirmOk && passOk);
+  }
+
+  confirmInput.addEventListener('input', checkInputs);
+  passwordInput.addEventListener('input', checkInputs);
+
+  cancelBtn.addEventListener('click', closeDeleteModal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeDeleteModal();
+  });
+
+  confirmBtn.addEventListener('click', async () => {
+    errorMsg.textContent = '';
+    confirmBtn.disabled = true;
+    cancelBtn.disabled = true;
+
+    document.getElementById('deleteProgress').classList.add('show');
+    document.getElementById('deleteProgressText').textContent = 'Verifying password...';
+
+    try {
+      await deleteUserAccount(passwordInput.value);
+    } catch (err) {
+      console.error('Delete account error:', err);
+      errorMsg.textContent = err.message || 'Failed to delete account. Try again.';
+      confirmBtn.disabled = false;
+      cancelBtn.disabled = false;
+      document.getElementById('deleteProgress').classList.remove('show');
+    }
+  });
+
+  setTimeout(() => confirmInput.focus(), 100);
+}
+
+function closeDeleteModal() {
+  document.querySelectorAll('.delete-modal-overlay').forEach(el => el.remove());
+}
+
+async function deleteUserAccount(password) {
+  if (!currentUser || !currentUser.email) {
+    throw new Error('You are not logged in.');
+  }
+
+  const uid = currentUser.uid;
+  const progressText = document.getElementById('deleteProgressText');
+
+  try {
+    /* STEP 1 — Re-authenticate */
+    progressText.textContent = 'Verifying your password...';
+    const credential = EmailAuthProvider.credential(currentUser.email, password);
+    await reauthenticateWithCredential(currentUser, credential);
+
+    /* STEP 2 — Delete Posts + Comments on them */
+    progressText.textContent = 'Deleting your posts...';
+    try {
+      const postsQ = query(collection(db, 'posts'), where('userId', '==', uid));
+      const postsSnap = await getDocs(postsQ);
+      
+      for (const postDoc of postsSnap.docs) {
+        try {
+          const commentsQ = query(collection(db, 'comments'), where('postId', '==', postDoc.id));
+          const commentsSnap = await getDocs(commentsQ);
+          if (commentsSnap.size > 0) {
+            await batchDeleteDocs(commentsSnap.docs.map(d => d.ref));
+          }
+        } catch (e) { console.warn('Post comments delete:', e); }
+      }
+      
+      if (postsSnap.size > 0) {
+        await batchDeleteDocs(postsSnap.docs.map(d => d.ref));
+      }
+    } catch (e) { console.warn('Posts delete:', e); }
+
+    /* STEP 3 — Delete User's Comments */
+    progressText.textContent = 'Deleting your comments...';
+    try {
+      const commentsQ = query(collection(db, 'comments'), where('userId', '==', uid));
+      const commentsSnap = await getDocs(commentsQ);
+      if (commentsSnap.size > 0) {
+        await batchDeleteDocs(commentsSnap.docs.map(d => d.ref));
+      }
+    } catch (e) { console.warn('Comments delete:', e); }
+
+    /* STEP 4 — Delete Stories */
+    progressText.textContent = 'Deleting your stories...';
+    try {
+      const storiesQ = query(collection(db, 'stories'), where('userId', '==', uid));
+      const storiesSnap = await getDocs(storiesQ);
+      if (storiesSnap.size > 0) {
+        await batchDeleteDocs(storiesSnap.docs.map(d => d.ref));
+      }
+    } catch (e) { console.warn('Stories delete:', e); }
+
+    /* STEP 5 — Delete Notifications */
+    progressText.textContent = 'Deleting notifications...';
+    try {
+      const notifQ = query(collection(db, 'notifications'), where('userId', '==', uid));
+      const notifSnap = await getDocs(notifQ);
+      if (notifSnap.size > 0) {
+        await batchDeleteDocs(notifSnap.docs.map(d => d.ref));
+      }
+    } catch (e) { console.warn('Notifications delete:', e); }
+
+    /* STEP 6 — Leave all Groups */
+    progressText.textContent = 'Leaving groups...';
+    try {
+      const groupsQ = query(collection(db, 'groups'), where('members', 'array-contains', uid));
+      const groupsSnap = await getDocs(groupsQ);
+      for (const groupDoc of groupsSnap.docs) {
+        await updateDoc(groupDoc.ref, {
+          members: arrayRemove(uid),
+          admins: arrayRemove(uid),
+          unreadBy: arrayRemove(uid)
+        });
+      }
+    } catch (e) { console.warn('Groups leave:', e); }
+
+    /* STEP 7 — Delete Chats */
+    progressText.textContent = 'Deleting messages...';
+    try {
+      const chatsQ = query(collection(db, 'chats'), where('members', 'array-contains', uid));
+      const chatsSnap = await getDocs(chatsQ);
+      for (const chatDoc of chatsSnap.docs) {
+        try {
+          const msgsSnap = await getDocs(collection(db, 'chats', chatDoc.id, 'messages'));
+          if (msgsSnap.size > 0) {
+            await batchDeleteDocs(msgsSnap.docs.map(d => d.ref));
+          }
+        } catch (e) {}
+        await deleteDoc(chatDoc.ref);
+      }
+    } catch (e) { console.warn('Chats delete:', e); }
+
+    /* STEP 8 — Remove from Followers/Following */
+    progressText.textContent = 'Updating followers...';
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const updates = [];
+      for (const userDoc of usersSnap.docs) {
+        if (userDoc.id === uid) continue;
+        const userData = userDoc.data();
+        const updatesNeeded = {};
+        
+        if ((userData.followers || []).includes(uid)) {
+          updatesNeeded.followers = arrayRemove(uid);
+        }
+        if ((userData.following || []).includes(uid)) {
+          updatesNeeded.following = arrayRemove(uid);
+        }
+        
+        if (Object.keys(updatesNeeded).length > 0) {
+          updates.push(updateDoc(userDoc.ref, updatesNeeded).catch(() => {}));
+        }
+      }
+      if (updates.length > 0) await Promise.all(updates);
+    } catch (e) { console.warn('Followers update:', e); }
+
+    /* STEP 9 — Delete User Profile */
+    progressText.textContent = 'Deleting profile...';
+    try {
+      await deleteDoc(doc(db, 'users', uid));
+    } catch (e) {
+      console.warn('Profile delete:', e);
+    }
+
+    /* STEP 10 — Delete Firebase Auth User */
+    progressText.textContent = 'Finalizing...';
+    await currentUser.delete();
+
+    /* STEP 11 — Cleanup & Success */
+    progressText.textContent = '✅ Account deleted successfully!';
+
+    setTimeout(() => {
+      stopNotifWatcher();
+      stopShortsObserver();
+      stopChatListWatcher();
+      if (chatMessagesUnsub) clearInterval(chatMessagesUnsub);
+      
+      currentUser = null;
+      currentProfile = null;
+      viewedPostsSession.clear();
+
+      closeDeleteModal();
+      showToast('✅ Account deleted. Goodbye! 👋');
+
+      setTimeout(() => {
+        loginForm.reset();
+        signupForm.reset();
+        document.getElementById('goLogin')?.click();
+        showAuth();
+      }, 800);
+    }, 1200);
+
+  } catch (err) {
+    console.error('Delete account failed:', err);
+    
+    if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      throw new Error('Incorrect password. Please try again.');
+    } else if (err.code === 'auth/requires-recent-login') {
+      throw new Error('Session expired. Please logout and login again, then try.');
+    } else if (err.code === 'auth/too-many-requests') {
+      throw new Error('Too many attempts. Try again later.');
+    } else if (err.code === 'auth/network-request-failed') {
+      throw new Error('Network error. Check your internet.');
+    } else {
+      throw new Error(err.message || 'Failed to delete account.');
+    }
+  }
+}
+
+async function batchDeleteDocs(refs) {
+  for (let i = 0; i < refs.length; i += 450) {
+    const chunk = refs.slice(i, i + 450);
+    const batch = writeBatch(db);
+    chunk.forEach(ref => batch.delete(ref));
+    await batch.commit();
+  }
+}
+
+/* ============================================================
    SETTINGS
    ============================================================ */
 const DEFAULT_SETTINGS = {
@@ -5511,6 +5796,22 @@ function initSettingsListeners() {
   wireToggle('settingCompactMode', 'compactMode', '📐 ON', '📐 OFF');
   document.getElementById('settingAboutBtn')?.addEventListener('click', () => showToast('📱 ReelHub v1.0.0'));
 
+  // ✅ Privacy Policy Link
+  document.getElementById('settingPrivacyBtn')?.addEventListener('click', () => {
+    window.open('privacy.html', '_blank');
+  });
+
+  // ✅ Terms of Service Link
+  document.getElementById('settingTermsBtn')?.addEventListener('click', () => {
+    window.open('terms.html', '_blank');
+  });
+
+  // ✅ Delete Account
+  document.getElementById('deleteAccountBtn')?.addEventListener('click', () => {
+    openDeleteAccountModal();
+  });
+
+  // Blocked Users
   document.getElementById('settingBlockedUsersBtn')?.addEventListener('click', () => {
     document.getElementById('settingsModal')?.classList.remove('show');
     openBlockedUsersModal();
@@ -5527,4 +5828,4 @@ initSettingsListeners();
   applySetting('privateAccount', s.privateAccount);
 })();
 
-console.log('✅ app.js loaded — FINAL VERSION with Verified Badge + Congrats Animation (4 Parts)');
+console.log('✅ app.js loaded — FINAL VERSION with Delete Account + Congrats Animation (4 Parts)');
