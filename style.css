@@ -1,6 +1,6 @@
 /* ============================================================
    ReelHub — style.css (Complete Final Version)
-   Includes: Loading + YouTube Feed + Shorts Shelf + Skeleton
+   Includes: Loading + YouTube Feed + Shorts Shelf + Skeleton + Fallbacks
    ============================================================ */
 
 /* ============================================================
@@ -685,6 +685,7 @@ html, body {
   color: #fff;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  z-index: 2;
 }
 
 .grid-item .play-icon {
@@ -700,6 +701,7 @@ html, body {
   border-radius: 50%;
   color: #fff;
   font-size: 10px;
+  z-index: 2;
 }
 
 .grid-empty {
@@ -985,6 +987,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2;
 }
 
 .shorts-shelf-play svg {
@@ -1010,6 +1013,23 @@ html, body {
   font-size: 11.5px;
   color: #888;
   padding: 0 2px;
+}
+
+/* ✅ NAYA: Shorts shelf fallback (no thumbnail) */
+.shorts-shelf-thumb.no-thumb {
+  background: linear-gradient(135deg, #ff2e63, #ff8a00);
+}
+
+.shorts-shelf-thumb.no-thumb::after {
+  content: '▶';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 48px;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
 }
 
 /* ============================================================
@@ -3544,6 +3564,35 @@ body.light-mode .settings-select { background: #f5f5f5; border-color: #ddd; colo
 body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; }
 body.light-mode .modal-close { color: #666; }
 body.light-mode .modal-close:hover { background: #f0f0f0; color: #000; }
+
+/* ============================================================
+   GRID ITEM — Thumbnail fallback
+   ============================================================ */
+.grid-item video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.grid-item.no-thumb {
+  background: linear-gradient(135deg, #ff2e63, #ff8a00);
+}
+
+.grid-item.no-thumb::after {
+  content: '▶';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 1;
+}
 
 /* ============================================================
    PERFORMANCE
