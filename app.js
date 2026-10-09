@@ -1,6 +1,6 @@
 /* ============================================================
-   ReelHub — app.js (PART 1/4) — FULL FINAL VERSION
-   Imports, Config, DOM, State, Auth, Loading Timeout
+   ReelHub — app.js (PART 1/4) — FULL FIXED VERSION
+   Imports, Config, DOM, State, Auth, Signup (FIXED)
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -206,7 +206,7 @@ let allCommentsForPost = [];
 
 let activeChatId = null;
 let activeChatUser = null;
-let chatMessagesUnsub = null;  // onSnapshot unsubscribe function
+let chatMessagesUnsub = null;
 let chatListInterval = null;
 let pinnedMessage = null;
 
@@ -236,10 +236,8 @@ let currentStoryMediaEl = null;
 let viewedPostsSession = new Set();
 let shortsSoundEnabled = localStorage.getItem('shortsSound') === 'true';
 
-/* Auth action flag — prevents listener double-fire */
 let authActionInProgress = false;
 
-/* Loading timeout safety */
 const LOADING_TIMEOUT_MS = 10000;
 let loadingTimeoutId = null;
 
@@ -284,7 +282,6 @@ function showAuth() {
   stopShortsObserver();
   stopChatListWatcher();
 
-  /* Stop onSnapshot listener */
   if (chatMessagesUnsub) {
     try { chatMessagesUnsub(); } catch (e) {}
     chatMessagesUnsub = null;
@@ -326,7 +323,7 @@ function requestNotificationPermission() {
 }
 
 /* ============================================================
-   VISIBILITY — resume polling when tab visible
+   VISIBILITY
    ============================================================ */
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && currentUser) {
@@ -384,7 +381,8 @@ $id('goLogin')?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   SIGNUP
+   ✅ SIGNUP — FIXED
+   Auth user PEHLE banao, phir username check
    ============================================================ */
 signupForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -423,22 +421,33 @@ signupForm?.addEventListener('submit', async (e) => {
   let createdAuthUser = null;
 
   try {
-    /* Username check BEFORE auth user creation */
+    /* ✅ STEP 1 — PEHLE auth user banao */
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    const uid  = cred.user.uid;
+    createdAuthUser = cred.user;
+
+    console.log('✅ Auth user created:', uid);
+
+    /* ✅ STEP 2 — Auth settle hone ka wait (250ms) */
+    await new Promise(r => setTimeout(r, 250));
+
+    /* ✅ STEP 3 — AB username check karo (user authenticated hai) */
     const usersRef = collection(db, 'users');
     const uq = query(usersRef, where('user', '==', user));
     const userSnap = await getDocs(uq);
 
     if (!userSnap.empty) {
+      /* Username already taken — rollback */
+      try {
+        await createdAuthUser.delete();
+      } catch (e) {
+        try { await signOut(auth); } catch (e2) {}
+      }
       signupMsg.textContent = 'Username already taken. Try another.';
       return;
     }
 
-    /* STEP 1 — Create auth user */
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    const uid  = cred.user.uid;
-    createdAuthUser = cred.user;
-
-    /* STEP 2 — Firestore profile */
+    /* ✅ STEP 4 — Firestore profile banao */
     await setDoc(doc(db, 'users', uid), {
       uid: uid,
       name: name,
@@ -457,14 +466,16 @@ signupForm?.addEventListener('submit', async (e) => {
       createdAt: serverTimestamp()
     });
 
-    /* STEP 3 — Email verification */
+    console.log('✅ Firestore profile created');
+
+    /* STEP 5 — Email verification */
     try {
       await sendEmailVerification(cred.user);
     } catch (e) {
       console.warn('Verification email failed:', e);
     }
 
-    /* STEP 4 — Set state */
+    /* STEP 6 — State set */
     currentUser = cred.user;
     await loadProfile(uid);
 
@@ -483,6 +494,7 @@ signupForm?.addEventListener('submit', async (e) => {
   } catch (err) {
     console.error('Signup error:', err);
 
+    /* Rollback */
     if (createdAuthUser && !currentProfile) {
       try {
         await createdAuthUser.delete();
@@ -493,19 +505,19 @@ signupForm?.addEventListener('submit', async (e) => {
 
     signupMsg.className = 'error-msg';
 
-    if (err.code === 'permission-denied' ||
-        (err.message && err.message.toLowerCase().includes('permission'))) {
-      signupMsg.textContent = '⚠️ Firestore rules block kar rahe hain.';
-    } else if (err.code === 'auth/email-already-in-use') {
-      signupMsg.textContent = 'Email already registered.';
+    if (err.code === 'auth/email-already-in-use') {
+      signupMsg.textContent = 'Email already registered. Try logging in.';
     } else if (err.code === 'auth/invalid-email') {
       signupMsg.textContent = 'Invalid email.';
     } else if (err.code === 'auth/weak-password') {
-      signupMsg.textContent = 'Password too weak.';
+      signupMsg.textContent = 'Password too weak (min 6 chars).';
     } else if (err.code === 'auth/network-request-failed') {
       signupMsg.textContent = 'Network error. Check your connection.';
+    } else if (err.code === 'permission-denied' ||
+               (err.message && err.message.toLowerCase().includes('permission'))) {
+      signupMsg.textContent = '⚠️ Firestore rules update karo (Firebase Console → Rules).';
     } else {
-      signupMsg.textContent = err.message || 'Signup failed.';
+      signupMsg.textContent = err.message || 'Signup failed. Try again.';
     }
   } finally {
     isSigningUp = false;
