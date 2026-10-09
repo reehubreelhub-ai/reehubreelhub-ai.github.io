@@ -1,6 +1,6 @@
 /* ============================================================
-   ReelHub — app.js (PART 1/4) — FIXED VERSION
-   Imports, Config, DOM, State, Auth
+   ReelHub — app.js (PART 1/4) — FULL FINAL VERSION
+   Imports, Config, DOM, State, Auth, Loading Timeout
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -206,7 +206,7 @@ let allCommentsForPost = [];
 
 let activeChatId = null;
 let activeChatUser = null;
-let chatMessagesUnsub = null;   // ✅ Ab ye onSnapshot ka unsubscribe function hai (pehle interval tha)
+let chatMessagesUnsub = null;  // onSnapshot unsubscribe function
 let chatListInterval = null;
 let pinnedMessage = null;
 
@@ -236,15 +236,15 @@ let currentStoryMediaEl = null;
 let viewedPostsSession = new Set();
 let shortsSoundEnabled = localStorage.getItem('shortsSound') === 'true';
 
-/* ✅ FIX: Auth action flag — listener double-fire rokta hai */
+/* Auth action flag — prevents listener double-fire */
 let authActionInProgress = false;
 
-/* ✅ FIX: Loading timeout safety */
+/* Loading timeout safety */
 const LOADING_TIMEOUT_MS = 10000;
 let loadingTimeoutId = null;
 
 /* ============================================================
-   🔧 LOADING SCREEN SAFETY
+   LOADING SCREEN SAFETY TIMEOUT
    ============================================================ */
 function startLoadingTimeout() {
   clearTimeout(loadingTimeoutId);
@@ -284,7 +284,7 @@ function showAuth() {
   stopShortsObserver();
   stopChatListWatcher();
 
-  /* ✅ FIX: onSnapshot listener band karo */
+  /* Stop onSnapshot listener */
   if (chatMessagesUnsub) {
     try { chatMessagesUnsub(); } catch (e) {}
     chatMessagesUnsub = null;
@@ -316,7 +316,7 @@ function setActiveNav(page) {
 }
 
 /* ============================================================
-   🔧 NOTIFICATION PERMISSION
+   NOTIFICATION PERMISSION
    ============================================================ */
 function requestNotificationPermission() {
   if (!('Notification' in window)) return;
@@ -326,7 +326,7 @@ function requestNotificationPermission() {
 }
 
 /* ============================================================
-   🔧 VISIBILITY — polling resume
+   VISIBILITY — resume polling when tab visible
    ============================================================ */
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && currentUser) {
@@ -336,7 +336,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 /* ============================================================
-   🔧 GLOBAL ERROR CATCHER
+   GLOBAL ERROR CATCHER
    ============================================================ */
 window.addEventListener('error', (e) => {
   console.error('❌ Global error:', e.error || e.message);
@@ -364,8 +364,11 @@ $id('goSignup')?.addEventListener('click', () => {
   if (signupForm) signupForm.style.display = 'block';
   if (loginMsg) loginMsg.textContent = '';
   if (signupMsg) signupMsg.textContent = '';
-  $id('goSignupSwitch') && ($id('goSignupSwitch').style.display = 'block');
-  $id('goSignupWrap') && ($id('goSignupWrap').style.display = 'none');
+
+  const sw = $id('goSignupSwitch');
+  const wr = $id('goSignupWrap');
+  if (sw) sw.style.display = 'block';
+  if (wr) wr.style.display = 'none';
 });
 
 $id('goLogin')?.addEventListener('click', () => {
@@ -373,12 +376,15 @@ $id('goLogin')?.addEventListener('click', () => {
   if (loginForm) loginForm.style.display = 'block';
   if (loginMsg) loginMsg.textContent = '';
   if (signupMsg) signupMsg.textContent = '';
-  $id('goSignupSwitch') && ($id('goSignupSwitch').style.display = 'none');
-  $id('goSignupWrap') && ($id('goSignupWrap').style.display = 'block');
+
+  const sw = $id('goSignupSwitch');
+  const wr = $id('goSignupWrap');
+  if (sw) sw.style.display = 'none';
+  if (wr) wr.style.display = 'block';
 });
 
 /* ============================================================
-   SIGNUP — FIXED
+   SIGNUP
    ============================================================ */
 signupForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -410,14 +416,14 @@ signupForm?.addEventListener('submit', async (e) => {
   }
 
   isSigningUp = true;
-  authActionInProgress = true; // ✅ FIX
+  authActionInProgress = true;
   signupBtn.disabled = true;
   signupBtn.textContent = 'Creating...';
 
   let createdAuthUser = null;
 
   try {
-    /* ✅ FIX: Username check BEFORE auth user creation */
+    /* Username check BEFORE auth user creation */
     const usersRef = collection(db, 'users');
     const uq = query(usersRef, where('user', '==', user));
     const userSnap = await getDocs(uq);
@@ -451,14 +457,14 @@ signupForm?.addEventListener('submit', async (e) => {
       createdAt: serverTimestamp()
     });
 
-    /* ✅ FIX: Send email verification */
+    /* STEP 3 — Email verification */
     try {
       await sendEmailVerification(cred.user);
     } catch (e) {
       console.warn('Verification email failed:', e);
     }
 
-    /* STEP 3 — Set state */
+    /* STEP 4 — Set state */
     currentUser = cred.user;
     await loadProfile(uid);
 
@@ -477,7 +483,6 @@ signupForm?.addEventListener('submit', async (e) => {
   } catch (err) {
     console.error('Signup error:', err);
 
-    /* Rollback */
     if (createdAuthUser && !currentProfile) {
       try {
         await createdAuthUser.delete();
@@ -511,7 +516,7 @@ signupForm?.addEventListener('submit', async (e) => {
 });
 
 /* ============================================================
-   LOGIN — FIXED
+   LOGIN
    ============================================================ */
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -579,7 +584,6 @@ loginForm?.addEventListener('submit', async (e) => {
     if (auth.currentUser) {
       try { await signOut(auth); } catch (e) {}
     }
-
   } finally {
     isLoggingIn = false;
     authActionInProgress = false;
@@ -649,7 +653,7 @@ sendResetBtn.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   LOGOUT — FIXED
+   LOGOUT
    ============================================================ */
 $id('logoutBtn')?.addEventListener('click', async () => {
   if (!confirm('Log out of ReelHub?')) return;
@@ -658,13 +662,11 @@ $id('logoutBtn')?.addEventListener('click', async () => {
   stopShortsObserver();
   stopChatListWatcher();
 
-  /* ✅ FIX: onSnapshot cleanup */
   if (chatMessagesUnsub) {
     try { chatMessagesUnsub(); } catch (e) {}
     chatMessagesUnsub = null;
   }
 
-  /* Close any open modals */
   try { closeChatWindow?.(); } catch (e) {}
   if (storyViewer) storyViewer.style.display = 'none';
   document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
@@ -701,10 +703,9 @@ searchBtn?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   AUTH STATE LISTENER — FIXED
+   AUTH STATE LISTENER
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
-  /* ✅ FIX: skip if manual login/signup in progress */
   if (authActionInProgress) return;
 
   if (user) {
@@ -817,9 +818,10 @@ function renderPage(page) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 2/4) — FIXED + YouTube Style
-   Helpers, Home Feed (Shorts Shelf + Long Cards + Cache),
-   Stories Bar, Double-Tap, Story Upload, Verified Badge
+   ReelHub — app.js (PART 2/4) — FULL FINAL VERSION
+   Helpers, Home Feed (YouTube + Shorts Shelf + Cache),
+   Stories Bar, Double-Tap, Story Upload, Verified Badge,
+   Congratulation Animation, Thumbnail Fix
    ============================================================ */
 
 let feedAutoplayObserver = null;
@@ -868,7 +870,7 @@ function formatDuration(seconds) {
   return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
-/* ✅ Format views like YouTube (1.2M, 850K, 1.2K) */
+/* ✅ Format views (1.2M, 850K, 1.2K) */
 function formatViews(count) {
   const n = parseInt(count) || 0;
   if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + 'M';
@@ -1177,7 +1179,7 @@ function showHeartAnimation(container, event) {
 }
 
 /* ============================================================
-   🎉 CONGRATS ANIMATION
+   🎉 CONGRATULATIONS ANIMATION
    ============================================================ */
 function showCongratsAnimation(userName, userEmail) {
   document.querySelectorAll('.congrats-overlay').forEach(el => el.remove());
@@ -1287,6 +1289,7 @@ function showAdminPanelRedirect() {
     align-items: center;
     justify-content: center;
     padding: 20px;
+    animation: fadeIn 0.3s ease;
   `;
 
   modal.innerHTML = `
@@ -1415,6 +1418,40 @@ function loadFeedCache() {
 }
 
 /* ============================================================
+   ✅ FIX: buildThumbnailUrl — Cloudinary smart thumbnail
+   ============================================================ */
+function buildThumbnailUrl(videoUrl, type) {
+  if (!videoUrl) return '';
+
+  try {
+    /* Photo — simple transform */
+    if (type === 'photo') {
+      if (videoUrl.includes('/image/upload/')) {
+        return videoUrl.replace('/image/upload/', '/image/upload/w_400,q_auto,f_auto/');
+      }
+      return videoUrl;
+    }
+
+    /* Video — Cloudinary video thumbnail (so_auto = smart frame) */
+    if (videoUrl.includes('/video/upload/')) {
+      const parts = videoUrl.split('/video/upload/');
+      if (parts.length === 2) {
+        const afterUpload = parts[1];
+
+        let publicId = afterUpload.replace(/^v\d+\//, '');
+        publicId = publicId.replace(/\.[^.]+$/, '');
+
+        return `https://res.cloudinary.com/${CLOUDINARY_ACCOUNTS.videos.cloudName}/video/upload/so_auto,w_400,h_711,c_fill,q_auto/${publicId}.jpg`;
+      }
+    }
+  } catch (e) {
+    console.warn('buildThumbnailUrl error:', e);
+  }
+
+  return '';
+}
+
+/* ============================================================
    HOME FEED — YouTube Style with Shorts Shelf
    ============================================================ */
 async function renderHomeFeed() {
@@ -1452,7 +1489,7 @@ async function loadHomeFeedPosts() {
     return;
   }
 
-  /* ⚡ STEP 1: Instant cache */
+  /* STEP 1: Instant cache */
   const cached = loadFeedCache();
   if (cached && cached.length > 0) {
     container.innerHTML = '';
@@ -1483,7 +1520,7 @@ async function loadHomeFeedPosts() {
     `;
   }
 
-  /* ⚡ STEP 2: Fresh fetch */
+  /* STEP 2: Fresh fetch */
   try {
     const postsRef = collection(db, 'posts');
     const q = query(postsRef, limit(15));
@@ -1499,7 +1536,6 @@ async function loadHomeFeedPosts() {
     const blocked = currentProfile?.blockedUsers || [];
     posts = posts.filter(p => !blocked.includes(p.userId));
 
-    /* Sort */
     const settings = typeof getSettings === 'function' ? getSettings() : { feedOrder: 'newest' };
 
     if (settings.feedOrder === 'trending') {
@@ -1514,10 +1550,10 @@ async function loadHomeFeedPosts() {
       );
     }
 
-    /* ⚡ Save cache */
+    /* STEP 3: Save cache */
     saveFeedCache(posts);
 
-    /* ⚡ Update UI only if needed */
+    /* STEP 4: Update UI only if needed */
     const cacheIds = (cached || []).map(p => p.id).join(',');
     const newIds = posts.map(p => p.id).join(',');
 
@@ -1531,14 +1567,14 @@ async function loadHomeFeedPosts() {
   }
 }
 
-/* ✅ NAYA: Shorts shelf + regular feed */
+/* ✅ Render: Shorts shelf + Long cards */
 function renderFeedWithShortsShelf(posts, container) {
   const shorts = posts.filter(p => p.type === 'short');
   const regular = posts.filter(p => p.type !== 'short');
 
   container.innerHTML = '';
 
-  /* 1️⃣ Shorts Shelf (YouTube style) */
+  /* 1️⃣ Shorts Shelf */
   if (shorts.length > 0) {
     const shelf = document.createElement('div');
     shelf.className = 'shorts-shelf';
@@ -1570,7 +1606,7 @@ function renderFeedWithShortsShelf(posts, container) {
     });
   }
 
-  /* 2️⃣ Regular feed (Long videos + Photos) */
+  /* 2️⃣ Regular feed */
   if (regular.length > 0) {
     regular.forEach(post => container.appendChild(makeFeedPost(post)));
     setupFeedAutoplay();
@@ -1591,7 +1627,7 @@ function renderFeedWithShortsShelf(posts, container) {
   }
 }
 
-/* ✅ Short shelf item (vertical 9:16) */
+/* ✅ Short shelf item — WITH THUMBNAIL FALLBACK */
 function makeShortShelfItem(short) {
   const item = document.createElement('div');
   item.className = 'shorts-shelf-item';
@@ -1612,8 +1648,37 @@ function makeShortShelfItem(short) {
     <div class="shorts-shelf-views">${viewsText} views</div>
   `;
 
+  /* ✅ FALLBACK: If thumbnail fails, load video as thumbnail */
+  const img = item.querySelector('img');
+  if (img) {
+    img.addEventListener('error', () => {
+      img.style.display = 'none';
+
+      const thumbWrap = item.querySelector('.shorts-shelf-thumb');
+      if (thumbWrap && !thumbWrap.querySelector('video')) {
+        const vid = document.createElement('video');
+        vid.src = short.url;
+        vid.muted = true;
+        vid.playsInline = true;
+        vid.preload = 'metadata';
+        vid.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;position:absolute;top:0;left:0;';
+
+        thumbWrap.insertBefore(vid, thumbWrap.firstChild);
+
+        vid.addEventListener('loadedmetadata', () => {
+          try { vid.currentTime = 1; } catch (e) {}
+        });
+
+        /* Final fallback: gradient */
+        vid.addEventListener('error', () => {
+          vid.remove();
+          thumbWrap.classList.add('no-thumb');
+        });
+      }
+    }, { once: true });
+  }
+
   item.addEventListener('click', () => {
-    /* Shorts tab mein jao */
     setActiveNav('shorts');
     renderShortsFeed();
   });
@@ -2316,12 +2381,13 @@ function uploadToCloudinaryVoice(file, onProgress) {
   });
 }
 /* ============================================================
-   ReelHub — app.js (PART 3/4) — FIXED VERSION
-   Story Viewer, Shorts, Like/Unlike, Comments
+   ReelHub — app.js (PART 3/4) — FULL FINAL VERSION
+   Story Viewer, Shorts Feed, Like/Unlike, Comments,
+   Voice Duration Helper
    ============================================================ */
 
 /* ============================================================
-   🔧 FORMAT VOICE DURATION — Guard helper
+   FORMAT VOICE DURATION — Guard helper
    ============================================================ */
 function formatVoiceDuration(seconds) {
   if (seconds === undefined || seconds === null || isNaN(seconds) || seconds < 0) {
@@ -2559,7 +2625,6 @@ async function markStoryViewed(storyId) {
     if (!viewers.includes(currentUser.uid)) {
       await updateDoc(storyRef, { viewers: arrayUnion(currentUser.uid) });
 
-      /* ✅ FIX: Respect notif settings */
       const s = typeof getSettings === 'function'
         ? getSettings()
         : { pushNotif: true };
@@ -2755,7 +2820,7 @@ function getCurrentVisibleVideo(wrap) {
   return videos[0];
 }
 
-/* ✅ FIX: Deferred mute toggle — double-tap doesn't unmute first */
+/* ✅ Short item — deferred mute toggle */
 function makeShortItem(short) {
   const item = document.createElement('div');
   item.className = 'short-item';
@@ -2843,7 +2908,7 @@ function makeShortItem(short) {
     await sharePost(short);
   });
 
-  /* ✅ FIX: Deferred mute toggle */
+  /* ✅ Deferred mute toggle */
   let shortTapTimer = null;
   videoEl.addEventListener('click', (e) => {
     if (e.detail >= 2) {
@@ -2877,7 +2942,6 @@ function setupShortsAutoplay(wrap) {
     entries.forEach(entry => {
       const video = entry.target;
       if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
-        /* ✅ FIX: dataSaver check */
         if (settings.autoPlay && !settings.dataSaver) {
           video.muted = !shortsSoundEnabled;
           video.play().catch(() => {
@@ -2905,7 +2969,7 @@ function stopShortsObserver() {
 }
 
 /* ============================================================
-   ✅ LIKE / UNLIKE — FIXED (respect notif settings)
+   ✅ LIKE / UNLIKE
    ============================================================ */
 async function toggleLike(postId, btnEl) {
   if (!currentUser) return;
@@ -2952,7 +3016,6 @@ async function toggleLike(postId, btnEl) {
       showToast('❤️ Liked');
       if (navigator.vibrate) navigator.vibrate(30);
 
-      /* ✅ FIX: Respect notif settings */
       try {
         const s = typeof getSettings === 'function'
           ? getSettings()
@@ -3220,7 +3283,6 @@ commentInput.addEventListener('input', () => {
   postCommentBtn.disabled = !commentInput.value.trim();
 });
 
-/* ✅ FIX: Respect notif settings for both post owner AND reply target */
 postCommentBtn.addEventListener('click', async () => {
   const text = commentInput.value.trim();
   if (!text || !activeCommentPostId || !currentUser) return;
@@ -3257,7 +3319,6 @@ postCommentBtn.addEventListener('click', async () => {
         document.querySelectorAll(`.comment-btn[data-post="${activeCommentPostId}"] span`)
           .forEach(el => { el.textContent = currentCount + 1; });
 
-        /* ✅ FIX: Respect notif settings */
         const s = typeof getSettings === 'function'
           ? getSettings()
           : { notifComments: true, pushNotif: true };
@@ -3281,7 +3342,7 @@ postCommentBtn.addEventListener('click', async () => {
           } catch (e) {}
         }
 
-        /* Notify reply target (only if different from post owner) */
+        /* Notify reply target */
         if (activeReplyTo && activeReplyTo.commentId && shouldNotify) {
           try {
             const parentRef = doc(db, 'comments', activeReplyTo.commentId);
@@ -3318,7 +3379,6 @@ postCommentBtn.addEventListener('click', async () => {
 
     await loadComments();
 
-    /* ✅ FIX: Scroll input into view after posting */
     setTimeout(() => {
       commentInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 100);
@@ -3340,7 +3400,6 @@ function showReplyIndicator(commentId, userName, userHandle) {
   commentInput.focus();
   commentInput.placeholder = `Reply to @${userHandle}...`;
 
-  /* ✅ FIX: Scroll input into view */
   setTimeout(() => {
     commentInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, 100);
@@ -3427,7 +3486,7 @@ async function deleteComment(commentId) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 4/4) — FIXED VERSION
+   ReelHub — app.js (PART 4/4) — FULL FINAL VERSION
    Chat (Real-time onSnapshot), Groups, Profile, Upload,
    Notifications, Search, Settings, Delete Account
    ============================================================ */
@@ -3875,7 +3934,7 @@ document.getElementById('createGroupBtn')?.addEventListener('click', async () =>
 });
 
 /* ============================================================
-   DM CHAT WINDOW — FIXED (onSnapshot real-time)
+   DM CHAT WINDOW — Real-time onSnapshot
    ============================================================ */
 function getChatId(uid1, uid2) {
   return [uid1, uid2].sort().join('_');
@@ -3897,7 +3956,6 @@ async function openChatWindow(otherUser) {
     }
   }
 
-  /* ✅ FIX: onSnapshot listener cleanup */
   if (chatMessagesUnsub) {
     try { chatMessagesUnsub(); } catch (e) {}
     chatMessagesUnsub = null;
@@ -3930,7 +3988,6 @@ async function openChatWindow(otherUser) {
 function closeChatWindow() {
   chatWindowModal.classList.remove('show');
 
-  /* ✅ FIX: onSnapshot cleanup */
   if (chatMessagesUnsub) {
     try { chatMessagesUnsub(); } catch (e) {}
     chatMessagesUnsub = null;
@@ -3951,7 +4008,7 @@ function closeChatWindow() {
 document.getElementById('closeChatWindow')?.addEventListener('click', closeChatWindow);
 
 /* ============================================================
-   GROUP CHAT WINDOW — FIXED (onSnapshot real-time)
+   GROUP CHAT WINDOW
    ============================================================ */
 async function openGroupChatWindow(group) {
   if (!group || !group.members.includes(currentUser.uid)) return;
@@ -3983,7 +4040,6 @@ async function openGroupChatWindow(group) {
   await markGroupRead();
 }
 
-/* ✅ FIX: onSnapshot real-time listener */
 async function loadGroupMessages() {
   if (!activeGroupId) return;
 
@@ -4018,7 +4074,6 @@ async function loadGroupMessages() {
   }
 }
 
-/* ✅ FIX: No signature check — onSnapshot only fires on change */
 function paintGroupMessages(messages) {
   if (messages.length === 0) {
     chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
@@ -4163,7 +4218,7 @@ async function markGroupRead() {
 }
 
 /* ============================================================
-   SEND MESSAGE — FIXED (setTimeout hata diya)
+   SEND MESSAGE
    ============================================================ */
 async function sendGroupMessage(msgData) {
   if (!activeGroupId) return;
@@ -4203,8 +4258,6 @@ async function sendGroupMessage(msgData) {
       lastMessageBy: currentUser.uid,
       unreadBy: otherMembers
     });
-
-    /* ✅ FIX: No setTimeout — onSnapshot khud repaint karega */
   } catch (e) {
     console.error('Group send error:', e);
     showToast('❌ Could not send');
@@ -4262,7 +4315,6 @@ async function sendMessage(msgData) {
       await updateDoc(chatRef, chatData);
     }
 
-    /* ✅ FIX: Respect notif settings */
     const s = typeof getSettings === 'function'
       ? getSettings()
       : { notifMessages: true, pushNotif: true };
@@ -4281,8 +4333,6 @@ async function sendMessage(msgData) {
         });
       } catch (e) {}
     }
-
-    /* ✅ FIX: No setTimeout — onSnapshot khud repaint karega */
   } catch (e) {
     console.error('Send error:', e);
     showToast('❌ Could not send');
@@ -4290,7 +4340,7 @@ async function sendMessage(msgData) {
 }
 
 /* ============================================================
-   DM MESSAGES LOAD — FIXED (onSnapshot real-time)
+   DM MESSAGES LOAD — Real-time onSnapshot
    ============================================================ */
 async function loadChatMessages() {
   if (!activeChatId) return;
@@ -4327,7 +4377,6 @@ async function loadChatMessages() {
   }
 }
 
-/* ✅ FIX: No signature check */
 function paintChatMessages(messages) {
   if (messages.length === 0) {
     chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
@@ -4573,7 +4622,6 @@ async function openEditMessageModal(msg) {
   });
 }
 
-/* ✅ FIX: No manual repaint — onSnapshot khud update karega */
 async function editMessage(msgId, newText) {
   if (!activeChatId || !currentUser) return;
   try {
@@ -4649,7 +4697,6 @@ async function markMessagesAsRead(messages) {
   } catch (e) {}
 }
 
-/* ✅ FIX: No manual repaint */
 async function deleteMessage(msgId) {
   if (!activeChatId) return;
   try {
@@ -4841,7 +4888,7 @@ async function sendFileMessage(file) {
 }
 
 /* ============================================================
-   VOICE RECORDING — FIXED (Cloudinary upload)
+   VOICE RECORDING — Cloudinary upload
    ============================================================ */
 micBtn.addEventListener('mousedown', startVoiceRecording);
 micBtn.addEventListener('touchstart', (e) => {
@@ -4923,7 +4970,6 @@ async function stopVoiceRecordingAndSend() {
       }
 
       try {
-        /* ✅ FIX: Upload to Cloudinary (no Firestore 1MB limit) */
         showToast('📤 Uploading voice...');
         const file = new File([audioBlob], `voice_${Date.now()}.webm`, { type: audioBlob.type });
         const res = await uploadToCloudinaryVoice(file, () => {});
@@ -4968,15 +5014,6 @@ function cancelVoiceRecording() {
   audioChunks = [];
   voiceSeconds = 0;
   showToast('Recording cancelled');
-}
-
-function blobToBase64(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 }
 
 async function playVoiceMessage(msg, waveformEl, btnEl) {
@@ -5366,6 +5403,7 @@ async function renderUserPosts(uid, containerId) {
   }
 }
 
+/* ✅ Grid item — thumbnail fallback */
 function makeGridItem(post) {
   const item = document.createElement('div');
   item.className = 'grid-item';
@@ -5375,13 +5413,37 @@ function makeGridItem(post) {
   let inner = '';
 
   if (post.type === 'photo') {
-    inner = `<img src="${post.url}" alt="">`;
+    inner = `<img src="${post.url}" alt="" loading="lazy">`;
   } else {
-    inner = `<video src="${post.url}" muted playsinline preload="metadata" ${thumbUrl ? `poster="${thumbUrl}"` : ''}></video>`;
+    inner = `
+      <img src="${thumbUrl}" alt="" loading="lazy">
+      <video src="${post.url}" muted playsinline preload="metadata"
+             style="display:none;width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;"></video>
+    `;
   }
 
   const badgeText = post.type === 'photo' ? 'PHOTO' : (post.type === 'long' ? 'LONG' : 'SHORT');
   item.innerHTML = `${inner}<div class="type-badge">${badgeText}</div>${post.type !== 'photo' ? `<div class="play-icon">▶</div>` : ''}`;
+
+  /* Fallback to video element if thumbnail fails */
+  const img = item.querySelector('img');
+  const vid = item.querySelector('video');
+  if (img && vid) {
+    img.addEventListener('error', () => {
+      img.style.display = 'none';
+      vid.style.display = 'block';
+
+      vid.addEventListener('loadedmetadata', () => {
+        try { vid.currentTime = 1; } catch (e) {}
+      });
+
+      /* Final fallback */
+      vid.addEventListener('error', () => {
+        vid.style.display = 'none';
+        item.classList.add('no-thumb');
+      }, { once: true });
+    }, { once: true });
+  }
 
   attachDoubleTapLike(item, post, () => openPlayer(post));
   return item;
@@ -6071,7 +6133,6 @@ uploadSubmitBtn.addEventListener('click', async () => {
     });
     currentProfile.videoCount = (currentProfile.videoCount || 0) + 1;
 
-    /* Clear cache so next feed load shows new post */
     localStorage.removeItem('reelhub_feed_cache');
 
     uploadMsg.className = 'success-msg';
@@ -6138,21 +6199,6 @@ function uploadToCloudinary(file, onProgress) {
     xhr.ontimeout = () => reject(new Error('Timeout'));
     xhr.send(formData);
   });
-}
-
-function buildThumbnailUrl(videoUrl, type) {
-  if (!videoUrl) return '';
-
-  try {
-    if (type === 'photo') {
-      return videoUrl.replace('/image/upload/', '/image/upload/w_400,q_auto,f_auto/');
-    }
-    if (videoUrl.includes('/video/upload/')) {
-      return videoUrl.replace('/video/upload/', '/video/upload/so_0,w_400,c_fill,q_auto,f_auto/');
-    }
-  } catch (e) {}
-
-  return '';
 }
 
 function openPlayer(post) {
@@ -6339,7 +6385,6 @@ listModal.addEventListener('click', (e) => {
   if (e.target === listModal) listModal.classList.remove('show');
 });
 
-/* ✅ FIX: Respect notifFollows */
 async function toggleFollow(targetUid, btnEl) {
   if (!currentUser || !currentProfile) return;
   if (targetUid === currentUser.uid) return;
@@ -6371,7 +6416,6 @@ async function toggleFollow(targetUid, btnEl) {
         btnEl.className = 'unfollow';
       }
 
-      /* ✅ FIX: Respect notif settings */
       const s = typeof getSettings === 'function'
         ? getSettings()
         : { notifFollows: true, pushNotif: true };
@@ -6500,7 +6544,7 @@ function paintNotifications(list) {
 }
 
 /* ============================================================
-   ADMIN INVITE — Accept / Reject with Congrats
+   ADMIN INVITE
    ============================================================ */
 async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
   if (!currentUser || !currentUser.email) {
@@ -6888,8 +6932,6 @@ function formatDate(date) {
   return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-/* ⚠️ NOTE: formatVoiceDuration is defined in PART 3 — do NOT redefine here */
-
 /* ============================================================
    DELETE ACCOUNT
    ============================================================ */
@@ -7005,7 +7047,7 @@ async function deleteUserAccount(password) {
     const credential = EmailAuthProvider.credential(currentUser.email, password);
     await reauthenticateWithCredential(currentUser, credential);
 
-    /* STEP 2 — Delete posts + their comments */
+    /* STEP 2 — Posts + their comments */
     progressText.textContent = 'Deleting your posts...';
     try {
       const postsQ = query(collection(db, 'posts'), where('userId', '==', uid));
@@ -7026,7 +7068,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Posts delete:', e); }
 
-    /* STEP 3 — Delete user's comments + orphaned replies */
+    /* STEP 3 — Comments + orphaned replies */
     progressText.textContent = 'Deleting your comments and replies...';
     try {
       const myCommentsQ = query(collection(db, 'comments'), where('userId', '==', uid));
@@ -7048,7 +7090,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Comments delete:', e); }
 
-    /* STEP 4 — Delete stories */
+    /* STEP 4 — Stories */
     progressText.textContent = 'Deleting your stories...';
     try {
       const storiesQ = query(collection(db, 'stories'), where('userId', '==', uid));
@@ -7058,7 +7100,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Stories delete:', e); }
 
-    /* STEP 5 — Delete notifications */
+    /* STEP 5 — Notifications */
     progressText.textContent = 'Deleting notifications...';
     try {
       const notifQ = query(collection(db, 'notifications'), where('userId', '==', uid));
@@ -7068,7 +7110,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Notifications delete:', e); }
 
-    /* STEP 6 — Delete user's group messages */
+    /* STEP 6 — Group messages */
     progressText.textContent = 'Deleting your group messages...';
     try {
       const myGroupsQ = query(collection(db, 'groups'), where('members', 'array-contains', uid));
@@ -7100,7 +7142,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Groups leave:', e); }
 
-    /* STEP 8 — Delete DM chats + messages */
+    /* STEP 8 — DM chats + messages */
     progressText.textContent = 'Deleting messages...';
     try {
       const chatsQ = query(collection(db, 'chats'), where('members', 'array-contains', uid));
