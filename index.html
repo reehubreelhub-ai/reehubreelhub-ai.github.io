@@ -7,10 +7,8 @@
   <meta name="description" content="ReelHub — Short videos. Big vibes.">
   <title>ReelHub — Short videos. Big vibes.</title>
 
-  <!-- Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='50' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='central'>R</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='55' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='middle'>R</text></svg>">
 
-  <!-- Preconnect -->
   <link rel="preconnect" href="https://www.gstatic.com">
   <link rel="preconnect" href="https://firestore.googleapis.com">
   <link rel="preconnect" href="https://identitytoolkit.googleapis.com">
@@ -23,24 +21,12 @@
   <!-- ================= LOADING SCREEN ================= -->
   <div id="loadingScreen">
 
-    <!-- Top-Right Buttons: Editor + Contact -->
     <div class="top-btn-wrap">
-
-      <button class="editor-link" onclick="window.open('editor.html','_blank')">
-        <svg viewBox="0 0 24 24">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-        </svg>
-        EDITOR
-      </button>
-
       <button class="contact-us" onclick="window.open('contact.html','_blank')">
         CONTACT US
       </button>
-
     </div>
 
-    <!-- Main Content -->
     <div class="loader-wrap">
 
       <div class="logo-anim">
@@ -66,7 +52,6 @@
 
     </div>
 
-    <!-- Footer -->
     <div class="footer-line">
       From<br>Reelhub
     </div>
@@ -79,7 +64,6 @@
       <div class="auth-logo">ReelHub</div>
       <div class="auth-tagline">Short videos. Big vibes. 🎬</div>
 
-      <!-- LOGIN FORM -->
       <form id="loginForm">
         <div class="auth-title">Welcome back</div>
 
@@ -103,7 +87,6 @@
         <div class="error-msg" id="loginMsg"></div>
       </form>
 
-      <!-- SIGNUP FORM -->
       <form id="signupForm" style="display:none;">
         <div class="auth-title">Create account</div>
 
@@ -154,13 +137,6 @@
     <header class="header">
       <div class="logo">ReelHub</div>
       <div class="header-actions">
-        <button class="icon-btn" id="editorBtn" title="Editor" onclick="window.open('editor.html','_blank')">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </button>
-
         <button class="icon-btn" id="searchBtn" title="Search">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/>
@@ -198,7 +174,7 @@
           <span>Shorts</span>
         </button>
         <div class="nav-upload">
-          <button class="upload-btn" title="Upload">
+          <button class="upload-btn" title="Upload" id="mainUploadBtn">
             <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </button>
         </div>
@@ -266,63 +242,183 @@
     </div>
   </div>
 
-  <!-- ================= UPLOAD MODAL ================= -->
+  <!-- ================= UPLOAD MODAL WITH EDITOR ================= -->
   <div class="modal-overlay" id="uploadModal">
-    <div class="modal">
+    <div class="modal upload-modal-editor">
       <div class="modal-header">
-        <h3>Upload</h3>
+        <h3>Create Post</h3>
         <button class="modal-close" id="closeUpload">&times;</button>
       </div>
 
+      <!-- Upload Type Tabs -->
       <div class="upload-tabs">
         <button class="upload-tab active" data-type="short">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/></svg>
           Short
         </button>
         <button class="upload-tab" data-type="long">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
           Long
         </button>
         <button class="upload-tab" data-type="photo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           Photo
         </button>
       </div>
 
-      <div id="uploadPickerWrap" style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 20px;background:#0a0a0a;border:1px dashed #333;border-radius:12px;margin-bottom:14px;">
+      <!-- File Picker (shown initially) -->
+      <div id="uploadPickerWrap" class="picker-wrap">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        <div id="pickerTitle" style="font-size:14px;font-weight:600;color:#fff;">Choose a short video</div>
-        <div id="pickerSubtitle" style="font-size:12px;color:#888;text-align:center;">Max 30 sec • 9:16 vertical</div>
-        <label for="uploadFileInput" id="pickerLabel" style="padding:10px 20px;background:linear-gradient(90deg,#ff2e63,#ff8a00);color:#fff;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">Select video</label>
+        <div id="pickerTitle" class="picker-title">Choose a short video</div>
+        <div id="pickerSubtitle" class="picker-subtitle">Max 30 sec • 9:16 vertical</div>
+        <label for="uploadFileInput" id="pickerLabel" class="picker-btn">Select video</label>
         <input type="file" id="uploadFileInput" accept="video/*" style="display:none;">
       </div>
 
-      <div id="uploadPreviewWrap" style="display:none;margin-bottom:14px;">
-        <video id="uploadPreview" controls playsinline style="width:100%;max-height:300px;background:#000;border-radius:12px;"></video>
-        <div id="uploadPreviewInfo" style="font-size:12px;color:#888;margin-top:8px;text-align:center;"></div>
+      <!-- Editor Preview Area (shown after file selected) -->
+      <div id="uploadEditorArea" class="upload-editor-area" style="display:none;">
+        
+        <!-- Preview -->
+        <div class="upload-preview-wrap">
+          <canvas id="editorCanvas"></canvas>
+          <video id="editorVideo" playsinline muted style="display:none;"></video>
+          <div class="editor-wmark" id="editorWmarkLive">REELHUB</div>
+          <div class="editor-text-live" id="editorTextLive"></div>
+        </div>
+
+        <!-- Editor Controls -->
+        <div class="editor-controls-scroll">
+          
+          <!-- Transform Section (photo only) -->
+          <div class="editor-sec" id="photoTransformSec">
+            <div class="editor-sec-title">Transform</div>
+            <div class="editor-row">
+              <button class="editor-btn" onclick="editorRotate(-90)">
+                <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                <small>Left</small>
+              </button>
+              <button class="editor-btn" onclick="editorRotate(90)">
+                <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                <small>Right</small>
+              </button>
+              <button class="editor-btn" onclick="editorFlip('h')">
+                <svg viewBox="0 0 24 24"><polyline points="12 3 12 21"/><polyline points="8 8 4 12 8 16"/><polyline points="16 8 20 12 16 16"/></svg>
+                <small>Flip H</small>
+              </button>
+              <button class="editor-btn" onclick="editorFlip('v')">
+                <svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><polyline points="8 8 12 4 16 8"/><polyline points="8 16 12 20 16 16"/></svg>
+                <small>Flip V</small>
+              </button>
+              <button class="editor-btn" onclick="editorReset()">
+                <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                <small>Reset</small>
+              </button>
+            </div>
+          </div>
+
+          <!-- Video Tools (video only) -->
+          <div class="editor-sec" id="videoTrimSec" style="display:none;">
+            <div class="editor-sec-title">Trim & Speed</div>
+            <div class="trim-row">
+              <div class="trim-item">
+                <label>Start (s)</label>
+                <input type="number" id="editorTrimStart" min="0" value="0" step="0.1">
+              </div>
+              <div class="trim-item">
+                <label>End (s)</label>
+                <input type="number" id="editorTrimEnd" min="0" value="0" step="0.1">
+              </div>
+            </div>
+            <div class="editor-row">
+              <button class="editor-btn" onclick="editorSetSpeed(0.5)"><b>0.5x</b><small>Slow</small></button>
+              <button class="editor-btn active" id="speedBtn1" onclick="editorSetSpeed(1)"><b>1x</b><small>Normal</small></button>
+              <button class="editor-btn" onclick="editorSetSpeed(1.5)"><b>1.5x</b><small>Fast</small></button>
+              <button class="editor-btn" onclick="editorSetSpeed(2)"><b>2x</b><small>Faster</small></button>
+            </div>
+          </div>
+
+          <!-- Adjustments -->
+          <div class="editor-sec">
+            <div class="editor-sec-title">Adjust</div>
+            <div class="editor-slider">
+              <div class="editor-slider-lbl"><span>Brightness</span><b id="editorVBright">100%</b></div>
+              <input type="range" id="editorSBright" min="0" max="200" value="100" oninput="editorUpdateFilter('brightness',this.value)">
+            </div>
+            <div class="editor-slider">
+              <div class="editor-slider-lbl"><span>Contrast</span><b id="editorVContrast">100%</b></div>
+              <input type="range" id="editorSContrast" min="0" max="200" value="100" oninput="editorUpdateFilter('contrast',this.value)">
+            </div>
+            <div class="editor-slider">
+              <div class="editor-slider-lbl"><span>Saturation</span><b id="editorVSat">100%</b></div>
+              <input type="range" id="editorSSat" min="0" max="200" value="100" oninput="editorUpdateFilter('saturate',this.value)">
+            </div>
+          </div>
+
+          <!-- Filters -->
+          <div class="editor-sec">
+            <div class="editor-sec-title">Filters</div>
+            <div class="editor-filter-grid" id="editorFilterGrid"></div>
+          </div>
+
+          <!-- Text Overlay -->
+          <div class="editor-sec">
+            <div class="editor-sec-title">Text Overlay</div>
+            <input type="text" class="editor-text-input" id="editorTextInput" placeholder="Enter text..." maxlength="60" oninput="editorUpdateText()">
+            <div class="editor-color-row" id="editorColorRow">
+              <button class="editor-color-btn active" style="background:#ffffff" onclick="editorSetTextColor('#ffffff',this)"></button>
+              <button class="editor-color-btn" style="background:#000000" onclick="editorSetTextColor('#000000',this)"></button>
+              <button class="editor-color-btn" style="background:#ff2e63" onclick="editorSetTextColor('#ff2e63',this)"></button>
+              <button class="editor-color-btn" style="background:#ff8a00" onclick="editorSetTextColor('#ff8a00',this)"></button>
+              <button class="editor-color-btn" style="background:#4ea8ff" onclick="editorSetTextColor('#4ea8ff',this)"></button>
+              <button class="editor-color-btn" style="background:#4ade80" onclick="editorSetTextColor('#4ade80',this)"></button>
+            </div>
+            <div class="editor-slider">
+              <div class="editor-slider-lbl"><span>Text Size</span><b id="editorVTxtSize">26px</b></div>
+              <input type="range" id="editorSTxtSize" min="12" max="72" value="26" oninput="editorUpdateText()">
+            </div>
+          </div>
+
+          <!-- Watermark -->
+          <div class="editor-sec">
+            <div class="editor-sec-title">Watermark</div>
+            <div class="editor-toggle-row">
+              <span>ReelHub Watermark</span>
+              <label class="editor-toggle">
+                <input type="checkbox" id="editorWmarkToggle" checked onchange="editorToggleWmark()">
+                <span class="editor-toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Change File Button -->
+        <button class="editor-change-file" onclick="editorChangeFile()">
+          <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Change File
+        </button>
       </div>
 
-      <div id="uploadPhotoPreviewWrap" style="display:none;margin-bottom:14px;">
-        <img id="uploadPhotoPreview" style="width:100%;max-height:300px;object-fit:contain;background:#000;border-radius:12px;">
-      </div>
-
-      <div class="input-group">
+      <!-- Caption Input -->
+      <div class="input-group" id="uploadCaptionWrap" style="margin-top:14px;">
         <label>Caption</label>
         <input type="text" id="uploadCaption" placeholder="Write a caption..." maxlength="200">
       </div>
 
-      <div id="uploadProgressWrap" style="display:none;margin-bottom:12px;">
-        <div style="height:6px;background:#1e1e28;border-radius:3px;overflow:hidden;margin-bottom:6px;">
-          <div id="uploadProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#ff2e63,#ff8a00);transition:width 0.2s;"></div>
+      <!-- Progress -->
+      <div id="uploadProgressWrap" class="progress-wrap" style="display:none;">
+        <div class="progress-bar-bg">
+          <div id="uploadProgressBar" class="progress-bar-fill"></div>
         </div>
-        <div id="uploadProgressText" style="font-size:12px;color:#888;text-align:center;">0%</div>
+        <div id="uploadProgressText" class="progress-text">0%</div>
       </div>
 
-      <button class="btn-primary" id="uploadSubmitBtn" disabled>Upload</button>
+      <!-- Upload Button -->
+      <button class="btn-primary" id="uploadSubmitBtn" disabled>Upload to ReelHub</button>
       <div class="error-msg" id="uploadMsg"></div>
     </div>
   </div>
@@ -538,7 +634,6 @@
       </div>
       <div class="settings-content">
 
-        <!-- APPEARANCE -->
         <div class="settings-section">
           <div class="settings-section-title">Appearance</div>
 
@@ -576,7 +671,6 @@
           </div>
         </div>
 
-        <!-- PLAYBACK -->
         <div class="settings-section">
           <div class="settings-section-title">Playback</div>
 
@@ -637,7 +731,6 @@
           </div>
         </div>
 
-        <!-- NOTIFICATIONS -->
         <div class="settings-section">
           <div class="settings-section-title">Notifications</div>
 
@@ -693,7 +786,6 @@
           </div>
         </div>
 
-        <!-- PRIVACY -->
         <div class="settings-section">
           <div class="settings-section-title">Privacy & Safety</div>
 
@@ -768,7 +860,6 @@
           </div>
         </div>
 
-        <!-- CONTENT -->
         <div class="settings-section">
           <div class="settings-section-title">Content</div>
 
@@ -856,7 +947,6 @@
           </div>
         </div>
 
-        <!-- DATA & STORAGE -->
         <div class="settings-section">
           <div class="settings-section-title">Data & Storage</div>
 
@@ -893,7 +983,6 @@
           </div>
         </div>
 
-        <!-- ABOUT & LEGAL -->
         <div class="settings-section">
           <div class="settings-section-title">About & Legal</div>
 
@@ -928,7 +1017,6 @@
           </div>
         </div>
 
-        <!-- DANGER ZONE -->
         <div class="settings-section">
           <div class="settings-section-title" style="color:#ff4d4d;border-bottom-color:rgba(255,77,77,0.2);">⚠️ Danger Zone</div>
 
@@ -950,7 +1038,6 @@
           </button>
         </div>
 
-        <!-- LOGOUT -->
         <div class="settings-section" style="margin-top:24px;">
           <button id="logoutBtn" style="width:100%;height:48px;background:#1e1e28;border:1px solid #333;border-radius:12px;color:#ff4d4d;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">
             Log Out
