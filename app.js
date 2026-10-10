@@ -1,6 +1,6 @@
 /* ============================================================
-   ReelHub — app.js (PART 1/4) — FULLY FIXED
-   Imports, Config, DOM, State, Auth, Signup (FIXED), Login
+   ReelHub — app.js (PART 1/4) — FULL FINAL
+   Imports, Config, DOM, State, Auth, Signup, Login
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -126,13 +126,6 @@ const uploadProgressWrap     = $id('uploadProgressWrap');
 const uploadProgressBar      = $id('uploadProgressBar');
 const uploadProgressText     = $id('uploadProgressText');
 
-/* ✅ EDITOR ELEMENTS */
-const uploadEditorArea    = $id('uploadEditorArea');
-const editorCanvas        = $id('editorCanvas');
-const editorVideo         = $id('editorVideo');
-const editorWmarkLive     = $id('editorWmarkLive');
-const editorTextLive      = $id('editorTextLive');
-
 const playerModal   = $id('playerModal');
 const playerTitle   = $id('playerTitle');
 const playerContent = $id('playerContent');
@@ -243,40 +236,20 @@ let currentStoryMediaEl = null;
 let viewedPostsSession = new Set();
 let shortsSoundEnabled = localStorage.getItem('shortsSound') === 'true';
 
-/* ✅ EDITOR STATE */
-let editorMode = 'photo'; // 'photo' or 'video'
-let editorImage = null;
-let editorImgRotation = 0;
-let editorImgFlipH = false;
-let editorImgFlipV = false;
-let editorFilters = { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
-let editorPresetFilter = '';
-let editorTextOverlay = '';
-let editorTextColor = '#ffffff';
-let editorTextSize = 26;
-let editorWmarkOn = true;
-let editorVideoFile = null;
-let editorVideoDuration = 0;
-let editorVideoSpeed = 1;
+/* ✅ CHAT REPLY + REACTION + TYPING STATE */
+let chatReplyTo = null;             // Reply: { msgId, text, senderName, senderUid }
+let activeReactionMsg = null;       // Currently long-pressed msg for reaction
+let longPressTimer = null;          // Long press detection
+let swipeStartX = 0;                // Swipe start X
+let swipeCurrentRow = null;         // Currently swiping row
+let typingListenerUnsub = null;     // Typing onSnapshot cleanup
+let typingTimeout = null;           // Typing timeout
+let isCurrentlyTyping = false;      // Am I typing?
 
-const EDITOR_PRESETS = [
-  { id: 'none', name: 'Original', css: '' },
-  { id: 'clarendon', name: 'Clarendon', css: 'contrast(1.2) saturate(1.35)' },
-  { id: 'gingham', name: 'Gingham', css: 'brightness(1.05) hue-rotate(-10deg) sepia(.1)' },
-  { id: 'moon', name: 'Moon', css: 'grayscale(1) contrast(1.1) brightness(1.1)' },
-  { id: 'lark', name: 'Lark', css: 'brightness(1.1) contrast(1.05) saturate(1.1)' },
-  { id: 'reyes', name: 'Reyes', css: 'sepia(.4) brightness(1.1) contrast(.9) saturate(.85)' },
-  { id: 'juno', name: 'Juno', css: 'saturate(1.4) contrast(1.1) hue-rotate(-5deg)' },
-  { id: 'warm', name: 'Warm', css: 'saturate(1.3) hue-rotate(-15deg) brightness(1.05)' },
-  { id: 'cool', name: 'Cool', css: 'saturate(1.2) hue-rotate(15deg) brightness(1.05)' },
-  { id: 'vintage', name: 'Vintage', css: 'sepia(.5) contrast(1.1) brightness(1.05)' },
-  { id: 'fade', name: 'Fade', css: 'contrast(.8) brightness(1.15) saturate(.8)' },
-  { id: 'mono', name: 'Mono', css: 'grayscale(1) contrast(1.15)' }
-];
-
-/* ✅ Flags */
+/* Auth action flag */
 let authActionInProgress = false;
 
+/* Loading timeout */
 const LOADING_TIMEOUT_MS = 10000;
 let loadingTimeoutId = null;
 
@@ -324,6 +297,11 @@ function showAuth() {
   if (chatMessagesUnsub) {
     try { chatMessagesUnsub(); } catch (e) {}
     chatMessagesUnsub = null;
+  }
+
+  if (typingListenerUnsub) {
+    try { typingListenerUnsub(); } catch (e) {}
+    typingListenerUnsub = null;
   }
 }
 
@@ -420,7 +398,7 @@ $id('goLogin')?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   ✅ SIGNUP — FIXED (Auth PEHLE, phir username check)
+   SIGNUP — FIXED
    ============================================================ */
 signupForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -433,7 +411,7 @@ signupForm?.addEventListener('submit', async (e) => {
   signupMsg.className = 'error-msg';
   signupMsg.textContent = '';
 
-  /* ---- Validation ---- */
+  /* Validation */
   if (!name || !user || !email || !pass) {
     signupMsg.textContent = 'Please fill all fields.';
     return;
@@ -459,25 +437,21 @@ signupForm?.addEventListener('submit', async (e) => {
   let createdAuthUser = null;
 
   try {
-    /* ✅ STEP 1 — PEHLE auth user banao
-       (Username check ke liye authenticated hona zaroori hai) */
-    console.log('🔵 Creating auth user...');
+    /* STEP 1 — Create auth user PEHLE */
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const uid  = cred.user.uid;
     createdAuthUser = cred.user;
     console.log('✅ Auth user created:', uid);
 
-    /* ✅ STEP 2 — Auth state settle hone ka wait (300ms) */
+    /* STEP 2 — Wait for auth to settle */
     await new Promise(r => setTimeout(r, 300));
 
-    /* ✅ STEP 3 — AB username check karo (authenticated hai ab) */
-    console.log('🔵 Checking username availability...');
+    /* STEP 3 — Check username (now authenticated) */
     const usersRef = collection(db, 'users');
     const uq = query(usersRef, where('user', '==', user));
     const userSnap = await getDocs(uq);
 
     if (!userSnap.empty) {
-      console.warn('⚠️ Username taken, rolling back');
       try {
         await createdAuthUser.delete();
       } catch (e) {
@@ -487,8 +461,7 @@ signupForm?.addEventListener('submit', async (e) => {
       return;
     }
 
-    /* ✅ STEP 4 — Firestore profile banao */
-    console.log('🔵 Creating Firestore profile...');
+    /* STEP 4 — Create Firestore profile */
     await setDoc(doc(db, 'users', uid), {
       uid: uid,
       name: name,
@@ -506,17 +479,15 @@ signupForm?.addEventListener('submit', async (e) => {
       banned: false,
       createdAt: serverTimestamp()
     });
-    console.log('✅ Firestore profile created');
 
-    /* ✅ STEP 5 — Email verification */
+    /* STEP 5 — Email verification */
     try {
       await sendEmailVerification(cred.user);
-      console.log('✅ Verification email sent');
     } catch (e) {
       console.warn('Verification email failed:', e);
     }
 
-    /* ✅ STEP 6 — State set */
+    /* STEP 6 — Set state */
     currentUser = cred.user;
     await loadProfile(uid);
 
@@ -533,9 +504,8 @@ signupForm?.addEventListener('submit', async (e) => {
     }, 800);
 
   } catch (err) {
-    console.error('❌ Signup error:', err);
+    console.error('Signup error:', err);
 
-    /* Rollback agar profile create nahi hui */
     if (createdAuthUser && !currentProfile) {
       try {
         await createdAuthUser.delete();
@@ -546,22 +516,19 @@ signupForm?.addEventListener('submit', async (e) => {
 
     signupMsg.className = 'error-msg';
 
-    /* Better error messages */
     if (err.code === 'auth/email-already-in-use') {
-      signupMsg.textContent = 'Email already registered. Try logging in.';
+      signupMsg.textContent = 'Email already registered.';
     } else if (err.code === 'auth/invalid-email') {
-      signupMsg.textContent = 'Invalid email format.';
+      signupMsg.textContent = 'Invalid email.';
     } else if (err.code === 'auth/weak-password') {
-      signupMsg.textContent = 'Password too weak (min 6 chars).';
+      signupMsg.textContent = 'Password too weak.';
     } else if (err.code === 'auth/network-request-failed') {
-      signupMsg.textContent = 'Network error. Check your internet.';
-    } else if (err.code === 'auth/too-many-requests') {
-      signupMsg.textContent = 'Too many attempts. Wait 5 min and try again.';
+      signupMsg.textContent = 'Network error. Check your connection.';
     } else if (err.code === 'permission-denied' ||
                (err.message && err.message.toLowerCase().includes('permission'))) {
-      signupMsg.textContent = '⚠️ Firestore rules update karo (Firebase Console → Rules).';
+      signupMsg.textContent = '⚠️ Firestore rules update karo.';
     } else {
-      signupMsg.textContent = err.message || 'Signup failed. Try again.';
+      signupMsg.textContent = err.message || 'Signup failed.';
     }
   } finally {
     isSigningUp = false;
@@ -572,7 +539,7 @@ signupForm?.addEventListener('submit', async (e) => {
 });
 
 /* ============================================================
-   LOGIN — FIXED
+   LOGIN
    ============================================================ */
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -594,11 +561,9 @@ loginForm?.addEventListener('submit', async (e) => {
   loginBtn.textContent = 'Logging in...';
 
   try {
-    console.log('🔵 Logging in...');
     const result = await signInWithEmailAndPassword(auth, email, pass);
     if (!result || !result.user) throw new Error('Login failed');
 
-    console.log('✅ Login successful:', result.user.uid);
     currentUser = result.user;
     await loadProfile(result.user.uid);
 
@@ -619,7 +584,7 @@ loginForm?.addEventListener('submit', async (e) => {
     requestNotificationPermission();
 
   } catch (err) {
-    console.error('❌ Login error:', err);
+    console.error('Login error:', err);
     currentUser = null;
     currentProfile = null;
     loginMsg.className = 'error-msg';
@@ -636,7 +601,7 @@ loginForm?.addEventListener('submit', async (e) => {
     } else if (err.code === 'auth/invalid-email') {
       loginMsg.textContent = 'Invalid email format.';
     } else {
-      loginMsg.textContent = err.message || 'Login failed. Try again.';
+      loginMsg.textContent = err.message || 'Login failed.';
     }
 
     if (auth.currentUser) {
@@ -725,6 +690,11 @@ $id('logoutBtn')?.addEventListener('click', async () => {
     chatMessagesUnsub = null;
   }
 
+  if (typingListenerUnsub) {
+    try { typingListenerUnsub(); } catch (e) {}
+    typingListenerUnsub = null;
+  }
+
   try { closeChatWindow?.(); } catch (e) {}
   if (storyViewer) storyViewer.style.display = 'none';
   document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
@@ -797,6 +767,11 @@ onAuthStateChanged(auth, async (user) => {
     if (chatMessagesUnsub) {
       try { chatMessagesUnsub(); } catch (e) {}
       chatMessagesUnsub = null;
+    }
+
+    if (typingListenerUnsub) {
+      try { typingListenerUnsub(); } catch (e) {}
+      typingListenerUnsub = null;
     }
 
     loginForm?.reset();
@@ -3523,8 +3498,8 @@ async function deleteComment(commentId) {
 }
 /* ============================================================
    ReelHub — app.js (PART 4/4) — FULL FINAL
-   Chat, Groups, Profile, Upload+EDITOR, Notifications,
-   Search, Settings, Delete Account (FIXED)
+   Chat, Groups, Profile, Upload, Notifications, Search,
+   Settings, Delete Account + IG/WA Chat Upgrade
    ============================================================ */
 
 /* ============================================================
@@ -3585,8 +3560,7 @@ async function loadChatsList(filter = 'all') {
   try {
     let dms = [];
     if (filter === 'all' || filter === 'dm') {
-      const chatsRef = collection(db, 'chats');
-      const q = query(chatsRef, where('members', 'array-contains', currentUser.uid));
+      const q = query(collection(db, 'chats'), where('members', 'array-contains', currentUser.uid));
       const snap = await getDocs(q);
 
       for (const docSnap of snap.docs) {
@@ -3596,9 +3570,7 @@ async function loadChatsList(filter = 'all') {
         if (!otherUid) continue;
         try {
           const userSnap = await getDoc(doc(db, 'users', otherUid));
-          if (userSnap.exists()) {
-            dms.push({ ...chat, otherUser: { uid: otherUid, ...userSnap.data() } });
-          }
+          if (userSnap.exists()) dms.push({ ...chat, otherUser: { uid: otherUid, ...userSnap.data() } });
         } catch (e) {}
       }
     }
@@ -3826,10 +3798,7 @@ document.getElementById('groupNameInput')?.addEventListener('input', checkCreate
 document.getElementById('groupPhotoInput')?.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  if (file.size > 500 * 1024) {
-    showToast('❌ Max 500 KB');
-    return;
-  }
+  if (file.size > 500 * 1024) { showToast('❌ Max 500 KB'); return; }
   currentGroupFile = file;
   const preview = document.getElementById('groupPhotoPreview');
   if (preview) preview.src = URL.createObjectURL(file);
@@ -3935,9 +3904,7 @@ document.getElementById('createGroupBtn')?.addEventListener('click', async () =>
       try {
         const uploadRes = await uploadToCloudinaryGroupFile(currentGroupFile, () => {});
         photoUrl = uploadRes.secure_url;
-      } catch (e) {
-        console.warn('Group photo upload failed:', e);
-      }
+      } catch (e) { console.warn('Group photo upload failed:', e); }
     }
 
     await addDoc(collection(db, 'groups'), {
@@ -3965,6 +3932,323 @@ document.getElementById('createGroupBtn')?.addEventListener('click', async () =>
     btn.textContent = 'Create Group';
   }
 });
+
+/* ============================================================
+   ⌨️ TYPING INDICATOR
+   ============================================================ */
+async function sendTypingSignal(isTyping) {
+  if (!activeChatId || !currentUser) return;
+  try {
+    const col = activeGroupId ? 'groups' : 'chats';
+    const ref = doc(db, col, activeChatId);
+    const data = {};
+    data[`typing.${currentUser.uid}`] = isTyping ? Date.now() : null;
+    await updateDoc(ref, data);
+  } catch (e) {}
+}
+
+function setupTypingListener() {
+  if (typingListenerUnsub) {
+    try { typingListenerUnsub(); } catch (e) {}
+    typingListenerUnsub = null;
+  }
+
+  if (!activeChatId || !currentUser) return;
+
+  const col = activeGroupId ? 'groups' : 'chats';
+  const ref = doc(db, col, activeChatId);
+
+  typingListenerUnsub = onSnapshot(ref, (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const typingData = data.typing || {};
+
+    const now = Date.now();
+    const activeTypers = Object.keys(typingData).filter(uid => {
+      if (uid === currentUser.uid) return false;
+      const t = typingData[uid];
+      return t && typeof t === 'number' && (now - t) < 4000;
+    });
+
+    updateTypingIndicatorUI(activeTypers);
+  });
+}
+
+function updateTypingIndicatorUI(uids) {
+  const el = document.getElementById('typingIndicator');
+  if (!el) return;
+
+  if (uids.length === 0) {
+    el.style.display = 'none';
+    return;
+  }
+
+  el.style.display = 'flex';
+
+  let text = 'typing...';
+  if (activeGroupId) {
+    if (uids.length === 1) text = 'Someone is typing...';
+    else if (uids.length === 2) text = '2 people typing...';
+    else text = `${uids.length} people typing...`;
+  }
+
+  const textEl = el.querySelector('.typing-text');
+  if (textEl) textEl.textContent = text;
+}
+
+async function clearTypingSignal() {
+  if (!isCurrentlyTyping) return;
+  isCurrentlyTyping = false;
+  clearTimeout(typingTimeout);
+  await sendTypingSignal(false);
+}
+
+/* ============================================================
+   💬 REPLY SYSTEM
+   ============================================================ */
+function setChatReply(msg) {
+  chatReplyTo = {
+    msgId: msg.id,
+    text: msg.text || (msg.type === 'voice' ? '🎤 Voice message' : (msg.type === 'file' ? '📎 File' : 'Message')),
+    senderName: msg.from === currentUser.uid ? 'You' : (msg.fromName || 'User'),
+    senderUid: msg.from
+  };
+
+  const preview = document.getElementById('chatReplyPreview');
+  const nameEl = document.getElementById('chatReplyName');
+  const textEl = document.getElementById('chatReplyText');
+  if (preview) preview.classList.add('show');
+  if (nameEl) nameEl.textContent = chatReplyTo.senderName;
+  if (textEl) textEl.textContent = chatReplyTo.text.substring(0, 80);
+  chatMessageInput.focus();
+}
+
+function clearChatReply() {
+  chatReplyTo = null;
+  const preview = document.getElementById('chatReplyPreview');
+  if (preview) preview.classList.remove('show');
+}
+
+document.getElementById('chatReplyClose')?.addEventListener('click', clearChatReply);
+
+/* ============================================================
+   😍 REACTION SYSTEM
+   ============================================================ */
+function showReactionPicker(msg, anchorEl) {
+  const picker = document.getElementById('reactionPicker');
+  if (!picker) return;
+
+  activeReactionMsg = msg;
+  picker.style.display = 'flex';
+
+  const rect = anchorEl.getBoundingClientRect();
+  const pickerRect = picker.getBoundingClientRect();
+
+  let top = rect.top - pickerRect.height - 8;
+  let left = rect.left + rect.width / 2 - pickerRect.width / 2;
+
+  if (top < 60) top = rect.bottom + 8;
+  if (left < 10) left = 10;
+  if (left + pickerRect.width > window.innerWidth - 10) {
+    left = window.innerWidth - pickerRect.width - 10;
+  }
+
+  picker.style.top = top + 'px';
+  picker.style.left = left + 'px';
+}
+
+async function addReaction(msgId, emoji) {
+  if (!activeChatId || !currentUser) return;
+
+  try {
+    const col = activeGroupId ? 'groups' : 'chats';
+    const msgRef = doc(db, col, activeChatId, 'messages', msgId);
+    const msgSnap = await getDoc(msgRef);
+    if (!msgSnap.exists()) return;
+
+    const data = msgSnap.data();
+    const reactions = data.reactions || {};
+    const myReaction = reactions[currentUser.uid];
+
+    if (myReaction === emoji) {
+      delete reactions[currentUser.uid];
+    } else {
+      reactions[currentUser.uid] = emoji;
+    }
+
+    await updateDoc(msgRef, { reactions });
+    if (navigator.vibrate) navigator.vibrate(20);
+  } catch (e) {
+    console.error('Reaction error:', e);
+  }
+}
+
+/* Reaction picker button clicks */
+document.querySelectorAll('#reactionPicker button').forEach(btn => {
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const emoji = btn.dataset.emoji;
+    if (activeReactionMsg) await addReaction(activeReactionMsg.id, emoji);
+    document.getElementById('reactionPicker').style.display = 'none';
+    activeReactionMsg = null;
+  });
+});
+
+/* Close picker on outside click */
+document.addEventListener('click', (e) => {
+  const picker = document.getElementById('reactionPicker');
+  if (picker && picker.style.display !== 'none') {
+    if (!picker.contains(e.target) && !e.target.closest('.msg-bubble')) {
+      picker.style.display = 'none';
+      activeReactionMsg = null;
+    }
+  }
+});
+
+/* Reaction pill click (delegated) */
+document.addEventListener('click', async (e) => {
+  const pill = e.target.closest('.msg-reaction-pill');
+  if (!pill) return;
+  const row = pill.closest('.msg-row');
+  if (!row) return;
+  const msgId = row.dataset.msgId;
+  const emoji = pill.dataset.emoji;
+  if (msgId && emoji) await addReaction(msgId, emoji);
+});
+
+/* ============================================================
+   ↔️ SWIPE TO REPLY
+   ============================================================ */
+function setupSwipeReply(row, msg) {
+  if (msg.deleted) return;
+
+  let startX = 0, startY = 0, isDragging = false, currentX = 0;
+
+  const onStart = (e) => {
+    const touch = e.touches ? e.touches[0] : e;
+    startX = touch.clientX;
+    startY = touch.clientY;
+    isDragging = false;
+    currentX = 0;
+  };
+
+  const onMove = (e) => {
+    const touch = e.touches ? e.touches[0] : e;
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+
+    if (!isDragging) {
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.5 && dx > 0) {
+        isDragging = true;
+        row.classList.add('swiping');
+      } else return;
+    }
+
+    if (isDragging) {
+      if (e.cancelable) e.preventDefault();
+      currentX = Math.min(dx, 80);
+      row.style.transform = `translateX(${currentX}px)`;
+      const icon = row.querySelector('.swipe-reply-icon');
+      if (icon) icon.style.opacity = currentX > 30 ? '1' : '0';
+    }
+  };
+
+  const onEnd = () => {
+    if (!isDragging) return;
+    row.classList.remove('swiping');
+    row.style.transition = 'transform 0.2s ease';
+
+    if (currentX > 50) {
+      setChatReply(msg);
+      if (navigator.vibrate) navigator.vibrate(15);
+    }
+
+    row.style.transform = 'translateX(0)';
+    currentX = 0;
+    isDragging = false;
+    const icon = row.querySelector('.swipe-reply-icon');
+    if (icon) icon.style.opacity = '0';
+    setTimeout(() => row.style.transition = '', 250);
+  };
+
+  /* Long press for reaction */
+  let pressTimer = null;
+  const onLongPress = (e) => {
+    pressTimer = setTimeout(() => {
+      showReactionPicker(msg, row.querySelector('.msg-bubble'));
+      if (navigator.vibrate) navigator.vibrate(30);
+    }, 500);
+  };
+  const cancelPress = () => clearTimeout(pressTimer);
+
+  row.addEventListener('touchstart', onStart, { passive: true });
+  row.addEventListener('touchmove', onMove, { passive: false });
+  row.addEventListener('touchend', onEnd);
+  row.addEventListener('touchcancel', onEnd);
+  row.addEventListener('mousedown', onStart);
+  row.addEventListener('mousemove', (e) => { if (isDragging || e.buttons === 1) onMove(e); });
+  row.addEventListener('mouseup', onEnd);
+  row.addEventListener('mouseleave', onEnd);
+
+  row.addEventListener('touchstart', onLongPress, { passive: true });
+  row.addEventListener('touchend', cancelPress);
+  row.addEventListener('touchmove', cancelPress);
+  row.addEventListener('touchcancel', cancelPress);
+  row.addEventListener('mousedown', onLongPress);
+  row.addEventListener('mouseup', cancelPress);
+  row.addEventListener('mouseleave', cancelPress);
+}
+
+/* ============================================================
+   RENDER QUOTED + REACTIONS
+   ============================================================ */
+function renderQuotedBlock(msg) {
+  if (!msg.replyTo) return '';
+
+  return `
+    <div class="msg-quoted" data-jump="${msg.replyTo.msgId || ''}">
+      <div class="msg-quoted-content">
+        <div class="msg-quoted-name">${escapeHtml(msg.replyTo.senderName || 'User')}</div>
+        <div class="msg-quoted-text">${escapeHtml((msg.replyTo.text || '').substring(0, 80))}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderReactions(msg) {
+  const reactions = msg.reactions || {};
+  const uids = Object.keys(reactions);
+  if (uids.length === 0) return '';
+
+  const grouped = {};
+  uids.forEach(uid => {
+    const emoji = reactions[uid];
+    if (!grouped[emoji]) grouped[emoji] = [];
+    grouped[emoji].push(uid);
+  });
+
+  const pills = Object.keys(grouped).map(emoji => {
+    const users = grouped[emoji];
+    const isMine = users.includes(currentUser.uid);
+    return `
+      <div class="msg-reaction-pill ${isMine ? 'mine' : ''}" data-emoji="${emoji}">
+        <span class="emoji">${emoji}</span>
+        ${users.length > 1 ? `<span class="count">${users.length}</span>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  return `<div class="msg-reactions">${pills}</div>`;
+}
+
+function jumpToMessage(msgId) {
+  const target = chatMessages.querySelector(`[data-msg-id="${msgId}"]`);
+  if (!target) return;
+
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  target.classList.add('highlight');
+  setTimeout(() => target.classList.remove('highlight'), 1200);
+}
 
 /* ============================================================
    DM CHAT WINDOW
@@ -4015,11 +4299,31 @@ async function openChatWindow(otherUser) {
   updateSendTextBtn();
   chatWindowModal.classList.add('show');
 
+  /* ✅ Wallpaper + clear reply */
+  chatMessages.classList.add('wallpaper-1');
+  clearChatReply();
+
   await loadChatMessages();
+
+  /* ✅ Setup typing listener */
+  setupTypingListener();
 }
 
 function closeChatWindow() {
   chatWindowModal.classList.remove('show');
+
+  /* ✅ Cleanup */
+  clearChatReply();
+  clearTypingSignal();
+
+  if (typingListenerUnsub) {
+    try { typingListenerUnsub(); } catch (e) {}
+    typingListenerUnsub = null;
+  }
+
+  const picker = document.getElementById('reactionPicker');
+  if (picker) picker.style.display = 'none';
+  activeReactionMsg = null;
 
   if (chatMessagesUnsub) {
     try { chatMessagesUnsub(); } catch (e) {}
@@ -4069,8 +4373,15 @@ async function openGroupChatWindow(group) {
   updateSendTextBtn();
   chatWindowModal.classList.add('show');
 
+  /* ✅ Wallpaper + clear reply */
+  chatMessages.classList.add('wallpaper-1');
+  clearChatReply();
+
   await loadGroupMessages();
   await markGroupRead();
+
+  /* ✅ Setup typing listener */
+  setupTypingListener();
 }
 
 async function loadGroupMessages() {
@@ -4086,20 +4397,14 @@ async function loadGroupMessages() {
 
     chatMessagesUnsub = onSnapshot(msgsRef, (snap) => {
       const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
       messages.sort((a, b) => {
-        const ta = a.time?.toDate?.()?.getTime?.() ||
-                   (a.time?.seconds ? a.time.seconds * 1000 : 0);
-        const tb = b.time?.toDate?.()?.getTime?.() ||
-                   (b.time?.seconds ? b.time.seconds * 1000 : 0);
+        const ta = a.time?.toDate?.()?.getTime?.() || (a.time?.seconds ? a.time.seconds * 1000 : 0);
+        const tb = b.time?.toDate?.()?.getTime?.() || (b.time?.seconds ? b.time.seconds * 1000 : 0);
         return ta - tb;
       });
-
       paintGroupMessages(messages);
       markGroupMessagesAsRead();
-    }, (err) => {
-      console.warn('Group listener error:', err);
-    });
+    }, (err) => console.warn('Group listener error:', err));
 
     await loadPinnedMessage();
   } catch (e) {
@@ -4121,7 +4426,6 @@ function paintGroupMessages(messages) {
   messages.forEach(msg => {
     const msgDate = msg.time?.toDate?.();
     const dateStr = msgDate ? formatDate(msgDate) : '';
-
     if (dateStr && dateStr !== lastDateStr) {
       const sep = document.createElement('div');
       sep.className = 'msg-date-sep';
@@ -4129,13 +4433,10 @@ function paintGroupMessages(messages) {
       chatMessages.appendChild(sep);
       lastDateStr = dateStr;
     }
-
     chatMessages.appendChild(makeGroupMessageBubble(msg));
   });
 
-  if (wasAtBottom) setTimeout(() => {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }, 30);
+  if (wasAtBottom) setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 30);
 }
 
 function makeGroupMessageBubble(msg) {
@@ -4150,8 +4451,14 @@ function makeGroupMessageBubble(msg) {
     ? `<div class="msg-sender-name">${escapeHtml(msg.fromName || 'User')}${verifiedBadgeHTML(msg.fromVerified)}</div>`
     : '';
 
+  const swipeIcon = !isMe ? `
+    <div class="swipe-reply-icon">
+      <svg viewBox="0 0 24 24"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+    </div>` : '';
+
   if (msg.deleted) {
     row.innerHTML = `
+      ${swipeIcon}
       <div class="msg-bubble deleted"><div class="deleted-text">🚫 This message was deleted</div></div>
       ${isMe ? buildDotsButton(msg) : ''}
     `;
@@ -4168,9 +4475,11 @@ function makeGroupMessageBubble(msg) {
     else if (fileType === 'application/pdf') fileIcon = '📄';
 
     row.innerHTML = `
+      ${swipeIcon}
       ${isMe ? buildDotsButton(msg) : ''}
       <div class="msg-bubble file-bubble" data-msg="${msg.id}">
         ${senderName}
+        ${renderQuotedBlock(msg)}
         <a href="${msg.fileUrl}" target="_blank" rel="noopener" class="file-download-wrap" download="${escapeHtml(fileName)}">
           <div class="file-icon">${fileIcon}</div>
           <div class="file-info">
@@ -4181,8 +4490,10 @@ function makeGroupMessageBubble(msg) {
         <div class="msg-time">${timeStr}</div>
       </div>
       ${!isMe ? buildDotsButton(msg) : ''}
+      ${renderReactions(msg)}
     `;
     if (isMe) attachDotsButton(row, msg);
+    attachMsgEvents(row, msg);
     return row;
   }
 
@@ -4190,13 +4501,14 @@ function makeGroupMessageBubble(msg) {
     const duration = msg.voiceDuration || 0;
     const bars = [];
     for (let i = 0; i < 22; i++) bars.push(30 + Math.floor(Math.random() * 70));
-
     const voiceSrc = msg.voiceUrl || msg.voiceData;
 
     row.innerHTML = `
+      ${swipeIcon}
       ${isMe ? buildDotsButton(msg) : ''}
       <div class="msg-bubble voice-bubble" data-msg="${msg.id}">
         ${senderName}
+        ${renderQuotedBlock(msg)}
         <button class="voice-play-btn" data-play="${msg.id}">
           <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>
         </button>
@@ -4205,6 +4517,7 @@ function makeGroupMessageBubble(msg) {
         <div class="msg-time">${timeStr}</div>
       </div>
       ${!isMe ? buildDotsButton(msg) : ''}
+      ${renderReactions(msg)}
     `;
     const playBtn = row.querySelector('.voice-play-btn');
     if (playBtn) {
@@ -4214,38 +4527,39 @@ function makeGroupMessageBubble(msg) {
       });
     }
     if (isMe) attachDotsButton(row, msg);
+    attachMsgEvents(row, msg);
     return row;
   }
 
   const editedLabel = msg.edited ? '<span class="edited-label">(edited)</span>' : '';
   row.innerHTML = `
+    ${swipeIcon}
     ${isMe ? buildDotsButton(msg) : ''}
     <div class="msg-bubble" data-msg="${msg.id}">
       ${senderName}
-      ${escapeHtml(msg.text || '')}${editedLabel}
+      ${renderQuotedBlock(msg)}
+      <div class="msg-text">${escapeHtml(msg.text || '')}${editedLabel}</div>
       <div class="msg-time">${timeStr}</div>
     </div>
     ${!isMe ? buildDotsButton(msg) : ''}
+    ${renderReactions(msg)}
   `;
   if (isMe) attachDotsButton(row, msg);
+  attachMsgEvents(row, msg);
   return row;
 }
 
 async function markGroupMessagesAsRead() {
   if (!currentUser || !activeGroupId) return;
   try {
-    await updateDoc(doc(db, 'groups', activeGroupId), {
-      unreadBy: arrayRemove(currentUser.uid)
-    });
+    await updateDoc(doc(db, 'groups', activeGroupId), { unreadBy: arrayRemove(currentUser.uid) });
   } catch (e) {}
 }
 
 async function markGroupRead() {
   if (!activeGroupId) return;
   try {
-    await updateDoc(doc(db, 'groups', activeGroupId), {
-      unreadBy: arrayRemove(currentUser.uid)
-    });
+    await updateDoc(doc(db, 'groups', activeGroupId), { unreadBy: arrayRemove(currentUser.uid) });
     checkChatsUnread();
   } catch (e) {}
 }
@@ -4270,6 +4584,7 @@ async function sendGroupMessage(msgData) {
     fileUrl: msgData.fileUrl || null,
     fileType: msgData.fileType || null,
     fileSize: msgData.fileSize || null,
+    replyTo: chatReplyTo, // ✅ Reply
     time: serverTimestamp()
   };
 
@@ -4312,6 +4627,7 @@ async function sendMessage(msgData) {
     fileUrl: msgData.fileUrl || null,
     fileType: msgData.fileType || null,
     fileSize: msgData.fileSize || null,
+    replyTo: chatReplyTo, // ✅ Reply
     delivered: false,
     read: false,
     deleted: false,
@@ -4348,10 +4664,7 @@ async function sendMessage(msgData) {
       await updateDoc(chatRef, chatData);
     }
 
-    const s = typeof getSettings === 'function'
-      ? getSettings()
-      : { notifMessages: true, pushNotif: true };
-
+    const s = typeof getSettings === 'function' ? getSettings() : { notifMessages: true, pushNotif: true };
     if (s.pushNotif && s.notifMessages) {
       try {
         await addDoc(collection(db, 'notifications'), {
@@ -4373,7 +4686,7 @@ async function sendMessage(msgData) {
 }
 
 /* ============================================================
-   DM MESSAGES — REAL-TIME onSnapshot
+   DM MESSAGES — REAL-TIME
    ============================================================ */
 async function loadChatMessages() {
   if (!activeChatId) return;
@@ -4388,20 +4701,14 @@ async function loadChatMessages() {
 
     chatMessagesUnsub = onSnapshot(msgsRef, (snap) => {
       const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
       messages.sort((a, b) => {
-        const ta = a.time?.toDate?.()?.getTime?.() ||
-                   (a.time?.seconds ? a.time.seconds * 1000 : 0);
-        const tb = b.time?.toDate?.()?.getTime?.() ||
-                   (b.time?.seconds ? b.time.seconds * 1000 : 0);
+        const ta = a.time?.toDate?.()?.getTime?.() || (a.time?.seconds ? a.time.seconds * 1000 : 0);
+        const tb = b.time?.toDate?.()?.getTime?.() || (b.time?.seconds ? b.time.seconds * 1000 : 0);
         return ta - tb;
       });
-
       paintChatMessages(messages);
       markMessagesAsRead(messages);
-    }, (err) => {
-      console.warn('Chat listener error:', err);
-    });
+    }, (err) => console.warn('Chat listener error:', err));
 
     await loadPinnedMessage();
   } catch (e) {
@@ -4424,7 +4731,6 @@ function paintChatMessages(messages) {
   messages.forEach(msg => {
     const msgDate = msg.time?.toDate?.();
     const dateStr = msgDate ? formatDate(msgDate) : '';
-
     if (dateStr && dateStr !== lastDateStr) {
       const sep = document.createElement('div');
       sep.className = 'msg-date-sep';
@@ -4432,13 +4738,10 @@ function paintChatMessages(messages) {
       chatMessages.appendChild(sep);
       lastDateStr = dateStr;
     }
-
     chatMessages.appendChild(makeMessageBubble(msg));
   });
 
-  if (wasAtBottom) setTimeout(() => {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }, 30);
+  if (wasAtBottom) setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 30);
 }
 
 function makeMessageBubble(msg) {
@@ -4450,8 +4753,14 @@ function makeMessageBubble(msg) {
   const time = msg.time?.toDate?.();
   const timeStr = time ? formatTime(time) : '';
 
+  const swipeIcon = !isMe ? `
+    <div class="swipe-reply-icon">
+      <svg viewBox="0 0 24 24"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+    </div>` : '';
+
   if (msg.deleted) {
     row.innerHTML = `
+      ${swipeIcon}
       <div class="msg-bubble deleted"><div class="deleted-text">🚫 This message was deleted</div></div>
       ${isMe ? buildDotsButton(msg) : ''}
     `;
@@ -4468,8 +4777,10 @@ function makeMessageBubble(msg) {
     else if (fileType === 'application/pdf') fileIcon = '📄';
 
     row.innerHTML = `
+      ${swipeIcon}
       ${isMe ? buildDotsButton(msg) : ''}
       <div class="msg-bubble file-bubble" data-msg="${msg.id}">
+        ${renderQuotedBlock(msg)}
         <a href="${msg.fileUrl}" target="_blank" rel="noopener" class="file-download-wrap" download="${escapeHtml(fileName)}">
           <div class="file-icon">${fileIcon}</div>
           <div class="file-info">
@@ -4480,8 +4791,10 @@ function makeMessageBubble(msg) {
         <div class="msg-time">${timeStr}${isMe ? buildTicksHTML(msg) : ''}</div>
       </div>
       ${!isMe ? buildDotsButton(msg) : ''}
+      ${renderReactions(msg)}
     `;
     if (isMe) attachDotsButton(row, msg);
+    attachMsgEvents(row, msg);
     return row;
   }
 
@@ -4489,20 +4802,22 @@ function makeMessageBubble(msg) {
     const duration = msg.voiceDuration || 0;
     const bars = [];
     for (let i = 0; i < 22; i++) bars.push(30 + Math.floor(Math.random() * 70));
-
     const voiceSrc = msg.voiceUrl || msg.voiceData;
 
     row.innerHTML = `
+      ${swipeIcon}
       ${isMe ? buildDotsButton(msg) : ''}
       <div class="msg-bubble voice-bubble" data-msg="${msg.id}">
+        ${renderQuotedBlock(msg)}
         <button class="voice-play-btn" data-play="${msg.id}">
           <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>
         </button>
         <div class="voice-waveform">${bars.map(h => `<div class="bar" style="height:${h}%"></div>`).join('')}</div>
         <div class="voice-duration">${formatVoiceDuration(duration)}</div>
-        <div class="msg-time" style="position:absolute;bottom:-14px;right:0;">${timeStr}${isMe ? buildTicksHTML(msg) : ''}</div>
+        <div class="msg-time">${timeStr}${isMe ? buildTicksHTML(msg) : ''}</div>
       </div>
       ${!isMe ? buildDotsButton(msg) : ''}
+      ${renderReactions(msg)}
     `;
     const playBtn = row.querySelector('.voice-play-btn');
     if (playBtn) {
@@ -4512,20 +4827,58 @@ function makeMessageBubble(msg) {
       });
     }
     if (isMe) attachDotsButton(row, msg);
+    attachMsgEvents(row, msg);
     return row;
   }
 
   const editedLabel = msg.edited ? '<span class="edited-label">(edited)</span>' : '';
   row.innerHTML = `
+    ${swipeIcon}
     ${isMe ? buildDotsButton(msg) : ''}
     <div class="msg-bubble" data-msg="${msg.id}">
-      ${escapeHtml(msg.text || '')}${editedLabel}
+      ${renderQuotedBlock(msg)}
+      <div class="msg-text">${escapeHtml(msg.text || '')}${editedLabel}</div>
       <div class="msg-time">${timeStr}${isMe ? buildTicksHTML(msg) : ''}</div>
     </div>
     ${!isMe ? buildDotsButton(msg) : ''}
+    ${renderReactions(msg)}
   `;
   if (isMe) attachDotsButton(row, msg);
+  attachMsgEvents(row, msg);
   return row;
+}
+
+/* Attach swipe/reaction/quote events */
+function attachMsgEvents(row, msg) {
+  setupSwipeReply(row, msg);
+
+  /* Double-tap to react ❤️ */
+  let lastTap = 0;
+  const bubble = row.querySelector('.msg-bubble');
+  if (bubble) {
+    bubble.addEventListener('click', (e) => {
+      if (e.target.closest('.msg-quoted')) return;
+      if (e.target.closest('.file-download-wrap')) return;
+      if (e.target.closest('.voice-play-btn')) return;
+      if (e.target.closest('.msg-reaction-pill')) return;
+
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        addReaction(msg.id, '❤️');
+        lastTap = 0;
+      } else lastTap = now;
+    });
+  }
+
+  /* Click on quoted → jump */
+  const quoted = row.querySelector('.msg-quoted');
+  if (quoted) {
+    quoted.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const jumpId = quoted.dataset.jump;
+      if (jumpId) jumpToMessage(jumpId);
+    });
+  }
 }
 
 function buildDotsButton(msg) {
@@ -4554,7 +4907,6 @@ function showMessageActionsMenu(anchorEl, msg) {
 
   const menu = document.createElement('div');
   menu.className = 'msg-actions-menu';
-
   const isPinned = pinnedMessage?.id === msg.id;
   let menuHTML = '';
 
@@ -4562,12 +4914,14 @@ function showMessageActionsMenu(anchorEl, msg) {
     menuHTML += `<button data-action="edit"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>`;
   }
   if (msg.type === 'text' && !msg.deleted && msg.text) {
+    menuHTML += `<button data-action="reply"><svg viewBox="0 0 24 24"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>Reply</button>`;
+  }
+  if (msg.type === 'text' && !msg.deleted && msg.text) {
     menuHTML += `<button data-action="copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>`;
   }
   if (!msg.deleted) {
     menuHTML += `<button data-action="pin"><svg viewBox="0 0 24 24"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.5-7.5L19 5l-7 1-7-1 1.5 4.5z"/></svg>${isPinned ? 'Unpin' : 'Pin'}</button>`;
   }
-
   menuHTML += `<div class="menu-divider"></div><button data-action="delete" class="danger"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete</button>`;
 
   menu.innerHTML = menuHTML;
@@ -4575,18 +4929,11 @@ function showMessageActionsMenu(anchorEl, msg) {
 
   const rect = anchorEl.getBoundingClientRect();
   const menuRect = menu.getBoundingClientRect();
-
   let top = rect.bottom + 5;
   let left = rect.left - menuRect.width + rect.width;
-
   if (left < 10) left = 10;
-  if (left + menuRect.width > window.innerWidth - 10) {
-    left = window.innerWidth - menuRect.width - 10;
-  }
-  if (top + menuRect.height > window.innerHeight - 10) {
-    top = rect.top - menuRect.height - 5;
-  }
-
+  if (left + menuRect.width > window.innerWidth - 10) left = window.innerWidth - menuRect.width - 10;
+  if (top + menuRect.height > window.innerHeight - 10) top = rect.top - menuRect.height - 5;
   menu.style.top = top + 'px';
   menu.style.left = left + 'px';
 
@@ -4595,15 +4942,13 @@ function showMessageActionsMenu(anchorEl, msg) {
       e.stopPropagation();
       const action = btn.dataset.action;
       menu.remove();
-
       if (action === 'edit')        await openEditMessageModal(msg);
+      else if (action === 'reply')  setChatReply(msg);
       else if (action === 'copy')   await copyMessageText(msg);
       else if (action === 'pin')    await togglePinMessage(msg);
       else if (action === 'delete') {
         const settings = typeof getSettings === 'function' ? getSettings() : { confirmDelete: true };
-        if (!settings.confirmDelete || confirm('Delete this message?')) {
-          await deleteMessage(msg.id);
-        }
+        if (!settings.confirmDelete || confirm('Delete this message?')) await deleteMessage(msg.id);
       }
     });
   });
@@ -4623,7 +4968,6 @@ function showMessageActionsMenu(anchorEl, msg) {
 
 async function openEditMessageModal(msg) {
   document.querySelectorAll('.edit-msg-modal').forEach(el => el.remove());
-
   const modal = document.createElement('div');
   modal.className = 'edit-msg-modal';
   modal.innerHTML = `
@@ -4637,19 +4981,15 @@ async function openEditMessageModal(msg) {
     </div>
   `;
   document.body.appendChild(modal);
-
   const textarea = modal.querySelector('#editMsgText');
   textarea.focus();
   textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-
   modal.querySelector('#cancelEditBtn').addEventListener('click', () => modal.remove());
   modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
-
   modal.querySelector('#saveEditBtn').addEventListener('click', async () => {
     const newText = textarea.value.trim();
     if (!newText) { showToast('❌ Cannot be empty'); return; }
     if (newText === msg.text) { modal.remove(); return; }
-
     await editMessage(msg.id, newText);
     modal.remove();
   });
@@ -4660,15 +5000,10 @@ async function editMessage(msgId, newText) {
   try {
     const col = activeGroupId ? 'groups' : 'chats';
     await updateDoc(doc(db, col, activeChatId, 'messages', msgId), {
-      text: newText,
-      edited: true,
-      editedAt: serverTimestamp()
+      text: newText, edited: true, editedAt: serverTimestamp()
     });
     showToast('✏️ Edited');
-  } catch (e) {
-    console.error('Edit error:', e);
-    showToast('❌ Could not edit');
-  }
+  } catch (e) { showToast('❌ Could not edit'); }
 }
 
 async function copyMessageText(msg) {
@@ -4676,56 +5011,30 @@ async function copyMessageText(msg) {
   try {
     await navigator.clipboard.writeText(msg.text);
     showToast('📋 Copied');
-  } catch (e) {
-    showToast('❌ Failed to copy');
-  }
+  } catch (e) { showToast('❌ Failed to copy'); }
 }
 
 function buildTicksHTML(msg) {
   if (msg.from !== currentUser.uid) return '';
-
   const settings = typeof getSettings === 'function' ? getSettings() : { readReceipts: true };
   if (settings.readReceipts === false) return '';
-
-  if (msg.read) {
-    return `<span class="msg-ticks read"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
-  }
-  if (msg.delivered) {
-    return `<span class="msg-ticks delivered"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
-  }
+  if (msg.read) return `<span class="msg-ticks read"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
+  if (msg.delivered) return `<span class="msg-ticks delivered"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
   return `<span class="msg-ticks sent"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
 }
 
 async function markMessagesAsRead(messages) {
   if (!currentUser || !activeChatId || activeGroupId) return;
   try {
-    const unreadFromOther = messages
-      .filter(m => m.to === currentUser.uid && !m.read && !m.deleted)
-      .slice(0, 20);
-
-    const undeliveredFromMe = messages
-      .filter(m => m.from === currentUser.uid && !m.delivered && !m.deleted)
-      .slice(0, 20);
-
+    const unreadFromOther = messages.filter(m => m.to === currentUser.uid && !m.read && !m.deleted).slice(0, 20);
+    const undeliveredFromMe = messages.filter(m => m.from === currentUser.uid && !m.delivered && !m.deleted).slice(0, 20);
     const updates = [];
-
     for (const msg of unreadFromOther) {
-      updates.push(
-        updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), {
-          read: true,
-          readAt: serverTimestamp()
-        }).catch(() => {})
-      );
+      updates.push(updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), { read: true, readAt: serverTimestamp() }).catch(() => {}));
     }
-
     for (const msg of undeliveredFromMe) {
-      updates.push(
-        updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), {
-          delivered: true
-        }).catch(() => {})
-      );
+      updates.push(updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), { delivered: true }).catch(() => {}));
     }
-
     if (updates.length > 0) await Promise.all(updates);
   } catch (e) {}
 }
@@ -4735,18 +5044,11 @@ async function deleteMessage(msgId) {
   try {
     const col = activeGroupId ? 'groups' : 'chats';
     await updateDoc(doc(db, col, activeChatId, 'messages', msgId), {
-      deleted: true,
-      deletedAt: serverTimestamp(),
-      text: null,
-      voiceData: null,
-      voiceUrl: null,
-      fileUrl: null
+      deleted: true, deletedAt: serverTimestamp(),
+      text: null, voiceData: null, voiceUrl: null, fileUrl: null
     });
     showToast('🗑️ Deleted');
-  } catch (e) {
-    console.error('Delete error:', e);
-    showToast('❌ Failed to delete');
-  }
+  } catch (e) { showToast('❌ Failed to delete'); }
 }
 
 /* ============================================================
@@ -4759,9 +5061,7 @@ async function togglePinMessage(msg) {
     const ref = doc(db, col, activeChatId);
     const snap = await getDoc(ref);
     if (!snap.exists()) return;
-
     const currentPin = snap.data().pinnedMessage || null;
-
     if (currentPin === msg.id) {
       await updateDoc(ref, { pinnedMessage: null });
       pinnedMessage = null;
@@ -4771,7 +5071,6 @@ async function togglePinMessage(msg) {
       pinnedMessage = msg;
       showToast('📌 Pinned');
     }
-
     await loadPinnedMessage();
   } catch (e) {}
 }
@@ -4782,27 +5081,11 @@ async function loadPinnedMessage() {
     const col = activeGroupId ? 'groups' : 'chats';
     const ref = doc(db, col, activeChatId);
     const snap = await getDoc(ref);
-
-    if (!snap.exists()) {
-      pinnedMessage = null;
-      removePinnedBanner();
-      return;
-    }
-
+    if (!snap.exists()) { pinnedMessage = null; removePinnedBanner(); return; }
     const pinId = snap.data().pinnedMessage;
-    if (!pinId) {
-      pinnedMessage = null;
-      removePinnedBanner();
-      return;
-    }
-
+    if (!pinId) { pinnedMessage = null; removePinnedBanner(); return; }
     const msgSnap = await getDoc(doc(db, col, activeChatId, 'messages', pinId));
-    if (!msgSnap.exists()) {
-      pinnedMessage = null;
-      removePinnedBanner();
-      return;
-    }
-
+    if (!msgSnap.exists()) { pinnedMessage = null; removePinnedBanner(); return; }
     pinnedMessage = { id: pinId, ...msgSnap.data() };
     renderPinnedBanner(pinnedMessage);
   } catch (e) {}
@@ -4810,7 +5093,6 @@ async function loadPinnedMessage() {
 
 function renderPinnedBanner(msg) {
   removePinnedBanner();
-
   const chatWindow = document.getElementById('chatWindow');
   if (!chatWindow) return;
 
@@ -4818,13 +5100,10 @@ function renderPinnedBanner(msg) {
   banner.className = 'pinned-banner';
   banner.id = 'pinnedBanner';
 
-  const previewText = msg.deleted
-    ? '🚫 Deleted'
-    : (msg.type === 'voice'
-        ? '🎤 Voice'
-        : (msg.type === 'file'
-            ? '📎 ' + (msg.fileName || 'File')
-            : (msg.text || '')));
+  const previewText = msg.deleted ? '🚫 Deleted'
+    : (msg.type === 'voice' ? '🎤 Voice'
+    : (msg.type === 'file' ? '📎 ' + (msg.fileName || 'File')
+    : (msg.text || '')));
 
   banner.innerHTML = `
     <svg viewBox="0 0 24 24"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.5-7.5L19 5l-7 1-7-1 1.5 4.5z"/></svg>
@@ -4853,7 +5132,7 @@ function removePinnedBanner() {
 }
 
 /* ============================================================
-   SEND TEXT / VOICE / FILE
+   INPUT BAR — Auto-resize + Typing + Enter
    ============================================================ */
 function updateSendTextBtn() {
   const hasText = chatMessageInput.value.trim().length > 0;
@@ -4861,28 +5140,54 @@ function updateSendTextBtn() {
   micBtn.style.display = hasText ? 'none' : 'flex';
 }
 
-chatMessageInput.addEventListener('input', updateSendTextBtn);
-
-sendTextBtn.addEventListener('click', async () => {
-  const text = chatMessageInput.value.trim();
-  if (!text) return;
-  chatMessageInput.value = '';
+/* ✅ Input — auto-resize + typing signal */
+chatMessageInput.addEventListener('input', () => {
   updateSendTextBtn();
 
-  if (activeGroupId) await sendGroupMessage({ type: 'text', text });
-  else await sendMessage({ type: 'text', text });
+  /* Auto-resize */
+  chatMessageInput.style.height = 'auto';
+  chatMessageInput.style.height = Math.min(chatMessageInput.scrollHeight, 120) + 'px';
+
+  /* Typing signal */
+  if (!activeChatId || !currentUser) return;
+  if (!isCurrentlyTyping) {
+    isCurrentlyTyping = true;
+    sendTypingSignal(true);
+  }
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    if (isCurrentlyTyping) {
+      isCurrentlyTyping = false;
+      sendTypingSignal(false);
+    }
+  }, 2500);
 });
 
-chatMessageInput.addEventListener('keypress', (e) => {
+/* ✅ Enter key — send (Shift+Enter = newline) */
+chatMessageInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     sendTextBtn.click();
   }
 });
 
-document.querySelector('.chat-attach-btn')?.addEventListener('click', () => {
-  if (!activeChatId) return;
+/* ✅ Send text */
+sendTextBtn.addEventListener('click', async () => {
+  const text = chatMessageInput.value.trim();
+  if (!text) return;
+  chatMessageInput.value = '';
+  chatMessageInput.style.height = 'auto';
+  updateSendTextBtn();
+  clearChatReply();
+  clearTypingSignal();
 
+  if (activeGroupId) await sendGroupMessage({ type: 'text', text });
+  else await sendMessage({ type: 'text', text });
+});
+
+/* ✅ Attach button */
+document.getElementById('chatAttachBtn')?.addEventListener('click', () => {
+  if (!activeChatId) return;
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*,video/*,application/pdf';
@@ -4895,74 +5200,44 @@ document.querySelector('.chat-attach-btn')?.addEventListener('click', () => {
 });
 
 async function sendFileMessage(file) {
-  if (file.size > 25 * 1024 * 1024) {
-    showToast('❌ Max 25 MB');
-    return;
-  }
-
+  if (file.size > 25 * 1024 * 1024) { showToast('❌ Max 25 MB'); return; }
   showToast('📤 Uploading file...');
-
   try {
     const res = await uploadToCloudinaryGroupFile(file, () => {});
     const payload = {
-      type: 'file',
-      fileName: file.name,
-      fileUrl: res.secure_url,
-      fileType: file.type || 'application/octet-stream',
-      fileSize: file.size
+      type: 'file', fileName: file.name, fileUrl: res.secure_url,
+      fileType: file.type || 'application/octet-stream', fileSize: file.size
     };
-
     if (activeGroupId) await sendGroupMessage(payload);
     else await sendMessage(payload);
-  } catch (e) {
-    console.error(e);
-    showToast('❌ Upload failed');
-  }
+  } catch (e) { console.error(e); showToast('❌ Upload failed'); }
 }
 
 /* ============================================================
    VOICE RECORDING
    ============================================================ */
 micBtn.addEventListener('mousedown', startVoiceRecording);
-micBtn.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  startVoiceRecording();
-}, { passive: false });
-
+micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startVoiceRecording(); }, { passive: false });
 micBtn.addEventListener('mouseup', stopVoiceRecordingAndSend);
-micBtn.addEventListener('mouseleave', () => {
-  if (isRecording) stopVoiceRecordingAndSend();
-});
-micBtn.addEventListener('touchend', (e) => {
-  e.preventDefault();
-  stopVoiceRecordingAndSend();
-}, { passive: false });
-
+micBtn.addEventListener('mouseleave', () => { if (isRecording) stopVoiceRecordingAndSend(); });
+micBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopVoiceRecordingAndSend(); }, { passive: false });
 cancelRecordingBtn.addEventListener('click', cancelVoiceRecording);
 
 async function startVoiceRecording() {
   if (isRecording) return;
-
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
     let mimeType = 'audio/webm';
     if (!MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/mp4';
-
     mediaRecorder = new MediaRecorder(stream, { mimeType });
     audioChunks = [];
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) audioChunks.push(e.data);
-    };
-
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
     mediaRecorder.start();
     isRecording = true;
     voiceSeconds = 0;
     recordingTimer.textContent = '0:00';
     recordingIndicator.classList.add('show');
     recordingIndicator.style.display = 'flex';
-
     voiceTimerInterval = setInterval(() => {
       voiceSeconds++;
       recordingTimer.textContent = `0:${voiceSeconds < 10 ? '0' + voiceSeconds : voiceSeconds}`;
@@ -4976,115 +5251,66 @@ async function startVoiceRecording() {
 
 async function stopVoiceRecordingAndSend() {
   if (!isRecording || !mediaRecorder) return;
-
   isRecording = false;
   clearInterval(voiceTimerInterval);
   recordingIndicator.classList.remove('show');
   recordingIndicator.style.display = 'none';
-
   const finalSeconds = voiceSeconds;
 
   return new Promise((resolve) => {
     mediaRecorder.onstop = async () => {
       mediaRecorder.stream.getTracks().forEach(t => t.stop());
-
-      if (finalSeconds < 1) {
-        showToast('Too short');
-        resolve();
-        return;
-      }
-
+      if (finalSeconds < 1) { showToast('Too short'); resolve(); return; }
       const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
-
-      if (audioBlob.size > 5 * 1024 * 1024) {
-        showToast('❌ Recording too large');
-        resolve();
-        return;
-      }
-
+      if (audioBlob.size > 5 * 1024 * 1024) { showToast('❌ Recording too large'); resolve(); return; }
       try {
         showToast('📤 Uploading voice...');
         const file = new File([audioBlob], `voice_${Date.now()}.webm`, { type: audioBlob.type });
         const res = await uploadToCloudinaryVoice(file, () => {});
-
-        const payload = {
-          type: 'voice',
-          voiceUrl: res.secure_url,
-          voiceDuration: finalSeconds
-        };
-
+        const payload = { type: 'voice', voiceUrl: res.secure_url, voiceDuration: finalSeconds };
         if (activeGroupId) await sendGroupMessage(payload);
         else await sendMessage(payload);
-      } catch (e) {
-        console.error('Voice upload failed:', e);
-        showToast('❌ Voice upload failed');
-      }
-
+      } catch (e) { console.error('Voice upload failed:', e); showToast('❌ Voice upload failed'); }
       resolve();
     };
-
-    try {
-      mediaRecorder.stop();
-    } catch (e) {
-      resolve();
-    }
+    try { mediaRecorder.stop(); } catch (e) { resolve(); }
   });
 }
 
 function cancelVoiceRecording() {
   if (!isRecording || !mediaRecorder) return;
-
   isRecording = false;
   clearInterval(voiceTimerInterval);
   recordingIndicator.classList.remove('show');
   recordingIndicator.style.display = 'none';
-
   try {
     mediaRecorder.onstop = () => mediaRecorder.stream.getTracks().forEach(t => t.stop());
     mediaRecorder.stop();
   } catch (e) {}
-
   audioChunks = [];
   voiceSeconds = 0;
   showToast('Recording cancelled');
 }
 
 async function playVoiceMessage(msg, waveformEl, btnEl) {
-  if (currentPlayingAudio && currentPlayingBtn === btnEl) {
-    stopVoicePlayback();
-    return;
-  }
-
+  if (currentPlayingAudio && currentPlayingBtn === btnEl) { stopVoicePlayback(); return; }
   stopVoicePlayback();
-
   const src = msg.voiceUrl || msg.voiceData;
   if (!src) return;
-
   try {
     const audio = new Audio(src);
     currentPlayingAudio = audio;
     currentPlayingBtn = btnEl;
-
     waveformEl.classList.add('playing');
     btnEl.innerHTML = `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" fill="currentColor" stroke="none"/><rect x="14" y="4" width="4" height="16" fill="currentColor" stroke="none"/></svg>`;
-
     audio.onended = () => stopVoicePlayback();
-    audio.onerror = () => {
-      stopVoicePlayback();
-      showToast('❌ Play failed');
-    };
-
+    audio.onerror = () => { stopVoicePlayback(); showToast('❌ Play failed'); };
     await audio.play();
-  } catch (e) {
-    stopVoicePlayback();
-  }
+  } catch (e) { stopVoicePlayback(); }
 }
 
 function stopVoicePlayback() {
-  if (currentPlayingAudio) {
-    try { currentPlayingAudio.pause(); } catch (e) {}
-    currentPlayingAudio = null;
-  }
+  if (currentPlayingAudio) { try { currentPlayingAudio.pause(); } catch (e) {} currentPlayingAudio = null; }
   if (currentPlayingBtn) {
     currentPlayingBtn.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>`;
     currentPlayingBtn = null;
@@ -5102,10 +5328,7 @@ function startChatListWatcher() {
 }
 
 function stopChatListWatcher() {
-  if (chatListInterval) {
-    clearInterval(chatListInterval);
-    chatListInterval = null;
-  }
+  if (chatListInterval) { clearInterval(chatListInterval); chatListInterval = null; }
   if (chatsDot) chatsDot.style.display = 'none';
 }
 
@@ -5113,26 +5336,19 @@ async function checkChatsUnread() {
   if (!currentUser) return;
   try {
     let hasUnread = false;
-
     const q = query(collection(db, 'chats'), where('members', 'array-contains', currentUser.uid));
     const snap = await getDocs(q);
     snap.forEach(d => {
       const data = d.data();
       if (data.type === 'group') return;
-      if (data.lastMessageBy !== currentUser.uid && (data.unreadBy || []).includes(currentUser.uid)) {
-        hasUnread = true;
-      }
+      if (data.lastMessageBy !== currentUser.uid && (data.unreadBy || []).includes(currentUser.uid)) hasUnread = true;
     });
-
     const gq = query(collection(db, 'groups'), where('members', 'array-contains', currentUser.uid));
     const gsnap = await getDocs(gq);
     gsnap.forEach(d => {
       const data = d.data();
-      if (data.lastMessageBy !== currentUser.uid && (data.unreadBy || []).includes(currentUser.uid)) {
-        hasUnread = true;
-      }
+      if (data.lastMessageBy !== currentUser.uid && (data.unreadBy || []).includes(currentUser.uid)) hasUnread = true;
     });
-
     if (chatsDot) chatsDot.style.display = hasUnread ? 'block' : 'none';
   } catch (e) {}
 }
@@ -5157,15 +5373,9 @@ async function renderProfile() {
           <div class="avatar-plus">+</div>
         </div>
         <div class="profile-stats">
-          <div class="profile-stat" data-action="videos">
-            <b id="myVideoCount">${p.videoCount || 0}</b><span>Videos</span>
-          </div>
-          <div class="profile-stat" data-action="followers">
-            <b>${p.followers.length}</b><span>Followers</span>
-          </div>
-          <div class="profile-stat" data-action="following">
-            <b>${p.following.length}</b><span>Following</span>
-          </div>
+          <div class="profile-stat" data-action="videos"><b>${p.videoCount || 0}</b><span>Videos</span></div>
+          <div class="profile-stat" data-action="followers"><b>${p.followers.length}</b><span>Followers</span></div>
+          <div class="profile-stat" data-action="following"><b>${p.following.length}</b><span>Following</span></div>
         </div>
       </div>
       <div class="profile-info">
@@ -5206,14 +5416,9 @@ async function renderProfile() {
     tab.addEventListener('click', async () => {
       profileTabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-
       const grid = document.getElementById('myPostsGrid');
-      if (tab.dataset.tab === 'saved') {
-        await renderSavedPosts('myPostsGrid');
-      } else {
-        grid.innerHTML = `<div class="grid-empty">Loading...</div>`;
-        await renderUserPosts(currentUser.uid, 'myPostsGrid');
-      }
+      if (tab.dataset.tab === 'saved') await renderSavedPosts('myPostsGrid');
+      else { grid.innerHTML = `<div class="grid-empty">Loading...</div>`; await renderUserPosts(currentUser.uid, 'myPostsGrid'); }
     });
   });
 
@@ -5223,27 +5428,18 @@ async function renderProfile() {
 async function renderUserPosts(uid, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
-
   try {
     const q = query(collection(db, 'posts'), where('userId', '==', uid), limit(60));
     const snap = await getDocs(q);
-
     if (snap.empty) {
-      container.innerHTML = `<div class="grid-empty"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><div>No posts yet</div></div>`;
+      container.innerHTML = `<div class="grid-empty"><div>No posts yet</div></div>`;
       return;
     }
-
     const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    posts.sort((a, b) =>
-      (b.createdAt?.toDate?.()?.getTime() || 0) -
-      (a.createdAt?.toDate?.()?.getTime() || 0)
-    );
-
+    posts.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
     container.innerHTML = '';
     posts.forEach(post => container.appendChild(makeGridItem(post)));
-  } catch (e) {
-    console.error('renderUserPosts error:', e);
-  }
+  } catch (e) { console.error('renderUserPosts error:', e); }
 }
 
 function makeGridItem(post) {
@@ -5253,17 +5449,11 @@ function makeGridItem(post) {
 
   const thumbUrl = post.thumbnail || (post.type === 'photo' ? post.url : '');
   let inner = '';
-
   if (post.type === 'photo') {
     inner = `<img src="${post.url}" alt="" loading="lazy">`;
   } else {
-    inner = `
-      <img src="${thumbUrl}" alt="" loading="lazy">
-      <video src="${post.url}" muted playsinline preload="metadata"
-             style="display:none;width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;"></video>
-    `;
+    inner = `<img src="${thumbUrl}" alt="" loading="lazy"><video src="${post.url}" muted playsinline preload="metadata" style="display:none;width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;"></video>`;
   }
-
   const badgeText = post.type === 'photo' ? 'PHOTO' : (post.type === 'long' ? 'LONG' : 'SHORT');
   item.innerHTML = `${inner}<div class="type-badge">${badgeText}</div>${post.type !== 'photo' ? `<div class="play-icon">▶</div>` : ''}`;
 
@@ -5273,16 +5463,10 @@ function makeGridItem(post) {
     img.addEventListener('error', () => {
       img.style.display = 'none';
       vid.style.display = 'block';
-      vid.addEventListener('loadedmetadata', () => {
-        try { vid.currentTime = 1; } catch (e) {}
-      });
-      vid.addEventListener('error', () => {
-        vid.style.display = 'none';
-        item.classList.add('no-thumb');
-      }, { once: true });
+      vid.addEventListener('loadedmetadata', () => { try { vid.currentTime = 1; } catch (e) {} });
+      vid.addEventListener('error', () => { vid.style.display = 'none'; item.classList.add('no-thumb'); }, { once: true });
     }, { once: true });
   }
-
   attachDoubleTapLike(item, post, () => openPlayer(post));
   return item;
 }
@@ -5292,18 +5476,10 @@ function makeGridItem(post) {
    ============================================================ */
 async function openUserProfile(userId) {
   if (!userId) return;
-
-  if (userId === currentUser.uid) {
-    setActiveNav('profile');
-    renderPage('profile');
-    return;
-  }
+  if (userId === currentUser.uid) { setActiveNav('profile'); renderPage('profile'); return; }
 
   const blocked = currentProfile?.blockedUsers || [];
-  if (blocked.includes(userId)) {
-    showToast('🚫 You blocked this user');
-    return;
-  }
+  if (blocked.includes(userId)) { showToast('🚫 You blocked this user'); return; }
 
   viewingUserId = userId;
   setActiveNav(null);
@@ -5325,13 +5501,9 @@ async function openUserProfile(userId) {
 
     content.innerHTML = `
       <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
-        <button id="backFromProfileBtn">
-          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back
-        </button>
+        <button id="backFromProfileBtn"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
         <button id="profileMenuBtn" style="background:none;border:none;color:#fff;cursor:pointer;padding:6px;border-radius:50%;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/>
-          </svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
         </button>
       </div>
       <div class="profile-page" style="padding-top:0;">
@@ -5367,22 +5539,13 @@ async function openUserProfile(userId) {
       </div>
     `;
 
-    document.getElementById('backFromProfileBtn').addEventListener('click', () => {
-      viewingUserId = null;
-      setActiveNav(null);
-      renderPage('home');
-    });
-
-    document.getElementById('profileMenuBtn').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      await showProfileMenu(e.currentTarget, userId, user.user);
-    });
+    document.getElementById('backFromProfileBtn').addEventListener('click', () => { viewingUserId = null; setActiveNav(null); renderPage('home'); });
+    document.getElementById('profileMenuBtn').addEventListener('click', async (e) => { e.stopPropagation(); await showProfileMenu(e.currentTarget, userId, user.user); });
 
     const followBtn = document.getElementById('pubFollowBtn');
     followBtn.addEventListener('click', async () => {
       await toggleFollow(userId, null);
       const isNowFollowing = currentProfile.following.includes(userId);
-
       if (isNowFollowing) {
         followBtn.classList.add('following');
         followBtn.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Following`;
@@ -5405,22 +5568,12 @@ async function openUserProfile(userId) {
 async function shareUser(user) {
   const appUrl = window.location.origin;
   const shareText = `🎬 Check out ${user.name}'s profile on ReelHub!\n\n@${user.user}\n\n${appUrl}`;
-
   if (navigator.share) {
-    try {
-      await navigator.share({ title: `${user.name} on ReelHub`, text: shareText, url: appUrl });
-      return;
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-    }
+    try { await navigator.share({ title: `${user.name} on ReelHub`, text: shareText, url: appUrl }); return; }
+    catch (err) { if (err.name === 'AbortError') return; }
   }
-
-  try {
-    await navigator.clipboard.writeText(shareText);
-    showToast('✅ Link copied!');
-  } catch (err) {
-    showToast('❌ Could not share');
-  }
+  try { await navigator.clipboard.writeText(shareText); showToast('✅ Link copied!'); }
+  catch (err) { showToast('❌ Could not share'); }
 }
 
 /* ============================================================
@@ -5428,10 +5581,8 @@ async function shareUser(user) {
    ============================================================ */
 async function showProfileMenu(anchorEl, userId, userHandle) {
   document.querySelectorAll('.post-menu-dropdown').forEach(el => el.remove());
-
   const menu = document.createElement('div');
   menu.className = 'post-menu-dropdown';
-
   const isBlocked = (currentProfile?.blockedUsers || []).includes(userId);
 
   menu.innerHTML = `
@@ -5444,22 +5595,15 @@ async function showProfileMenu(anchorEl, userId, userHandle) {
       Report User
     </button>
   `;
-
   document.body.appendChild(menu);
 
   const rect = anchorEl.getBoundingClientRect();
   const menuRect = menu.getBoundingClientRect();
-
   let top = rect.bottom + 5;
   let left = rect.right - menuRect.width;
   if (left < 10) left = 10;
-  if (left + menuRect.width > window.innerWidth - 10) {
-    left = window.innerWidth - menuRect.width - 10;
-  }
-  if (top + menuRect.height > window.innerHeight - 10) {
-    top = rect.top - menuRect.height - 5;
-  }
-
+  if (left + menuRect.width > window.innerWidth - 10) left = window.innerWidth - menuRect.width - 10;
+  if (top + menuRect.height > window.innerHeight - 10) top = rect.top - menuRect.height - 5;
   menu.style.top = top + 'px';
   menu.style.left = left + 'px';
 
@@ -5468,7 +5612,6 @@ async function showProfileMenu(anchorEl, userId, userHandle) {
       e.stopPropagation();
       const action = btn.dataset.action;
       menu.remove();
-
       if (action === 'block')           await blockUser(userId, userHandle);
       else if (action === 'unblock')    await unblockUser(userId, userHandle);
       else if (action === 'report-user') await reportUser(userId, userHandle);
@@ -5489,135 +5632,59 @@ async function showProfileMenu(anchorEl, userId, userHandle) {
 }
 
 async function blockUser(userId, userHandle) {
-  if (userId === currentUser.uid) {
-    showToast('❌ Cannot block yourself');
-    return;
-  }
-
-  if (!confirm(`Block @${userHandle}?\n\nThey won't be able to message you or see your profile.`)) return;
-
+  if (userId === currentUser.uid) { showToast('❌ Cannot block yourself'); return; }
+  if (!confirm(`Block @${userHandle}?`)) return;
   try {
-    await updateDoc(doc(db, 'users', currentUser.uid), {
-      blockedUsers: arrayUnion(userId)
-    });
-
+    await updateDoc(doc(db, 'users', currentUser.uid), { blockedUsers: arrayUnion(userId) });
     if (!currentProfile.blockedUsers) currentProfile.blockedUsers = [];
-    if (!currentProfile.blockedUsers.includes(userId)) {
-      currentProfile.blockedUsers.push(userId);
-    }
-
-    if (currentProfile.following.includes(userId)) {
-      await toggleFollow(userId, null);
-    }
-
+    if (!currentProfile.blockedUsers.includes(userId)) currentProfile.blockedUsers.push(userId);
+    if (currentProfile.following.includes(userId)) await toggleFollow(userId, null);
     showToast(`🚫 Blocked @${userHandle}`);
     renderHomeFeed();
-  } catch (e) {
-    showToast('❌ Could not block user');
-  }
+  } catch (e) { showToast('❌ Could not block user'); }
 }
 
 async function unblockUser(userId, userHandle) {
   if (!confirm(`Unblock @${userHandle}?`)) return;
-
   try {
-    await updateDoc(doc(db, 'users', currentUser.uid), {
-      blockedUsers: arrayRemove(userId)
-    });
-
-    if (currentProfile) {
-      currentProfile.blockedUsers = (currentProfile.blockedUsers || [])
-        .filter(id => id !== userId);
-    }
-
+    await updateDoc(doc(db, 'users', currentUser.uid), { blockedUsers: arrayRemove(userId) });
+    if (currentProfile) currentProfile.blockedUsers = (currentProfile.blockedUsers || []).filter(id => id !== userId);
     showToast(`✅ Unblocked @${userHandle}`);
     closeBlockedUsersModal();
-
     if (viewingUserId === userId) openUserProfile(userId);
-  } catch (e) {
-    showToast('❌ Could not unblock user');
-  }
+  } catch (e) { showToast('❌ Could not unblock user'); }
 }
 
 async function reportPost(post) {
-  const reasons = [
-    'Spam or misleading',
-    'Nudity or sexual content',
-    'Hate speech or symbols',
-    'Violence or dangerous',
-    'Harassment or bullying',
-    'False information',
-    'Other'
-  ];
-
-  const reasonStr = prompt(
-    '🚨 Report this post\n\n' +
-    reasons.map((r, i) => `${i + 1}. ${r}`).join('\n') +
-    '\n\nType number (1-7):'
-  );
-
+  const reasons = ['Spam or misleading','Nudity or sexual content','Hate speech or symbols','Violence or dangerous','Harassment or bullying','False information','Other'];
+  const reasonStr = prompt('🚨 Report this post\n\n' + reasons.map((r, i) => `${i + 1}. ${r}`).join('\n') + '\n\nType number (1-7):');
   if (!reasonStr) return;
   const idx = parseInt(reasonStr) - 1;
-  if (idx < 0 || idx >= reasons.length) {
-    showToast('❌ Invalid choice');
-    return;
-  }
-
+  if (idx < 0 || idx >= reasons.length) { showToast('❌ Invalid choice'); return; }
   try {
     await addDoc(collection(db, 'reports'), {
-      type: 'post',
-      postId: post.id,
-      postUserId: post.userId,
-      reportedBy: currentUser.uid,
-      reportedByHandle: currentProfile?.user || '',
-      reason: reasons[idx],
-      status: 'pending',
-      createdAt: serverTimestamp()
+      type: 'post', postId: post.id, postUserId: post.userId,
+      reportedBy: currentUser.uid, reportedByHandle: currentProfile?.user || '',
+      reason: reasons[idx], status: 'pending', createdAt: serverTimestamp()
     });
     showToast('✅ Report submitted');
-  } catch (e) {
-    showToast('❌ Could not submit report');
-  }
+  } catch (e) { showToast('❌ Could not submit report'); }
 }
 
 async function reportUser(userId, userHandle) {
-  const reasons = [
-    'Fake account',
-    'Impersonation',
-    'Harassment',
-    'Spam',
-    'Inappropriate content',
-    'Other'
-  ];
-
-  const reasonStr = prompt(
-    '🚨 Report @' + userHandle + '\n\n' +
-    reasons.map((r, i) => `${i + 1}. ${r}`).join('\n') +
-    '\n\nType number (1-6):'
-  );
-
+  const reasons = ['Fake account','Impersonation','Harassment','Spam','Inappropriate content','Other'];
+  const reasonStr = prompt('🚨 Report @' + userHandle + '\n\n' + reasons.map((r, i) => `${i + 1}. ${r}`).join('\n') + '\n\nType number (1-6):');
   if (!reasonStr) return;
   const idx = parseInt(reasonStr) - 1;
-  if (idx < 0 || idx >= reasons.length) {
-    showToast('❌ Invalid choice');
-    return;
-  }
-
+  if (idx < 0 || idx >= reasons.length) { showToast('❌ Invalid choice'); return; }
   try {
     await addDoc(collection(db, 'reports'), {
-      type: 'user',
-      reportedUserId: userId,
-      reportedUserHandle: userHandle,
-      reportedBy: currentUser.uid,
-      reportedByHandle: currentProfile?.user || '',
-      reason: reasons[idx],
-      status: 'pending',
-      createdAt: serverTimestamp()
+      type: 'user', reportedUserId: userId, reportedUserHandle: userHandle,
+      reportedBy: currentUser.uid, reportedByHandle: currentProfile?.user || '',
+      reason: reasons[idx], status: 'pending', createdAt: serverTimestamp()
     });
     showToast('✅ Report submitted');
-  } catch (e) {
-    showToast('❌ Could not submit report');
-  }
+  } catch (e) { showToast('❌ Could not submit report'); }
 }
 
 async function openBlockedUsersModal() {
@@ -5625,50 +5692,29 @@ async function openBlockedUsersModal() {
   const list = document.getElementById('blockedUsersList');
   modal.classList.add('show');
   list.innerHTML = '<div class="empty-msg">Loading...</div>';
-
   const blockedIds = currentProfile?.blockedUsers || [];
-
-  if (blockedIds.length === 0) {
-    list.innerHTML = '<div class="empty-msg">No blocked users</div>';
-    return;
-  }
-
+  if (blockedIds.length === 0) { list.innerHTML = '<div class="empty-msg">No blocked users</div>'; return; }
   try {
     const users = [];
     for (const uid of blockedIds) {
       const snap = await getDoc(doc(db, 'users', uid));
       if (snap.exists()) users.push({ uid, ...snap.data() });
     }
-
-    if (users.length === 0) {
-      list.innerHTML = '<div class="empty-msg">No blocked users</div>';
-      return;
-    }
-
+    if (users.length === 0) { list.innerHTML = '<div class="empty-msg">No blocked users</div>'; return; }
     list.innerHTML = '';
     users.forEach(u => {
       const row = document.createElement('div');
       row.className = 'user-row';
-      row.innerHTML = `
-        <img src="${u.photo || defaultAvatar(u.name)}" alt="">
-        <div class="meta"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}</b><span>@${escapeHtml(u.user)}</span></div>
-        <button class="unblock" data-uid="${u.uid}" style="background:#ff4d4d;color:#fff;">Unblock</button>
-      `;
-
+      row.innerHTML = `<img src="${u.photo || defaultAvatar(u.name)}" alt=""><div class="meta"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}</b><span>@${escapeHtml(u.user)}</span></div><button class="unblock" data-uid="${u.uid}" style="background:#ff4d4d;color:#fff;">Unblock</button>`;
       row.querySelector('button').addEventListener('click', async (e) => {
         e.stopPropagation();
         await unblockUser(u.uid, u.user);
         row.remove();
-        if (!list.querySelector('.user-row')) {
-          list.innerHTML = '<div class="empty-msg">No blocked users</div>';
-        }
+        if (!list.querySelector('.user-row')) list.innerHTML = '<div class="empty-msg">No blocked users</div>';
       });
-
       list.appendChild(row);
     });
-  } catch (e) {
-    list.innerHTML = '<div class="empty-msg">Could not load blocked users</div>';
-  }
+  } catch (e) { list.innerHTML = '<div class="empty-msg">Could not load blocked users</div>'; }
 }
 
 function closeBlockedUsersModal() {
@@ -5679,91 +5725,61 @@ function closeBlockedUsersModal() {
 function updateBlockedUsersCount() {
   const count = (currentProfile?.blockedUsers || []).length;
   const el = document.getElementById('blockedUsersCount');
-  if (el) {
-    el.textContent = count === 0
-      ? 'No users blocked'
-      : count === 1
-        ? '1 user blocked'
-        : `${count} users blocked`;
-  }
+  if (el) el.textContent = count === 0 ? 'No users blocked' : count === 1 ? '1 user blocked' : `${count} users blocked`;
 }
 
 document.getElementById('closeBlockedUsers')?.addEventListener('click', closeBlockedUsersModal);
-document.getElementById('blockedUsersModal')?.addEventListener('click', (e) => {
-  if (e.target.id === 'blockedUsersModal') closeBlockedUsersModal();
-});
+document.getElementById('blockedUsersModal')?.addEventListener('click', (e) => { if (e.target.id === 'blockedUsersModal') closeBlockedUsersModal(); });
 
 /* ============================================================
-   🎬 UPLOAD MODAL WITH EDITOR — FULL SYSTEM
+   UPLOAD MODAL
    ============================================================ */
 function openUploadModal() {
   selectedFile = null;
   selectedFileDuration = 0;
   currentUploadType = 'short';
-
-  /* Reset editor state */
-  editorMode = 'photo';
-  editorImage = null;
-  editorImgRotation = 0;
-  editorImgFlipH = false;
-  editorImgFlipV = false;
-  editorFilters = { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
-  editorPresetFilter = '';
-  editorTextOverlay = '';
-  editorTextColor = '#ffffff';
-  editorTextSize = 26;
-  editorWmarkOn = true;
-  editorVideoFile = null;
-  editorVideoDuration = 0;
-  editorVideoSpeed = 1;
-
   uploadFileInput.value = '';
   uploadCaption.value = '';
   uploadMsg.textContent = '';
   uploadMsg.className = 'error-msg';
+  uploadPreview.src = '';
+  uploadPhotoPreview.src = '';
+  uploadPreviewWrap.style.display = 'none';
+  uploadPhotoPreviewWrap.style.display = 'none';
+  uploadPickerWrap.style.display = 'flex';
   uploadSubmitBtn.disabled = true;
   uploadProgressWrap.style.display = 'none';
   uploadProgressBar.style.width = '0%';
   uploadProgressText.textContent = '0%';
 
-  /* Show picker, hide editor */
-  uploadPickerWrap.style.display = 'flex';
-  uploadEditorArea.style.display = 'none';
-
   document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
   document.querySelector('.upload-tab[data-type="short"]')?.classList.add('active');
 
   updatePickerText();
-  initEditorFilters();
   uploadModal.classList.add('show');
 }
 
 function updatePickerText() {
   if (currentUploadType === 'short') {
     pickerTitle.textContent = 'Choose a short video';
-    pickerSubtitle.textContent = 'Max 60 sec · 9:16 vertical';
+    pickerSubtitle.textContent = 'Max 30 sec • 9:16 vertical';
     pickerLabel.textContent = 'Select video';
     uploadFileInput.accept = 'video/*';
   } else if (currentUploadType === 'long') {
     pickerTitle.textContent = 'Choose a long video';
-    pickerSubtitle.textContent = 'Max 10 min · 16:9 horizontal';
+    pickerSubtitle.textContent = 'Max 1 minute • 16:9 horizontal';
     pickerLabel.textContent = 'Select video';
     uploadFileInput.accept = 'video/*';
   } else {
     pickerTitle.textContent = 'Choose a photo';
-    pickerSubtitle.textContent = 'Max 10 MB · JPG / PNG';
+    pickerSubtitle.textContent = 'Max 5 MB • JPG / PNG';
     pickerLabel.textContent = 'Select photo';
     uploadFileInput.accept = 'image/*';
   }
 }
 
-document.getElementById('closeUpload')?.addEventListener('click', () =>
-  uploadModal.classList.remove('show')
-);
-
-uploadModal.addEventListener('click', (e) => {
-  if (e.target === uploadModal) uploadModal.classList.remove('show');
-});
+document.getElementById('closeUpload')?.addEventListener('click', () => uploadModal.classList.remove('show'));
+uploadModal.addEventListener('click', (e) => { if (e.target === uploadModal) uploadModal.classList.remove('show'); });
 
 document.querySelectorAll('.upload-tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -5773,17 +5789,17 @@ document.querySelectorAll('.upload-tab').forEach(tab => {
     selectedFile = null;
     selectedFileDuration = 0;
     uploadFileInput.value = '';
+    uploadPreview.src = '';
+    uploadPhotoPreview.src = '';
+    uploadPreviewWrap.style.display = 'none';
+    uploadPhotoPreviewWrap.style.display = 'none';
     uploadPickerWrap.style.display = 'flex';
-    uploadEditorArea.style.display = 'none';
     uploadSubmitBtn.disabled = true;
     uploadMsg.textContent = '';
     updatePickerText();
   });
 });
 
-/* ============================================================
-   FILE SELECT → EDITOR
-   ============================================================ */
 uploadFileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -5792,62 +5808,18 @@ uploadFileInput.addEventListener('change', async (e) => {
   uploadMsg.textContent = '';
 
   if (currentUploadType === 'photo') {
-    if (!file.type.startsWith('image/')) {
-      uploadMsg.textContent = 'Choose an image.';
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      uploadMsg.textContent = 'Max 10 MB.';
-      return;
-    }
-
+    if (!file.type.startsWith('image/')) { uploadMsg.textContent = 'Choose an image.'; return; }
+    if (file.size > 5 * 1024 * 1024) { uploadMsg.textContent = 'Max 5 MB.'; return; }
     selectedFile = file;
-    editorMode = 'photo';
-
-    /* Load image into canvas */
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const image = new Image();
-      image.onload = () => {
-        editorImage = image;
-
-        /* Show editor area */
-        uploadPickerWrap.style.display = 'none';
-        uploadEditorArea.style.display = 'flex';
-
-        /* Hide video tools */
-        document.getElementById('videoTrimSec').style.display = 'none';
-        document.getElementById('photoTransformSec').style.display = 'block';
-
-        /* Show video element hidden, canvas visible */
-        editorVideo.style.display = 'none';
-        editorCanvas.style.display = 'block';
-
-        drawEditorImage();
-        updateEditorLiveOverlays();
-        uploadSubmitBtn.disabled = false;
-        showToast('✅ Photo loaded — edit karo!');
-      };
-      image.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
+    uploadPhotoPreview.src = URL.createObjectURL(file);
+    uploadPhotoPreviewWrap.style.display = 'block';
+    uploadPickerWrap.style.display = 'none';
+    uploadSubmitBtn.disabled = false;
     return;
   }
 
-  /* VIDEO */
-  if (!file.type.startsWith('video/')) {
-    uploadMsg.textContent = 'Choose a video.';
-    return;
-  }
-
-  if (file.size > 500 * 1024 * 1024) {
-    uploadMsg.textContent = 'Max 500 MB.';
-    return;
-  }
-
-  selectedFile = file;
-  editorVideoFile = file;
-  editorMode = 'video';
+  if (!file.type.startsWith('video/')) { uploadMsg.textContent = 'Choose a video.'; return; }
+  if (file.size > 500 * 1024 * 1024) { uploadMsg.textContent = 'Max 500 MB.'; return; }
 
   const url = URL.createObjectURL(file);
   const tempVideo = document.createElement('video');
@@ -5856,13 +5828,10 @@ uploadFileInput.addEventListener('change', async (e) => {
 
   tempVideo.onloadedmetadata = () => {
     const duration = tempVideo.duration;
+    if (!isFinite(duration) || duration <= 0) { uploadMsg.textContent = 'Could not read duration.'; return; }
+    selectedFile = file;
+    selectedFileDuration = duration;
 
-    if (!isFinite(duration) || duration <= 0) {
-      uploadMsg.textContent = 'Could not read duration.';
-      return;
-    }
-
-    /* Auto switch short/long */
     if (currentUploadType === 'short' && duration > 60.5) {
       uploadMsg.textContent = `⚠️ Switching to Long...`;
       setTimeout(() => {
@@ -5873,7 +5842,6 @@ uploadFileInput.addEventListener('change', async (e) => {
       }, 1500);
       return;
     }
-
     if (currentUploadType === 'long' && duration <= 30.5) {
       uploadMsg.textContent = `⚠️ Switching to Short...`;
       setTimeout(() => {
@@ -5885,326 +5853,33 @@ uploadFileInput.addEventListener('change', async (e) => {
       return;
     }
 
-    selectedFileDuration = duration;
-    editorVideoDuration = duration;
-
-    /* Show editor area */
+    uploadPreview.src = url;
+    uploadPreviewWrap.style.display = 'block';
     uploadPickerWrap.style.display = 'none';
-    uploadEditorArea.style.display = 'flex';
-
-    /* Show video tools, hide photo transform */
-    document.getElementById('videoTrimSec').style.display = 'block';
-    document.getElementById('photoTransformSec').style.display = 'none';
-
-    /* Show video element, hide canvas */
-    editorCanvas.style.display = 'none';
-    editorVideo.style.display = 'block';
-    editorVideo.src = url;
-    editorVideo.loop = true;
-    editorVideo.muted = false;
-    editorVideo.play().catch(() => {});
-
-    /* Set trim defaults */
-    document.getElementById('editorTrimStart').value = 0;
-    document.getElementById('editorTrimEnd').value = duration.toFixed(1);
-    document.getElementById('editorTrimEnd').max = duration.toFixed(1);
-
-    updateEditorLiveOverlays();
+    uploadPreviewInfo.textContent = `${Math.round(duration)}s · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
     uploadSubmitBtn.disabled = false;
-    showToast('✅ Video loaded — edit karo!');
   };
 
-  tempVideo.onerror = () => {
-    uploadMsg.textContent = 'Could not load video.';
-  };
+  tempVideo.onerror = () => { uploadMsg.textContent = 'Could not load video.'; };
 });
 
-/* ============================================================
-   EDITOR — CANVAS DRAW
-   ============================================================ */
-function drawEditorImage() {
-  if (!editorImage) return;
-
-  const maxW = 1200;
-  const maxH = 1200;
-  let w = editorImage.width;
-  let h = editorImage.height;
-
-  if (w > maxW || h > maxH) {
-    const ratio = Math.min(maxW / w, maxH / h);
-    w = Math.round(w * ratio);
-    h = Math.round(h * ratio);
-  }
-
-  if (editorImgRotation === 90 || editorImgRotation === 270) {
-    editorCanvas.width = h;
-    editorCanvas.height = w;
-  } else {
-    editorCanvas.width = w;
-    editorCanvas.height = h;
-  }
-
-  const ctx = editorCanvas.getContext('2d');
-  ctx.filter = buildEditorFilterStr();
-  ctx.save();
-  ctx.translate(editorCanvas.width / 2, editorCanvas.height / 2);
-  ctx.rotate(editorImgRotation * Math.PI / 180);
-  ctx.scale(editorImgFlipH ? -1 : 1, editorImgFlipV ? -1 : 1);
-  ctx.drawImage(editorImage, -w / 2, -h / 2, w, h);
-  ctx.restore();
-}
-
-function buildEditorFilterStr() {
-  const parts = [];
-  const p = EDITOR_PRESETS.find(p => p.id === editorPresetFilter);
-  if (p && p.css) parts.push(p.css);
-  parts.push(`brightness(${editorFilters.brightness}%)`);
-  parts.push(`contrast(${editorFilters.contrast}%)`);
-  parts.push(`saturate(${editorFilters.saturate}%)`);
-  if (editorFilters.blur > 0) parts.push(`blur(${editorFilters.blur}px)`);
-  return parts.join(' ');
-}
-
-function editorRotate(deg) {
-  editorImgRotation = (editorImgRotation + deg + 360) % 360;
-  drawEditorImage();
-}
-
-function editorFlip(dir) {
-  if (dir === 'h') editorImgFlipH = !editorImgFlipH;
-  else editorImgFlipV = !editorImgFlipV;
-  drawEditorImage();
-}
-
-function editorReset() {
-  editorImgRotation = 0;
-  editorImgFlipH = false;
-  editorImgFlipV = false;
-  editorFilters = { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
-  editorPresetFilter = '';
-  document.getElementById('editorSBright').value = 100;
-  document.getElementById('editorSContrast').value = 100;
-  document.getElementById('editorSSat').value = 100;
-  document.getElementById('editorVBright').textContent = '100%';
-  document.getElementById('editorVContrast').textContent = '100%';
-  document.getElementById('editorVSat').textContent = '100%';
-  document.querySelectorAll('#editorFilterGrid .editor-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.preset === 'none'));
-
-  if (editorMode === 'photo') drawEditorImage();
-  else applyEditorVideoFilter();
-  showToast('🔄 Reset');
-}
-
-/* ============================================================
-   EDITOR — FILTERS
-   ============================================================ */
-function initEditorFilters() {
-  const grid = document.getElementById('editorFilterGrid');
-  if (!grid) return;
-  grid.innerHTML = '';
-  EDITOR_PRESETS.forEach(p => {
-    const b = document.createElement('button');
-    b.className = 'editor-filter-btn' + (p.id === 'none' ? ' active' : '');
-    b.dataset.preset = p.id;
-    b.style.background = 'linear-gradient(135deg,#ff2e63,#ff8a00)';
-    b.innerHTML = `<span>${p.name}</span>`;
-    b.addEventListener('click', () => editorApplyPreset(p.id));
-    grid.appendChild(b);
-  });
-}
-
-function editorApplyPreset(id) {
-  editorPresetFilter = id === 'none' ? '' : id;
-  document.querySelectorAll('#editorFilterGrid .editor-filter-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.preset === id)
-  );
-  if (editorMode === 'photo') drawEditorImage();
-  else applyEditorVideoFilter();
-}
-
-function editorUpdateFilter(type, value) {
-  editorFilters[type] = type === 'blur' ? parseInt(value) : parseInt(value);
-  const v = { brightness: value + '%', contrast: value + '%', saturate: value + '%', blur: value + 'px' }[type];
-  const el = { brightness: 'editorVBright', contrast: 'editorVContrast', saturate: 'editorVSat', blur: 'editorVBlur' }[type];
-  const vEl = document.getElementById(el);
-  if (vEl) vEl.textContent = v;
-  if (editorMode === 'photo') drawEditorImage();
-  else applyEditorVideoFilter();
-}
-
-function applyEditorVideoFilter() {
-  if (!editorVideo || editorMode !== 'video') return;
-  const p = EDITOR_PRESETS.find(p => p.id === editorPresetFilter);
-  let f = '';
-  if (p && p.css) f += p.css + ' ';
-  f += `brightness(${editorFilters.brightness}%) contrast(${editorFilters.contrast}%) saturate(${editorFilters.saturate}%)`;
-  if (editorFilters.blur > 0) f += ` blur(${editorFilters.blur}px)`;
-  editorVideo.style.filter = f;
-}
-
-/* ============================================================
-   EDITOR — VIDEO TRIM & SPEED
-   ============================================================ */
-function editorSetSpeed(s) {
-  editorVideoSpeed = s;
-  if (editorVideo) editorVideo.playbackRate = s;
-  document.querySelectorAll('#videoTrimSec .editor-btn').forEach(b => b.classList.remove('active'));
-  if (event && event.currentTarget) event.currentTarget.classList.add('active');
-  showToast(`⚡ Speed: ${s}x`);
-}
-
-/* ============================================================
-   EDITOR — TEXT OVERLAY
-   ============================================================ */
-function editorUpdateText() {
-  editorTextOverlay = document.getElementById('editorTextInput').value;
-  editorTextSize = parseInt(document.getElementById('editorSTxtSize').value);
-  document.getElementById('editorVTxtSize').textContent = editorTextSize + 'px';
-  updateEditorLiveOverlays();
-}
-
-function editorSetTextColor(color, btn) {
-  editorTextColor = color;
-  document.querySelectorAll('#editorColorRow .editor-color-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  updateEditorLiveOverlays();
-}
-
-function updateEditorLiveOverlays() {
-  const t = document.getElementById('editorTextLive');
-  if (editorTextOverlay.trim()) {
-    t.textContent = editorTextOverlay;
-    t.style.color = editorTextColor;
-    t.style.fontSize = editorTextSize + 'px';
-    t.style.display = 'block';
-  } else {
-    t.style.display = 'none';
-  }
-  toggleEditorWmark();
-}
-
-function editorToggleWmark() {
-  editorWmarkOn = document.getElementById('editorWmarkToggle').checked;
-  toggleEditorWmark();
-}
-
-function toggleEditorWmark() {
-  const w = document.getElementById('editorWmarkLive');
-  if (editorWmarkOn && (editorMode === 'photo' && editorImage || editorMode === 'video' && editorVideoFile)) {
-    w.style.display = 'block';
-  } else {
-    w.style.display = 'none';
-  }
-}
-
-function editorChangeFile() {
-  uploadFileInput.value = '';
+function switchUploadType(type) {
+  document.querySelectorAll('.upload-tab').forEach(t => t.classList.toggle('active', t.dataset.type === type));
+  currentUploadType = type;
+  updatePickerText();
+  uploadPreview.src = '';
+  uploadPhotoPreview.src = '';
+  uploadPreviewWrap.style.display = 'none';
+  uploadPhotoPreviewWrap.style.display = 'none';
   uploadPickerWrap.style.display = 'flex';
-  uploadEditorArea.style.display = 'none';
   uploadSubmitBtn.disabled = true;
-  editorImage = null;
-  editorVideoFile = null;
-
-  try { editorVideo.pause(); } catch (e) {}
-  editorVideo.src = '';
 }
 
-/* ============================================================
-   EDITOR — EXPORT (for upload)
-   ============================================================ */
-async function exportEditedPhoto() {
-  if (!editorImage) return null;
-
-  /* Redraw with final watermark + text for export */
-  const c = document.createElement('canvas');
-  const maxW = 1200, maxH = 1200;
-  let w = editorImage.width;
-  let h = editorImage.height;
-
-  if (w > maxW || h > maxH) {
-    const ratio = Math.min(maxW / w, maxH / h);
-    w = Math.round(w * ratio);
-    h = Math.round(h * ratio);
-  }
-
-  if (editorImgRotation === 90 || editorImgRotation === 270) {
-    c.width = h;
-    c.height = w;
-  } else {
-    c.width = w;
-    c.height = h;
-  }
-
-  const ctx = c.getContext('2d');
-  ctx.filter = buildEditorFilterStr();
-  ctx.save();
-  ctx.translate(c.width / 2, c.height / 2);
-  ctx.rotate(editorImgRotation * Math.PI / 180);
-  ctx.scale(editorImgFlipH ? -1 : 1, editorImgFlipV ? -1 : 1);
-  ctx.drawImage(editorImage, -w / 2, -h / 2, w, h);
-  ctx.restore();
-
-  /* Watermark */
-  if (editorWmarkOn) {
-    ctx.filter = 'none';
-    const pad = 20;
-    const fontSize = Math.max(14, Math.round(c.width / 40));
-    ctx.font = `900 ${fontSize}px -apple-system, sans-serif`;
-    const text = 'REELHUB';
-    const textW = ctx.measureText(text).width;
-    const boxW = textW + 24;
-    const boxH = fontSize + 14;
-    const x = c.width - boxW - pad;
-    const y = c.height - boxH - pad;
-
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-    if (ctx.roundRect) {
-      ctx.beginPath();
-      ctx.roundRect(x, y, boxW, boxH, 6);
-      ctx.fill();
-    } else {
-      ctx.fillRect(x, y, boxW, boxH);
-    }
-
-    ctx.fillStyle = '#ff2e63';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, x + 12, y + boxH / 2);
-  }
-
-  /* Text overlay */
-  if (editorTextOverlay.trim()) {
-    ctx.filter = 'none';
-    const fontSize = Math.round(editorTextSize * (c.width / 500));
-    ctx.font = `900 ${fontSize}px -apple-system, sans-serif`;
-    ctx.fillStyle = editorTextColor;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 12;
-    ctx.fillText(editorTextOverlay, c.width / 2, c.height / 2);
-    ctx.shadowBlur = 0;
-  }
-
-  return new Promise((resolve) => {
-    c.toBlob((blob) => resolve(blob), 'image/jpeg', 0.92);
-  });
-}
-
-/* ============================================================
-   UPLOAD SUBMIT
-   ============================================================ */
 uploadSubmitBtn.addEventListener('click', async () => {
-  if (!currentUser || !currentProfile) {
-    uploadMsg.textContent = 'Login required.';
-    return;
-  }
-  if (!selectedFile) {
-    uploadMsg.textContent = 'Select a file.';
-    return;
-  }
+  if (!currentUser || !currentProfile) { uploadMsg.textContent = 'Login required.'; return; }
+  if (!selectedFile) { uploadMsg.textContent = 'Select a file.'; return; }
 
   const caption = uploadCaption.value.trim();
-
   uploadSubmitBtn.disabled = true;
   uploadSubmitBtn.textContent = 'Uploading...';
   uploadMsg.textContent = '';
@@ -6213,17 +5888,7 @@ uploadSubmitBtn.addEventListener('click', async () => {
   uploadProgressText.textContent = '0%';
 
   try {
-    let fileToUpload = selectedFile;
-
-    /* For photo: export edited canvas as JPEG blob */
-    if (editorMode === 'photo' && editorImage) {
-      const editedBlob = await exportEditedPhoto();
-      if (editedBlob) {
-        fileToUpload = new File([editedBlob], `edited_${Date.now()}.jpg`, { type: 'image/jpeg' });
-      }
-    }
-
-    const result = await uploadToCloudinary(fileToUpload, (percent) => {
+    const result = await uploadToCloudinary(selectedFile, (percent) => {
       uploadProgressBar.style.width = percent + '%';
       uploadProgressText.textContent = percent + '%';
     });
@@ -6247,48 +5912,25 @@ uploadSubmitBtn.addEventListener('click', async () => {
     };
 
     await addDoc(collection(db, 'posts'), postData);
-    await updateDoc(doc(db, 'users', currentUser.uid), {
-      videoCount: (currentProfile.videoCount || 0) + 1
-    });
+    await updateDoc(doc(db, 'users', currentUser.uid), { videoCount: (currentProfile.videoCount || 0) + 1 });
     currentProfile.videoCount = (currentProfile.videoCount || 0) + 1;
 
     localStorage.removeItem('reelhub_feed_cache');
-
     uploadMsg.className = 'success-msg';
     uploadMsg.textContent = '✅ Uploaded!';
 
     setTimeout(() => {
       uploadModal.classList.remove('show');
-      if (document.querySelector('.nav-item[data-page="profile"]')?.classList.contains('active')) {
-        renderProfile();
-      } else {
-        setActiveNav('home');
-        renderHomeFeed();
-      }
+      if (document.querySelector('.nav-item[data-page="profile"]')?.classList.contains('active')) renderProfile();
     }, 1500);
   } catch (err) {
-    console.error('Upload error:', err);
     uploadMsg.className = 'error-msg';
     uploadMsg.textContent = err.message || 'Upload failed.';
     uploadSubmitBtn.disabled = false;
-    uploadSubmitBtn.textContent = 'Upload to ReelHub';
+    uploadSubmitBtn.textContent = 'Upload';
   }
 });
 
-function switchUploadType(type) {
-  document.querySelectorAll('.upload-tab').forEach(t =>
-    t.classList.toggle('active', t.dataset.type === type)
-  );
-  currentUploadType = type;
-  updatePickerText();
-  uploadPickerWrap.style.display = 'flex';
-  uploadEditorArea.style.display = 'none';
-  uploadSubmitBtn.disabled = true;
-}
-
-/* ============================================================
-   CLOUDINARY UPLOAD
-   ============================================================ */
 function uploadToCloudinary(file, onProgress) {
   return new Promise((resolve, reject) => {
     const resourceType = currentUploadType === 'photo' ? 'image' : 'video';
@@ -6302,36 +5944,18 @@ function uploadToCloudinary(file, onProgress) {
 
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
-    xhr.timeout = 300000;
-
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) {
-        onProgress(Math.round((e.loaded / e.total) * 100));
-      }
-    };
-
+    xhr.timeout = 120000;
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); };
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const res = JSON.parse(xhr.responseText);
-          if (!res.secure_url) {
-            reject(new Error('No URL returned'));
-            return;
-          }
-          resolve(res);
-        } catch (e) {
-          reject(new Error('Invalid response'));
-        }
+        try { const res = JSON.parse(xhr.responseText); if (!res.secure_url) { reject(new Error('No URL returned')); return; } resolve(res); }
+        catch (e) { reject(new Error('Invalid response')); }
       } else {
         let errMsg = 'Upload failed';
-        try {
-          const d = JSON.parse(xhr.responseText);
-          if (d.error?.message) errMsg = d.error.message;
-        } catch (e) {}
+        try { const d = JSON.parse(xhr.responseText); if (d.error?.message) errMsg = d.error.message; } catch (e) {}
         reject(new Error(errMsg));
       }
     };
-
     xhr.onerror = () => reject(new Error('Network error'));
     xhr.ontimeout = () => reject(new Error('Timeout'));
     xhr.send(formData);
@@ -6340,34 +5964,19 @@ function uploadToCloudinary(file, onProgress) {
 
 function openPlayer(post) {
   playerTitle.textContent = post.caption || (post.type === 'photo' ? 'Photo' : 'Video');
-
-  if (post.type === 'photo') {
-    playerContent.innerHTML = `<img src="${post.url}" alt="">`;
-  } else {
-    playerContent.innerHTML = `<video src="${post.url}" controls playsinline autoplay class="aspect-${post.type === 'long' ? '16-9' : '9-16'}" style="background:#000;"></video>`;
-  }
-
+  if (post.type === 'photo') playerContent.innerHTML = `<img src="${post.url}" alt="">`;
+  else playerContent.innerHTML = `<video src="${post.url}" controls playsinline autoplay class="aspect-${post.type === 'long' ? '16-9' : '9-16'}" style="background:#000;"></video>`;
   playerModal.classList.add('show');
 }
 
-document.getElementById('closePlayer')?.addEventListener('click', () => {
-  playerModal.classList.remove('show');
-  playerContent.innerHTML = '';
-});
-
-playerModal.addEventListener('click', (e) => {
-  if (e.target === playerModal) {
-    playerModal.classList.remove('show');
-    playerContent.innerHTML = '';
-  }
-});
+document.getElementById('closePlayer')?.addEventListener('click', () => { playerModal.classList.remove('show'); playerContent.innerHTML = ''; });
+playerModal.addEventListener('click', (e) => { if (e.target === playerModal) { playerModal.classList.remove('show'); playerContent.innerHTML = ''; } });
 
 /* ============================================================
    EDIT PROFILE MODAL
    ============================================================ */
 function openEditModal() {
   if (!currentProfile) return;
-
   selectedPhotoBase64 = null;
   editNameInput.value = currentProfile.name || '';
   editUserInput.value = currentProfile.user || '';
@@ -6377,24 +5986,13 @@ function openEditModal() {
   editModal.classList.add('show');
 }
 
-document.getElementById('closeEdit')?.addEventListener('click', () =>
-  editModal.classList.remove('show')
-);
-
-editModal.addEventListener('click', (e) => {
-  if (e.target === editModal) editModal.classList.remove('show');
-});
+document.getElementById('closeEdit')?.addEventListener('click', () => editModal.classList.remove('show'));
+editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.classList.remove('show'); });
 
 editPhotoInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-
-  if (file.size > 500 * 1024) {
-    editMsg.className = 'error-msg';
-    editMsg.textContent = 'Max 500 KB.';
-    return;
-  }
-
+  if (file.size > 500 * 1024) { editMsg.className = 'error-msg'; editMsg.textContent = 'Max 500 KB.'; return; }
   const base64 = await fileToBase64(file);
   selectedPhotoBase64 = base64;
   editPreviewImg.src = base64;
@@ -6402,23 +6000,14 @@ editPhotoInput.addEventListener('change', async (e) => {
 
 saveProfileBtn.addEventListener('click', async () => {
   if (!currentUser) return;
-
   const newName = editNameInput.value.trim();
   const newUser = editUserInput.value.trim().toLowerCase();
   const newBio = editBioInput.value.trim();
-
   editMsg.className = 'error-msg';
   editMsg.textContent = '';
-
   if (!newName) { editMsg.textContent = 'Name required.'; return; }
-  if (!/^[a-z0-9._]{3,20}$/.test(newUser)) {
-    editMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
-    return;
-  }
-  if (newBio.length > 150) {
-    editMsg.textContent = 'Bio max 150 characters.';
-    return;
-  }
+  if (!/^[a-z0-9._]{3,20}$/.test(newUser)) { editMsg.textContent = 'Username: 3-20 chars.'; return; }
+  if (newBio.length > 150) { editMsg.textContent = 'Bio max 150 characters.'; return; }
 
   saveProfileBtn.disabled = true;
   saveProfileBtn.textContent = 'Saving...';
@@ -6427,27 +6016,15 @@ saveProfileBtn.addEventListener('click', async () => {
     if (newUser !== currentProfile.user) {
       const q = query(collection(db, 'users'), where('user', '==', newUser));
       const snap = await getDocs(q);
-      if (!snap.empty) {
-        editMsg.textContent = 'Username already taken.';
-        saveProfileBtn.disabled = false;
-        saveProfileBtn.textContent = 'Save Changes';
-        return;
-      }
+      if (!snap.empty) { editMsg.textContent = 'Username already taken.'; saveProfileBtn.disabled = false; saveProfileBtn.textContent = 'Save Changes'; return; }
     }
-
     const updateData = { name: newName, user: newUser, bio: newBio };
     if (selectedPhotoBase64) updateData.photo = selectedPhotoBase64;
-
     await updateDoc(doc(db, 'users', currentUser.uid), updateData);
     Object.assign(currentProfile, updateData);
-
     editMsg.className = 'success-msg';
     editMsg.textContent = 'Profile updated!';
-
-    setTimeout(() => {
-      editModal.classList.remove('show');
-      renderProfile();
-    }, 500);
+    setTimeout(() => { editModal.classList.remove('show'); renderProfile(); }, 500);
   } catch (err) {
     editMsg.className = 'error-msg';
     editMsg.textContent = err.message || 'Update failed.';
@@ -6462,116 +6039,68 @@ saveProfileBtn.addEventListener('click', async () => {
    ============================================================ */
 function openListModal(type) {
   if (!currentProfile) return;
-
   const isFollowers = type === 'followers';
   listTitle.textContent = isFollowers ? 'Followers' : 'Following';
   userList.innerHTML = '<div class="empty-msg">Loading...</div>';
   listModal.classList.add('show');
-
   const uids = isFollowers ? currentProfile.followers : currentProfile.following;
-
   if (!uids || uids.length === 0) {
     userList.innerHTML = `<div class="empty-msg">No ${isFollowers ? 'followers' : 'following'} yet.</div>`;
     return;
   }
-
   loadUsersByIds(uids).then(users => {
-    if (users.length === 0) {
-      userList.innerHTML = `<div class="empty-msg">No users found.</div>`;
-      return;
-    }
-
+    if (users.length === 0) { userList.innerHTML = `<div class="empty-msg">No users found.</div>`; return; }
     userList.innerHTML = '';
     users.forEach(u => {
       const row = document.createElement('div');
       row.className = 'user-row';
       const isFollowing = currentProfile.following.includes(u.uid);
-
       row.innerHTML = `
         <img src="${u.photo || defaultAvatar(u.name)}" alt="">
         <div class="meta"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}${u.isPrivate ? ' 🔒' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
         <button class="${isFollowing ? 'unfollow' : 'follow'}">${isFollowing ? 'Following' : 'Follow'}</button>
       `;
-
-      row.querySelector('img').addEventListener('click', () => {
-        listModal.classList.remove('show');
-        openUserProfile(u.uid);
-      });
-      row.querySelector('.meta').addEventListener('click', () => {
-        listModal.classList.remove('show');
-        openUserProfile(u.uid);
-      });
-      row.querySelector('button').addEventListener('click', async (e) => {
-        e.stopPropagation();
-        await toggleFollow(u.uid, e.target);
-      });
-
+      row.querySelector('img').addEventListener('click', () => { listModal.classList.remove('show'); openUserProfile(u.uid); });
+      row.querySelector('.meta').addEventListener('click', () => { listModal.classList.remove('show'); openUserProfile(u.uid); });
+      row.querySelector('button').addEventListener('click', async (e) => { e.stopPropagation(); await toggleFollow(u.uid, e.target); });
       userList.appendChild(row);
     });
   });
 }
 
-document.getElementById('closeList')?.addEventListener('click', () =>
-  listModal.classList.remove('show')
-);
-
-listModal.addEventListener('click', (e) => {
-  if (e.target === listModal) listModal.classList.remove('show');
-});
+document.getElementById('closeList')?.addEventListener('click', () => listModal.classList.remove('show'));
+listModal.addEventListener('click', (e) => { if (e.target === listModal) listModal.classList.remove('show'); });
 
 async function toggleFollow(targetUid, btnEl) {
   if (!currentUser || !currentProfile) return;
   if (targetUid === currentUser.uid) return;
-
   const isFollowing = currentProfile.following.includes(targetUid);
-
   try {
     const myRef = doc(db, 'users', currentUser.uid);
     const targetRef = doc(db, 'users', targetUid);
-
     if (isFollowing) {
       await updateDoc(myRef, { following: arrayRemove(targetUid) });
       await updateDoc(targetRef, { followers: arrayRemove(currentUser.uid) });
-
       currentProfile.following = currentProfile.following.filter(id => id !== targetUid);
-
-      if (btnEl) {
-        btnEl.textContent = 'Follow';
-        btnEl.className = 'follow';
-      }
+      if (btnEl) { btnEl.textContent = 'Follow'; btnEl.className = 'follow'; }
     } else {
       await updateDoc(myRef, { following: arrayUnion(targetUid) });
       await updateDoc(targetRef, { followers: arrayUnion(currentUser.uid) });
-
       currentProfile.following.push(targetUid);
+      if (btnEl) { btnEl.textContent = 'Following'; btnEl.className = 'unfollow'; }
 
-      if (btnEl) {
-        btnEl.textContent = 'Following';
-        btnEl.className = 'unfollow';
-      }
-
-      const s = typeof getSettings === 'function'
-        ? getSettings()
-        : { notifFollows: true, pushNotif: true };
-
+      const s = typeof getSettings === 'function' ? getSettings() : { notifFollows: true, pushNotif: true };
       if (s.pushNotif && s.notifFollows) {
         try {
           await addDoc(collection(db, 'notifications'), {
-            userId: targetUid,
-            type: 'follow',
-            title: '👤 New Follower',
+            userId: targetUid, type: 'follow', title: '👤 New Follower',
             message: `${currentProfile.name || 'Someone'} started following you`,
-            fromUserId: currentUser.uid,
-            read: false,
-            createdAt: serverTimestamp()
+            fromUserId: currentUser.uid, read: false, createdAt: serverTimestamp()
           });
         } catch (e) {}
       }
     }
-  } catch (err) {
-    console.error('toggleFollow error:', err);
-    showToast('Could not update follow.');
-  }
+  } catch (err) { console.error('toggleFollow error:', err); showToast('Could not update follow.'); }
 }
 
 /* ============================================================
@@ -6579,38 +6108,19 @@ async function toggleFollow(targetUid, btnEl) {
    ============================================================ */
 async function renderNotifications() {
   if (!currentUser) return;
-
-  content.innerHTML = `
-    <div class="notif-page">
-      <div class="page-title" style="margin-bottom:16px;text-align:left;padding:0 4px;">Notifications</div>
-      <div id="notifList"><div class="empty-notif">Loading...</div></div>
-    </div>
-  `;
-
+  content.innerHTML = `<div class="notif-page"><div class="page-title" style="margin-bottom:16px;text-align:left;padding:0 4px;">Notifications</div><div id="notifList"><div class="empty-notif">Loading...</div></div></div>`;
   try {
-    const q = query(
-      collection(db, 'notifications'),
-      where('userId', '==', currentUser.uid),
-      limit(50)
-    );
+    const q = query(collection(db, 'notifications'), where('userId', '==', currentUser.uid), limit(50));
     const snap = await getDocs(q);
     const notifications = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    notifications.sort((a, b) =>
-      (b.createdAt?.toDate?.()?.getTime() || 0) -
-      (a.createdAt?.toDate?.()?.getTime() || 0)
-    );
-
+    notifications.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
     paintNotifications(notifications);
 
     for (const n of notifications) {
       if (!n.read && n.type !== 'admin_invite') {
-        try {
-          await updateDoc(doc(db, 'notifications', n.id), { read: true });
-        } catch (e) {}
+        try { await updateDoc(doc(db, 'notifications', n.id), { read: true }); } catch (e) {}
       }
     }
-
     updateNotifDot(0);
   } catch (e) {
     const el = document.getElementById('notifList');
@@ -6621,22 +6131,14 @@ async function renderNotifications() {
 function paintNotifications(list) {
   const wrap = document.getElementById('notifList');
   if (!wrap) return;
-
   if (list.length === 0) {
-    wrap.innerHTML = `
-      <div class="empty-notif">
-        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        <div>No notifications yet</div>
-      </div>`;
+    wrap.innerHTML = `<div class="empty-notif"><div>No notifications yet</div></div>`;
     return;
   }
-
   wrap.innerHTML = '';
-
   list.forEach(n => {
     const item = document.createElement('div');
     item.className = 'notif-item' + (n.read ? '' : ' unread');
-
     const time = n.createdAt?.toDate?.();
     const isInvite = n.type === 'admin_invite';
     const isHandled = n.handled === true;
@@ -6645,10 +6147,7 @@ function paintNotifications(list) {
       <div class="notif-actions">
         <button class="accept" data-invite-action="accept" data-invite-id="${n.inviteId || ''}" data-notif-id="${n.id}">✓ Accept</button>
         <button class="reject" data-invite-action="reject" data-invite-id="${n.inviteId || ''}" data-notif-id="${n.id}">✕ Decline</button>
-      </div>
-    ` : (isInvite && isHandled
-        ? `<div style="font-size:11px;color:#888;margin-top:8px;">✅ Handled</div>`
-        : '');
+      </div>` : (isInvite && isHandled ? `<div style="font-size:11px;color:#888;margin-top:8px;">✅ Handled</div>` : '');
 
     item.innerHTML = `
       <div class="notif-header">
@@ -6663,136 +6162,50 @@ function paintNotifications(list) {
       item.querySelectorAll('[data-invite-action]').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
-          await handleAdminInviteAction(
-            btn.dataset.inviteAction,
-            btn.dataset.inviteId,
-            btn.dataset.notifId,
-            item
-          );
+          await handleAdminInviteAction(btn.dataset.inviteAction, btn.dataset.inviteId, btn.dataset.notifId, item);
         });
       });
     }
-
     wrap.appendChild(item);
   });
 }
 
 async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
-  if (!currentUser || !currentUser.email) {
-    showToast('❌ Please login first');
-    return;
-  }
-  if (!inviteId) {
-    showToast('❌ Invalid invitation');
-    return;
-  }
-
+  if (!currentUser || !currentUser.email) { showToast('❌ Please login first'); return; }
+  if (!inviteId) { showToast('❌ Invalid invitation'); return; }
   try {
     const inviteRef = doc(db, 'admin_invites', inviteId);
     const inviteSnap = await getDoc(inviteRef);
-
-    if (!inviteSnap.exists()) {
-      showToast('❌ Invitation not found');
-      return;
-    }
-
+    if (!inviteSnap.exists()) { showToast('❌ Invitation not found'); return; }
     const inviteData = inviteSnap.data();
-
     if (inviteData.status !== 'pending') {
       showToast('⚠️ Invitation already ' + inviteData.status);
-      if (notifId) {
-        try {
-          await updateDoc(doc(db, 'notifications', notifId), { handled: true, read: true });
-        } catch (e) {}
-      }
+      if (notifId) { try { await updateDoc(doc(db, 'notifications', notifId), { handled: true, read: true }); } catch (e) {} }
       return;
     }
-
     if (action === 'accept') {
-      if (!confirm('🎉 Accept admin invitation?\n\nYou will get admin panel access.')) return;
-
-      await updateDoc(inviteRef, {
-        status: 'accepted',
-        respondedAt: serverTimestamp()
-      });
-
+      if (!confirm('🎉 Accept admin invitation?')) return;
+      await updateDoc(inviteRef, { status: 'accepted', respondedAt: serverTimestamp() });
       const configRef = doc(db, 'admin_config', 'emails');
       const configSnap = await getDoc(configRef);
-
       const currentList = configSnap.exists() ? (configSnap.data().list || []) : [];
       const myEmail = currentUser.email.toLowerCase().trim();
-
       if (!currentList.map(e => e.toLowerCase()).includes(myEmail)) {
         currentList.push(myEmail);
-        if (configSnap.exists()) {
-          await updateDoc(configRef, { list: currentList });
-        } else {
-          await setDoc(configRef, { list: currentList });
-        }
+        if (configSnap.exists()) await updateDoc(configRef, { list: currentList });
+        else await setDoc(configRef, { list: currentList });
       }
-
-      if (notifId) {
-        try {
-          await updateDoc(doc(db, 'notifications', notifId), {
-            read: true,
-            handled: true
-          });
-        } catch (e) {}
-      }
-
-      if (itemEl) {
-        itemEl.innerHTML = `
-          <div class="notif-header">
-            <div class="notif-title">🎉 Admin Invitation Accepted</div>
-            <div class="notif-time">now</div>
-          </div>
-          <div class="notif-message">You are now a ReelHub Admin. Login at the admin panel.</div>
-          <div style="font-size:11px;color:#4ade80;margin-top:8px;">✅ Handled</div>
-        `;
-      }
-
+      if (notifId) { try { await updateDoc(doc(db, 'notifications', notifId), { read: true, handled: true }); } catch (e) {} }
+      if (itemEl) itemEl.innerHTML = `<div class="notif-header"><div class="notif-title">🎉 Admin Accepted</div><div class="notif-time">now</div></div><div class="notif-message">You are now a ReelHub Admin.</div>`;
       showToast('✅ You are now an admin!');
-
-      setTimeout(() => {
-        showCongratsAnimation(
-          currentProfile?.name || 'User',
-          currentUser.email
-        );
-      }, 500);
+      setTimeout(() => showCongratsAnimation(currentProfile?.name || 'User', currentUser.email), 500);
     } else if (action === 'reject') {
       if (!confirm('Decline admin invitation?')) return;
-
-      await updateDoc(inviteRef, {
-        status: 'rejected',
-        respondedAt: serverTimestamp()
-      });
-
-      if (notifId) {
-        try {
-          await updateDoc(doc(db, 'notifications', notifId), {
-            read: true,
-            handled: true
-          });
-        } catch (e) {}
-      }
-
-      if (itemEl) {
-        itemEl.innerHTML = `
-          <div class="notif-header">
-            <div class="notif-title">Admin Invitation Declined</div>
-            <div class="notif-time">now</div>
-          </div>
-          <div class="notif-message">You declined the admin invitation.</div>
-          <div style="font-size:11px;color:#888;margin-top:8px;">Handled</div>
-        `;
-      }
-
+      await updateDoc(inviteRef, { status: 'rejected', respondedAt: serverTimestamp() });
+      if (notifId) { try { await updateDoc(doc(db, 'notifications', notifId), { read: true, handled: true }); } catch (e) {} }
       showToast('Invitation declined');
     }
-  } catch (err) {
-    console.error('Admin invite error:', err);
-    showToast('❌ ' + (err.message || 'Failed'));
-  }
+  } catch (err) { console.error('Admin invite error:', err); showToast('❌ ' + (err.message || 'Failed')); }
 }
 
 function startNotifWatcher() {
@@ -6802,10 +6215,7 @@ function startNotifWatcher() {
 }
 
 function stopNotifWatcher() {
-  if (notifIntervalId) {
-    clearInterval(notifIntervalId);
-    notifIntervalId = null;
-  }
+  if (notifIntervalId) { clearInterval(notifIntervalId); notifIntervalId = null; }
   updateNotifDot(0);
 }
 
@@ -6813,17 +6223,8 @@ async function checkUnreadNotifications() {
   if (!currentUser) return;
   try {
     const settings = typeof getSettings === 'function' ? getSettings() : { pushNotif: true };
-    if (settings.pushNotif === false) {
-      updateNotifDot(0);
-      return;
-    }
-
-    const q = query(
-      collection(db, 'notifications'),
-      where('userId', '==', currentUser.uid),
-      where('read', '==', false),
-      limit(100)
-    );
+    if (settings.pushNotif === false) { updateNotifDot(0); return; }
+    const q = query(collection(db, 'notifications'), where('userId', '==', currentUser.uid), where('read', '==', false), limit(100));
     const snap = await getDocs(q);
     updateNotifDot(snap.size);
   } catch (e) {}
@@ -6831,12 +6232,8 @@ async function checkUnreadNotifications() {
 
 function updateNotifDot(count) {
   if (!notifDot) return;
-  if (count > 0) {
-    notifDot.style.display = 'block';
-    notifDot.textContent = count > 20 ? '20+' : '';
-  } else {
-    notifDot.style.display = 'none';
-  }
+  if (count > 0) { notifDot.style.display = 'block'; notifDot.textContent = count > 20 ? '20+' : ''; }
+  else notifDot.style.display = 'none';
 }
 
 /* ============================================================
@@ -6852,106 +6249,60 @@ async function renderSearch() {
       <div class="search-results" id="searchResults"><div class="search-empty">Start typing...</div></div>
     </div>
   `;
-
   const input = document.getElementById('searchInput');
   let debounceTimer = null;
-
   input.addEventListener('input', (e) => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => performSearch(e.target.value.trim()), 300);
   });
-
   input.focus();
 }
 
 async function performSearch(searchTerm) {
   const results = document.getElementById('searchResults');
   if (!results) return;
-
-  if (!searchTerm) {
-    results.innerHTML = `<div class="search-empty">Start typing...</div>`;
-    return;
-  }
-
+  if (!searchTerm) { results.innerHTML = `<div class="search-empty">Start typing...</div>`; return; }
   results.innerHTML = `<div class="search-empty">Searching...</div>`;
-
   try {
     const usersRef = collection(db, 'users');
     const snap = await getDocs(usersRef);
     const term = searchTerm.toLowerCase();
     const blocked = currentProfile?.blockedUsers || [];
-
     const matches = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .filter(u => u.id !== currentUser.uid && !blocked.includes(u.id))
-      .filter(u =>
-        (u.name || '').toLowerCase().includes(term) ||
-        (u.user || '').toLowerCase().includes(term)
-      )
+      .filter(u => (u.name || '').toLowerCase().includes(term) || (u.user || '').toLowerCase().includes(term))
       .slice(0, 30);
 
-    if (matches.length === 0) {
-      results.innerHTML = `<div class="search-empty">No users found</div>`;
-      return;
-    }
-
+    if (matches.length === 0) { results.innerHTML = `<div class="search-empty">No users found</div>`; return; }
     results.innerHTML = '';
     matches.forEach(u => {
       const row = document.createElement('div');
       row.className = 'search-user';
       const isFollowing = currentProfile?.following?.includes(u.id);
-
       row.innerHTML = `
         <img src="${u.photo || defaultAvatar(u.name)}" alt="">
         <div class="info"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}${u.isPrivate ? ' 🔒' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
         <button class="${isFollowing ? 'unfollow' : 'follow'}">${isFollowing ? 'Following' : 'Follow'}</button>
       `;
-
-      row.querySelector('img').addEventListener('click', (e) => {
-        e.stopPropagation();
-        openUserProfile(u.id);
-      });
-      row.querySelector('.info').addEventListener('click', (e) => {
-        e.stopPropagation();
-        openUserProfile(u.id);
-      });
-      row.querySelector('button').addEventListener('click', async (e) => {
-        e.stopPropagation();
-        await toggleFollow(u.id, e.target);
-      });
-
+      row.querySelector('img').addEventListener('click', (e) => { e.stopPropagation(); openUserProfile(u.id); });
+      row.querySelector('.info').addEventListener('click', (e) => { e.stopPropagation(); openUserProfile(u.id); });
+      row.querySelector('button').addEventListener('click', async (e) => { e.stopPropagation(); await toggleFollow(u.id, e.target); });
       results.appendChild(row);
     });
-  } catch (e) {
-    results.innerHTML = `<div class="search-empty">Search failed</div>`;
-  }
+  } catch (e) { results.innerHTML = `<div class="search-empty">Search failed</div>`; }
 }
 
 async function shareProfile() {
   if (!currentProfile) return;
-
   const appUrl = window.location.origin;
   const shareText = `🎬 Check out ${currentProfile.name}'s profile on ReelHub!\n\n@${currentProfile.user}\n\n${appUrl}`;
-
   if (navigator.share) {
-    try {
-      await navigator.share({
-        title: `${currentProfile.name} on ReelHub`,
-        text: shareText,
-        url: appUrl
-      });
-      return;
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-    }
+    try { await navigator.share({ title: `${currentProfile.name} on ReelHub`, text: shareText, url: appUrl }); return; }
+    catch (err) { if (err.name === 'AbortError') return; }
   }
-
-  try {
-    await navigator.clipboard.writeText(shareText);
-    showToast('✅ Link copied!');
-  } catch (err) {
-    showToast('❌ Could not share');
-  }
+  try { await navigator.clipboard.writeText(shareText); showToast('✅ Link copied!'); }
+  catch (err) { showToast('❌ Could not share'); }
 }
 
 /* ============================================================
@@ -6960,13 +6311,11 @@ async function shareProfile() {
 function showToast(message) {
   const existing = document.getElementById('toast');
   if (existing) existing.remove();
-
   const toast = document.createElement('div');
   toast.id = 'toast';
   toast.textContent = message;
   toast.style.cssText = `position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1e1e28;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:10000;box-shadow:0 8px 20px rgba(0,0,0,0.6);border:1px solid #333;max-width:90%;`;
   document.body.appendChild(toast);
-
   setTimeout(() => {
     toast.style.opacity = '0';
     toast.style.transition = 'opacity 0.3s';
@@ -6993,20 +6342,14 @@ function defaultAvatar(name) {
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 async function loadUsersByIds(uids) {
   const results = [];
   for (const uid of uids) {
-    try {
-      const snap = await getDoc(doc(db, 'users', uid));
-      if (snap.exists()) results.push(snap.data());
-    } catch (e) {}
+    try { const snap = await getDoc(doc(db, 'users', uid)); if (snap.exists()) results.push(snap.data()); } catch (e) {}
   }
   return results;
 }
@@ -7042,8 +6385,7 @@ function timeAgoShort(date) {
 }
 
 function formatTime(date) {
-  const h = date.getHours();
-  const m = date.getMinutes();
+  const h = date.getHours(); const m = date.getMinutes();
   const ampm = h >= 12 ? 'PM' : 'AM';
   const hr = h % 12 || 12;
   return `${hr}:${m < 10 ? '0' + m : m} ${ampm}`;
@@ -7051,67 +6393,44 @@ function formatTime(date) {
 
 function formatDate(date) {
   const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
   if (date.toDateString() === today.toDateString()) return 'Today';
   if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
   return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 /* ============================================================
-   ✅ DELETE ACCOUNT — FULLY FIXED
+   DELETE ACCOUNT
    ============================================================ */
 function openDeleteAccountModal() {
   document.querySelectorAll('.delete-modal-overlay').forEach(el => el.remove());
-
   const overlay = document.createElement('div');
   overlay.className = 'delete-modal-overlay show';
   overlay.id = 'deleteAccountModal';
-
   overlay.innerHTML = `
     <div class="delete-modal">
       <div class="delete-modal-icon">⚠️</div>
-
       <h3>Delete Your Account?</h3>
       <p>This action is <strong style="color:#ff4d4d;">permanent and cannot be undone</strong>.</p>
-
-      <div class="warning-list">
-        <ul>
-          <li>Your profile will be removed</li>
-          <li>All your posts and videos will be deleted</li>
-          <li>Your stories will be deleted</li>
-          <li>Your comments and replies will be removed</li>
-          <li>Your messages in DMs and groups will be deleted</li>
-          <li>You'll be removed from all groups</li>
-          <li>You'll lose all followers</li>
-        </ul>
-      </div>
-
-      <div class="confirm-input-wrap">
-        <label>Type <strong>DELETE</strong> to confirm:</label>
-        <input type="text" id="deleteConfirmInput" placeholder="Type DELETE" autocomplete="off">
-      </div>
-
-      <div class="confirm-input-wrap">
-        <label>Enter your password:</label>
-        <input type="password" id="deletePasswordInput" placeholder="Your password" autocomplete="current-password">
-      </div>
-
+      <div class="warning-list"><ul>
+        <li>Your profile will be removed</li>
+        <li>All your posts and videos will be deleted</li>
+        <li>Your stories will be deleted</li>
+        <li>Your comments and replies will be removed</li>
+        <li>Your messages in DMs and groups will be deleted</li>
+        <li>You'll be removed from all groups</li>
+        <li>You'll lose all followers</li>
+      </ul></div>
+      <div class="confirm-input-wrap"><label>Type <strong>DELETE</strong> to confirm:</label><input type="text" id="deleteConfirmInput" placeholder="Type DELETE" autocomplete="off"></div>
+      <div class="confirm-input-wrap"><label>Enter your password:</label><input type="password" id="deletePasswordInput" placeholder="Your password" autocomplete="current-password"></div>
       <div class="delete-modal-actions">
         <button class="cancel-btn" id="cancelDeleteBtn">Cancel</button>
         <button class="confirm-btn" id="confirmDeleteBtn" disabled>Delete Account</button>
       </div>
-
       <div class="error-text" id="deleteErrorMsg"></div>
-
-      <div class="delete-progress" id="deleteProgress">
-        <div class="spinner-small"></div>
-        <div class="progress-text" id="deleteProgressText">Deleting your account...</div>
-      </div>
+      <div class="delete-progress" id="deleteProgress"><div class="spinner-small"></div><div class="progress-text" id="deleteProgressText">Deleting your account...</div></div>
     </div>
   `;
-
   document.body.appendChild(overlay);
 
   const confirmInput = document.getElementById('deleteConfirmInput');
@@ -7125,34 +6444,25 @@ function openDeleteAccountModal() {
     const passOk = passwordInput.value.length >= 6;
     confirmBtn.disabled = !(confirmOk && passOk);
   }
-
   confirmInput.addEventListener('input', checkInputs);
   passwordInput.addEventListener('input', checkInputs);
-
   cancelBtn.addEventListener('click', closeDeleteModal);
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeDeleteModal();
-  });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeDeleteModal(); });
 
   confirmBtn.addEventListener('click', async () => {
     errorMsg.textContent = '';
     confirmBtn.disabled = true;
     cancelBtn.disabled = true;
-
     document.getElementById('deleteProgress').classList.add('show');
     document.getElementById('deleteProgressText').textContent = 'Verifying password...';
-
-    try {
-      await deleteUserAccount(passwordInput.value);
-    } catch (err) {
-      console.error('Delete account error:', err);
-      errorMsg.textContent = err.message || 'Failed to delete account. Try again.';
+    try { await deleteUserAccount(passwordInput.value); }
+    catch (err) {
+      errorMsg.textContent = err.message || 'Failed to delete account.';
       confirmBtn.disabled = false;
       cancelBtn.disabled = false;
       document.getElementById('deleteProgress').classList.remove('show');
     }
   });
-
   setTimeout(() => confirmInput.focus(), 100);
 }
 
@@ -7161,209 +6471,137 @@ function closeDeleteModal() {
 }
 
 async function deleteUserAccount(password) {
-  if (!currentUser || !currentUser.email) {
-    throw new Error('You are not logged in.');
-  }
-
+  if (!currentUser || !currentUser.email) throw new Error('You are not logged in.');
   const uid = currentUser.uid;
   const progressText = document.getElementById('deleteProgressText');
 
   try {
-    /* STEP 1 — Re-authenticate */
     progressText.textContent = 'Verifying your password...';
     const credential = EmailAuthProvider.credential(currentUser.email, password);
     await reauthenticateWithCredential(currentUser, credential);
-    console.log('✅ Reauth success');
 
-    /* STEP 2 — Delete posts + their comments */
     progressText.textContent = 'Deleting your posts...';
     try {
       const postsQ = query(collection(db, 'posts'), where('userId', '==', uid));
       const postsSnap = await getDocs(postsQ);
-
       for (const postDoc of postsSnap.docs) {
         try {
           const commentsQ = query(collection(db, 'comments'), where('postId', '==', postDoc.id));
           const commentsSnap = await getDocs(commentsQ);
-          if (commentsSnap.size > 0) {
-            await batchDeleteDocs(commentsSnap.docs.map(d => d.ref));
-          }
+          if (commentsSnap.size > 0) await batchDeleteDocs(commentsSnap.docs.map(d => d.ref));
         } catch (e) {}
       }
+      if (postsSnap.size > 0) await batchDeleteDocs(postsSnap.docs.map(d => d.ref));
+    } catch (e) {}
 
-      if (postsSnap.size > 0) {
-        await batchDeleteDocs(postsSnap.docs.map(d => d.ref));
-      }
-    } catch (e) { console.warn('Posts delete:', e); }
-
-    /* STEP 3 — Delete user's comments + orphaned replies */
-    progressText.textContent = 'Deleting your comments and replies...';
+    progressText.textContent = 'Deleting your comments...';
     try {
       const myCommentsQ = query(collection(db, 'comments'), where('userId', '==', uid));
       const myCommentsSnap = await getDocs(myCommentsQ);
       const myCommentIds = myCommentsSnap.docs.map(d => d.id);
-
       for (const cid of myCommentIds) {
         try {
           const repliesQ = query(collection(db, 'comments'), where('parentId', '==', cid));
           const repliesSnap = await getDocs(repliesQ);
-          if (repliesSnap.size > 0) {
-            await batchDeleteDocs(repliesSnap.docs.map(d => d.ref));
-          }
+          if (repliesSnap.size > 0) await batchDeleteDocs(repliesSnap.docs.map(d => d.ref));
         } catch (e) {}
       }
+      if (myCommentsSnap.size > 0) await batchDeleteDocs(myCommentsSnap.docs.map(d => d.ref));
+    } catch (e) {}
 
-      if (myCommentsSnap.size > 0) {
-        await batchDeleteDocs(myCommentsSnap.docs.map(d => d.ref));
-      }
-    } catch (e) { console.warn('Comments delete:', e); }
-
-    /* STEP 4 — Delete stories */
     progressText.textContent = 'Deleting your stories...';
     try {
       const storiesQ = query(collection(db, 'stories'), where('userId', '==', uid));
       const storiesSnap = await getDocs(storiesQ);
-      if (storiesSnap.size > 0) {
-        await batchDeleteDocs(storiesSnap.docs.map(d => d.ref));
-      }
-    } catch (e) { console.warn('Stories delete:', e); }
+      if (storiesSnap.size > 0) await batchDeleteDocs(storiesSnap.docs.map(d => d.ref));
+    } catch (e) {}
 
-    /* STEP 5 — Delete notifications */
     progressText.textContent = 'Deleting notifications...';
     try {
       const notifQ = query(collection(db, 'notifications'), where('userId', '==', uid));
       const notifSnap = await getDocs(notifQ);
-      if (notifSnap.size > 0) {
-        await batchDeleteDocs(notifSnap.docs.map(d => d.ref));
-      }
-    } catch (e) { console.warn('Notifications delete:', e); }
+      if (notifSnap.size > 0) await batchDeleteDocs(notifSnap.docs.map(d => d.ref));
+    } catch (e) {}
 
-    /* STEP 6 — Delete user's group messages */
-    progressText.textContent = 'Deleting your group messages...';
+    progressText.textContent = 'Deleting group messages...';
     try {
       const myGroupsQ = query(collection(db, 'groups'), where('members', 'array-contains', uid));
       const myGroupsSnap = await getDocs(myGroupsQ);
-
       for (const gDoc of myGroupsSnap.docs) {
         try {
           const msgsSnap = await getDocs(collection(db, 'groups', gDoc.id, 'messages'));
           const myMsgs = msgsSnap.docs.filter(d => d.data().from === uid);
-          if (myMsgs.length > 0) {
-            await batchDeleteDocs(myMsgs.map(d => d.ref));
-          }
+          if (myMsgs.length > 0) await batchDeleteDocs(myMsgs.map(d => d.ref));
         } catch (e) {}
       }
-    } catch (e) { console.warn('Group messages delete:', e); }
+    } catch (e) {}
 
-    /* STEP 7 — Leave groups */
     progressText.textContent = 'Leaving groups...';
     try {
       const groupsQ = query(collection(db, 'groups'), where('members', 'array-contains', uid));
       const groupsSnap = await getDocs(groupsQ);
-
       for (const groupDoc of groupsSnap.docs) {
-        await updateDoc(groupDoc.ref, {
-          members: arrayRemove(uid),
-          admins: arrayRemove(uid),
-          unreadBy: arrayRemove(uid)
-        });
+        await updateDoc(groupDoc.ref, { members: arrayRemove(uid), admins: arrayRemove(uid), unreadBy: arrayRemove(uid) });
       }
-    } catch (e) { console.warn('Groups leave:', e); }
+    } catch (e) {}
 
-    /* STEP 8 — Delete DM chats + messages */
     progressText.textContent = 'Deleting messages...';
     try {
       const chatsQ = query(collection(db, 'chats'), where('members', 'array-contains', uid));
       const chatsSnap = await getDocs(chatsQ);
-
       for (const chatDoc of chatsSnap.docs) {
         try {
           const msgsSnap = await getDocs(collection(db, 'chats', chatDoc.id, 'messages'));
-          if (msgsSnap.size > 0) {
-            await batchDeleteDocs(msgsSnap.docs.map(d => d.ref));
-          }
+          if (msgsSnap.size > 0) await batchDeleteDocs(msgsSnap.docs.map(d => d.ref));
         } catch (e) {}
         await deleteDoc(chatDoc.ref);
       }
-    } catch (e) { console.warn('Chats delete:', e); }
+    } catch (e) {}
 
-    /* STEP 9 — Remove from followers/following */
     progressText.textContent = 'Updating followers...';
     try {
       const myProfileSnap = await getDoc(doc(db, 'users', uid));
       const myProfile = myProfileSnap.exists() ? myProfileSnap.data() : {};
-      const myFollowers = myProfile.followers || [];
-      const myFollowing = myProfile.following || [];
-
-      const affectedUids = [...new Set([...myFollowers, ...myFollowing])];
-
+      const affectedUids = [...new Set([...(myProfile.followers || []), ...(myProfile.following || [])])];
       const updates = [];
       for (const otherUid of affectedUids) {
         if (otherUid === uid) continue;
-        updates.push(
-          updateDoc(doc(db, 'users', otherUid), {
-            followers: arrayRemove(uid),
-            following: arrayRemove(uid)
-          }).catch(e => console.warn(`Follow cleanup for ${otherUid}:`, e.message))
-        );
+        updates.push(updateDoc(doc(db, 'users', otherUid), { followers: arrayRemove(uid), following: arrayRemove(uid) }).catch(() => {}));
       }
       if (updates.length > 0) await Promise.all(updates);
-    } catch (e) { console.warn('Followers update:', e); }
+    } catch (e) {}
 
-    /* STEP 10 — Delete user profile */
     progressText.textContent = 'Deleting profile...';
-    try {
-      await deleteDoc(doc(db, 'users', uid));
-    } catch (e) {
-      console.warn('Profile delete:', e);
-    }
+    try { await deleteDoc(doc(db, 'users', uid)); } catch (e) {}
 
-    /* STEP 11 — Delete Firebase Auth user */
     progressText.textContent = 'Finalizing...';
     await currentUser.delete();
-    console.log('✅ Auth user deleted');
 
-    /* STEP 12 — Cleanup */
     progressText.textContent = '✅ Account deleted successfully!';
 
     setTimeout(() => {
-      stopNotifWatcher();
-      stopShortsObserver();
-      stopChatListWatcher();
-      if (chatMessagesUnsub) {
-        try { chatMessagesUnsub(); } catch (e) {}
-        chatMessagesUnsub = null;
-      }
+      stopNotifWatcher(); stopShortsObserver(); stopChatListWatcher();
+      if (chatMessagesUnsub) { try { chatMessagesUnsub(); } catch (e) {} chatMessagesUnsub = null; }
+      if (typingListenerUnsub) { try { typingListenerUnsub(); } catch (e) {} typingListenerUnsub = null; }
 
-      currentUser = null;
-      currentProfile = null;
+      currentUser = null; currentProfile = null;
       viewedPostsSession.clear();
       localStorage.removeItem('reelhub_feed_cache');
-
       closeDeleteModal();
       showToast('✅ Account deleted. Goodbye! 👋');
-
       setTimeout(() => {
-        loginForm.reset();
-        signupForm.reset();
+        loginForm.reset(); signupForm.reset();
         document.getElementById('goLogin')?.click();
         showAuth();
       }, 800);
     }, 1200);
   } catch (err) {
     console.error('Delete account failed:', err);
-
-    if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-      throw new Error('Incorrect password. Please try again.');
-    } else if (err.code === 'auth/requires-recent-login') {
-      throw new Error('Session expired. Please logout and login again, then try.');
-    } else if (err.code === 'auth/too-many-requests') {
-      throw new Error('Too many attempts. Try again later.');
-    } else if (err.code === 'auth/network-request-failed') {
-      throw new Error('Network error. Check your internet.');
-    } else {
-      throw new Error(err.message || 'Failed to delete account.');
-    }
+    if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') throw new Error('Incorrect password.');
+    else if (err.code === 'auth/requires-recent-login') throw new Error('Session expired. Logout and login again.');
+    else if (err.code === 'auth/too-many-requests') throw new Error('Too many attempts. Try later.');
+    else if (err.code === 'auth/network-request-failed') throw new Error('Network error.');
+    else throw new Error(err.message || 'Failed to delete account.');
   }
 }
 
@@ -7390,67 +6628,39 @@ const DEFAULT_SETTINGS = {
 };
 
 function getSettings() {
-  try {
-    const saved = JSON.parse(localStorage.getItem('reelhubSettings') || '{}');
-    return { ...DEFAULT_SETTINGS, ...saved };
-  } catch (e) {
-    return { ...DEFAULT_SETTINGS };
-  }
+  try { const saved = JSON.parse(localStorage.getItem('reelhubSettings') || '{}'); return { ...DEFAULT_SETTINGS, ...saved }; }
+  catch (e) { return { ...DEFAULT_SETTINGS }; }
 }
 
 function saveSetting(key, value) {
-  const current = getSettings();
-  current[key] = value;
+  const current = getSettings(); current[key] = value;
   localStorage.setItem('reelhubSettings', JSON.stringify(current));
   applySetting(key, value);
 }
 
 function applySetting(key, value) {
   switch (key) {
-    case 'darkMode':
-      document.body.classList.toggle('light-mode', !value);
-      break;
-
+    case 'darkMode': document.body.classList.toggle('light-mode', !value); break;
     case 'pushNotif': {
       const subIds = ['settingNotifLikes', 'settingNotifComments', 'settingNotifFollows', 'settingNotifMessages'];
-      subIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.disabled = !value;
-      });
+      subIds.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = !value; });
       break;
     }
-
-    case 'compactMode':
-      document.body.classList.toggle('compact-mode', value);
-      break;
-
-    case 'fontSize':
-      applyFontSize(value);
-      break;
-
+    case 'compactMode': document.body.classList.toggle('compact-mode', value); break;
+    case 'fontSize': applyFontSize(value); break;
     case 'privateAccount': {
       const d = document.getElementById('privateAccountDesc');
-      if (d) {
-        d.textContent = value
-          ? 'Private — Sirf followers dekh sakte hain'
-          : 'Public — Sab dekh sakte hain';
-      }
+      if (d) d.textContent = value ? 'Private — Sirf followers dekh sakte hain' : 'Public — Sab dekh sakte hain';
       break;
     }
-
     case 'dataSaver': {
       document.body.classList.toggle('data-saver', value);
       if (value) {
         const s = getSettings();
-        if (s.autoPlay) {
-          saveSetting('autoPlay', false);
-          const el = document.getElementById('settingAutoPlay');
-          if (el) el.checked = false;
-        }
+        if (s.autoPlay) { saveSetting('autoPlay', false); const el = document.getElementById('settingAutoPlay'); if (el) el.checked = false; }
       }
       break;
     }
-
     case 'videoQuality': {
       document.querySelectorAll('video').forEach(v => {
         if (value === 'low') v.setAttribute('data-quality', '360');
@@ -7472,7 +6682,6 @@ function applyFontSize(size) {
 
 function loadSettingsToUI() {
   const s = getSettings();
-
   const checkboxes = {
     settingDarkMode: s.darkMode, settingAutoPlay: s.autoPlay, settingDataSaver: s.dataSaver,
     settingPushNotif: s.pushNotif, settingNotifLikes: s.notifLikes, settingNotifComments: s.notifComments,
@@ -7484,34 +6693,19 @@ function loadSettingsToUI() {
     settingShowViews: s.showViews, settingInfiniteScroll: s.infiniteScroll,
     settingDoubleTapLike: s.doubleTapLike, settingConfirmDelete: s.confirmDelete, settingCompactMode: s.compactMode
   };
-
-  Object.keys(checkboxes).forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.checked = checkboxes[id];
-  });
+  Object.keys(checkboxes).forEach(id => { const el = document.getElementById(id); if (el) el.checked = checkboxes[id]; });
 
   const selects = {
     settingVideoQuality: s.videoQuality, settingLanguage: s.language, settingFontSize: s.fontSize,
     settingVideoPreload: s.videoPreload, settingFeedOrder: s.feedOrder
   };
-
-  Object.keys(selects).forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = selects[id];
-  });
+  Object.keys(selects).forEach(id => { const el = document.getElementById(id); if (el) el.value = selects[id]; });
 
   const d = document.getElementById('privateAccountDesc');
-  if (d) {
-    d.textContent = s.privateAccount
-      ? 'Private — Sirf followers dekh sakte hain'
-      : 'Public — Sab dekh sakte hain';
-  }
+  if (d) d.textContent = s.privateAccount ? 'Private — Sirf followers dekh sakte hain' : 'Public — Sab dekh sakte hain';
 
   const subIds = ['settingNotifLikes', 'settingNotifComments', 'settingNotifFollows', 'settingNotifMessages'];
-  subIds.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.disabled = !s.pushNotif;
-  });
+  subIds.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = !s.pushNotif; });
 
   updateBlockedUsersCount();
 }
@@ -7523,36 +6717,18 @@ function openSettingsModal() {
 
 function initSettingsListeners() {
   if (settingsBtn) {
-    settingsBtn.addEventListener('click', () => {
-      setActiveNav(null);
-      openSettingsModal();
-    });
+    settingsBtn.addEventListener('click', () => { setActiveNav(null); openSettingsModal(); });
   }
-
-  document.getElementById('closeSettings')?.addEventListener('click', () =>
-    document.getElementById('settingsModal').classList.remove('show')
-  );
-
-  document.getElementById('settingsModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'settingsModal') e.target.classList.remove('show');
-  });
+  document.getElementById('closeSettings')?.addEventListener('click', () => document.getElementById('settingsModal').classList.remove('show'));
+  document.getElementById('settingsModal')?.addEventListener('click', (e) => { if (e.target.id === 'settingsModal') e.target.classList.remove('show'); });
 
   function wireToggle(id, key, onMsg, offMsg) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('change', (e) => {
-      saveSetting(key, e.target.checked);
-      if (onMsg || offMsg) showToast(e.target.checked ? onMsg : offMsg);
-    });
+    const el = document.getElementById(id); if (!el) return;
+    el.addEventListener('change', (e) => { saveSetting(key, e.target.checked); if (onMsg || offMsg) showToast(e.target.checked ? onMsg : offMsg); });
   }
-
   function wireSelect(id, key, prefix) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('change', (e) => {
-      saveSetting(key, e.target.value);
-      showToast(prefix + e.target.value);
-    });
+    const el = document.getElementById(id); if (!el) return;
+    el.addEventListener('change', (e) => { saveSetting(key, e.target.value); showToast(prefix + e.target.value); });
   }
 
   wireToggle('settingDarkMode', 'darkMode', '🌙 Dark ON', '☀️ Light ON');
@@ -7570,13 +6746,8 @@ function initSettingsListeners() {
     const isPrivate = e.target.checked;
     saveSetting('privateAccount', isPrivate);
     showToast(isPrivate ? '🔐 Private ON' : '🌐 Public ON');
-
-    try {
-      await updateDoc(doc(db, 'users', currentUser.uid), { isPrivate: isPrivate });
-      if (currentProfile) currentProfile.isPrivate = isPrivate;
-    } catch (err) {
-      showToast('❌ Save failed');
-    }
+    try { await updateDoc(doc(db, 'users', currentUser.uid), { isPrivate: isPrivate }); if (currentProfile) currentProfile.isPrivate = isPrivate; }
+    catch (err) { showToast('❌ Save failed'); }
   });
 
   wireToggle('settingReadReceipts', 'readReceipts', '✓✓ ON', '✓✓ OFF');
@@ -7599,22 +6770,10 @@ function initSettingsListeners() {
   wireToggle('settingConfirmDelete', 'confirmDelete', '🗑️ ON', '🗑️ OFF');
   wireToggle('settingCompactMode', 'compactMode', '📐 ON', '📐 OFF');
 
-  document.getElementById('settingAboutBtn')?.addEventListener('click', () =>
-    showToast('📱 ReelHub v1.0.0')
-  );
-
-  document.getElementById('settingPrivacyBtn')?.addEventListener('click', () => {
-    window.open('privacy.html', '_blank');
-  });
-
-  document.getElementById('settingTermsBtn')?.addEventListener('click', () => {
-    window.open('terms.html', '_blank');
-  });
-
-  document.getElementById('deleteAccountBtn')?.addEventListener('click', () => {
-    openDeleteAccountModal();
-  });
-
+  document.getElementById('settingAboutBtn')?.addEventListener('click', () => showToast('📱 ReelHub v1.0.0'));
+  document.getElementById('settingPrivacyBtn')?.addEventListener('click', () => window.open('privacy.html', '_blank'));
+  document.getElementById('settingTermsBtn')?.addEventListener('click', () => window.open('terms.html', '_blank'));
+  document.getElementById('deleteAccountBtn')?.addEventListener('click', () => openDeleteAccountModal());
   document.getElementById('settingBlockedUsersBtn')?.addEventListener('click', () => {
     document.getElementById('settingsModal')?.classList.remove('show');
     openBlockedUsersModal();
@@ -7633,20 +6792,9 @@ initSettingsListeners();
   applySetting('videoQuality', s.videoQuality);
 })();
 
-/* ============================================================
-   DELETE ACCOUNT — Global Handler
-   ============================================================ */
 window.handleDeleteClick = function(event) {
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
-  if (typeof openDeleteAccountModal === 'function') {
-    openDeleteAccountModal();
-  } else {
-    console.error('openDeleteAccountModal function not found');
-  }
+  if (event) { event.preventDefault(); event.stopPropagation(); }
+  if (typeof openDeleteAccountModal === 'function') openDeleteAccountModal();
 };
 
-console.log('✅ app.js loaded — FULLY FIXED VERSION (4 Parts with Editor)');
+console.log('✅ app.js loaded — PART 4 with IG/WA Chat Upgrade');
