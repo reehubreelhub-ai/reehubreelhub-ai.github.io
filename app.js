@@ -1,6 +1,7 @@
 /* ============================================================
    ReelHub — app.js (PART 1/4) — FULL FINAL
    Imports, Config, DOM, State, Auth, Signup, Login
+   ✅ Real-time state variables added
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -246,6 +247,18 @@ let typingListenerUnsub = null;     // Typing onSnapshot cleanup
 let typingTimeout = null;           // Typing timeout
 let isCurrentlyTyping = false;      // Am I typing?
 
+/* ✅ Track processed messages to avoid Firestore write spam */
+const _readProcessed = new Set();
+const _deliveredProcessed = new Set();
+
+/* ✅ REAL-TIME STATE (NEW) */
+let chatListUnsub = null;            // DM list onSnapshot unsub
+let groupListUnsub = null;           // Group list onSnapshot unsub
+let notifUnsub = null;               // Notifications onSnapshot unsub
+const _seenMsgIds = new Set();       // Track seen messages (for receive sound)
+const _lastChatMsgTime = new Map();  // chatId -> last msg time (for notif sound)
+const _lastGroupMsgTime = new Map(); // groupId -> last msg time
+
 /* Auth action flag */
 let authActionInProgress = false;
 
@@ -303,6 +316,13 @@ function showAuth() {
     try { typingListenerUnsub(); } catch (e) {}
     typingListenerUnsub = null;
   }
+
+  // ✅ Clear processed sets
+  _readProcessed.clear();
+  _deliveredProcessed.clear();
+  _seenMsgIds.clear();
+  _lastChatMsgTime.clear();
+  _lastGroupMsgTime.clear();
 }
 
 function showApp() {
@@ -703,6 +723,13 @@ $id('logoutBtn')?.addEventListener('click', async () => {
   viewingUserId = null;
   pinnedMessage = null;
 
+  // ✅ Clear processed sets
+  _readProcessed.clear();
+  _deliveredProcessed.clear();
+  _seenMsgIds.clear();
+  _lastChatMsgTime.clear();
+  _lastGroupMsgTime.clear();
+
   try {
     await signOut(auth);
   } catch (e) {
@@ -773,6 +800,12 @@ onAuthStateChanged(auth, async (user) => {
       try { typingListenerUnsub(); } catch (e) {}
       typingListenerUnsub = null;
     }
+
+    _readProcessed.clear();
+    _deliveredProcessed.clear();
+    _seenMsgIds.clear();
+    _lastChatMsgTime.clear();
+    _lastGroupMsgTime.clear();
 
     loginForm?.reset();
     signupForm?.reset();
@@ -3303,6 +3336,9 @@ postCommentBtn.addEventListener('click', async () => {
   postCommentBtn.disabled = true;
   postCommentBtn.textContent = '...';
 
+  // ✅ Snapshot reply so async failures don't lose it
+  const replySnapshot = activeReplyTo;
+
   try {
     const commentData = {
       postId: activeCommentPostId,
@@ -3313,9 +3349,9 @@ postCommentBtn.addEventListener('click', async () => {
       userVerified: currentProfile?.verified || false,
       text: text,
       likes: [],
-      parentId: activeReplyTo ? activeReplyTo.commentId : null,
-      replyToUser: activeReplyTo ? activeReplyTo.userName : null,
-      replyToHandle: activeReplyTo ? activeReplyTo.userHandle : null,
+      parentId: replySnapshot ? replySnapshot.commentId : null,
+      replyToUser: replySnapshot ? replySnapshot.userName : null,
+      replyToHandle: replySnapshot ? replySnapshot.userHandle : null,
       createdAt: serverTimestamp()
     };
 
@@ -3354,9 +3390,9 @@ postCommentBtn.addEventListener('click', async () => {
           } catch (e) {}
         }
 
-        if (activeReplyTo && activeReplyTo.commentId && shouldNotify) {
+        if (replySnapshot && replySnapshot.commentId && shouldNotify) {
           try {
-            const parentRef = doc(db, 'comments', activeReplyTo.commentId);
+            const parentRef = doc(db, 'comments', replySnapshot.commentId);
             const parentSnap = await getDoc(parentRef);
 
             if (parentSnap.exists()) {
@@ -3500,7 +3536,114 @@ async function deleteComment(commentId) {
    ReelHub — app.js (PART 4/4) — FULL FINAL
    Chat, Groups, Profile, Upload, Notifications, Search,
    Settings, Delete Account + IG/WA Chat Upgrade
+   ⚡ All chat bugs FIXED (#1-#8)
+   🔊 Sound system added
+   🔥 Real-time chat list + notifications
    ============================================================ */
+
+/* ============================================================
+   🔊 SOUND SYSTEM (Web Audio API — no files needed)
+   ============================================================ */
+let _audioCtx = null;
+
+function _getAudioCtx() {
+  if (!_audioCtx) {
+    try {
+      _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+      console.warn('Web Audio not supported');
+    }
+  }
+  return _audioCtx;
+}
+
+/* Unlock audio on first user interaction (Chrome policy) */
+function _unlockAudio() {
+  const ctx = _getAudioCtx();
+  if (ctx && ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
+}
+document.addEventListener('click', _unlockAudio, { once: true });
+document.addEventListener('touchstart', _unlockAudio, { once: true });
+
+/* ✅ Send sound — short "swoosh up" blip */
+function playSendSound() {
+  const s = typeof getSettings === 'function' ? getSettings() : {};
+  if (s.soundEffects === false) return;
+  try {
+    const ctx = _getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(700, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.09);
+    g.gain.setValueAtTime(0.001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.09, ctx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.14);
+    o.start();
+    o.stop(ctx.currentTime + 0.15);
+  } catch (e) {}
+}
+
+/* ✅ Receive sound — "ta-da" double blip (when chat window is open) */
+function playReceiveSound() {
+  const s = typeof getSettings === 'function' ? getSettings() : {};
+  if (s.soundEffects === false) return;
+  try {
+    const ctx = _getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    const tones = [
+      { freq: 660, delay: 0 },
+      { freq: 880, delay: 0.12 }
+    ];
+    tones.forEach(({ freq, delay }) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+      g.gain.setValueAtTime(0.001, ctx.currentTime + delay);
+      g.gain.exponentialRampToValueAtTime(0.11, ctx.currentTime + delay + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.16);
+      o.start(ctx.currentTime + delay);
+      o.stop(ctx.currentTime + delay + 0.17);
+    });
+    if (navigator.vibrate) navigator.vibrate(60);
+  } catch (e) {}
+}
+
+/* ✅ Notification sound — triple blip (new message when chat closed) */
+function playNotificationSound() {
+  const s = typeof getSettings === 'function' ? getSettings() : {};
+  if (s.soundEffects === false) return;
+  try {
+    const ctx = _getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    const tones = [
+      { freq: 900, delay: 0 },
+      { freq: 1000, delay: 0.1 },
+      { freq: 1100, delay: 0.2 }
+    ];
+    tones.forEach(({ freq, delay }) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+      g.gain.setValueAtTime(0.001, ctx.currentTime + delay);
+      g.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + delay + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.1);
+      o.start(ctx.currentTime + delay);
+      o.stop(ctx.currentTime + delay + 0.11);
+    });
+  } catch (e) {}
+}
 
 /* ============================================================
    CHATS PAGE
@@ -3934,7 +4077,7 @@ document.getElementById('createGroupBtn')?.addEventListener('click', async () =>
 });
 
 /* ============================================================
-   ⌨️ TYPING INDICATOR
+   ⌨️ TYPING INDICATOR  —  ✅ BUG FIX #2
    ============================================================ */
 async function sendTypingSignal(isTyping) {
   if (!activeChatId || !currentUser) return;
@@ -3943,8 +4086,12 @@ async function sendTypingSignal(isTyping) {
     const ref = doc(db, col, activeChatId);
     const data = {};
     data[`typing.${currentUser.uid}`] = isTyping ? Date.now() : null;
-    await updateDoc(ref, data);
-  } catch (e) {}
+
+    // ✅ FIX #2: setDoc+merge instead of updateDoc (works on non-existent doc)
+    await setDoc(ref, data, { merge: true });
+  } catch (e) {
+    // Silent fail — typing is non-critical
+  }
 }
 
 function setupTypingListener() {
@@ -4299,20 +4446,16 @@ async function openChatWindow(otherUser) {
   updateSendTextBtn();
   chatWindowModal.classList.add('show');
 
-  /* ✅ Wallpaper + clear reply */
   chatMessages.classList.add('wallpaper-1');
   clearChatReply();
 
   await loadChatMessages();
-
-  /* ✅ Setup typing listener */
   setupTypingListener();
 }
 
 function closeChatWindow() {
   chatWindowModal.classList.remove('show');
 
-  /* ✅ Cleanup */
   clearChatReply();
   clearTypingSignal();
 
@@ -4338,6 +4481,10 @@ function closeChatWindow() {
   activeGroupId = null;
   activeGroupData = null;
   pinnedMessage = null;
+
+  // ✅ FIX #4: clear the dedup sets on close
+  _readProcessed.clear();
+  _deliveredProcessed.clear();
 
   stopVoicePlayback();
 }
@@ -4373,14 +4520,11 @@ async function openGroupChatWindow(group) {
   updateSendTextBtn();
   chatWindowModal.classList.add('show');
 
-  /* ✅ Wallpaper + clear reply */
   chatMessages.classList.add('wallpaper-1');
   clearChatReply();
 
   await loadGroupMessages();
   await markGroupRead();
-
-  /* ✅ Setup typing listener */
   setupTypingListener();
 }
 
@@ -4392,6 +4536,8 @@ async function loadGroupMessages() {
     chatMessagesUnsub = null;
   }
 
+  let isFirstSnapshot = true;
+
   try {
     const msgsRef = collection(db, 'groups', activeGroupId, 'messages');
 
@@ -4402,6 +4548,20 @@ async function loadGroupMessages() {
         const tb = b.time?.toDate?.()?.getTime?.() || (b.time?.seconds ? b.time.seconds * 1000 : 0);
         return ta - tb;
       });
+
+      // ✅ NEW: Play receive sound if new message from other user
+      if (!isFirstSnapshot && currentUser) {
+        const newFromOther = messages.some(m =>
+          !_seenMsgIds.has(m.id) &&
+          m.from !== currentUser.uid &&
+          !m.deleted
+        );
+        if (newFromOther) playReceiveSound();
+      }
+
+      messages.forEach(m => _seenMsgIds.add(m.id));
+      isFirstSnapshot = false;
+
       paintGroupMessages(messages);
       markGroupMessagesAsRead();
     }, (err) => console.warn('Group listener error:', err));
@@ -4412,13 +4572,16 @@ async function loadGroupMessages() {
   }
 }
 
+/* ✅ FIX #3: Scroll position preserved */
 function paintGroupMessages(messages) {
   if (messages.length === 0) {
     chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
     return;
   }
 
-  const wasAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 150;
+  const prevScrollTop = chatMessages.scrollTop;
+  const prevScrollHeight = chatMessages.scrollHeight;
+  const wasAtBottom = prevScrollHeight - prevScrollTop - chatMessages.clientHeight < 150;
 
   chatMessages.innerHTML = '';
   let lastDateStr = '';
@@ -4436,7 +4599,15 @@ function paintGroupMessages(messages) {
     chatMessages.appendChild(makeGroupMessageBubble(msg));
   });
 
-  if (wasAtBottom) setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 30);
+  requestAnimationFrame(() => {
+    if (wasAtBottom) {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    } else {
+      const newScrollHeight = chatMessages.scrollHeight;
+      const diff = newScrollHeight - prevScrollHeight;
+      chatMessages.scrollTop = prevScrollTop + diff;
+    }
+  });
 }
 
 function makeGroupMessageBubble(msg) {
@@ -4567,6 +4738,8 @@ async function markGroupRead() {
 /* ============================================================
    SEND MESSAGE
    ============================================================ */
+
+/* ✅ FIX #1 + SOUND: accept replyTo from payload, play send sound */
 async function sendGroupMessage(msgData) {
   if (!activeGroupId) return;
 
@@ -4584,12 +4757,15 @@ async function sendGroupMessage(msgData) {
     fileUrl: msgData.fileUrl || null,
     fileType: msgData.fileType || null,
     fileSize: msgData.fileSize || null,
-    replyTo: chatReplyTo, // ✅ Reply
+    replyTo: msgData.replyTo ?? chatReplyTo,
     time: serverTimestamp()
   };
 
   try {
     await addDoc(collection(db, 'groups', activeGroupId, 'messages'), message);
+
+    // 🔊 Send sound
+    playSendSound();
 
     const otherMembers = (activeGroupData?.members || []).filter(m => m !== currentUser.uid);
     const groupRef = doc(db, 'groups', activeGroupId);
@@ -4606,12 +4782,16 @@ async function sendGroupMessage(msgData) {
       lastMessageBy: currentUser.uid,
       unreadBy: otherMembers
     });
+
+    // ✅ FIX #8
+    if (!typingListenerUnsub) setupTypingListener();
   } catch (e) {
     console.error('Group send error:', e);
     showToast('❌ Could not send');
   }
 }
 
+/* ✅ FIX #1 + SOUND: reply snapshot + send sound */
 async function sendMessage(msgData) {
   if (!activeChatId || !activeChatUser) return;
 
@@ -4627,7 +4807,7 @@ async function sendMessage(msgData) {
     fileUrl: msgData.fileUrl || null,
     fileType: msgData.fileType || null,
     fileSize: msgData.fileSize || null,
-    replyTo: chatReplyTo, // ✅ Reply
+    replyTo: msgData.replyTo ?? chatReplyTo,
     delivered: false,
     read: false,
     deleted: false,
@@ -4640,6 +4820,9 @@ async function sendMessage(msgData) {
     if (settings.vibration && navigator.vibrate) navigator.vibrate(30);
 
     await addDoc(collection(db, 'chats', activeChatId, 'messages'), message);
+
+    // 🔊 Send sound
+    playSendSound();
 
     const chatRef = doc(db, 'chats', activeChatId);
     const chatSnap = await getDoc(chatRef);
@@ -4664,6 +4847,8 @@ async function sendMessage(msgData) {
       await updateDoc(chatRef, chatData);
     }
 
+    if (!typingListenerUnsub) setupTypingListener();
+
     const s = typeof getSettings === 'function' ? getSettings() : { notifMessages: true, pushNotif: true };
     if (s.pushNotif && s.notifMessages) {
       try {
@@ -4686,7 +4871,7 @@ async function sendMessage(msgData) {
 }
 
 /* ============================================================
-   DM MESSAGES — REAL-TIME
+   DM MESSAGES — REAL-TIME + Receive Sound
    ============================================================ */
 async function loadChatMessages() {
   if (!activeChatId) return;
@@ -4695,6 +4880,8 @@ async function loadChatMessages() {
     try { chatMessagesUnsub(); } catch (e) {}
     chatMessagesUnsub = null;
   }
+
+  let isFirstSnapshot = true;
 
   try {
     const msgsRef = collection(db, 'chats', activeChatId, 'messages');
@@ -4706,6 +4893,20 @@ async function loadChatMessages() {
         const tb = b.time?.toDate?.()?.getTime?.() || (b.time?.seconds ? b.time.seconds * 1000 : 0);
         return ta - tb;
       });
+
+      // 🔊 Receive sound if new message from other user
+      if (!isFirstSnapshot && currentUser) {
+        const newFromOther = messages.some(m =>
+          !_seenMsgIds.has(m.id) &&
+          m.from !== currentUser.uid &&
+          !m.deleted
+        );
+        if (newFromOther) playReceiveSound();
+      }
+
+      messages.forEach(m => _seenMsgIds.add(m.id));
+      isFirstSnapshot = false;
+
       paintChatMessages(messages);
       markMessagesAsRead(messages);
     }, (err) => console.warn('Chat listener error:', err));
@@ -4717,13 +4918,16 @@ async function loadChatMessages() {
   }
 }
 
+/* ✅ FIX #3: Scroll position preserved */
 function paintChatMessages(messages) {
   if (messages.length === 0) {
     chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
     return;
   }
 
-  const wasAtBottom = chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight < 150;
+  const prevScrollTop = chatMessages.scrollTop;
+  const prevScrollHeight = chatMessages.scrollHeight;
+  const wasAtBottom = prevScrollHeight - prevScrollTop - chatMessages.clientHeight < 150;
 
   chatMessages.innerHTML = '';
   let lastDateStr = '';
@@ -4741,7 +4945,15 @@ function paintChatMessages(messages) {
     chatMessages.appendChild(makeMessageBubble(msg));
   });
 
-  if (wasAtBottom) setTimeout(() => { chatMessages.scrollTop = chatMessages.scrollHeight; }, 30);
+  requestAnimationFrame(() => {
+    if (wasAtBottom) {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    } else {
+      const newScrollHeight = chatMessages.scrollHeight;
+      const diff = newScrollHeight - prevScrollHeight;
+      chatMessages.scrollTop = prevScrollTop + diff;
+    }
+  });
 }
 
 function makeMessageBubble(msg) {
@@ -4852,25 +5064,28 @@ function makeMessageBubble(msg) {
 function attachMsgEvents(row, msg) {
   setupSwipeReply(row, msg);
 
-  /* Double-tap to react ❤️ */
-  let lastTap = 0;
+  /* ✅ FIX #7: Double-tap to react ❤️ */
   const bubble = row.querySelector('.msg-bubble');
   if (bubble) {
+    let lastTap = 0;
     bubble.addEventListener('click', (e) => {
       if (e.target.closest('.msg-quoted')) return;
       if (e.target.closest('.file-download-wrap')) return;
       if (e.target.closest('.voice-play-btn')) return;
       if (e.target.closest('.msg-reaction-pill')) return;
+      if (e.target.closest('.msg-dots-btn')) return;
 
       const now = Date.now();
       if (now - lastTap < 300) {
-        addReaction(msg.id, '❤️');
         lastTap = 0;
-      } else lastTap = now;
+        addReaction(msg.id, '❤️');
+        if (navigator.vibrate) navigator.vibrate(30);
+      } else {
+        lastTap = now;
+      }
     });
   }
 
-  /* Click on quoted → jump */
   const quoted = row.querySelector('.msg-quoted');
   if (quoted) {
     quoted.addEventListener('click', (e) => {
@@ -4966,14 +5181,16 @@ function showMessageActionsMenu(anchorEl, msg) {
   }, 100);
 }
 
+/* ✅ FIX #6: XSS-safe + DOM leak prevention */
 async function openEditMessageModal(msg) {
   document.querySelectorAll('.edit-msg-modal').forEach(el => el.remove());
+
   const modal = document.createElement('div');
   modal.className = 'edit-msg-modal';
   modal.innerHTML = `
     <div class="edit-msg-box">
       <h3>✏️ Edit Message</h3>
-      <textarea id="editMsgText" maxlength="1000">${escapeHtml(msg.text || '')}</textarea>
+      <textarea id="editMsgText" maxlength="1000">${escapeHtml((msg.text || '').substring(0, 1000))}</textarea>
       <div class="edit-msg-actions">
         <button class="cancel-btn" id="cancelEditBtn">Cancel</button>
         <button class="save-btn" id="saveEditBtn">Save</button>
@@ -4981,11 +5198,14 @@ async function openEditMessageModal(msg) {
     </div>
   `;
   document.body.appendChild(modal);
+
   const textarea = modal.querySelector('#editMsgText');
   textarea.focus();
   textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
   modal.querySelector('#cancelEditBtn').addEventListener('click', () => modal.remove());
   modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+
   modal.querySelector('#saveEditBtn').addEventListener('click', async () => {
     const newText = textarea.value.trim();
     if (!newText) { showToast('❌ Cannot be empty'); return; }
@@ -5023,20 +5243,42 @@ function buildTicksHTML(msg) {
   return `<span class="msg-ticks sent"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
 }
 
+/* ✅ FIX #4: Dedup writes to save Firestore quota */
 async function markMessagesAsRead(messages) {
   if (!currentUser || !activeChatId || activeGroupId) return;
   try {
-    const unreadFromOther = messages.filter(m => m.to === currentUser.uid && !m.read && !m.deleted).slice(0, 20);
-    const undeliveredFromMe = messages.filter(m => m.from === currentUser.uid && !m.delivered && !m.deleted).slice(0, 20);
+    const unreadFromOther = messages.filter(m =>
+      m.to === currentUser.uid && !m.read && !m.deleted && !_readProcessed.has(m.id)
+    ).slice(0, 20);
+
+    const undeliveredFromMe = messages.filter(m =>
+      m.from === currentUser.uid && !m.delivered && !m.deleted && !_deliveredProcessed.has(m.id)
+    ).slice(0, 20);
+
+    if (unreadFromOther.length === 0 && undeliveredFromMe.length === 0) return;
+
     const updates = [];
     for (const msg of unreadFromOther) {
-      updates.push(updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), { read: true, readAt: serverTimestamp() }).catch(() => {}));
+      _readProcessed.add(msg.id);
+      updates.push(
+        updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id),
+          { read: true, readAt: serverTimestamp() }
+        ).catch(() => { _readProcessed.delete(msg.id); })
+      );
     }
     for (const msg of undeliveredFromMe) {
-      updates.push(updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id), { delivered: true }).catch(() => {}));
+      _deliveredProcessed.add(msg.id);
+      updates.push(
+        updateDoc(doc(db, 'chats', activeChatId, 'messages', msg.id),
+          { delivered: true }
+        ).catch(() => { _deliveredProcessed.delete(msg.id); })
+      );
     }
-    if (updates.length > 0) await Promise.all(updates);
-  } catch (e) {}
+
+    await Promise.all(updates);
+  } catch (e) {
+    console.warn('markMessagesAsRead:', e);
+  }
 }
 
 async function deleteMessage(msgId) {
@@ -5140,15 +5382,12 @@ function updateSendTextBtn() {
   micBtn.style.display = hasText ? 'none' : 'flex';
 }
 
-/* ✅ Input — auto-resize + typing signal */
 chatMessageInput.addEventListener('input', () => {
   updateSendTextBtn();
 
-  /* Auto-resize */
   chatMessageInput.style.height = 'auto';
   chatMessageInput.style.height = Math.min(chatMessageInput.scrollHeight, 120) + 'px';
 
-  /* Typing signal */
   if (!activeChatId || !currentUser) return;
   if (!isCurrentlyTyping) {
     isCurrentlyTyping = true;
@@ -5163,7 +5402,6 @@ chatMessageInput.addEventListener('input', () => {
   }, 2500);
 });
 
-/* ✅ Enter key — send (Shift+Enter = newline) */
 chatMessageInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
@@ -5171,21 +5409,29 @@ chatMessageInput.addEventListener('keydown', (e) => {
   }
 });
 
-/* ✅ Send text */
+/* ✅ FIX #1: Reply snapshot BEFORE clearing */
 sendTextBtn.addEventListener('click', async () => {
   const text = chatMessageInput.value.trim();
   if (!text) return;
+
+  const replySnapshot = chatReplyTo;
+
   chatMessageInput.value = '';
   chatMessageInput.style.height = 'auto';
   updateSendTextBtn();
-  clearChatReply();
   clearTypingSignal();
 
-  if (activeGroupId) await sendGroupMessage({ type: 'text', text });
-  else await sendMessage({ type: 'text', text });
+  try {
+    if (activeGroupId) {
+      await sendGroupMessage({ type: 'text', text, replyTo: replySnapshot });
+    } else {
+      await sendMessage({ type: 'text', text, replyTo: replySnapshot });
+    }
+  } finally {
+    clearChatReply();
+  }
 });
 
-/* ✅ Attach button */
 document.getElementById('chatAttachBtn')?.addEventListener('click', () => {
   if (!activeChatId) return;
   const input = document.createElement('input');
@@ -5199,18 +5445,30 @@ document.getElementById('chatAttachBtn')?.addEventListener('click', () => {
   input.click();
 });
 
+/* ✅ FIX #5: File reply chip cleared properly */
 async function sendFileMessage(file) {
   if (file.size > 25 * 1024 * 1024) { showToast('❌ Max 25 MB'); return; }
   showToast('📤 Uploading file...');
+
+  const replySnapshot = chatReplyTo;
+
   try {
     const res = await uploadToCloudinaryGroupFile(file, () => {});
     const payload = {
       type: 'file', fileName: file.name, fileUrl: res.secure_url,
-      fileType: file.type || 'application/octet-stream', fileSize: file.size
+      fileType: file.type || 'application/octet-stream', fileSize: file.size,
+      replyTo: replySnapshot
     };
-    if (activeGroupId) await sendGroupMessage(payload);
-    else await sendMessage(payload);
-  } catch (e) { console.error(e); showToast('❌ Upload failed'); }
+    try {
+      if (activeGroupId) await sendGroupMessage(payload);
+      else await sendMessage(payload);
+    } finally {
+      clearChatReply();
+    }
+  } catch (e) {
+    console.error(e);
+    showToast('❌ Upload failed');
+  }
 }
 
 /* ============================================================
@@ -5249,6 +5507,7 @@ async function startVoiceRecording() {
   }
 }
 
+/* ✅ FIX #5: Voice reply chip cleared properly */
 async function stopVoiceRecordingAndSend() {
   if (!isRecording || !mediaRecorder) return;
   isRecording = false;
@@ -5256,6 +5515,8 @@ async function stopVoiceRecordingAndSend() {
   recordingIndicator.classList.remove('show');
   recordingIndicator.style.display = 'none';
   const finalSeconds = voiceSeconds;
+
+  const replySnapshot = chatReplyTo;
 
   return new Promise((resolve) => {
     mediaRecorder.onstop = async () => {
@@ -5267,10 +5528,20 @@ async function stopVoiceRecordingAndSend() {
         showToast('📤 Uploading voice...');
         const file = new File([audioBlob], `voice_${Date.now()}.webm`, { type: audioBlob.type });
         const res = await uploadToCloudinaryVoice(file, () => {});
-        const payload = { type: 'voice', voiceUrl: res.secure_url, voiceDuration: finalSeconds };
-        if (activeGroupId) await sendGroupMessage(payload);
-        else await sendMessage(payload);
-      } catch (e) { console.error('Voice upload failed:', e); showToast('❌ Voice upload failed'); }
+        const payload = {
+          type: 'voice', voiceUrl: res.secure_url, voiceDuration: finalSeconds,
+          replyTo: replySnapshot
+        };
+        try {
+          if (activeGroupId) await sendGroupMessage(payload);
+          else await sendMessage(payload);
+        } finally {
+          clearChatReply();
+        }
+      } catch (e) {
+        console.error('Voice upload failed:', e);
+        showToast('❌ Voice upload failed');
+      }
       resolve();
     };
     try { mediaRecorder.stop(); } catch (e) { resolve(); }
@@ -5319,19 +5590,116 @@ function stopVoicePlayback() {
 }
 
 /* ============================================================
-   CHAT UNREAD WATCHER
+   🔥 REAL-TIME CHAT LIST WATCHER (DM + Group)
    ============================================================ */
 function startChatListWatcher() {
   stopChatListWatcher();
-  checkChatsUnread();
-  chatListInterval = setInterval(checkChatsUnread, 15000);
+
+  // ✅ DM chats real-time
+  try {
+    const dmQuery = query(
+      collection(db, 'chats'),
+      where('members', 'array-contains', currentUser.uid)
+    );
+
+    chatListUnsub = onSnapshot(dmQuery, (snap) => {
+      let hasUnread = false;
+
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.type === 'group') return;
+
+        if (data.lastMessageBy !== currentUser.uid &&
+            (data.unreadBy || []).includes(currentUser.uid)) {
+          hasUnread = true;
+        }
+
+        // 🔊 Notification sound if new msg & chat window not open
+        const chatId = d.id;
+        const lastTime = data.lastMessageTime?.toDate?.()?.getTime?.() || 0;
+        const prevTime = _lastChatMsgTime.get(chatId) || 0;
+
+        if (prevTime && lastTime > prevTime &&
+            data.lastMessageBy !== currentUser.uid &&
+            activeChatId !== chatId) {
+          playNotificationSound();
+          if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        }
+        _lastChatMsgTime.set(chatId, lastTime);
+      });
+
+      updateChatsDot(hasUnread);
+
+      // ✅ Auto-refresh chat list if page open
+      if (document.getElementById('chatsList') && !activeChatId) {
+        const activeTab = document.querySelector('.chats-tab.active')?.dataset.tab || 'all';
+        _debouncedLoadChatsList(activeTab);
+      }
+    }, (err) => console.warn('DM list watcher:', err));
+  } catch (e) { console.warn(e); }
+
+  // ✅ Group chats real-time
+  try {
+    const groupQuery = query(
+      collection(db, 'groups'),
+      where('members', 'array-contains', currentUser.uid)
+    );
+
+    groupListUnsub = onSnapshot(groupQuery, (snap) => {
+      let hasUnread = false;
+
+      snap.forEach(d => {
+        const data = d.data();
+
+        if (data.lastMessageBy !== currentUser.uid &&
+            (data.unreadBy || []).includes(currentUser.uid)) {
+          hasUnread = true;
+        }
+
+        const groupId = d.id;
+        const lastTime = data.lastMessageTime?.toDate?.()?.getTime?.() || 0;
+        const prevTime = _lastGroupMsgTime.get(groupId) || 0;
+
+        if (prevTime && lastTime > prevTime &&
+            data.lastMessageBy !== currentUser.uid &&
+            activeChatId !== groupId) {
+          playNotificationSound();
+          if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        }
+        _lastGroupMsgTime.set(groupId, lastTime);
+      });
+
+      if (hasUnread) updateChatsDot(true);
+
+      if (document.getElementById('chatsList') && !activeChatId) {
+        const activeTab = document.querySelector('.chats-tab.active')?.dataset.tab || 'all';
+        _debouncedLoadChatsList(activeTab);
+      }
+    }, (err) => console.warn('Group list watcher:', err));
+  } catch (e) { console.warn(e); }
 }
 
 function stopChatListWatcher() {
   if (chatListInterval) { clearInterval(chatListInterval); chatListInterval = null; }
+  if (chatListUnsub) { try { chatListUnsub(); } catch (e) {} chatListUnsub = null; }
+  if (groupListUnsub) { try { groupListUnsub(); } catch (e) {} groupListUnsub = null; }
   if (chatsDot) chatsDot.style.display = 'none';
 }
 
+function updateChatsDot(show) {
+  if (chatsDot) chatsDot.style.display = show ? 'block' : 'none';
+}
+
+/* ✅ Debounced list loader to avoid spam */
+let _chatListLoadTimer = null;
+function _debouncedLoadChatsList(filter) {
+  clearTimeout(_chatListLoadTimer);
+  _chatListLoadTimer = setTimeout(() => {
+    loadChatsList(filter);
+  }, 200);
+}
+
+/* Legacy — still called by visibility handler */
 async function checkChatsUnread() {
   if (!currentUser) return;
   try {
@@ -5349,7 +5717,7 @@ async function checkChatsUnread() {
       const data = d.data();
       if (data.lastMessageBy !== currentUser.uid && (data.unreadBy || []).includes(currentUser.uid)) hasUnread = true;
     });
-    if (chatsDot) chatsDot.style.display = hasUnread ? 'block' : 'none';
+    updateChatsDot(hasUnread);
   } catch (e) {}
 }
 
@@ -6208,17 +6576,43 @@ async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
   } catch (err) { console.error('Admin invite error:', err); showToast('❌ ' + (err.message || 'Failed')); }
 }
 
+/* ============================================================
+   🔥 REAL-TIME NOTIFICATIONS WATCHER
+   ============================================================ */
 function startNotifWatcher() {
   stopNotifWatcher();
-  checkUnreadNotifications();
-  notifIntervalId = setInterval(checkUnreadNotifications, 30000);
+
+  let firstLoad = true;
+
+  try {
+    const nQuery = query(
+      collection(db, 'notifications'),
+      where('userId', '==', currentUser.uid),
+      where('read', '==', false),
+      limit(50)
+    );
+
+    notifUnsub = onSnapshot(nQuery, (snap) => {
+      const count = snap.size;
+      updateNotifDot(count);
+
+      // 🔊 Sound on new notification (skip first load)
+      if (!firstLoad && count > 0) {
+        playNotificationSound();
+        if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+      }
+      firstLoad = false;
+    }, (err) => console.warn('Notif watcher:', err));
+  } catch (e) { console.warn(e); }
 }
 
 function stopNotifWatcher() {
   if (notifIntervalId) { clearInterval(notifIntervalId); notifIntervalId = null; }
+  if (notifUnsub) { try { notifUnsub(); } catch (e) {} notifUnsub = null; }
   updateNotifDot(0);
 }
 
+/* Legacy — keep for visibility handler */
 async function checkUnreadNotifications() {
   if (!currentUser) return;
   try {
@@ -6232,8 +6626,12 @@ async function checkUnreadNotifications() {
 
 function updateNotifDot(count) {
   if (!notifDot) return;
-  if (count > 0) { notifDot.style.display = 'block'; notifDot.textContent = count > 20 ? '20+' : ''; }
-  else notifDot.style.display = 'none';
+  if (count > 0) {
+    notifDot.style.display = 'block';
+    notifDot.textContent = count > 20 ? '20+' : '';
+  } else {
+    notifDot.style.display = 'none';
+  }
 }
 
 /* ============================================================
@@ -6586,6 +6984,11 @@ async function deleteUserAccount(password) {
 
       currentUser = null; currentProfile = null;
       viewedPostsSession.clear();
+      _readProcessed.clear();
+      _deliveredProcessed.clear();
+      _seenMsgIds.clear();
+      _lastChatMsgTime.clear();
+      _lastGroupMsgTime.clear();
       localStorage.removeItem('reelhub_feed_cache');
       closeDeleteModal();
       showToast('✅ Account deleted. Goodbye! 👋');
@@ -6797,4 +7200,4 @@ window.handleDeleteClick = function(event) {
   if (typeof openDeleteAccountModal === 'function') openDeleteAccountModal();
 };
 
-console.log('✅ app.js loaded — PART 4 with IG/WA Chat Upgrade');
+console.log('✅ app.js loaded — PART 4 with ALL Chat Bugs FIXED + Real-Time + Sound');
