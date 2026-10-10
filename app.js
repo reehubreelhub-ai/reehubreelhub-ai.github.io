@@ -1,6 +1,6 @@
 /* ============================================================
-   ReelHub — app.js (PART 1/4) — FULL FIXED VERSION
-   Imports, Config, DOM, State, Auth, Signup (FIXED)
+   ReelHub — app.js (PART 1/4) — FULLY FIXED
+   Imports, Config, DOM, State, Auth, Signup (FIXED), Login
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -126,6 +126,13 @@ const uploadProgressWrap     = $id('uploadProgressWrap');
 const uploadProgressBar      = $id('uploadProgressBar');
 const uploadProgressText     = $id('uploadProgressText');
 
+/* ✅ EDITOR ELEMENTS */
+const uploadEditorArea    = $id('uploadEditorArea');
+const editorCanvas        = $id('editorCanvas');
+const editorVideo         = $id('editorVideo');
+const editorWmarkLive     = $id('editorWmarkLive');
+const editorTextLive      = $id('editorTextLive');
+
 const playerModal   = $id('playerModal');
 const playerTitle   = $id('playerTitle');
 const playerContent = $id('playerContent');
@@ -236,13 +243,45 @@ let currentStoryMediaEl = null;
 let viewedPostsSession = new Set();
 let shortsSoundEnabled = localStorage.getItem('shortsSound') === 'true';
 
+/* ✅ EDITOR STATE */
+let editorMode = 'photo'; // 'photo' or 'video'
+let editorImage = null;
+let editorImgRotation = 0;
+let editorImgFlipH = false;
+let editorImgFlipV = false;
+let editorFilters = { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
+let editorPresetFilter = '';
+let editorTextOverlay = '';
+let editorTextColor = '#ffffff';
+let editorTextSize = 26;
+let editorWmarkOn = true;
+let editorVideoFile = null;
+let editorVideoDuration = 0;
+let editorVideoSpeed = 1;
+
+const EDITOR_PRESETS = [
+  { id: 'none', name: 'Original', css: '' },
+  { id: 'clarendon', name: 'Clarendon', css: 'contrast(1.2) saturate(1.35)' },
+  { id: 'gingham', name: 'Gingham', css: 'brightness(1.05) hue-rotate(-10deg) sepia(.1)' },
+  { id: 'moon', name: 'Moon', css: 'grayscale(1) contrast(1.1) brightness(1.1)' },
+  { id: 'lark', name: 'Lark', css: 'brightness(1.1) contrast(1.05) saturate(1.1)' },
+  { id: 'reyes', name: 'Reyes', css: 'sepia(.4) brightness(1.1) contrast(.9) saturate(.85)' },
+  { id: 'juno', name: 'Juno', css: 'saturate(1.4) contrast(1.1) hue-rotate(-5deg)' },
+  { id: 'warm', name: 'Warm', css: 'saturate(1.3) hue-rotate(-15deg) brightness(1.05)' },
+  { id: 'cool', name: 'Cool', css: 'saturate(1.2) hue-rotate(15deg) brightness(1.05)' },
+  { id: 'vintage', name: 'Vintage', css: 'sepia(.5) contrast(1.1) brightness(1.05)' },
+  { id: 'fade', name: 'Fade', css: 'contrast(.8) brightness(1.15) saturate(.8)' },
+  { id: 'mono', name: 'Mono', css: 'grayscale(1) contrast(1.15)' }
+];
+
+/* ✅ Flags */
 let authActionInProgress = false;
 
 const LOADING_TIMEOUT_MS = 10000;
 let loadingTimeoutId = null;
 
 /* ============================================================
-   LOADING SCREEN SAFETY TIMEOUT
+   LOADING SCREEN SAFETY
    ============================================================ */
 function startLoadingTimeout() {
   clearTimeout(loadingTimeoutId);
@@ -333,7 +372,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 /* ============================================================
-   GLOBAL ERROR CATCHER
+   GLOBAL ERROR
    ============================================================ */
 window.addEventListener('error', (e) => {
   console.error('❌ Global error:', e.error || e.message);
@@ -381,8 +420,7 @@ $id('goLogin')?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   ✅ SIGNUP — FIXED
-   Auth user PEHLE banao, phir username check
+   ✅ SIGNUP — FIXED (Auth PEHLE, phir username check)
    ============================================================ */
 signupForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -395,7 +433,7 @@ signupForm?.addEventListener('submit', async (e) => {
   signupMsg.className = 'error-msg';
   signupMsg.textContent = '';
 
-  /* Validation */
+  /* ---- Validation ---- */
   if (!name || !user || !email || !pass) {
     signupMsg.textContent = 'Please fill all fields.';
     return;
@@ -421,23 +459,25 @@ signupForm?.addEventListener('submit', async (e) => {
   let createdAuthUser = null;
 
   try {
-    /* ✅ STEP 1 — PEHLE auth user banao */
+    /* ✅ STEP 1 — PEHLE auth user banao
+       (Username check ke liye authenticated hona zaroori hai) */
+    console.log('🔵 Creating auth user...');
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const uid  = cred.user.uid;
     createdAuthUser = cred.user;
-
     console.log('✅ Auth user created:', uid);
 
-    /* ✅ STEP 2 — Auth settle hone ka wait (250ms) */
-    await new Promise(r => setTimeout(r, 250));
+    /* ✅ STEP 2 — Auth state settle hone ka wait (300ms) */
+    await new Promise(r => setTimeout(r, 300));
 
-    /* ✅ STEP 3 — AB username check karo (user authenticated hai) */
+    /* ✅ STEP 3 — AB username check karo (authenticated hai ab) */
+    console.log('🔵 Checking username availability...');
     const usersRef = collection(db, 'users');
     const uq = query(usersRef, where('user', '==', user));
     const userSnap = await getDocs(uq);
 
     if (!userSnap.empty) {
-      /* Username already taken — rollback */
+      console.warn('⚠️ Username taken, rolling back');
       try {
         await createdAuthUser.delete();
       } catch (e) {
@@ -448,6 +488,7 @@ signupForm?.addEventListener('submit', async (e) => {
     }
 
     /* ✅ STEP 4 — Firestore profile banao */
+    console.log('🔵 Creating Firestore profile...');
     await setDoc(doc(db, 'users', uid), {
       uid: uid,
       name: name,
@@ -465,17 +506,17 @@ signupForm?.addEventListener('submit', async (e) => {
       banned: false,
       createdAt: serverTimestamp()
     });
-
     console.log('✅ Firestore profile created');
 
-    /* STEP 5 — Email verification */
+    /* ✅ STEP 5 — Email verification */
     try {
       await sendEmailVerification(cred.user);
+      console.log('✅ Verification email sent');
     } catch (e) {
       console.warn('Verification email failed:', e);
     }
 
-    /* STEP 6 — State set */
+    /* ✅ STEP 6 — State set */
     currentUser = cred.user;
     await loadProfile(uid);
 
@@ -492,9 +533,9 @@ signupForm?.addEventListener('submit', async (e) => {
     }, 800);
 
   } catch (err) {
-    console.error('Signup error:', err);
+    console.error('❌ Signup error:', err);
 
-    /* Rollback */
+    /* Rollback agar profile create nahi hui */
     if (createdAuthUser && !currentProfile) {
       try {
         await createdAuthUser.delete();
@@ -505,14 +546,17 @@ signupForm?.addEventListener('submit', async (e) => {
 
     signupMsg.className = 'error-msg';
 
+    /* Better error messages */
     if (err.code === 'auth/email-already-in-use') {
       signupMsg.textContent = 'Email already registered. Try logging in.';
     } else if (err.code === 'auth/invalid-email') {
-      signupMsg.textContent = 'Invalid email.';
+      signupMsg.textContent = 'Invalid email format.';
     } else if (err.code === 'auth/weak-password') {
       signupMsg.textContent = 'Password too weak (min 6 chars).';
     } else if (err.code === 'auth/network-request-failed') {
-      signupMsg.textContent = 'Network error. Check your connection.';
+      signupMsg.textContent = 'Network error. Check your internet.';
+    } else if (err.code === 'auth/too-many-requests') {
+      signupMsg.textContent = 'Too many attempts. Wait 5 min and try again.';
     } else if (err.code === 'permission-denied' ||
                (err.message && err.message.toLowerCase().includes('permission'))) {
       signupMsg.textContent = '⚠️ Firestore rules update karo (Firebase Console → Rules).';
@@ -528,7 +572,7 @@ signupForm?.addEventListener('submit', async (e) => {
 });
 
 /* ============================================================
-   LOGIN
+   LOGIN — FIXED
    ============================================================ */
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -550,9 +594,11 @@ loginForm?.addEventListener('submit', async (e) => {
   loginBtn.textContent = 'Logging in...';
 
   try {
+    console.log('🔵 Logging in...');
     const result = await signInWithEmailAndPassword(auth, email, pass);
     if (!result || !result.user) throw new Error('Login failed');
 
+    console.log('✅ Login successful:', result.user.uid);
     currentUser = result.user;
     await loadProfile(result.user.uid);
 
@@ -573,7 +619,7 @@ loginForm?.addEventListener('submit', async (e) => {
     requestNotificationPermission();
 
   } catch (err) {
-    console.error('Login error:', err);
+    console.error('❌ Login error:', err);
     currentUser = null;
     currentProfile = null;
     loginMsg.className = 'error-msg';
@@ -590,7 +636,7 @@ loginForm?.addEventListener('submit', async (e) => {
     } else if (err.code === 'auth/invalid-email') {
       loginMsg.textContent = 'Invalid email format.';
     } else {
-      loginMsg.textContent = err.message || 'Login failed.';
+      loginMsg.textContent = err.message || 'Login failed. Try again.';
     }
 
     if (auth.currentUser) {
@@ -830,10 +876,7 @@ function renderPage(page) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 2/4) — FULL FINAL VERSION
-   Helpers, Home Feed (YouTube + Shorts Shelf + Cache),
-   Stories Bar, Double-Tap, Story Upload, Verified Badge,
-   Congratulation Animation, Thumbnail Fix
+   ReelHub — app.js (PART 2/4) — Home Feed + Shorts + Stories
    ============================================================ */
 
 let feedAutoplayObserver = null;
@@ -869,7 +912,7 @@ function buildViewsHTML(viewsCount) {
   `;
 }
 
-/* ✅ Format duration (mm:ss or h:mm:ss) */
+/* ✅ Format duration (mm:ss) */
 function formatDuration(seconds) {
   if (!seconds || seconds < 0) return '';
   const m = Math.floor(seconds / 60);
@@ -882,7 +925,7 @@ function formatDuration(seconds) {
   return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
-/* ✅ Format views (1.2M, 850K, 1.2K) */
+/* ✅ Format views (1.2M, 850K) */
 function formatViews(count) {
   const n = parseInt(count) || 0;
   if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + 'M';
@@ -890,9 +933,7 @@ function formatViews(count) {
   return n.toString();
 }
 
-/* ============================================================
-   ✅ VERIFIED BADGE
-   ============================================================ */
+/* ✅ Verified Badge */
 function verifiedBadgeHTML(isVerified, size = 'normal') {
   if (!isVerified) return '';
   const sizeClass = size === 'large' ? 'large' : '';
@@ -905,6 +946,7 @@ function verifiedBadgeHTML(isVerified, size = 'normal') {
   `;
 }
 
+/* Save Post */
 async function toggleSavePost(postId, btnEl) {
   if (!currentUser || !currentProfile) return;
   try {
@@ -979,6 +1021,7 @@ async function renderSavedPosts(containerId) {
   }
 }
 
+/* Track Post View */
 async function trackPostView(postId) {
   if (!currentUser || !postId) return;
   if (viewedPostsSession.has(postId)) return;
@@ -1071,7 +1114,7 @@ async function loadStoryViewersList(uids, containerId) {
 }
 
 /* ============================================================
-   ✅ DOUBLE TAP LIKE
+   DOUBLE TAP LIKE
    ============================================================ */
 function attachDoubleTapLike(element, post, onSingleTap) {
   if (!element || !post) return;
@@ -1081,7 +1124,7 @@ function attachDoubleTapLike(element, post, onSingleTap) {
   const TAP_DELAY = 300;
 
   element.addEventListener('click', (e) => {
-    if (e.target.closest('button, a, .post-menu-btn, .msg-dots-btn, .yt-menu-btn, .shorts-shelf-more')) return;
+    if (e.target.closest('button, a, .post-menu-btn, .msg-dots-btn, .yt-menu-btn, .shorts-shelf-more, .editor-btn, .editor-filter-btn, .editor-color-btn')) return;
 
     const s = typeof getSettings === 'function' ? getSettings() : { doubleTapLike: true };
     if (s.doubleTapLike === false) {
@@ -1301,7 +1344,6 @@ function showAdminPanelRedirect() {
     align-items: center;
     justify-content: center;
     padding: 20px;
-    animation: fadeIn 0.3s ease;
   `;
 
   modal.innerHTML = `
@@ -1379,7 +1421,7 @@ function showAdminPanelRedirect() {
 }
 
 /* ============================================================
-   ⚡ CACHE HELPERS
+   CACHE HELPERS
    ============================================================ */
 function saveFeedCache(posts) {
   try {
@@ -1430,13 +1472,12 @@ function loadFeedCache() {
 }
 
 /* ============================================================
-   ✅ FIX: buildThumbnailUrl — Cloudinary smart thumbnail
+   THUMBNAIL BUILDER (Cloudinary smart frame)
    ============================================================ */
 function buildThumbnailUrl(videoUrl, type) {
   if (!videoUrl) return '';
 
   try {
-    /* Photo — simple transform */
     if (type === 'photo') {
       if (videoUrl.includes('/image/upload/')) {
         return videoUrl.replace('/image/upload/', '/image/upload/w_400,q_auto,f_auto/');
@@ -1444,15 +1485,12 @@ function buildThumbnailUrl(videoUrl, type) {
       return videoUrl;
     }
 
-    /* Video — Cloudinary video thumbnail (so_auto = smart frame) */
     if (videoUrl.includes('/video/upload/')) {
       const parts = videoUrl.split('/video/upload/');
       if (parts.length === 2) {
         const afterUpload = parts[1];
-
         let publicId = afterUpload.replace(/^v\d+\//, '');
         publicId = publicId.replace(/\.[^.]+$/, '');
-
         return `https://res.cloudinary.com/${CLOUDINARY_ACCOUNTS.videos.cloudName}/video/upload/so_auto,w_400,h_711,c_fill,q_auto/${publicId}.jpg`;
       }
     }
@@ -1464,7 +1502,7 @@ function buildThumbnailUrl(videoUrl, type) {
 }
 
 /* ============================================================
-   HOME FEED — YouTube Style with Shorts Shelf
+   HOME FEED
    ============================================================ */
 async function renderHomeFeed() {
   content.innerHTML = `
@@ -1507,7 +1545,6 @@ async function loadHomeFeedPosts() {
     container.innerHTML = '';
     renderFeedWithShortsShelf(cached, container);
   } else {
-    /* Skeleton */
     container.innerHTML = `
       <div class="yt-skeleton">
         <div class="yt-skeleton-thumb"></div>
@@ -1562,10 +1599,8 @@ async function loadHomeFeedPosts() {
       );
     }
 
-    /* STEP 3: Save cache */
     saveFeedCache(posts);
 
-    /* STEP 4: Update UI only if needed */
     const cacheIds = (cached || []).map(p => p.id).join(',');
     const newIds = posts.map(p => p.id).join(',');
 
@@ -1579,7 +1614,7 @@ async function loadHomeFeedPosts() {
   }
 }
 
-/* ✅ Render: Shorts shelf + Long cards */
+/* ✅ Shorts shelf + Long cards */
 function renderFeedWithShortsShelf(posts, container) {
   const shorts = posts.filter(p => p.type === 'short');
   const regular = posts.filter(p => p.type !== 'short');
@@ -1618,7 +1653,7 @@ function renderFeedWithShortsShelf(posts, container) {
     });
   }
 
-  /* 2️⃣ Regular feed */
+  /* 2️⃣ Regular Feed */
   if (regular.length > 0) {
     regular.forEach(post => container.appendChild(makeFeedPost(post)));
     setupFeedAutoplay();
@@ -1639,7 +1674,7 @@ function renderFeedWithShortsShelf(posts, container) {
   }
 }
 
-/* ✅ Short shelf item — WITH THUMBNAIL FALLBACK */
+/* ✅ Short Shelf Item */
 function makeShortShelfItem(short) {
   const item = document.createElement('div');
   item.className = 'shorts-shelf-item';
@@ -1660,12 +1695,11 @@ function makeShortShelfItem(short) {
     <div class="shorts-shelf-views">${viewsText} views</div>
   `;
 
-  /* ✅ FALLBACK: If thumbnail fails, load video as thumbnail */
+  /* Fallback */
   const img = item.querySelector('img');
   if (img) {
     img.addEventListener('error', () => {
       img.style.display = 'none';
-
       const thumbWrap = item.querySelector('.shorts-shelf-thumb');
       if (thumbWrap && !thumbWrap.querySelector('video')) {
         const vid = document.createElement('video');
@@ -1674,14 +1708,10 @@ function makeShortShelfItem(short) {
         vid.playsInline = true;
         vid.preload = 'metadata';
         vid.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;position:absolute;top:0;left:0;';
-
         thumbWrap.insertBefore(vid, thumbWrap.firstChild);
-
         vid.addEventListener('loadedmetadata', () => {
           try { vid.currentTime = 1; } catch (e) {}
         });
-
-        /* Final fallback: gradient */
         vid.addEventListener('error', () => {
           vid.remove();
           thumbWrap.classList.add('no-thumb');
@@ -1698,7 +1728,7 @@ function makeShortShelfItem(short) {
   return item;
 }
 
-/* ✅ YouTube-style card for Long/Photo */
+/* ✅ YouTube-style Long Card */
 function makeFeedPost(post) {
   const card = document.createElement('div');
   card.className = 'yt-card';
@@ -1791,7 +1821,7 @@ function openPostPlayer(post) {
 }
 
 /* ============================================================
-   POST MENU (3-dot)
+   POST MENU
    ============================================================ */
 async function showPostMenu(anchorEl, post) {
   document.querySelectorAll('.post-menu-dropdown').forEach(el => el.remove());
@@ -1892,9 +1922,7 @@ async function deletePost(postId) {
    AUTO PLAY
    ============================================================ */
 function setupFeedAutoplay() {
-  const settings = typeof getSettings === 'function'
-    ? getSettings()
-    : { autoPlay: true };
+  const settings = typeof getSettings === 'function' ? getSettings() : { autoPlay: true };
 
   stopFeedAutoplay();
 
@@ -2343,7 +2371,7 @@ function uploadToCloudinaryGroupFile(file, onProgress) {
 }
 
 /* ============================================================
-   CLOUDINARY UPLOAD — VOICE (for chat)
+   CLOUDINARY UPLOAD — VOICE
    ============================================================ */
 function uploadToCloudinaryVoice(file, onProgress) {
   return new Promise((resolve, reject) => {
@@ -2393,13 +2421,11 @@ function uploadToCloudinaryVoice(file, onProgress) {
   });
 }
 /* ============================================================
-   ReelHub — app.js (PART 3/4) — FULL FINAL VERSION
-   Story Viewer, Shorts Feed, Like/Unlike, Comments,
-   Voice Duration Helper
+   ReelHub — app.js (PART 3/4) — Story Viewer + Shorts + Comments
    ============================================================ */
 
 /* ============================================================
-   FORMAT VOICE DURATION — Guard helper
+   FORMAT VOICE DURATION
    ============================================================ */
 function formatVoiceDuration(seconds) {
   if (seconds === undefined || seconds === null || isNaN(seconds) || seconds < 0) {
@@ -2832,7 +2858,7 @@ function getCurrentVisibleVideo(wrap) {
   return videos[0];
 }
 
-/* ✅ Short item — deferred mute toggle */
+/* ✅ Short Item */
 function makeShortItem(short) {
   const item = document.createElement('div');
   item.className = 'short-item';
@@ -2920,7 +2946,7 @@ function makeShortItem(short) {
     await sharePost(short);
   });
 
-  /* ✅ Deferred mute toggle */
+  /* Deferred mute toggle */
   let shortTapTimer = null;
   videoEl.addEventListener('click', (e) => {
     if (e.detail >= 2) {
@@ -2981,7 +3007,7 @@ function stopShortsObserver() {
 }
 
 /* ============================================================
-   ✅ LIKE / UNLIKE
+   LIKE / UNLIKE
    ============================================================ */
 async function toggleLike(postId, btnEl) {
   if (!currentUser) return;
@@ -3338,7 +3364,6 @@ postCommentBtn.addEventListener('click', async () => {
         const postData = postSnap.data();
         const shouldNotify = s.pushNotif && s.notifComments;
 
-        /* Notify post owner */
         if (postData.userId && postData.userId !== currentUser.uid && shouldNotify) {
           try {
             await addDoc(collection(db, 'notifications'), {
@@ -3354,7 +3379,6 @@ postCommentBtn.addEventListener('click', async () => {
           } catch (e) {}
         }
 
-        /* Notify reply target */
         if (activeReplyTo && activeReplyTo.commentId && shouldNotify) {
           try {
             const parentRef = doc(db, 'comments', activeReplyTo.commentId);
@@ -3498,9 +3522,9 @@ async function deleteComment(commentId) {
   }
 }
 /* ============================================================
-   ReelHub — app.js (PART 4/4) — FULL FINAL VERSION
-   Chat (Real-time onSnapshot), Groups, Profile, Upload,
-   Notifications, Search, Settings, Delete Account
+   ReelHub — app.js (PART 4/4) — FULL FINAL
+   Chat, Groups, Profile, Upload+EDITOR, Notifications,
+   Search, Settings, Delete Account (FIXED)
    ============================================================ */
 
 /* ============================================================
@@ -3553,10 +3577,7 @@ async function renderChatsPage() {
   await loadChatsList('all');
 }
 
-let currentChatsFilter = 'all';
-
 async function loadChatsList(filter = 'all') {
-  currentChatsFilter = filter;
   const wrap = document.getElementById('chatsList');
   if (!wrap) return;
   wrap.innerHTML = `<div class="empty-msg">Loading chats...</div>`;
@@ -3946,7 +3967,7 @@ document.getElementById('createGroupBtn')?.addEventListener('click', async () =>
 });
 
 /* ============================================================
-   DM CHAT WINDOW — Real-time onSnapshot
+   DM CHAT WINDOW
    ============================================================ */
 function getChatId(uid1, uid2) {
   return [uid1, uid2].sort().join('_');
@@ -4352,7 +4373,7 @@ async function sendMessage(msgData) {
 }
 
 /* ============================================================
-   DM MESSAGES LOAD — Real-time onSnapshot
+   DM MESSAGES — REAL-TIME onSnapshot
    ============================================================ */
 async function loadChatMessages() {
   if (!activeChatId) return;
@@ -4900,7 +4921,7 @@ async function sendFileMessage(file) {
 }
 
 /* ============================================================
-   VOICE RECORDING — Cloudinary upload
+   VOICE RECORDING
    ============================================================ */
 micBtn.addEventListener('mousedown', startVoiceRecording);
 micBtn.addEventListener('touchstart', (e) => {
@@ -5072,196 +5093,6 @@ function stopVoicePlayback() {
 }
 
 /* ============================================================
-   GROUP INFO MODAL
-   ============================================================ */
-function showGroupInfo(group) {
-  document.querySelectorAll('.group-info-modal').forEach(el => el.remove());
-
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay group-info-modal show';
-  modal.innerHTML = `
-    <div class="modal">
-      <div class="modal-header">
-        <h3>👥 Group Info</h3>
-        <button class="modal-close" id="closeGroupInfo">&times;</button>
-      </div>
-      <div style="text-align:center;padding:10px 0 20px;">
-        <img src="${group.photo || defaultGroupAvatar(group.name)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #4ea8ff;margin-bottom:12px;">
-        <div style="font-size:18px;font-weight:700;color:#fff;">${escapeHtml(group.name)}</div>
-        <div style="font-size:13px;color:#888;margin-top:4px;">${group.members.length} members</div>
-      </div>
-      <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;padding:14px 4px 8px;border-bottom:1px solid #1e1e28;">Members</div>
-      <div id="groupMembersList" style="max-height:300px;overflow-y:auto;"></div>
-      <div style="margin-top:16px;display:flex;gap:8px;">
-        ${group.admins?.includes(currentUser.uid) ? `
-          <button class="btn-outline" id="addMemberBtn">➕ Add Member</button>
-          <button class="btn-outline" id="deleteGroupBtn" style="color:#ff4d4d;border-color:#ff4d4d;">🗑️ Delete Group</button>
-        ` : ''}
-        ${!group.admins?.includes(currentUser.uid) ? `<button class="btn-outline" id="leaveGroupBtn" style="color:#ff4d4d;border-color:#ff4d4d;">🚪 Leave Group</button>` : ''}
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  const list = modal.querySelector('#groupMembersList');
-
-  (async () => {
-    for (const uid of group.members) {
-      try {
-        const snap = await getDoc(doc(db, 'users', uid));
-        if (!snap.exists()) continue;
-
-        const u = snap.data();
-        const isAdmin = group.admins?.includes(uid);
-
-        const row = document.createElement('div');
-        row.className = 'user-row';
-        row.innerHTML = `
-          <img src="${u.photo || defaultAvatar(u.name)}" alt="">
-          <div class="meta"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)} ${isAdmin ? '👑' : ''}</b><span>@${escapeHtml(u.user)}</span></div>
-          ${uid !== currentUser.uid && group.admins?.includes(currentUser.uid)
-            ? `<button class="unfollow" data-remove="${uid}" style="color:#ff4d4d;">Remove</button>`
-            : ''}
-        `;
-
-        row.querySelector('img').addEventListener('click', () => {
-          modal.remove();
-          openUserProfile(uid);
-        });
-        row.querySelector('.meta').addEventListener('click', () => {
-          modal.remove();
-          openUserProfile(uid);
-        });
-
-        row.querySelector('[data-remove]')?.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          if (!confirm('Remove this member?')) return;
-          await updateDoc(doc(db, 'groups', group.id), {
-            members: arrayRemove(uid),
-            admins: arrayRemove(uid)
-          });
-          showToast('Member removed');
-          modal.remove();
-          renderChatsPage();
-        });
-
-        list.appendChild(row);
-      } catch (e) {}
-    }
-  })();
-
-  modal.querySelector('#closeGroupInfo').addEventListener('click', () => modal.remove());
-  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
-
-  modal.querySelector('#leaveGroupBtn')?.addEventListener('click', async () => {
-    if (!confirm('Leave this group?')) return;
-    await updateDoc(doc(db, 'groups', group.id), {
-      members: arrayRemove(currentUser.uid),
-      admins: arrayRemove(currentUser.uid)
-    });
-    showToast('Left group');
-    modal.remove();
-    closeChatWindow();
-    renderChatsPage();
-  });
-
-  modal.querySelector('#deleteGroupBtn')?.addEventListener('click', async () => {
-    if (!confirm('Delete group permanently?')) return;
-    await deleteDoc(doc(db, 'groups', group.id));
-    showToast('Group deleted');
-    modal.remove();
-    closeChatWindow();
-    renderChatsPage();
-  });
-
-  modal.querySelector('#addMemberBtn')?.addEventListener('click', () => {
-    modal.remove();
-    openAddMemberModal(group);
-  });
-}
-
-async function openAddMemberModal(group) {
-  document.querySelectorAll('.add-member-modal').forEach(el => el.remove());
-
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay add-member-modal show';
-  modal.innerHTML = `
-    <div class="modal">
-      <div class="modal-header">
-        <h3>➕ Add Members</h3>
-        <button class="modal-close" id="closeAddMember">&times;</button>
-      </div>
-      <div class="search-bar-wrap">
-        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="search-bar" id="addMemberSearch" placeholder="Search users...">
-      </div>
-      <div class="search-results" id="addMemberResults"><div class="search-empty">Start typing...</div></div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  modal.querySelector('#closeAddMember').addEventListener('click', () => modal.remove());
-  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
-
-  let t = null;
-  modal.querySelector('#addMemberSearch').addEventListener('input', (e) => {
-    clearTimeout(t);
-    t = setTimeout(async () => {
-      const term = e.target.value.trim().toLowerCase();
-      const results = modal.querySelector('#addMemberResults');
-
-      if (!term) {
-        results.innerHTML = '<div class="search-empty">Start typing...</div>';
-        return;
-      }
-
-      results.innerHTML = '<div class="search-empty">Searching...</div>';
-
-      try {
-        const usersRef = collection(db, 'users');
-        const snap = await getDocs(usersRef);
-
-        const notInGroup = snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(u => u.id !== currentUser.uid && !group.members.includes(u.id))
-          .filter(u =>
-            (u.name || '').toLowerCase().includes(term) ||
-            (u.user || '').toLowerCase().includes(term)
-          )
-          .slice(0, 20);
-
-        if (notInGroup.length === 0) {
-          results.innerHTML = '<div class="search-empty">No users found</div>';
-          return;
-        }
-
-        results.innerHTML = '';
-        notInGroup.forEach(u => {
-          const row = document.createElement('div');
-          row.className = 'search-user';
-          row.innerHTML = `
-            <img src="${u.photo || defaultAvatar(u.name)}" alt="">
-            <div class="info"><b>${escapeHtml(u.name)}${verifiedBadgeHTML(u.verified)}</b><span>@${escapeHtml(u.user)}</span></div>
-            <button class="follow">Add</button>
-          `;
-          row.addEventListener('click', async () => {
-            await updateDoc(doc(db, 'groups', group.id), {
-              members: arrayUnion(u.id),
-              unreadBy: arrayUnion(u.id)
-            });
-            showToast(`✅ ${u.name} added`);
-            row.remove();
-          });
-          results.appendChild(row);
-        });
-      } catch (e) {
-        results.innerHTML = '<div class="search-empty">Search failed</div>';
-      }
-    }, 300);
-  });
-}
-
-/* ============================================================
    CHAT UNREAD WATCHER
    ============================================================ */
 function startChatListWatcher() {
@@ -5415,7 +5246,6 @@ async function renderUserPosts(uid, containerId) {
   }
 }
 
-/* ✅ Grid item — thumbnail fallback */
 function makeGridItem(post) {
   const item = document.createElement('div');
   item.className = 'grid-item';
@@ -5437,19 +5267,15 @@ function makeGridItem(post) {
   const badgeText = post.type === 'photo' ? 'PHOTO' : (post.type === 'long' ? 'LONG' : 'SHORT');
   item.innerHTML = `${inner}<div class="type-badge">${badgeText}</div>${post.type !== 'photo' ? `<div class="play-icon">▶</div>` : ''}`;
 
-  /* Fallback to video element if thumbnail fails */
   const img = item.querySelector('img');
   const vid = item.querySelector('video');
   if (img && vid) {
     img.addEventListener('error', () => {
       img.style.display = 'none';
       vid.style.display = 'block';
-
       vid.addEventListener('loadedmetadata', () => {
         try { vid.currentTime = 1; } catch (e) {}
       });
-
-      /* Final fallback */
       vid.addEventListener('error', () => {
         vid.style.display = 'none';
         item.classList.add('no-thumb');
@@ -5496,63 +5322,6 @@ async function openUserProfile(userId) {
     const videoCount = typeof user.videoCount === 'number' ? user.videoCount : 0;
     const avatarSrc = user.photo || defaultAvatar(user.name);
     const isFollowing = currentProfile?.following?.includes(userId) || false;
-
-    if (user.isPrivate && !isFollowing) {
-      content.innerHTML = `
-        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
-          <button id="backFromProfileBtn">
-            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back
-          </button>
-          <button id="profileMenuBtn" style="background:none;border:none;color:#fff;cursor:pointer;padding:6px;border-radius:50%;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/>
-            </svg>
-          </button>
-        </div>
-        <div class="profile-page" style="padding-top:0;text-align:center;">
-          <div class="profile-top" style="justify-content:center;">
-            <div class="profile-avatar-wrap"><img class="profile-avatar" src="${avatarSrc}" alt=""></div>
-          </div>
-          <div class="profile-info">
-            <div class="profile-name">${escapeHtml(user.name)}${verifiedBadgeHTML(user.verified, 'large')} 🔒</div>
-            <div class="profile-username">@${escapeHtml(user.user)}</div>
-          </div>
-          <div style="padding:30px 20px;">
-            <svg viewBox="0 0 24 24" style="width:70px;height:70px;stroke:#666;fill:none;stroke-width:1.5;margin-bottom:16px;">
-              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            <div style="font-size:18px;font-weight:700;margin-bottom:8px;">This Account is Private</div>
-            <div style="color:#888;font-size:14px;margin-bottom:20px;">Follow @${escapeHtml(user.user)} to see their posts</div>
-          </div>
-          <div class="profile-actions" style="justify-content:center;">
-            <button id="pubFollowBtn">
-              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Follow
-            </button>
-          </div>
-        </div>
-      `;
-
-      document.getElementById('backFromProfileBtn').addEventListener('click', () => {
-        viewingUserId = null;
-        setActiveNav(null);
-        renderPage('home');
-      });
-
-      document.getElementById('profileMenuBtn').addEventListener('click', async (e) => {
-        e.stopPropagation();
-        await showProfileMenu(e.currentTarget, userId, user.user);
-      });
-
-      document.getElementById('pubFollowBtn').addEventListener('click', async (e) => {
-        await toggleFollow(userId, e.currentTarget);
-        if (currentProfile.following.includes(userId)) {
-          showToast('✅ Followed! Loading...');
-          setTimeout(() => openUserProfile(userId), 500);
-        }
-      });
-      return;
-    }
 
     content.innerHTML = `
       <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
@@ -5925,47 +5694,64 @@ document.getElementById('blockedUsersModal')?.addEventListener('click', (e) => {
 });
 
 /* ============================================================
-   UPLOAD MODAL
+   🎬 UPLOAD MODAL WITH EDITOR — FULL SYSTEM
    ============================================================ */
 function openUploadModal() {
   selectedFile = null;
   selectedFileDuration = 0;
   currentUploadType = 'short';
+
+  /* Reset editor state */
+  editorMode = 'photo';
+  editorImage = null;
+  editorImgRotation = 0;
+  editorImgFlipH = false;
+  editorImgFlipV = false;
+  editorFilters = { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
+  editorPresetFilter = '';
+  editorTextOverlay = '';
+  editorTextColor = '#ffffff';
+  editorTextSize = 26;
+  editorWmarkOn = true;
+  editorVideoFile = null;
+  editorVideoDuration = 0;
+  editorVideoSpeed = 1;
+
   uploadFileInput.value = '';
   uploadCaption.value = '';
   uploadMsg.textContent = '';
   uploadMsg.className = 'error-msg';
-  uploadPreview.src = '';
-  uploadPhotoPreview.src = '';
-  uploadPreviewWrap.style.display = 'none';
-  uploadPhotoPreviewWrap.style.display = 'none';
-  uploadPickerWrap.style.display = 'flex';
   uploadSubmitBtn.disabled = true;
   uploadProgressWrap.style.display = 'none';
   uploadProgressBar.style.width = '0%';
   uploadProgressText.textContent = '0%';
 
+  /* Show picker, hide editor */
+  uploadPickerWrap.style.display = 'flex';
+  uploadEditorArea.style.display = 'none';
+
   document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
   document.querySelector('.upload-tab[data-type="short"]')?.classList.add('active');
 
   updatePickerText();
+  initEditorFilters();
   uploadModal.classList.add('show');
 }
 
 function updatePickerText() {
   if (currentUploadType === 'short') {
     pickerTitle.textContent = 'Choose a short video';
-    pickerSubtitle.textContent = 'Max 30 sec • 9:16 vertical';
+    pickerSubtitle.textContent = 'Max 60 sec · 9:16 vertical';
     pickerLabel.textContent = 'Select video';
     uploadFileInput.accept = 'video/*';
   } else if (currentUploadType === 'long') {
     pickerTitle.textContent = 'Choose a long video';
-    pickerSubtitle.textContent = 'Max 1 minute • 16:9 horizontal';
+    pickerSubtitle.textContent = 'Max 10 min · 16:9 horizontal';
     pickerLabel.textContent = 'Select video';
     uploadFileInput.accept = 'video/*';
   } else {
     pickerTitle.textContent = 'Choose a photo';
-    pickerSubtitle.textContent = 'Max 5 MB • JPG / PNG';
+    pickerSubtitle.textContent = 'Max 10 MB · JPG / PNG';
     pickerLabel.textContent = 'Select photo';
     uploadFileInput.accept = 'image/*';
   }
@@ -5987,17 +5773,17 @@ document.querySelectorAll('.upload-tab').forEach(tab => {
     selectedFile = null;
     selectedFileDuration = 0;
     uploadFileInput.value = '';
-    uploadPreview.src = '';
-    uploadPhotoPreview.src = '';
-    uploadPreviewWrap.style.display = 'none';
-    uploadPhotoPreviewWrap.style.display = 'none';
     uploadPickerWrap.style.display = 'flex';
+    uploadEditorArea.style.display = 'none';
     uploadSubmitBtn.disabled = true;
     uploadMsg.textContent = '';
     updatePickerText();
   });
 });
 
+/* ============================================================
+   FILE SELECT → EDITOR
+   ============================================================ */
 uploadFileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -6010,18 +5796,45 @@ uploadFileInput.addEventListener('change', async (e) => {
       uploadMsg.textContent = 'Choose an image.';
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      uploadMsg.textContent = 'Max 5 MB.';
+    if (file.size > 10 * 1024 * 1024) {
+      uploadMsg.textContent = 'Max 10 MB.';
       return;
     }
+
     selectedFile = file;
-    uploadPhotoPreview.src = URL.createObjectURL(file);
-    uploadPhotoPreviewWrap.style.display = 'block';
-    uploadPickerWrap.style.display = 'none';
-    uploadSubmitBtn.disabled = false;
+    editorMode = 'photo';
+
+    /* Load image into canvas */
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const image = new Image();
+      image.onload = () => {
+        editorImage = image;
+
+        /* Show editor area */
+        uploadPickerWrap.style.display = 'none';
+        uploadEditorArea.style.display = 'flex';
+
+        /* Hide video tools */
+        document.getElementById('videoTrimSec').style.display = 'none';
+        document.getElementById('photoTransformSec').style.display = 'block';
+
+        /* Show video element hidden, canvas visible */
+        editorVideo.style.display = 'none';
+        editorCanvas.style.display = 'block';
+
+        drawEditorImage();
+        updateEditorLiveOverlays();
+        uploadSubmitBtn.disabled = false;
+        showToast('✅ Photo loaded — edit karo!');
+      };
+      image.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
     return;
   }
 
+  /* VIDEO */
   if (!file.type.startsWith('video/')) {
     uploadMsg.textContent = 'Choose a video.';
     return;
@@ -6031,6 +5844,10 @@ uploadFileInput.addEventListener('change', async (e) => {
     uploadMsg.textContent = 'Max 500 MB.';
     return;
   }
+
+  selectedFile = file;
+  editorVideoFile = file;
+  editorMode = 'video';
 
   const url = URL.createObjectURL(file);
   const tempVideo = document.createElement('video');
@@ -6045,9 +5862,7 @@ uploadFileInput.addEventListener('change', async (e) => {
       return;
     }
 
-    selectedFile = file;
-    selectedFileDuration = duration;
-
+    /* Auto switch short/long */
     if (currentUploadType === 'short' && duration > 60.5) {
       uploadMsg.textContent = `⚠️ Switching to Long...`;
       setTimeout(() => {
@@ -6070,11 +5885,33 @@ uploadFileInput.addEventListener('change', async (e) => {
       return;
     }
 
-    uploadPreview.src = url;
-    uploadPreviewWrap.style.display = 'block';
+    selectedFileDuration = duration;
+    editorVideoDuration = duration;
+
+    /* Show editor area */
     uploadPickerWrap.style.display = 'none';
-    uploadPreviewInfo.textContent = `${Math.round(duration)}s · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+    uploadEditorArea.style.display = 'flex';
+
+    /* Show video tools, hide photo transform */
+    document.getElementById('videoTrimSec').style.display = 'block';
+    document.getElementById('photoTransformSec').style.display = 'none';
+
+    /* Show video element, hide canvas */
+    editorCanvas.style.display = 'none';
+    editorVideo.style.display = 'block';
+    editorVideo.src = url;
+    editorVideo.loop = true;
+    editorVideo.muted = false;
+    editorVideo.play().catch(() => {});
+
+    /* Set trim defaults */
+    document.getElementById('editorTrimStart').value = 0;
+    document.getElementById('editorTrimEnd').value = duration.toFixed(1);
+    document.getElementById('editorTrimEnd').max = duration.toFixed(1);
+
+    updateEditorLiveOverlays();
     uploadSubmitBtn.disabled = false;
+    showToast('✅ Video loaded — edit karo!');
   };
 
   tempVideo.onerror = () => {
@@ -6082,20 +5919,280 @@ uploadFileInput.addEventListener('change', async (e) => {
   };
 });
 
-function switchUploadType(type) {
-  document.querySelectorAll('.upload-tab').forEach(t =>
-    t.classList.toggle('active', t.dataset.type === type)
-  );
-  currentUploadType = type;
-  updatePickerText();
-  uploadPreview.src = '';
-  uploadPhotoPreview.src = '';
-  uploadPreviewWrap.style.display = 'none';
-  uploadPhotoPreviewWrap.style.display = 'none';
-  uploadPickerWrap.style.display = 'flex';
-  uploadSubmitBtn.disabled = true;
+/* ============================================================
+   EDITOR — CANVAS DRAW
+   ============================================================ */
+function drawEditorImage() {
+  if (!editorImage) return;
+
+  const maxW = 1200;
+  const maxH = 1200;
+  let w = editorImage.width;
+  let h = editorImage.height;
+
+  if (w > maxW || h > maxH) {
+    const ratio = Math.min(maxW / w, maxH / h);
+    w = Math.round(w * ratio);
+    h = Math.round(h * ratio);
+  }
+
+  if (editorImgRotation === 90 || editorImgRotation === 270) {
+    editorCanvas.width = h;
+    editorCanvas.height = w;
+  } else {
+    editorCanvas.width = w;
+    editorCanvas.height = h;
+  }
+
+  const ctx = editorCanvas.getContext('2d');
+  ctx.filter = buildEditorFilterStr();
+  ctx.save();
+  ctx.translate(editorCanvas.width / 2, editorCanvas.height / 2);
+  ctx.rotate(editorImgRotation * Math.PI / 180);
+  ctx.scale(editorImgFlipH ? -1 : 1, editorImgFlipV ? -1 : 1);
+  ctx.drawImage(editorImage, -w / 2, -h / 2, w, h);
+  ctx.restore();
 }
 
+function buildEditorFilterStr() {
+  const parts = [];
+  const p = EDITOR_PRESETS.find(p => p.id === editorPresetFilter);
+  if (p && p.css) parts.push(p.css);
+  parts.push(`brightness(${editorFilters.brightness}%)`);
+  parts.push(`contrast(${editorFilters.contrast}%)`);
+  parts.push(`saturate(${editorFilters.saturate}%)`);
+  if (editorFilters.blur > 0) parts.push(`blur(${editorFilters.blur}px)`);
+  return parts.join(' ');
+}
+
+function editorRotate(deg) {
+  editorImgRotation = (editorImgRotation + deg + 360) % 360;
+  drawEditorImage();
+}
+
+function editorFlip(dir) {
+  if (dir === 'h') editorImgFlipH = !editorImgFlipH;
+  else editorImgFlipV = !editorImgFlipV;
+  drawEditorImage();
+}
+
+function editorReset() {
+  editorImgRotation = 0;
+  editorImgFlipH = false;
+  editorImgFlipV = false;
+  editorFilters = { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
+  editorPresetFilter = '';
+  document.getElementById('editorSBright').value = 100;
+  document.getElementById('editorSContrast').value = 100;
+  document.getElementById('editorSSat').value = 100;
+  document.getElementById('editorVBright').textContent = '100%';
+  document.getElementById('editorVContrast').textContent = '100%';
+  document.getElementById('editorVSat').textContent = '100%';
+  document.querySelectorAll('#editorFilterGrid .editor-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.preset === 'none'));
+
+  if (editorMode === 'photo') drawEditorImage();
+  else applyEditorVideoFilter();
+  showToast('🔄 Reset');
+}
+
+/* ============================================================
+   EDITOR — FILTERS
+   ============================================================ */
+function initEditorFilters() {
+  const grid = document.getElementById('editorFilterGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  EDITOR_PRESETS.forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'editor-filter-btn' + (p.id === 'none' ? ' active' : '');
+    b.dataset.preset = p.id;
+    b.style.background = 'linear-gradient(135deg,#ff2e63,#ff8a00)';
+    b.innerHTML = `<span>${p.name}</span>`;
+    b.addEventListener('click', () => editorApplyPreset(p.id));
+    grid.appendChild(b);
+  });
+}
+
+function editorApplyPreset(id) {
+  editorPresetFilter = id === 'none' ? '' : id;
+  document.querySelectorAll('#editorFilterGrid .editor-filter-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.preset === id)
+  );
+  if (editorMode === 'photo') drawEditorImage();
+  else applyEditorVideoFilter();
+}
+
+function editorUpdateFilter(type, value) {
+  editorFilters[type] = type === 'blur' ? parseInt(value) : parseInt(value);
+  const v = { brightness: value + '%', contrast: value + '%', saturate: value + '%', blur: value + 'px' }[type];
+  const el = { brightness: 'editorVBright', contrast: 'editorVContrast', saturate: 'editorVSat', blur: 'editorVBlur' }[type];
+  const vEl = document.getElementById(el);
+  if (vEl) vEl.textContent = v;
+  if (editorMode === 'photo') drawEditorImage();
+  else applyEditorVideoFilter();
+}
+
+function applyEditorVideoFilter() {
+  if (!editorVideo || editorMode !== 'video') return;
+  const p = EDITOR_PRESETS.find(p => p.id === editorPresetFilter);
+  let f = '';
+  if (p && p.css) f += p.css + ' ';
+  f += `brightness(${editorFilters.brightness}%) contrast(${editorFilters.contrast}%) saturate(${editorFilters.saturate}%)`;
+  if (editorFilters.blur > 0) f += ` blur(${editorFilters.blur}px)`;
+  editorVideo.style.filter = f;
+}
+
+/* ============================================================
+   EDITOR — VIDEO TRIM & SPEED
+   ============================================================ */
+function editorSetSpeed(s) {
+  editorVideoSpeed = s;
+  if (editorVideo) editorVideo.playbackRate = s;
+  document.querySelectorAll('#videoTrimSec .editor-btn').forEach(b => b.classList.remove('active'));
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  showToast(`⚡ Speed: ${s}x`);
+}
+
+/* ============================================================
+   EDITOR — TEXT OVERLAY
+   ============================================================ */
+function editorUpdateText() {
+  editorTextOverlay = document.getElementById('editorTextInput').value;
+  editorTextSize = parseInt(document.getElementById('editorSTxtSize').value);
+  document.getElementById('editorVTxtSize').textContent = editorTextSize + 'px';
+  updateEditorLiveOverlays();
+}
+
+function editorSetTextColor(color, btn) {
+  editorTextColor = color;
+  document.querySelectorAll('#editorColorRow .editor-color-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  updateEditorLiveOverlays();
+}
+
+function updateEditorLiveOverlays() {
+  const t = document.getElementById('editorTextLive');
+  if (editorTextOverlay.trim()) {
+    t.textContent = editorTextOverlay;
+    t.style.color = editorTextColor;
+    t.style.fontSize = editorTextSize + 'px';
+    t.style.display = 'block';
+  } else {
+    t.style.display = 'none';
+  }
+  toggleEditorWmark();
+}
+
+function editorToggleWmark() {
+  editorWmarkOn = document.getElementById('editorWmarkToggle').checked;
+  toggleEditorWmark();
+}
+
+function toggleEditorWmark() {
+  const w = document.getElementById('editorWmarkLive');
+  if (editorWmarkOn && (editorMode === 'photo' && editorImage || editorMode === 'video' && editorVideoFile)) {
+    w.style.display = 'block';
+  } else {
+    w.style.display = 'none';
+  }
+}
+
+function editorChangeFile() {
+  uploadFileInput.value = '';
+  uploadPickerWrap.style.display = 'flex';
+  uploadEditorArea.style.display = 'none';
+  uploadSubmitBtn.disabled = true;
+  editorImage = null;
+  editorVideoFile = null;
+
+  try { editorVideo.pause(); } catch (e) {}
+  editorVideo.src = '';
+}
+
+/* ============================================================
+   EDITOR — EXPORT (for upload)
+   ============================================================ */
+async function exportEditedPhoto() {
+  if (!editorImage) return null;
+
+  /* Redraw with final watermark + text for export */
+  const c = document.createElement('canvas');
+  const maxW = 1200, maxH = 1200;
+  let w = editorImage.width;
+  let h = editorImage.height;
+
+  if (w > maxW || h > maxH) {
+    const ratio = Math.min(maxW / w, maxH / h);
+    w = Math.round(w * ratio);
+    h = Math.round(h * ratio);
+  }
+
+  if (editorImgRotation === 90 || editorImgRotation === 270) {
+    c.width = h;
+    c.height = w;
+  } else {
+    c.width = w;
+    c.height = h;
+  }
+
+  const ctx = c.getContext('2d');
+  ctx.filter = buildEditorFilterStr();
+  ctx.save();
+  ctx.translate(c.width / 2, c.height / 2);
+  ctx.rotate(editorImgRotation * Math.PI / 180);
+  ctx.scale(editorImgFlipH ? -1 : 1, editorImgFlipV ? -1 : 1);
+  ctx.drawImage(editorImage, -w / 2, -h / 2, w, h);
+  ctx.restore();
+
+  /* Watermark */
+  if (editorWmarkOn) {
+    ctx.filter = 'none';
+    const pad = 20;
+    const fontSize = Math.max(14, Math.round(c.width / 40));
+    ctx.font = `900 ${fontSize}px -apple-system, sans-serif`;
+    const text = 'REELHUB';
+    const textW = ctx.measureText(text).width;
+    const boxW = textW + 24;
+    const boxH = fontSize + 14;
+    const x = c.width - boxW - pad;
+    const y = c.height - boxH - pad;
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, boxW, boxH, 6);
+      ctx.fill();
+    } else {
+      ctx.fillRect(x, y, boxW, boxH);
+    }
+
+    ctx.fillStyle = '#ff2e63';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x + 12, y + boxH / 2);
+  }
+
+  /* Text overlay */
+  if (editorTextOverlay.trim()) {
+    ctx.filter = 'none';
+    const fontSize = Math.round(editorTextSize * (c.width / 500));
+    ctx.font = `900 ${fontSize}px -apple-system, sans-serif`;
+    ctx.fillStyle = editorTextColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 12;
+    ctx.fillText(editorTextOverlay, c.width / 2, c.height / 2);
+    ctx.shadowBlur = 0;
+  }
+
+  return new Promise((resolve) => {
+    c.toBlob((blob) => resolve(blob), 'image/jpeg', 0.92);
+  });
+}
+
+/* ============================================================
+   UPLOAD SUBMIT
+   ============================================================ */
 uploadSubmitBtn.addEventListener('click', async () => {
   if (!currentUser || !currentProfile) {
     uploadMsg.textContent = 'Login required.';
@@ -6116,7 +6213,17 @@ uploadSubmitBtn.addEventListener('click', async () => {
   uploadProgressText.textContent = '0%';
 
   try {
-    const result = await uploadToCloudinary(selectedFile, (percent) => {
+    let fileToUpload = selectedFile;
+
+    /* For photo: export edited canvas as JPEG blob */
+    if (editorMode === 'photo' && editorImage) {
+      const editedBlob = await exportEditedPhoto();
+      if (editedBlob) {
+        fileToUpload = new File([editedBlob], `edited_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      }
+    }
+
+    const result = await uploadToCloudinary(fileToUpload, (percent) => {
       uploadProgressBar.style.width = percent + '%';
       uploadProgressText.textContent = percent + '%';
     });
@@ -6154,16 +6261,34 @@ uploadSubmitBtn.addEventListener('click', async () => {
       uploadModal.classList.remove('show');
       if (document.querySelector('.nav-item[data-page="profile"]')?.classList.contains('active')) {
         renderProfile();
+      } else {
+        setActiveNav('home');
+        renderHomeFeed();
       }
     }, 1500);
   } catch (err) {
+    console.error('Upload error:', err);
     uploadMsg.className = 'error-msg';
     uploadMsg.textContent = err.message || 'Upload failed.';
     uploadSubmitBtn.disabled = false;
-    uploadSubmitBtn.textContent = 'Upload';
+    uploadSubmitBtn.textContent = 'Upload to ReelHub';
   }
 });
 
+function switchUploadType(type) {
+  document.querySelectorAll('.upload-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.type === type)
+  );
+  currentUploadType = type;
+  updatePickerText();
+  uploadPickerWrap.style.display = 'flex';
+  uploadEditorArea.style.display = 'none';
+  uploadSubmitBtn.disabled = true;
+}
+
+/* ============================================================
+   CLOUDINARY UPLOAD
+   ============================================================ */
 function uploadToCloudinary(file, onProgress) {
   return new Promise((resolve, reject) => {
     const resourceType = currentUploadType === 'photo' ? 'image' : 'video';
@@ -6177,7 +6302,7 @@ function uploadToCloudinary(file, onProgress) {
 
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
-    xhr.timeout = 120000;
+    xhr.timeout = 300000;
 
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable && onProgress) {
@@ -6285,10 +6410,7 @@ saveProfileBtn.addEventListener('click', async () => {
   editMsg.className = 'error-msg';
   editMsg.textContent = '';
 
-  if (!newName) {
-    editMsg.textContent = 'Name required.';
-    return;
-  }
+  if (!newName) { editMsg.textContent = 'Name required.'; return; }
   if (!/^[a-z0-9._]{3,20}$/.test(newUser)) {
     editMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
     return;
@@ -6555,9 +6677,6 @@ function paintNotifications(list) {
   });
 }
 
-/* ============================================================
-   ADMIN INVITE
-   ============================================================ */
 async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
   if (!currentUser || !currentUser.email) {
     showToast('❌ Please login first');
@@ -6714,11 +6833,7 @@ function updateNotifDot(count) {
   if (!notifDot) return;
   if (count > 0) {
     notifDot.style.display = 'block';
-    if (count > 20) {
-      notifDot.textContent = '20+';
-    } else {
-      notifDot.textContent = '';
-    }
+    notifDot.textContent = count > 20 ? '20+' : '';
   } else {
     notifDot.style.display = 'none';
   }
@@ -6849,7 +6964,7 @@ function showToast(message) {
   const toast = document.createElement('div');
   toast.id = 'toast';
   toast.textContent = message;
-  toast.style.cssText = `position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1e1e28;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:10000;box-shadow:0 8px 20px rgba(0,0,0,0.6);border:1px solid #333;`;
+  toast.style.cssText = `position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1e1e28;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:10000;box-shadow:0 8px 20px rgba(0,0,0,0.6);border:1px solid #333;max-width:90%;`;
   document.body.appendChild(toast);
 
   setTimeout(() => {
@@ -6945,7 +7060,7 @@ function formatDate(date) {
 }
 
 /* ============================================================
-   DELETE ACCOUNT
+   ✅ DELETE ACCOUNT — FULLY FIXED
    ============================================================ */
 function openDeleteAccountModal() {
   document.querySelectorAll('.delete-modal-overlay').forEach(el => el.remove());
@@ -7058,8 +7173,9 @@ async function deleteUserAccount(password) {
     progressText.textContent = 'Verifying your password...';
     const credential = EmailAuthProvider.credential(currentUser.email, password);
     await reauthenticateWithCredential(currentUser, credential);
+    console.log('✅ Reauth success');
 
-    /* STEP 2 — Posts + their comments */
+    /* STEP 2 — Delete posts + their comments */
     progressText.textContent = 'Deleting your posts...';
     try {
       const postsQ = query(collection(db, 'posts'), where('userId', '==', uid));
@@ -7080,7 +7196,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Posts delete:', e); }
 
-    /* STEP 3 — Comments + orphaned replies */
+    /* STEP 3 — Delete user's comments + orphaned replies */
     progressText.textContent = 'Deleting your comments and replies...';
     try {
       const myCommentsQ = query(collection(db, 'comments'), where('userId', '==', uid));
@@ -7102,7 +7218,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Comments delete:', e); }
 
-    /* STEP 4 — Stories */
+    /* STEP 4 — Delete stories */
     progressText.textContent = 'Deleting your stories...';
     try {
       const storiesQ = query(collection(db, 'stories'), where('userId', '==', uid));
@@ -7112,7 +7228,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Stories delete:', e); }
 
-    /* STEP 5 — Notifications */
+    /* STEP 5 — Delete notifications */
     progressText.textContent = 'Deleting notifications...';
     try {
       const notifQ = query(collection(db, 'notifications'), where('userId', '==', uid));
@@ -7122,7 +7238,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Notifications delete:', e); }
 
-    /* STEP 6 — Group messages */
+    /* STEP 6 — Delete user's group messages */
     progressText.textContent = 'Deleting your group messages...';
     try {
       const myGroupsQ = query(collection(db, 'groups'), where('members', 'array-contains', uid));
@@ -7154,7 +7270,7 @@ async function deleteUserAccount(password) {
       }
     } catch (e) { console.warn('Groups leave:', e); }
 
-    /* STEP 8 — DM chats + messages */
+    /* STEP 8 — Delete DM chats + messages */
     progressText.textContent = 'Deleting messages...';
     try {
       const chatsQ = query(collection(db, 'chats'), where('members', 'array-contains', uid));
@@ -7205,6 +7321,7 @@ async function deleteUserAccount(password) {
     /* STEP 11 — Delete Firebase Auth user */
     progressText.textContent = 'Finalizing...';
     await currentUser.delete();
+    console.log('✅ Auth user deleted');
 
     /* STEP 12 — Cleanup */
     progressText.textContent = '✅ Account deleted successfully!';
@@ -7323,7 +7440,6 @@ function applySetting(key, value) {
 
     case 'dataSaver': {
       document.body.classList.toggle('data-saver', value);
-
       if (value) {
         const s = getSettings();
         if (s.autoPlay) {
@@ -7533,4 +7649,4 @@ window.handleDeleteClick = function(event) {
   }
 };
 
-console.log('✅ app.js loaded — FULLY FIXED VERSION (4 Parts)');
+console.log('✅ app.js loaded — FULLY FIXED VERSION (4 Parts with Editor)');
