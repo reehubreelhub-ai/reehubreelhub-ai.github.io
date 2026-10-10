@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<title>ReelHub Editor</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='55' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='middle'>R</text></svg>">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;background:#0a0a0a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+#app{display:flex;flex-direction:column;width:100%;height:100%}
+
+.header{height:56px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#0a0a0a;border-bottom:1px solid #1a1a1a;z-index:100}
+.logo{font-size:18px;font-weight:900;background:linear-gradient(90deg,#ff2e63,#ff8a00);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hbtns{display:flex;gap:8px}
+.hbtn{height:36px;padding:0 14px;border-radius:18px;border:none;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity .15s}
+.hbtn:active{opacity:.7}
+.hbtn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.hbtn.close{background:#1a1a1a;color:#fff}
+.hbtn.export{background:linear-gradient(90deg,#ff2e63,#ff8a00);color:#fff;box-shadow:0 4px 12px rgba(255,46,99,.35)}
+.hbtn.export:disabled{opacity:.4;cursor:not-allowed}
+
+.tabs{display:flex;gap:6px;padding:10px 12px;background:#0f0f16;border-bottom:1px solid #1a1a1a;flex-shrink:0}
+.tab{flex:1;height:40px;background:#1a1a1a;border:none;border-radius:10px;color:#888;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s}
+.tab.active{background:linear-gradient(90deg,#ff2e63,#ff8a00);color:#fff}
+.tab svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.preview{flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative;overflow:hidden;padding:10px;min-height:0}
+#canvas{max-width:100%;max-height:100%;object-fit:contain;display:none;border-radius:6px}
+#videoEl{max-width:100%;max-height:100%;object-fit:contain;display:none;border-radius:6px;background:#000}
+.wmark{position:absolute;bottom:18px;right:18px;font-size:12px;font-weight:900;color:#ff2e63;background:rgba(0,0,0,.55);padding:5px 11px;border-radius:5px;letter-spacing:.5px;pointer-events:none;z-index:15;display:none;border:1px solid rgba(255,46,99,.4)}
+.txtlive{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:26px;font-weight:900;color:#fff;text-shadow:0 4px 12px rgba(0,0,0,.9);text-align:center;padding:6px 14px;pointer-events:none;z-index:14;display:none;max-width:88%;word-wrap:break-word;line-height:1.2;background:rgba(0,0,0,.25);border-radius:8px}
+
+.empty{text-align:center;color:#666;padding:30px 20px}
+.empty svg{width:56px;height:56px;stroke:#444;fill:none;stroke-width:1.5;margin-bottom:14px}
+.empty h3{font-size:15px;color:#888;font-weight:600;margin-bottom:6px}
+.empty p{font-size:12px;color:#555;margin-bottom:18px}
+.pick{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;background:linear-gradient(90deg,#ff2e63,#ff8a00);color:#fff;border:none;border-radius:11px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(255,46,99,.35)}
+.pick svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round}
+
+.controls{flex-shrink:0;background:#0f0f16;border-top:1px solid #1a1a1a;max-height:46vh;overflow-y:auto;padding:12px 12px 16px}
+.controls::-webkit-scrollbar{width:3px}
+.controls::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+
+.sec{margin-bottom:14px}
+.sec:last-child{margin-bottom:0}
+.sec-t{font-size:10px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.sec-t svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.row{display:flex;gap:6px;flex-wrap:wrap}
+.cbtn{flex:1;min-width:60px;height:42px;background:#1a1a1a;border:1px solid #262626;border-radius:9px;color:#ccc;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .15s;padding:4px}
+.cbtn:active{transform:scale(.95)}
+.cbtn.active{background:linear-gradient(135deg,#1a1520,#2a1520);border-color:#ff2e63;color:#ff2e63}
+.cbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cbtn small{font-size:8px;opacity:.7}
+
+.slider{margin-bottom:12px}
+.slider-lbl{display:flex;justify-content:space-between;font-size:11px;color:#aaa;font-weight:600;margin-bottom:6px}
+.slider-lbl b{color:#ff2e63;font-weight:800}
+input[type=range]{width:100%;height:5px;background:#22222e;border-radius:3px;-webkit-appearance:none;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#ff2e63,#ff8a00);cursor:pointer;box-shadow:0 2px 6px rgba(255,46,99,.5)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#ff2e63,#ff8a00);cursor:pointer;border:none}
+
+.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.fbtn{aspect-ratio:1;background:#1a1a1a;border:2px solid transparent;border-radius:9px;cursor:pointer;position:relative;overflow:hidden;font-size:9px;font-weight:700;color:#fff;padding:0;font-family:inherit;display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px}
+.fbtn.active{border-color:#ff2e63}
+.fbtn span{position:relative;z-index:2;text-shadow:0 2px 4px rgba(0,0,0,.9)}
+
+.tinp{width:100%;height:40px;background:#1a1a1a;border:1px solid #262626;border-radius:9px;padding:0 12px;color:#fff;font-family:inherit;font-size:13px;outline:none;margin-bottom:8px}
+.tinp:focus{border-color:#ff2e63}
+
+.crow{display:flex;gap:6px;margin-bottom:8px}
+.cbtnc{flex:1;height:32px;border-radius:7px;border:2px solid transparent;cursor:pointer}
+.cbtnc.active{border-color:#fff;transform:scale(1.05)}
+
+.trow{display:flex;align-items:center;justify-content:space-between;padding:10px 2px;border-bottom:1px solid #1a1a1a}
+.trow:last-child{border-bottom:none}
+.trow span{font-size:12.5px;color:#ccc;font-weight:600}
+.tgl{position:relative;width:44px;height:24px;flex-shrink:0}
+.tgl input{opacity:0;width:0;height:0}
+.tsl{position:absolute;inset:0;background:#333;border-radius:24px;transition:.3s;cursor:pointer}
+.tsl:before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 2px 4px rgba(0,0,0,.4)}
+.tgl input:checked+.tsl{background:linear-gradient(90deg,#ff2e63,#ff8a00)}
+.tgl input:checked+.tsl:before{transform:translateX(20px)}
+
+.trim-row{display:flex;gap:8px;margin-bottom:12px}
+.trim-item{flex:1}
+.trim-item label{font-size:10px;color:#888;font-weight:700;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.trim-item input{width:100%;height:36px;background:#1a1a1a;border:1px solid #262626;border-radius:8px;padding:0 10px;color:#fff;font-family:inherit;font-size:12px;outline:none}
+.trim-item input:focus{border-color:#ff2e63}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e1e28;color:#fff;padding:11px 18px;border-radius:9px;font-size:12.5px;font-weight:600;z-index:10000;box-shadow:0 8px 20px rgba(0,0,0,.6);border:1px solid #333;opacity:0;pointer-events:none;transition:opacity .3s;max-width:90%}
+.toast.show{opacity:1}
+
+.prog{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:20px}
+.prog.show{display:flex}
+.spin{width:48px;height:48px;border:4px solid #1e1e28;border-top-color:#ff2e63;border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.prog-t{font-size:14px;color:#fff;font-weight:600}
+.prog-s{font-size:11px;color:#888}
+
+@media(max-width:380px){
+  .hbtn{padding:0 10px;font-size:11px}
+  .cbtn{font-size:10px;min-width:55px}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div class="header">
+    <div class="logo">Editor</div>
+    <div class="hbtns">
+      <button class="hbtn close" onclick="closeEditor()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Close
+      </button>
+      <button class="hbtn export" id="exportBtn" disabled onclick="exportMedia()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-mode="photo" onclick="switchMode('photo')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      Photo
+    </button>
+    <button class="tab" data-mode="video" onclick="switchMode('video')">
+      <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>
+      Video
+    </button>
+  </div>
+
+  <div class="preview">
+    <canvas id="canvas"></canvas>
+    <video id="videoEl" playsinline muted></video>
+    <div class="wmark" id="wmarkLive">REELHUB</div>
+    <div class="txtlive" id="txtLive"></div>
+    <div class="empty" id="emptyState">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <h3 id="emptyTitle">Choose a photo</h3>
+      <p id="emptyDesc">JPG / PNG · Max 10 MB</p>
+      <button class="pick" onclick="document.getElementById('fileInput').click()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Select File
+      </button>
+      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(event)">
+    </div>
+  </div>
+
+  <div class="controls" id="controls" style="display:none">
+
+    <!-- PHOTO CONTROLS -->
+    <div id="photoControls">
+      <div class="sec">
+        <div class="sec-t"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Transform</div>
+        <div class="row">
+          <button class="cbtn" onclick="rotate(-90)"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg><small>Left</small></button>
+          <button class="cbtn" onclick="rotate(90)"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><small>Right</small></button>
+          <button class="cbtn" onclick="flip('h')"><svg viewBox="0 0 24 24"><polyline points="12 3 12 21"/><polyline points="8 8 4 12 8 16"/><polyline points="16 8 20 12 16 16"/></svg><small>Flip H</small></button>
+          <button class="cbtn" onclick="flip('v')"><svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><polyline points="8 8 12 4 16 8"/><polyline points="8 16 12 20 16 16"/></svg><small>Flip V</small></button>
+          <button class="cbtn" onclick="resetEdits()"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg><small>Reset</small></button>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-t"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/></svg>Adjust</div>
+
+        <div class="slider">
+          <div class="slider-lbl"><span>Brightness</span><b id="vBright">100%</b></div>
+          <input type="range" id="sBright" min="0" max="200" value="100" oninput="updateFilter('brightness',this.value,200)">
+        </div>
+        <div class="slider">
+          <div class="slider-lbl"><span>Contrast</span><b id="vContrast">100%</b></div>
+          <input type="range" id="sContrast" min="0" max="200" value="100" oninput="updateFilter('contrast',this.value,200)">
+        </div>
+        <div class="slider">
+          <div class="slider-lbl"><span>Saturation</span><b id="vSat">100%</b></div>
+          <input type="range" id="sSat" min="0" max="200" value="100" oninput="updateFilter('saturate',this.value,200)">
+        </div>
+        <div class="slider">
+          <div class="slider-lbl"><span>Blur</span><b id="vBlur">0px</b></div>
+          <input type="range" id="sBlur" min="0" max="20" value="0" oninput="updateFilter('blur',this.value,20)">
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-t"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>Filters</div>
+        <div class="fgrid" id="filterGrid"></div>
+      </div>
+    </div>
+
+    <!-- VIDEO CONTROLS -->
+    <div id="videoControls" style="display:none">
+      <div class="sec">
+        <div class="sec-t"><svg viewBox="0 0 24 24"><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>Trim & Speed</div>
+        <div class="trim-row">
+          <div class="trim-item">
+            <label>Start (s)</label>
+            <input type="number" id="trimStart" min="0" value="0" step="0.1" onchange="applyTrim()">
+          </div>
+          <div class="trim-item">
+            <label>End (s)</label>
+            <input type="number" id="trimEnd" min="0" value="0" step="0.1" onchange="applyTrim()">
+          </div>
+        </div>
+        <div class="row">
+          <button class="cbtn" onclick="setSpeed(0.5)"><b>0.5x</b><small>Slow</small></button>
+          <button class="cbtn active" onclick="setSpeed(1)"><b>1x</b><small>Normal</small></button>
+          <button class="cbtn" onclick="setSpeed(1.5)"><b>1.5x</b><small>Fast</small></button>
+          <button class="cbtn" onclick="setSpeed(2)"><b>2x</b><small>Faster</small></button>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-t"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>Audio</div>
+        <div class="trow">
+          <span>Mute Video</span>
+          <label class="tgl"><input type="checkbox" id="muteVid" onchange="toggleMute()"><span class="tsl"></span></label>
+        </div>
+        <div class="slider">
+          <div class="slider-lbl"><span>Volume</span><b id="vVol">100%</b></div>
+          <input type="range" id="sVol" min="0" max="100" value="100" oninput="updateVolume(this.value)">
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-t"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>Filters</div>
+        <div class="fgrid" id="filterGridVid"></div>
+      </div>
+    </div>
+
+    <!-- COMMON: TEXT + WATERMARK -->
+    <div class="sec">
+      <div class="sec-t"><svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>Text Overlay</div>
+      <input type="text" class="tinp" id="txtInput" placeholder="Enter text..." maxlength="60" oninput="updateText()">
+      <div class="crow" id="colorRow">
+        <button class="cbtnc active" style="background:#ffffff" data-color="#ffffff" onclick="setTextColor('#ffffff',this)"></button>
+        <button class="cbtnc" style="background:#000000" data-color="#000000" onclick="setTextColor('#000000',this)"></button>
+        <button class="cbtnc" style="background:#ff2e63" data-color="#ff2e63" onclick="setTextColor('#ff2e63',this)"></button>
+        <button class="cbtnc" style="background:#ff8a00" data-color="#ff8a00" onclick="setTextColor('#ff8a00',this)"></button>
+        <button class="cbtnc" style="background:#4ea8ff" data-color="#4ea8ff" onclick="setTextColor('#4ea8ff',this)"></button>
+        <button class="cbtnc" style="background:#4ade80" data-color="#4ade80" onclick="setTextColor('#4ade80',this)"></button>
+      </div>
+      <div class="slider">
+        <div class="slider-lbl"><span>Text Size</span><b id="vTxtSize">26px</b></div>
+        <input type="range" id="sTxtSize" min="12" max="72" value="26" oninput="updateText()">
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-t"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><text x="12" y="16" font-size="8" text-anchor="middle" fill="currentColor" stroke="none" font-weight="700">R</text></svg>Watermark</div>
+      <div class="trow">
+        <span>Add ReelHub Watermark</span>
+        <label class="tgl"><input type="checkbox" id="wmarkToggle" checked onchange="toggleWmark()"><span class="tsl"></span></label>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="prog" id="prog">
+  <div class="spin"></div>
+  <div class="prog-t" id="progText">Processing...</div>
+  <div class="prog-s" id="progSub">Please wait</div>
+</div>
+
+<script>
+/* ============ STATE ============ */
+let mode = 'photo';
+let img = null;
+let imgRotation = 0;
+let imgFlipH = false;
+let imgFlipV = false;
+let filterStr = '';
+let filters = { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
+let presetFilter = '';
+let textOverlay = '';
+let textColor = '#ffffff';
+let textSize = 26;
+let wmarkOn = true;
+
+let videoFile = null;
+let videoDuration = 0;
+let videoSpeed = 1;
+let videoMuted = false;
+let videoVolume = 1;
+
+const PRESETS = [
+  { id: 'none', name: 'Original', css: '' },
+  { id: 'clarendon', name: 'Clarendon', css: 'contrast(1.2) saturate(1.35)' },
+  { id: 'gingham', name: 'Gingham', css: 'brightness(1.05) hue-rotate(-10deg) sepia(.1)' },
+  { id: 'moon', name: 'Moon', css: 'grayscale(1) contrast(1.1) brightness(1.1)' },
+  { id: 'lark', name: 'Lark', css: 'brightness(1.1) contrast(1.05) saturate(1.1)' },
+  { id: 'reyes', name: 'Reyes', css: 'sepia(.4) brightness(1.1) contrast(.9) saturate(.85)' },
+  { id: 'juno', name: 'Juno', css: 'saturate(1.4) contrast(1.1) hue-rotate(-5deg)' },
+  { id: 'warm', name: 'Warm', css: 'saturate(1.3) hue-rotate(-15deg) brightness(1.05)' },
+  { id: 'cool', name: 'Cool', css: 'saturate(1.2) hue-rotate(15deg) brightness(1.05)' },
+  { id: 'vintage', name: 'Vintage', css: 'sepia(.5) contrast(1.1) brightness(1.05)' },
+  { id: 'fade', name: 'Fade', css: 'contrast(.8) brightness(1.15) saturate(.8)' },
+  { id: 'mono', name: 'Mono', css: 'grayscale(1) contrast(1.15)' }
+];
+
+/* ============ INIT ============ */
+function initFilters() {
+  const grid = document.getElementById('filterGrid');
+  const gridV = document.getElementById('filterGridVid');
+  [grid, gridV].forEach(g => {
+    if (!g) return;
+    g.innerHTML = '';
+    PRESETS.forEach(p => {
+      const b = document.createElement('button');
+      b.className = 'fbtn' + (p.id === 'none' ? ' active' : '');
+      b.dataset.preset = p.id;
+      b.style.background = 'linear-gradient(135deg,#ff2e63,#ff8a00)';
+      b.innerHTML = `<span>${p.name}</span>`;
+      b.addEventListener('click', () => applyPreset(p.id));
+      g.appendChild(b);
+    });
+  });
+}
+initFilters();
+
+/* ============ MODE SWITCH ============ */
+function switchMode(m) {
+  mode = m;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === m));
+  document.getElementById('photoControls').style.display = m === 'photo' ? 'block' : 'none';
+  document.getElementById('videoControls').style.display = m === 'video' ? 'block' : 'none';
+  document.getElementById('emptyTitle').textContent = m === 'photo' ? 'Choose a photo' : 'Choose a video';
+  document.getElementById('emptyDesc').textContent = m === 'photo' ? 'JPG / PNG · Max 10 MB' : 'MP4 / MOV · Max 100 MB';
+  document.getElementById('fileInput').accept = m === 'photo' ? 'image/*' : 'video/*';
+  reset();
+}
+
+/* ============ FILE HANDLING ============ */
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (mode === 'photo') {
+    if (!file.type.startsWith('image/')) { toast('❌ Choose an image'); return; }
+    if (file.size > 10 * 1024 * 1024) { toast('❌ Max 10 MB'); return; }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const image = new Image();
+      image.onload = () => {
+        img = image;
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('controls').style.display = 'block';
+        document.getElementById('exportBtn').disabled = false;
+        drawImage();
+        toast('✅ Photo loaded');
+      };
+      image.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    if (!file.type.startsWith('video/')) { toast('❌ Choose a video'); return; }
+    if (file.size > 100 * 1024 * 1024) { toast('❌ Max 100 MB'); return; }
+
+    videoFile = file;
+    const vid = document.getElementById('videoEl');
+    vid.src = URL.createObjectURL(file);
+    vid.onloadedmetadata = () => {
+      videoDuration = vid.duration;
+      document.getElementById('trimEnd').value = videoDuration.toFixed(1);
+      document.getElementById('trimEnd').max = videoDuration.toFixed(1);
+      vid.muted = videoMuted;
+      vid.volume = videoVolume;
+      vid.play().catch(() => {});
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('controls').style.display = 'block';
+      document.getElementById('exportBtn').disabled = false;
+      applyVideoFilter();
+      toast('✅ Video loaded');
+    };
+    vid.style.display = 'block';
+    document.getElementById('canvas').style.display = 'none';
+    vid.loop = true;
+  }
+}
+
+/* ============ PHOTO CANVAS ============ */
+function drawImage() {
+  if (!img) return;
+  const c = document.getElementById('canvas');
+  const maxW = 1200;
+  const maxH = 1200;
+  let w = img.width;
+  let h = img.height;
+
+  if (w > maxW || h > maxH) {
+    const ratio = Math.min(maxW / w, maxH / h);
+    w = Math.round(w * ratio);
+    h = Math.round(h * ratio);
+  }
+
+  if (imgRotation === 90 || imgRotation === 270) {
+    c.width = h;
+    c.height = w;
+  } else {
+    c.width = w;
+    c.height = h;
+  }
+
+  const ctx = c.getContext('2d');
+  ctx.filter = buildFilterStr();
+  ctx.save();
+  ctx.translate(c.width / 2, c.height / 2);
+  ctx.rotate(imgRotation * Math.PI / 180);
+  ctx.scale(imgFlipH ? -1 : 1, imgFlipV ? -1 : 1);
+  ctx.drawImage(img, -w / 2, -h / 2, w, h);
+  ctx.restore();
+
+  c.style.display = 'block';
+  document.getElementById('videoEl').style.display = 'none';
+  updateLiveOverlays();
+}
+
+function buildFilterStr() {
+  const parts = [];
+  const p = PRESETS.find(p => p.id === presetFilter);
+  if (p && p.css) parts.push(p.css);
+  parts.push(`brightness(${filters.brightness}%)`);
+  parts.push(`contrast(${filters.contrast}%)`);
+  parts.push(`saturate(${filters.saturate}%)`);
+  if (filters.blur > 0) parts.push(`blur(${filters.blur}px)`);
+  return parts.join(' ');
+}
+
+function updateFilter(type, value, max) {
+  filters[type] = type === 'blur' ? parseInt(value) : parseInt(value);
+  const el = { brightness: 'vBright', contrast: 'vContrast', saturate: 'vSat', blur: 'vBlur' }[type];
+  const v = { brightness: value + '%', contrast: value + '%', saturate: value + '%', blur: value + 'px' }[type];
+  document.getElementById(el).textContent = v;
+  if (mode === 'photo') drawImage();
+  else applyVideoFilter();
+}
+
+function applyPreset(id) {
+  presetFilter = id === 'none' ? '' : id;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.toggle('active', b.dataset.preset === id));
+  if (mode === 'photo') drawImage();
+  else applyVideoFilter();
+}
+
+function rotate(deg) {
+  imgRotation = (imgRotation + deg + 360) % 360;
+  drawImage();
+}
+
+function flip(dir) {
+  if (dir === 'h') imgFlipH = !imgFlipH;
+  else imgFlipV = !imgFlipV;
+  drawImage();
+}
+
+function resetEdits() {
+  imgRotation = 0;
+  imgFlipH = false;
+  imgFlipV = false;
+  filters = { brightness: 100, contrast: 100, saturate: 100, blur: 0 };
+  presetFilter = '';
+  document.getElementById('sBright').value = 100;
+  document.getElementById('sContrast').value = 100;
+  document.getElementById('sSat').value = 100;
+  document.getElementById('sBlur').value = 0;
+  document.getElementById('vBright').textContent = '100%';
+  document.getElementById('vContrast').textContent = '100%';
+  document.getElementById('vSat').textContent = '100%';
+  document.getElementById('vBlur').textContent = '0px';
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.toggle('active', b.dataset.preset === 'none'));
+  if (mode === 'photo') drawImage();
+  else applyVideoFilter();
+  toast('🔄 Reset');
+}
+
+/* ============ VIDEO ============ */
+function applyVideoFilter() {
+  const vid = document.getElementById('videoEl');
+  if (mode !== 'video' || !vid.src) return;
+  const p = PRESETS.find(p => p.id === presetFilter);
+  let f = '';
+  if (p && p.css) f += p.css + ' ';
+  f += `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturate}%)`;
+  if (filters.blur > 0) f += ` blur(${filters.blur}px)`;
+  vid.style.filter = f;
+}
+
+function setSpeed(s) {
+  videoSpeed = s;
+  document.getElementById('videoEl').playbackRate = s;
+  document.querySelectorAll('#videoControls .cbtn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  toast(`⚡ Speed: ${s}x`);
+}
+
+function toggleMute() {
+  videoMuted = document.getElementById('muteVid').checked;
+  document.getElementById('videoEl').muted = videoMuted;
+}
+
+function updateVolume(v) {
+  videoVolume = v / 100;
+  document.getElementById('videoEl').volume = videoVolume;
+  document.getElementById('vVol').textContent = v + '%';
+}
+
+function applyTrim() {
+  const vid = document.getElementById('videoEl');
+  const start = parseFloat(document.getElementById('trimStart').value) || 0;
+  const end = parseFloat(document.getElementById('trimEnd').value) || videoDuration;
+  if (end <= start) { toast('❌ End must be after start'); return; }
+  vid.currentTime = start;
+  toast(`✂️ Trim: ${start.toFixed(1)}s - ${end.toFixed(1)}s`);
+}
+
+/* ============ TEXT OVERLAY ============ */
+function updateText() {
+  textOverlay = document.getElementById('txtInput').value;
+  textSize = parseInt(document.getElementById('sTxtSize').value);
+  document.getElementById('vTxtSize').textContent = textSize + 'px';
+  updateLiveOverlays();
+}
+
+function setTextColor(color, btn) {
+  textColor = color;
+  document.querySelectorAll('#colorRow .cbtnc').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateLiveOverlays();
+}
+
+function updateLiveOverlays() {
+  const t = document.getElementById('txtLive');
+  if (textOverlay.trim()) {
+    t.textContent = textOverlay;
+    t.style.color = textColor;
+    t.style.fontSize = textSize + 'px';
+    t.style.display = 'block';
+  } else {
+    t.style.display = 'none';
+  }
+}
+
+function toggleWmark() {
+  wmarkOn = document.getElementById('wmarkToggle').checked;
+  document.getElementById('wmarkLive').style.display = (wmarkOn && (mode === 'photo' && img) || (mode === 'video' && videoFile)) ? 'block' : 'none';
+}
+
+function updateWmarkVisibility() {
+  const w = document.getElementById('wmarkLive');
+  w.style.display = wmarkOn ? 'block' : 'none';
+}
+
+/* ============ EXPORT ============ */
+async function exportMedia() {
+  if (mode === 'photo') await exportPhoto();
+  else await exportVideo();
+}
+
+async function exportPhoto() {
+  if (!img) return;
+  showProgress('Exporting photo...', 'Processing');
+
+  try {
+    const c = document.getElementById('canvas');
+    const ctx = c.getContext('2d');
+
+    // Draw watermark permanently
+    if (wmarkOn) {
+      ctx.filter = 'none';
+      const pad = 20;
+      const fontSize = Math.max(14, Math.round(c.width / 40));
+      ctx.font = `900 ${fontSize}px -apple-system, sans-serif`;
+      const text = 'REELHUB';
+      const textW = ctx.measureText(text).width;
+      const boxW = textW + 24;
+      const boxH = fontSize + 14;
+      const x = c.width - boxW - pad;
+      const y = c.height - boxH - pad;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+      ctx.beginPath();
+      ctx.roundRect(x, y, boxW, boxH, 6);
+      ctx.fill();
+
+      ctx.fillStyle = '#ff2e63';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x + 12, y + boxH / 2);
+    }
+
+    // Draw text overlay permanently
+    if (textOverlay.trim()) {
+      ctx.filter = 'none';
+      const fontSize = Math.round(textSize * (c.width / 500));
+      ctx.font = `900 ${fontSize}px -apple-system, sans-serif`;
+      ctx.fillStyle = textColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 12;
+      ctx.fillText(textOverlay, c.width / 2, c.height / 2);
+      ctx.shadowBlur = 0;
+    }
+
+    c.toBlob((blob) => {
+      hideProgress();
+      downloadBlob(blob, 'reelhub-photo-' + Date.now() + '.jpg');
+      toast('✅ Downloaded');
+    }, 'image/jpeg', 0.92);
+  } catch (e) {
+    hideProgress();
+    toast('❌ Export failed');
+  }
+}
+
+async function exportVideo() {
+  if (!videoFile) return;
+
+  const vid = document.getElementById('videoEl');
+  showProgress('Recording video...', 'Please wait');
+
+  try {
+    const stream = vid.captureStream ? vid.captureStream() : vid.mozCaptureStream();
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+      ? 'video/webm;codecs=vp9'
+      : 'video/webm';
+
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 2500000 });
+    const chunks = [];
+
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+    const start = parseFloat(document.getElementById('trimStart').value) || 0;
+    const end = parseFloat(document.getElementById('trimEnd').value) || videoDuration;
+
+    vid.currentTime = start;
+    vid.playbackRate = videoSpeed;
+    vid.muted = false; // capture audio
+    vid.volume = videoVolume;
+
+    await new Promise(r => setTimeout(r, 200));
+    recorder.start();
+
+    await vid.play();
+
+    const stopAt = () => {
+      if (vid.currentTime >= end) {
+        vid.pause();
+        recorder.stop();
+      }
+    };
+    vid.addEventListener('timeupdate', stopAt);
+
+    recorder.onstop = () => {
+      vid.removeEventListener('timeupdate', stopAt);
+      const blob = new Blob(chunks, { type: 'video/webm' });
+      hideProgress();
+      downloadBlob(blob, 'reelhub-video-' + Date.now() + '.webm');
+      toast('✅ Video exported (watermark+text not embedded in video — browser limitation)');
+    };
+  } catch (e) {
+    console.error(e);
+    hideProgress();
+    toast('❌ Video export failed. Try Chrome browser.');
+  }
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ============ UTILS ============ */
+function showProgress(t, s) {
+  document.getElementById('progText').textContent = t;
+  document.getElementById('progSub').textContent = s;
+  document.getElementById('prog').classList.add('show');
+}
+
+function hideProgress() {
+  document.getElementById('prog').classList.remove('show');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function closeEditor() {
+  if (confirm('Close editor? Unsaved changes will be lost.')) {
+    if (window.history.length > 1) window.history.back();
+    else window.close();
+  }
+}
+
+function reset() {
+  img = null;
+  videoFile = null;
+  videoDuration = 0;
+  const c = document.getElementById('canvas');
+  c.style.display = 'none';
+  const v = document.getElementById('videoEl');
+  v.style.display = 'none';
+  try { v.pause(); } catch(e){}
+  v.src = '';
+  document.getElementById('emptyState').style.display = 'block';
+  document.getElementById('controls').style.display = 'none';
+  document.getElementById('exportBtn').disabled = true;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('txtInput').value = '';
+  document.getElementById('txtLive').style.display = 'none';
+  document.getElementById('wmarkLive').style.display = 'none';
+  resetEdits();
+}
+
+/* RoundRect polyfill */
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    this.beginPath();
+    this.moveTo(x + r, y);
+    this.arcTo(x + w, y, x + w, y + h, r);
+    this.arcTo(x + w, y + h, x, y + h, r);
+    this.arcTo(x, y + h, x, y, r);
+    this.arcTo(x, y, x + w, y, r);
+    this.closePath();
+    return this;
+  };
+}
+
+console.log('✅ ReelHub Editor loaded');
+</script>
+
+</body>
+</html>
