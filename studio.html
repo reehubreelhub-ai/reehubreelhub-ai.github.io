@@ -25,49 +25,43 @@ a{color:inherit;text-decoration:none}
 #app{display:none;flex-direction:column;min-height:100vh}
 #app.show{display:flex}
 
-/* ========= TOP BAR ========= */
 .topbar{height:56px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:#0f0f16;border-bottom:1px solid #1a1a1a;position:sticky;top:0;z-index:50}
 .logo{font-size:18px;font-weight:900;background:linear-gradient(90deg,#ff2e63,#ff8a00);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .logo-badge{font-size:8px;font-weight:800;padding:3px 5px;background:#ff2e63;color:#fff;border-radius:4px;margin-left:4px;-webkit-text-fill-color:#fff}
 .topbar-right{display:flex;align-items:center;gap:8px}
 .avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;background:#1a1a1a;border:2px solid #1e1e28;cursor:pointer}
 
-/* ========= STATS HEADER ========= */
 .stats-header{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#1a1a1a;border-bottom:1px solid #1a1a1a}
-.stat-item{background:#0f0f16;padding:14px 8px;text-align:center}
+.stat-item{background:#0f0f16;padding:14px 8px;text-align:center;cursor:pointer;transition:background .15s}
+.stat-item:active{background:#1a1a24}
 .stat-item .sv{font-size:18px;font-weight:900;color:#fff;line-height:1;margin-bottom:4px}
 .stat-item .sl{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px}
 
-/* ========= MAIN CONTENT ========= */
 .content{flex:1;padding:14px;padding-bottom:90px;max-width:700px;margin:0 auto;width:100%}
 
 .hero{margin-bottom:16px}
 .hero h1{font-size:20px;font-weight:900;margin-bottom:4px;letter-spacing:-.3px}
 .hero p{font-size:12px;color:#888}
 
-/* ========= VIDEO CARD ========= */
-.video-card{background:#121212;border:1px solid #1e1e28;border-radius:12px;padding:10px;margin-bottom:10px;display:flex;gap:10px;cursor:pointer;transition:background .15s}
-.video-card:active{background:#1a1a24}
-.vc-thumb{position:relative;width:100px;height:56px;border-radius:8px;overflow:hidden;background:#1a1a1a;flex-shrink:0}
+.video-card{background:#121212;border:1px solid #1e1e28;border-radius:12px;padding:10px;margin-bottom:10px;display:flex;gap:10px;transition:background .15s}
+.vc-thumb{position:relative;width:100px;height:56px;border-radius:8px;overflow:hidden;background:#1a1a1a;flex-shrink:0;cursor:pointer}
 .vc-thumb img{width:100%;height:100%;object-fit:cover}
-.vc-thumb.wide{width:100px;height:56px}
 .vc-thumb.tall{width:56px;height:100px}
 .vc-duration{position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.85);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px}
-.vc-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
-.vc-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3}
-.vc-stats{display:flex;gap:10px;font-size:10.5px;color:#888;flex-wrap:wrap;align-items:center}
-.vc-stat{display:flex;align-items:center;gap:3px;font-weight:600}
-.vc-stat svg{width:12px;height:12px;stroke:#666;fill:none;stroke-width:2}
+.vc-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.vc-title{font-size:13px;font-weight:700;color:#fff;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3}
+.vc-stats{display:flex;gap:6px;font-size:10.5px;color:#888;flex-wrap:wrap;align-items:center}
+.vc-stat{display:flex;align-items:center;gap:3px;font-weight:600;padding:3px 6px;background:#1a1a24;border-radius:6px;cursor:pointer;transition:background .15s}
+.vc-stat:active{background:#262636}
+.vc-stat svg{width:12px;height:12px;stroke:#888;fill:none;stroke-width:2}
 .vc-badge{display:inline-block;padding:1px 5px;border-radius:3px;font-size:8px;font-weight:800;text-transform:uppercase;background:#1a1a24;color:#888}
 .vc-badge.short{color:#ff2e63}
 .vc-badge.long{color:#4ea8ff}
 .vc-badge.photo{color:#4ade80}
 
-/* ========= EMPTY ========= */
 .empty{text-align:center;padding:60px 20px;color:#666;font-size:13px}
 .empty svg{width:56px;height:56px;stroke:#333;fill:none;stroke-width:1.5;margin:0 auto 14px}
 
-/* ========= BOTTOM NAV ========= */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:68px;background:#0f0f16;border-top:1px solid #1a1a1a;display:flex;align-items:center;justify-content:space-around;padding:0 4px;z-index:100;max-width:700px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom)}
 .bn-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex:1;padding:8px 4px;color:#888;transition:color .15s;max-width:80px}
 .bn-item.active{color:#fff}
@@ -77,16 +71,21 @@ a{color:inherit;text-decoration:none}
 .bn-upload{width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#ff2e63,#ff8a00);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 16px rgba(255,46,99,.5);margin-top:-14px}
 .bn-upload svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2.5}
 
-/* ========= MODAL ========= */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9000;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px)}
 .modal-overlay.show{display:flex}
 .modal{background:#14141c;border-top-left-radius:22px;border-top-right-radius:22px;padding:20px;width:100%;max-width:700px;max-height:85vh;overflow-y:auto;animation:modalUp .25s ease}
 @keyframes modalUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;position:sticky;top:0;background:#14141c;padding-bottom:10px;z-index:5}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;position:sticky;top:0;background:#14141c;padding-bottom:10px;z-index:5;border-bottom:1px solid #1e1e28}
 .modal-header h3{font-size:17px;font-weight:800}
 .modal-close{width:32px;height:32px;border-radius:50%;background:#1e1e28;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center}
 
-/* ========= COMMENTS ========= */
+.user-row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #1a1a1a}
+.user-row:last-child{border-bottom:none}
+.user-avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;background:#1a1a1a;flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:14px;font-weight:700;color:#fff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-handle{font-size:12px;color:#888}
+
 .comment-item{padding:12px 0;border-bottom:1px solid #1a1a1a;display:flex;gap:10px}
 .comment-item:last-child{border-bottom:none}
 .comment-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;background:#1a1a1a;flex-shrink:0}
@@ -94,13 +93,13 @@ a{color:inherit;text-decoration:none}
 .comment-name{font-size:12.5px;font-weight:700;color:#fff;margin-bottom:2px}
 .comment-text{font-size:13px;color:#ccc;line-height:1.4;margin-bottom:4px;word-wrap:break-word}
 .comment-time{font-size:10.5px;color:#666}
-.comment-input-wrap{display:flex;gap:8px;align-items:center;padding:12px 0;border-top:1px solid #1e1e28;position:sticky;bottom:0;background:#14141c}
+
+.comment-input-wrap{display:flex;gap:8px;align-items:center;padding:12px 0;border-top:1px solid #1e1e28;position:sticky;bottom:0;background:#14141c;margin-top:8px}
 .comment-input-wrap input{flex:1;height:42px;background:#1a1a24;border:1px solid #262636;border-radius:22px;padding:0 16px;color:#fff;font-size:13px}
 .comment-input-wrap input:focus{border-color:#ff2e63}
 .comment-send{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#ff2e63,#ff8a00);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .comment-send svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
 
-/* Toast */
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:#1e1e28;color:#fff;padding:10px 18px;border-radius:10px;font-size:12.5px;font-weight:600;z-index:10000;box-shadow:0 8px 24px rgba(0,0,0,.7);border:1px solid #333;opacity:0;transition:all .3s;pointer-events:none;max-width:90%}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
@@ -148,13 +147,13 @@ a{color:inherit;text-decoration:none}
   </div>
 </div>
 
-<div class="modal-overlay" id="commentsModal">
+<div class="modal-overlay" id="listModal">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="commentsTitle">Comments</h3>
-      <button class="modal-close" onclick="closeCommentsModal()">✕</button>
+      <h3 id="listModalTitle">List</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div id="commentsList"></div>
+    <div id="listModalContent"></div>
     <div class="comment-input-wrap" id="commentInputWrap" style="display:none">
       <input type="text" id="commentInput" placeholder="Add a comment...">
       <button class="comment-send" onclick="postComment()">
@@ -171,7 +170,7 @@ console.log('=== Studio: Starting ===');
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, addDoc, collection, query, where, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, addDoc, updateDoc, collection, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 console.log('=== Studio: Imports OK ===');
 
@@ -195,7 +194,9 @@ let currentUser = null;
 let currentProfile = null;
 let allPosts = [];
 let currentTab = 'home';
-let activeCommentsPostId = null;
+let activePostId = null;
+
+const usersCache = {};
 
 function esc(s) {
   if (!s) return '';
@@ -243,6 +244,27 @@ function toast(msg) {
   window._toastT = setTimeout(() => t.classList.remove('show'), 2000);
 }
 
+async function getUser(uid) {
+  if (usersCache[uid]) return usersCache[uid];
+  try {
+    const snap = await getDoc(doc(db, 'users', uid));
+    if (snap.exists()) {
+      usersCache[uid] = { uid, ...snap.data() };
+      return usersCache[uid];
+    }
+  } catch (e) {}
+  return null;
+}
+
+async function getUsersBatch(uids) {
+  const result = [];
+  for (const uid of uids) {
+    const u = await getUser(uid);
+    if (u) result.push(u);
+  }
+  return result;
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     document.getElementById('loadingMsg').innerHTML = 
@@ -288,9 +310,18 @@ function renderStatsHeader() {
   const totalViews = allPosts.reduce((s, p) => s + (p.views || 0), 0);
 
   document.getElementById('statsHeader').innerHTML = `
-    <div class="stat-item"><div class="sv">${formatNum(followers)}</div><div class="sl">Followers</div></div>
-    <div class="stat-item"><div class="sv">${formatNum(following)}</div><div class="sl">Following</div></div>
-    <div class="stat-item"><div class="sv">${formatNum(totalViews)}</div><div class="sl">Views</div></div>
+    <div class="stat-item" onclick="showFollowers()">
+      <div class="sv">${formatNum(followers)}</div>
+      <div class="sl">Followers</div>
+    </div>
+    <div class="stat-item" onclick="showFollowing()">
+      <div class="sv">${formatNum(following)}</div>
+      <div class="sl">Following</div>
+    </div>
+    <div class="stat-item" onclick="showAllViews()">
+      <div class="sv">${formatNum(totalViews)}</div>
+      <div class="sl">Views</div>
+    </div>
   `;
 }
 
@@ -319,17 +350,17 @@ function renderHome() {
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">
-      <div class="video-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 6px;margin:0;">
+      <div class="video-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 6px;margin:0;cursor:pointer;" onclick="showAllViews()">
         <div style="font-size:20px;font-weight:900;color:#fff;">${formatNum(totalViews)}</div>
-        <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:4px;">Views</div>
+        <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:4px;">Total Views</div>
       </div>
-      <div class="video-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 6px;margin:0;">
+      <div class="video-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 6px;margin:0;cursor:pointer;" onclick="showAllLikes()">
         <div style="font-size:20px;font-weight:900;color:#fff;">${formatNum(totalLikes)}</div>
-        <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:4px;">Likes</div>
+        <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:4px;">Total Likes</div>
       </div>
-      <div class="video-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 6px;margin:0;">
+      <div class="video-card" style="flex-direction:column;align-items:center;text-align:center;padding:14px 6px;margin:0;cursor:pointer;" onclick="showAllComments()">
         <div style="font-size:20px;font-weight:900;color:#fff;">${formatNum(totalComments)}</div>
-        <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:4px;">Comments</div>
+        <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:4px;">Total Comments</div>
       </div>
     </div>
 
@@ -352,8 +383,8 @@ function renderVideoCard(p) {
   const shares = p.shares || 0;
 
   return `
-    <div class="video-card" onclick="openComments('${p.id}', '${esc(p.caption || 'Untitled')}')">
-      <div class="vc-thumb ${thumbClass}">
+    <div class="video-card">
+      <div class="vc-thumb ${thumbClass}" onclick="window.location.href='index.html'">
         <img src="${p.thumbnail || p.url}" alt="" onerror="this.style.display='none'">
         ${duration ? `<div class="vc-duration">${duration}</div>` : ''}
       </div>
@@ -361,15 +392,15 @@ function renderVideoCard(p) {
         <div class="vc-title">${esc(p.caption || 'Untitled')}</div>
         <div class="vc-stats">
           <span class="vc-badge ${p.type || 'short'}">${p.type || 'short'}</span>
-          <span class="vc-stat">
+          <span class="vc-stat" onclick="showPostViews('${p.id}')">
             <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             ${formatNum(views)}
           </span>
-          <span class="vc-stat">
+          <span class="vc-stat" onclick="showPostLikes('${p.id}')">
             <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             ${formatNum(likes)}
           </span>
-          <span class="vc-stat">
+          <span class="vc-stat" onclick="showPostComments('${p.id}')">
             <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
             ${formatNum(comments)}
           </span>
@@ -408,57 +439,240 @@ async function renderAudience() {
       <p>People connected to your account</p>
     </div>
 
-    <div style="font-size:14px;font-weight:800;color:#fff;margin:16px 0 12px;">Followers (${followers.length})</div>
-    <div id="followersList" class="empty">Loading...</div>
+    <div class="video-card" style="cursor:pointer;padding:16px;" onclick="showFollowers()">
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:800;">Followers</div>
+        <div style="font-size:12px;color:#888;margin-top:2px;">People following you</div>
+      </div>
+      <div style="font-size:20px;font-weight:900;">${formatNum(followers.length)}</div>
+    </div>
 
-    <div style="font-size:14px;font-weight:800;color:#fff;margin:24px 0 12px;">Following (${following.length})</div>
-    <div id="followingList" class="empty">Loading...</div>
+    <div class="video-card" style="cursor:pointer;padding:16px;" onclick="showFollowing()">
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:800;">Following</div>
+        <div style="font-size:12px;color:#888;margin-top:2px;">People you follow</div>
+      </div>
+      <div style="font-size:20px;font-weight:900;">${formatNum(following.length)}</div>
+    </div>
   `;
-
-  loadUsers(followers, 'followersList');
-  loadUsers(following, 'followingList');
 }
 
-async function loadUsers(uids, containerId) {
-  const wrap = document.getElementById(containerId);
-  if (!wrap) return;
+/* ========= MODAL SYSTEM ========= */
+function openModal(title, contentHTML, showCommentInput) {
+  document.getElementById('listModalTitle').textContent = title;
+  document.getElementById('listModalContent').innerHTML = contentHTML;
+  document.getElementById('commentInputWrap').style.display = showCommentInput ? 'flex' : 'none';
+  document.getElementById('listModal').classList.add('show');
+}
 
-  if (uids.length === 0) {
-    wrap.innerHTML = '<div>No users yet</div>';
-    return;
-  }
+window.closeModal = function() {
+  document.getElementById('listModal').classList.remove('show');
+  activePostId = null;
+};
 
-  const users = [];
-  for (const uid of uids.slice(0, 30)) {
-    try {
-      const snap = await getDoc(doc(db, 'users', uid));
-      if (snap.exists()) users.push({ uid, ...snap.data() });
-    } catch (e) {}
-  }
-
+function renderUserList(users, emptyMsg) {
   if (users.length === 0) {
-    wrap.innerHTML = '<div>Users not found</div>';
-    return;
+    return `<div class="empty"><div>${emptyMsg}</div></div>`;
   }
-
-  wrap.innerHTML = users.map(u => `
-    <div class="video-card" style="padding:10px;">
-      <img src="${u.photo || defaultAvatar(u.name)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;background:#1a1a1a;flex-shrink:0;">
-      <div class="vc-info">
-        <div class="vc-title" style="margin-bottom:2px;">${esc(u.name || 'User')}</div>
-        <div style="font-size:11.5px;color:#888;">@${esc(u.user || '')}</div>
+  return users.map(u => `
+    <div class="user-row">
+      <img class="user-avatar" src="${u.photo || defaultAvatar(u.name)}" alt="">
+      <div class="user-info">
+        <div class="user-name">${esc(u.name || 'User')}</div>
+        <div class="user-handle">@${esc(u.user || '')}</div>
       </div>
     </div>
   `).join('');
 }
 
-/* ========= COMMENTS ========= */
-window.openComments = async function(postId, title) {
-  activeCommentsPostId = postId;
-  document.getElementById('commentsTitle').textContent = title || 'Comments';
-  document.getElementById('commentsList').innerHTML = '<div class="empty">Loading...</div>';
-  document.getElementById('commentsModal').classList.add('show');
-  document.getElementById('commentInputWrap').style.display = 'flex';
+/* ========= FOLLOWERS LIST ========= */
+window.showFollowers = async function() {
+  openModal('Followers', '<div class="empty">Loading...</div>', false);
+  const uids = currentProfile.followers || [];
+  if (uids.length === 0) {
+    document.getElementById('listModalContent').innerHTML = '<div class="empty">No followers yet</div>';
+    return;
+  }
+  const users = await getUsersBatch(uids);
+  document.getElementById('listModalContent').innerHTML = renderUserList(users, 'No followers yet');
+};
+
+/* ========= FOLLOWING LIST ========= */
+window.showFollowing = async function() {
+  openModal('Following', '<div class="empty">Loading...</div>', false);
+  const uids = currentProfile.following || [];
+  if (uids.length === 0) {
+    document.getElementById('listModalContent').innerHTML = '<div class="empty">Not following anyone</div>';
+    return;
+  }
+  const users = await getUsersBatch(uids);
+  document.getElementById('listModalContent').innerHTML = renderUserList(users, 'Not following anyone');
+};
+
+/* ========= ALL VIEWS LIST ========= */
+window.showAllViews = async function() {
+  openModal('Total Views', '<div class="empty">Loading...</div>', false);
+
+  // Sab videos ka views count aggregate karo (postViews collection se)
+  const allViewers = {};
+  try {
+    for (const p of allPosts) {
+      const q = query(collection(db, 'postViews'), where('postId', '==', p.id));
+      const snap = await getDocs(q);
+      snap.forEach(d => {
+        const uid = d.data().userId;
+        if (uid) {
+          if (!allViewers[uid]) allViewers[uid] = { count: 0, videos: new Set() };
+          allViewers[uid].count++;
+          allViewers[uid].videos.add(p.id);
+        }
+      });
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
+  const uids = Object.keys(allViewers);
+  if (uids.length === 0) {
+    document.getElementById('listModalContent').innerHTML = 
+      '<div class="empty">' +
+      '<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
+      '<div>No view data yet</div></div>';
+    return;
+  }
+
+  const users = await getUsersBatch(uids);
+  const html = users.map(u => {
+    const info = allViewers[u.uid];
+    return `
+      <div class="user-row">
+        <img class="user-avatar" src="${u.photo || defaultAvatar(u.name)}" alt="">
+        <div class="user-info">
+          <div class="user-name">${esc(u.name || 'User')}</div>
+          <div class="user-handle">@${esc(u.user || '')} · ${info.count} view${info.count !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('listModalContent').innerHTML = html;
+};
+
+/* ========= ALL LIKES LIST ========= */
+window.showAllLikes = async function() {
+  openModal('Total Likes', '<div class="empty">Loading...</div>', false);
+
+  const allLikers = {};
+  allPosts.forEach(p => {
+    (p.likes || []).forEach(uid => {
+      if (!allLikers[uid]) allLikers[uid] = { count: 0 };
+      allLikers[uid].count++;
+    });
+  });
+
+  const uids = Object.keys(allLikers);
+  if (uids.length === 0) {
+    document.getElementById('listModalContent').innerHTML = '<div class="empty">No likes yet</div>';
+    return;
+  }
+
+  const users = await getUsersBatch(uids);
+  users.sort((a, b) => allLikers[b.uid].count - allLikers[a.uid].count);
+
+  const html = users.map(u => {
+    const info = allLikers[u.uid];
+    return `
+      <div class="user-row">
+        <img class="user-avatar" src="${u.photo || defaultAvatar(u.name)}" alt="">
+        <div class="user-info">
+          <div class="user-name">${esc(u.name || 'User')}</div>
+          <div class="user-handle">@${esc(u.user || '')} · liked ${info.count} video${info.count !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('listModalContent').innerHTML = html;
+};
+
+/* ========= ALL COMMENTS LIST ========= */
+window.showAllComments = async function() {
+  openModal('Total Comments', '<div class="empty">Loading...</div>', false);
+
+  try {
+    const q = query(collection(db, 'comments'), where('userId', '==', currentUser.uid));
+    const snap = await getDocs(q);
+    const myPostIds = allPosts.map(p => p.id);
+
+    const allComments = [];
+    for (const postId of myPostIds) {
+      const cq = query(collection(db, 'comments'), where('postId', '==', postId));
+      const csnap = await getDocs(cq);
+      csnap.forEach(d => allComments.push({ id: d.id, ...d.data() }));
+    }
+
+    if (allComments.length === 0) {
+      document.getElementById('listModalContent').innerHTML = '<div class="empty">No comments yet</div>';
+      return;
+    }
+
+    allComments.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
+
+    const html = allComments.map(c => `
+      <div class="comment-item">
+        <img class="comment-avatar" src="${c.userPhoto || defaultAvatar(c.userName)}" alt="">
+        <div class="comment-body">
+          <div class="comment-name">${esc(c.userName || 'User')}</div>
+          <div class="comment-text">${esc(c.text || '')}</div>
+          <div class="comment-time">${timeAgo(c.createdAt?.toDate?.())}</div>
+        </div>
+      </div>
+    `).join('');
+    document.getElementById('listModalContent').innerHTML = html;
+  } catch (e) {
+    console.error(e);
+    document.getElementById('listModalContent').innerHTML = '<div class="empty">Could not load comments</div>';
+  }
+};
+
+/* ========= POST-SPECIFIC LISTS ========= */
+window.showPostViews = async function(postId) {
+  const post = allPosts.find(p => p.id === postId);
+  if (!post) return;
+  openModal(`Views · ${esc(post.caption || 'Video')}`, '<div class="empty">Loading...</div>', false);
+
+  try {
+    const q = query(collection(db, 'postViews'), where('postId', '==', postId));
+    const snap = await getDocs(q);
+    const uids = snap.docs.map(d => d.data().userId).filter(Boolean);
+    if (uids.length === 0) {
+      document.getElementById('listModalContent').innerHTML = '<div class="empty">No views yet</div>';
+      return;
+    }
+    const users = await getUsersBatch(uids);
+    document.getElementById('listModalContent').innerHTML = renderUserList(users, 'No views yet');
+  } catch (e) {
+    document.getElementById('listModalContent').innerHTML = '<div class="empty">Could not load viewers</div>';
+  }
+};
+
+window.showPostLikes = async function(postId) {
+  const post = allPosts.find(p => p.id === postId);
+  if (!post) return;
+  openModal(`Likes · ${esc(post.caption || 'Video')}`, '<div class="empty">Loading...</div>', false);
+
+  const uids = post.likes || [];
+  if (uids.length === 0) {
+    document.getElementById('listModalContent').innerHTML = '<div class="empty">No likes yet</div>';
+    return;
+  }
+  const users = await getUsersBatch(uids);
+  document.getElementById('listModalContent').innerHTML = renderUserList(users, 'No likes yet');
+};
+
+window.showPostComments = async function(postId) {
+  const post = allPosts.find(p => p.id === postId);
+  if (!post) return;
+  activePostId = postId;
+  openModal(`Comments · ${esc(post.caption || 'Video')}`, '<div class="empty">Loading...</div>', true);
 
   try {
     const q = query(collection(db, 'comments'), where('postId', '==', postId));
@@ -467,16 +681,16 @@ window.openComments = async function(postId, title) {
     comments.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
     renderCommentsList(comments);
   } catch (e) {
-    document.getElementById('commentsList').innerHTML = '<div class="empty">Could not load comments</div>';
+    document.getElementById('listModalContent').innerHTML = '<div class="empty">Could not load comments</div>';
   }
 };
 
 function renderCommentsList(comments) {
   if (comments.length === 0) {
-    document.getElementById('commentsList').innerHTML = '<div class="empty">No comments yet<br>Be the first to comment!</div>';
+    document.getElementById('listModalContent').innerHTML = '<div class="empty">No comments yet<br>Be the first to comment!</div>';
     return;
   }
-  document.getElementById('commentsList').innerHTML = comments.map(c => `
+  document.getElementById('listModalContent').innerHTML = comments.map(c => `
     <div class="comment-item">
       <img class="comment-avatar" src="${c.userPhoto || defaultAvatar(c.userName)}" alt="">
       <div class="comment-body">
@@ -488,20 +702,15 @@ function renderCommentsList(comments) {
   `).join('');
 }
 
-window.closeCommentsModal = function() {
-  document.getElementById('commentsModal').classList.remove('show');
-  activeCommentsPostId = null;
-};
-
 window.postComment = async function() {
   const input = document.getElementById('commentInput');
   const text = input.value.trim();
-  if (!text || !activeCommentsPostId || !currentUser) return;
+  if (!text || !activePostId || !currentUser) return;
 
   input.disabled = true;
   try {
     await addDoc(collection(db, 'comments'), {
-      postId: activeCommentsPostId,
+      postId: activePostId,
       userId: currentUser.uid,
       userName: currentProfile.name || 'User',
       userHandle: currentProfile.user || '',
@@ -513,19 +722,18 @@ window.postComment = async function() {
       createdAt: serverTimestamp()
     });
 
-    const postRef = doc(db, 'posts', activeCommentsPostId);
+    const postRef = doc(db, 'posts', activePostId);
     const postSnap = await getDoc(postRef);
     if (postSnap.exists()) {
       const cur = postSnap.data().commentsCount || 0;
-      const { updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js");
       await updateDoc(postRef, { commentsCount: cur + 1 });
-      const p = allPosts.find(x => x.id === activeCommentsPostId);
+      const p = allPosts.find(x => x.id === activePostId);
       if (p) p.commentsCount = cur + 1;
     }
 
     input.value = '';
     toast('✅ Comment posted');
-    openComments(activeCommentsPostId, document.getElementById('commentsTitle').textContent);
+    showPostComments(activePostId);
   } catch (e) {
     console.error(e);
     toast('❌ Failed to post comment');
