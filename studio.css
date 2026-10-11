@@ -1,6 +1,5 @@
 /* ============================================================
-   ReelHub Studio — studio.css (COMPLETE FINAL)
-   Dashboard + Videos + Audience + Settings + Upload
+   ReelHub Studio — studio.css (COMPLETE)
    ============================================================ */
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -24,7 +23,6 @@ a { color: inherit; text-decoration: none; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #2a2a34; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3a3a44; }
 ::selection { background: #ff2e63; color: #fff; }
 
 /* ============================================================
@@ -68,7 +66,6 @@ a { color: inherit; text-decoration: none; }
 .studio-app {
   display: flex;
   min-height: 100vh;
-  padding-bottom: 0;
 }
 
 /* ============================================================
@@ -136,9 +133,6 @@ a { color: inherit; text-decoration: none; }
   font-weight: 600;
   text-align: left;
   transition: all 0.15s;
-  background: none;
-  border: none;
-  cursor: pointer;
 }
 
 .studio-nav-item:hover {
@@ -181,9 +175,6 @@ a { color: inherit; text-decoration: none; }
   color: #9a9aa8;
   font-size: 13px;
   font-weight: 600;
-  background: none;
-  border: none;
-  cursor: pointer;
   transition: all 0.15s;
 }
 
@@ -236,13 +227,6 @@ a { color: inherit; text-decoration: none; }
   display: none;
   align-items: center;
   justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-.studio-menu-toggle:hover {
-  background: #1a1a1a;
 }
 
 .studio-menu-toggle svg {
@@ -283,7 +267,6 @@ a { color: inherit; text-decoration: none; }
   border-radius: 20px;
   color: #fff;
   font-size: 14px;
-  transition: border-color 0.2s;
 }
 
 #studioSearch:focus {
@@ -313,9 +296,7 @@ a { color: inherit; text-decoration: none; }
   font-size: 13px;
   font-weight: 700;
   box-shadow: 0 4px 12px rgba(255, 46, 99, 0.35);
-  transition: transform 0.15s, opacity 0.2s;
-  border: none;
-  cursor: pointer;
+  transition: transform 0.15s;
 }
 
 .studio-upload-btn:active {
@@ -325,7 +306,6 @@ a { color: inherit; text-decoration: none; }
 .studio-upload-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
 }
 
 .studio-upload-btn svg {
@@ -335,7 +315,6 @@ a { color: inherit; text-decoration: none; }
   fill: none;
   stroke-width: 2.5;
   stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 .studio-avatar {
@@ -346,11 +325,6 @@ a { color: inherit; text-decoration: none; }
   background: #1a1a1a;
   border: 2px solid #1e1e28;
   cursor: pointer;
-  transition: border-color 0.2s;
-}
-
-.studio-avatar:hover {
-  border-color: #ff2e63;
 }
 
 /* ============================================================
@@ -457,7 +431,6 @@ a { color: inherit; text-decoration: none; }
   font-weight: 900;
   color: #fff;
   line-height: 1;
-  font-variant-numeric: tabular-nums;
 }
 
 .studio-stat-sub {
@@ -494,16 +467,6 @@ a { color: inherit; text-decoration: none; }
   color: #4ea8ff;
   font-size: 13px;
   font-weight: 700;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: background 0.15s;
-}
-
-.studio-section-link:hover {
-  background: #1a1a24;
 }
 
 /* ============================================================
@@ -635,27 +598,14 @@ a { color: inherit; text-decoration: none; }
   color: #888;
 }
 
-.studio-video-type-badge.short {
-  color: #ff2e63;
-}
-
-.studio-video-type-badge.long {
-  color: #4ea8ff;
-}
-
-.studio-video-type-badge.photo {
-  color: #4ade80;
-}
+.studio-video-type-badge.short { color: #ff2e63; }
+.studio-video-type-badge.long { color: #4ea8ff; }
+.studio-video-type-badge.photo { color: #4ade80; }
 
 .studio-num {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   color: #fff;
-}
-
-.studio-num.muted {
-  color: #888;
-  font-weight: 600;
 }
 
 .studio-video-menu-btn {
@@ -665,10 +615,6 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s;
 }
 
 .studio-video-menu-btn:hover {
@@ -715,26 +661,6 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ============================================================
-   USER ROW (Audience tab)
-   ============================================================ */
-.studio-user-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 4px;
-  border-bottom: 1px solid #1a1a1a;
-  transition: background 0.15s;
-}
-
-.studio-user-row:hover {
-  background: #16161f;
-}
-
-.studio-user-row:last-child {
-  border-bottom: none;
-}
-
-/* ============================================================
    UPLOAD MODAL
    ============================================================ */
 .studio-modal-overlay {
@@ -746,8 +672,6 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   justify-content: center;
   padding: 20px;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
 }
 
 .studio-modal-overlay.show {
@@ -763,18 +687,12 @@ a { color: inherit; text-decoration: none; }
   max-width: 460px;
   max-height: 90vh;
   overflow-y: auto;
-  animation: modalUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modalUp 0.25s ease;
 }
 
 @keyframes modalUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .studio-modal-header {
@@ -799,18 +717,8 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s;
 }
 
-.studio-modal-close:hover {
-  background: #2a2a34;
-}
-
-/* ============================================================
-   UPLOAD TABS
-   ============================================================ */
 .studio-upload-tabs {
   display: flex;
   gap: 6px;
@@ -826,12 +734,6 @@ a { color: inherit; text-decoration: none; }
   color: #888;
   font-size: 12.5px;
   font-weight: 700;
-  transition: all 0.2s;
-  cursor: pointer;
-}
-
-.studio-upload-tab:hover {
-  border-color: #444;
 }
 
 .studio-upload-tab.active {
@@ -840,9 +742,6 @@ a { color: inherit; text-decoration: none; }
   color: #ff2e63;
 }
 
-/* ============================================================
-   FILE PICKER
-   ============================================================ */
 .studio-picker {
   display: flex;
   flex-direction: column;
@@ -853,11 +752,6 @@ a { color: inherit; text-decoration: none; }
   border-radius: 14px;
   margin-bottom: 14px;
   text-align: center;
-  transition: border-color 0.2s;
-}
-
-.studio-picker:hover {
-  border-color: #444;
 }
 
 .studio-picker svg {
@@ -890,16 +784,8 @@ a { color: inherit; text-decoration: none; }
   font-weight: 700;
   cursor: pointer;
   display: inline-block;
-  transition: transform 0.15s;
 }
 
-.studio-picker-btn:active {
-  transform: scale(0.96);
-}
-
-/* ============================================================
-   PREVIEW
-   ============================================================ */
 .studio-preview {
   margin-bottom: 14px;
   text-align: center;
@@ -920,9 +806,6 @@ a { color: inherit; text-decoration: none; }
   margin-top: 8px;
 }
 
-/* ============================================================
-   INPUT
-   ============================================================ */
 .studio-input-wrap {
   margin-bottom: 14px;
 }
@@ -946,20 +829,12 @@ a { color: inherit; text-decoration: none; }
   border-radius: 12px;
   color: #fff;
   font-size: 14px;
-  transition: border-color 0.2s;
 }
 
 .studio-input-wrap input:focus {
   border-color: #ff2e63;
 }
 
-.studio-input-wrap input::placeholder {
-  color: #666;
-}
-
-/* ============================================================
-   PROGRESS
-   ============================================================ */
 .studio-progress-wrap {
   margin-bottom: 14px;
 }
@@ -977,19 +852,14 @@ a { color: inherit; text-decoration: none; }
   width: 0%;
   background: linear-gradient(90deg, #ff2e63, #ff8a00);
   transition: width 0.2s;
-  border-radius: 3px;
 }
 
 .studio-progress-text {
   font-size: 12px;
   color: #888;
   text-align: center;
-  font-variant-numeric: tabular-nums;
 }
 
-/* ============================================================
-   SUBMIT BUTTON
-   ============================================================ */
 .studio-submit-btn {
   width: 100%;
   height: 50px;
@@ -999,20 +869,12 @@ a { color: inherit; text-decoration: none; }
   font-size: 14px;
   font-weight: 800;
   box-shadow: 0 6px 20px rgba(255, 46, 99, 0.35);
-  transition: transform 0.15s, opacity 0.2s;
-  border: none;
-  cursor: pointer;
-}
-
-.studio-submit-btn:active {
-  transform: scale(0.98);
 }
 
 .studio-submit-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   box-shadow: none;
-  transform: none;
 }
 
 .studio-msg {
@@ -1048,8 +910,6 @@ a { color: inherit; text-decoration: none; }
   opacity: 0;
   transition: all 0.3s;
   pointer-events: none;
-  max-width: 90%;
-  text-align: center;
 }
 
 #studioToast.show {
@@ -1058,7 +918,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ============================================================
-   MOBILE RESPONSIVE
+   MOBILE
    ============================================================ */
 @media (max-width: 768px) {
   .studio-sidebar {
@@ -1112,21 +972,6 @@ a { color: inherit; text-decoration: none; }
     font-size: 22px;
   }
 
-  .studio-stat-label {
-    font-size: 10.5px;
-  }
-
-  .studio-stat-icon {
-    width: 28px;
-    height: 28px;
-  }
-
-  .studio-stat-icon svg {
-    width: 15px;
-    height: 15px;
-  }
-
-  /* Stack table for mobile */
   .studio-videos-table thead {
     display: none;
   }
@@ -1147,17 +992,12 @@ a { color: inherit; text-decoration: none; }
     border: 1px solid #1e1e28;
   }
 
-  .studio-videos-table tr:hover {
-    background: #16161f;
-  }
-
   .studio-videos-table td {
     padding: 6px 0;
     border: none;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 12.5px;
   }
 
   .studio-videos-table td::before {
@@ -1182,23 +1022,9 @@ a { color: inherit; text-decoration: none; }
 
   .studio-video-title {
     max-width: 180px;
-    font-size: 13.5px;
-  }
-
-  .studio-video-thumb {
-    width: 52px;
-    height: 78px;
-  }
-
-  .studio-video-thumb.wide {
-    width: 78px;
-    height: 52px;
   }
 }
 
-/* ============================================================
-   SMALL MOBILE
-   ============================================================ */
 @media (max-width: 400px) {
   .studio-topbar {
     padding: 0 12px;
@@ -1213,10 +1039,6 @@ a { color: inherit; text-decoration: none; }
     font-size: 18px;
   }
 
-  .studio-hero p {
-    font-size: 12px;
-  }
-
   .studio-stats-grid {
     gap: 8px;
   }
@@ -1229,10 +1051,6 @@ a { color: inherit; text-decoration: none; }
     font-size: 20px;
   }
 
-  .studio-stat-sub {
-    font-size: 10.5px;
-  }
-
   .studio-section {
     padding: 14px;
   }
@@ -1240,52 +1058,10 @@ a { color: inherit; text-decoration: none; }
   .studio-modal {
     padding: 20px 16px;
   }
-
-  .studio-chart {
-    height: 100px;
-  }
-
-  .studio-chart-bar {
-    max-width: 30px;
-  }
 }
 
-/* ============================================================
-   DESKTOP — Wider screens
-   ============================================================ */
 @media (min-width: 1024px) {
   .studio-stats-grid {
     grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (min-width: 1400px) {
-  .studio-content {
-    max-width: 1400px;
-    margin: 0 auto;
-    width: 100%;
-  }
-}
-
-/* ============================================================
-   SCROLLBAR HIDING FOR MOBILE
-   ============================================================ */
-@media (max-width: 768px) {
-  .studio-content::-webkit-scrollbar {
-    display: none;
-  }
-  .studio-sidebar::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-/* ============================================================
-   PRINT
-   ============================================================ */
-@media print {
-  .studio-sidebar,
-  .studio-topbar,
-  .studio-upload-btn {
-    display: none;
   }
 }
