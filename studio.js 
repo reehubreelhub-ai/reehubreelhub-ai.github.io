@@ -1,6 +1,5 @@
 /* ============================================================
    ReelHub Studio — studio.js (COMPLETE FINAL)
-   Dashboard + Videos + Audience + Settings + Upload
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -10,9 +9,6 @@ import {
   collection, query, where, addDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-/* ============================================================
-   FIREBASE CONFIG
-   ============================================================ */
 const firebaseConfig = {
   apiKey: "AIzaSyC6421R1kr0jYwUJFbjB2YzIerlJw_cdLc",
   authDomain: "reelhub-24616.firebaseapp.com",
@@ -33,9 +29,6 @@ const CLOUDINARY = {
   preset: "reelhub_video"
 };
 
-/* ============================================================
-   STATE
-   ============================================================ */
 let currentUser = null;
 let currentProfile = null;
 let allPosts = [];
@@ -47,9 +40,6 @@ let searchTerm = '';
 
 const $ = id => document.getElementById(id);
 
-/* ============================================================
-   AUTH + INIT
-   ============================================================ */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = 'index.html';
@@ -97,9 +87,6 @@ async function loadAllPosts() {
   }
 }
 
-/* ============================================================
-   UI INIT
-   ============================================================ */
 function initUI() {
   const avatar = $('studioAvatar');
   if (avatar) {
@@ -107,7 +94,6 @@ function initUI() {
     avatar.onclick = () => { window.location.href = 'index.html'; };
   }
 
-  // Nav items
   document.querySelectorAll('.studio-nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.studio-nav-item').forEach(b => b.classList.remove('active'));
@@ -118,17 +104,13 @@ function initUI() {
     });
   });
 
-  // Sidebar toggle
   $('studioMenuToggle')?.addEventListener('click', toggleSidebar);
-
-  // Upload button
   $('studioUploadBtn')?.addEventListener('click', openUploadModal);
   $('studioUploadClose')?.addEventListener('click', closeUploadModal);
   $('studioUploadModal')?.addEventListener('click', (e) => {
     if (e.target === $('studioUploadModal')) closeUploadModal();
   });
 
-  // Upload tabs
   document.querySelectorAll('.studio-upload-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.studio-upload-tab').forEach(t => t.classList.remove('active'));
@@ -139,11 +121,9 @@ function initUI() {
     });
   });
 
-  // File select + Upload
   $('studioFileInput')?.addEventListener('change', handleFileSelect);
   $('studioSubmitBtn')?.addEventListener('click', handleUpload);
 
-  // Search
   $('studioSearch')?.addEventListener('input', (e) => {
     searchTerm = e.target.value.trim().toLowerCase();
     if (activeTab === 'videos') renderVideosTab();
@@ -160,9 +140,6 @@ function closeSidebar() {
   }
 }
 
-/* ============================================================
-   TAB RENDER
-   ============================================================ */
 function renderCurrentTab() {
   if (activeTab === 'home') renderDashboard();
   else if (activeTab === 'videos') renderVideosTab();
@@ -170,9 +147,6 @@ function renderCurrentTab() {
   else if (activeTab === 'settings') renderSettingsTab();
 }
 
-/* ============================================================
-   DASHBOARD
-   ============================================================ */
 function renderDashboard() {
   const totalViews    = allPosts.reduce((s, p) => s + (p.views || 0), 0);
   const totalLikes    = allPosts.reduce((s, p) => s + ((p.likes || []).length), 0);
@@ -257,9 +231,6 @@ function iconSvg(name) {
   return icons[name] || icons.eye;
 }
 
-/* ============================================================
-   WEEK CHART
-   ============================================================ */
 function drawWeekChart() {
   const days = [];
   for (let i = 6; i >= 0; i--) {
@@ -348,9 +319,6 @@ function drawTopVideos() {
   `;
 }
 
-/* ============================================================
-   VIDEOS TAB
-   ============================================================ */
 function renderVideosTab() {
   const filtered = searchTerm
     ? allPosts.filter(p => (p.caption || '').toLowerCase().includes(searchTerm))
@@ -527,9 +495,6 @@ async function deletePost(post) {
   }
 }
 
-/* ============================================================
-   AUDIENCE TAB
-   ============================================================ */
 async function renderAudienceTab() {
   const followers = currentProfile?.followers || [];
   const following = currentProfile?.following || [];
@@ -597,9 +562,6 @@ async function loadUserList(uids, containerId) {
   `).join('');
 }
 
-/* ============================================================
-   SETTINGS TAB
-   ============================================================ */
 function renderSettingsTab() {
   $('studioContent').innerHTML = `
     <div class="studio-hero">
@@ -650,9 +612,6 @@ async function handleSignOut() {
   window.location.href = 'index.html';
 }
 
-/* ============================================================
-   UPLOAD MODAL
-   ============================================================ */
 function openUploadModal() {
   resetUploadPreview();
   currentUploadType = 'short';
@@ -895,9 +854,6 @@ function buildThumbnailUrl(url, type) {
   return '';
 }
 
-/* ============================================================
-   HELPERS
-   ============================================================ */
 function escapeHtml(str) {
   if (str == null) return '';
   return String(str)
