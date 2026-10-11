@@ -1,0 +1,951 @@
+/* ============================================================
+   ReelHub Studio — studio.js (COMPLETE FINAL)
+   Dashboard + Videos + Audience + Settings + Upload
+   ============================================================ */
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, getDocs, updateDoc, deleteDoc,
+  collection, query, where, addDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+/* ============================================================
+   FIREBASE CONFIG
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyC6421R1kr0jYwUJFbjB2YzIerlJw_cdLc",
+  authDomain: "reelhub-24616.firebaseapp.com",
+  projectId: "reelhub-24616",
+  storageBucket: "reelhub-24616.appspot.com",
+  messagingSenderId: "397521504045",
+  appId: "1:397521504045:web:bf6d3652a7375fd632b5a4",
+  measurementId: "G-81RN37XN6H"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const CLOUDINARY = {
+  cloudName: "s3eresx6",
+  apiKey: "349223397331644",
+  preset: "reelhub_video"
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let currentUser = null;
+let currentProfile = null;
+let allPosts = [];
+let activeTab = 'home';
+let currentUploadType = 'short';
+let selectedFile = null;
+let selectedFileDuration = 0;
+let searchTerm = '';
+
+const $ = id => document.getElementById(id);
+
+/* ============================================================
+   AUTH + INIT
+   ============================================================ */
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = 'index.html';
+    return;
+  }
+  currentUser = user;
+
+  await loadProfile();
+  await loadAllPosts();
+
+  initUI();
+  renderCurrentTab();
+
+  $('studioLoading').style.display = 'none';
+  $('studioApp').style.display = 'flex';
+});
+
+async function loadProfile() {
+  try {
+    const snap = await getDoc(doc(db, 'users', currentUser.uid));
+    if (snap.exists()) {
+      currentProfile = { uid: snap.id, ...snap.data() };
+      if (!Array.isArray(currentProfile.followers)) currentProfile.followers = [];
+      if (!Array.isArray(currentProfile.following)) currentProfile.following = [];
+      if (!Array.isArray(currentProfile.savedPosts)) currentProfile.savedPosts = [];
+      if (typeof currentProfile.videoCount !== 'number') currentProfile.videoCount = 0;
+    }
+  } catch (e) {
+    console.error('loadProfile error:', e);
+  }
+}
+
+async function loadAllPosts() {
+  try {
+    const q = query(collection(db, 'posts'), where('userId', '==', currentUser.uid));
+    const snap = await getDocs(q);
+    allPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allPosts.sort((a, b) =>
+      (b.createdAt?.toDate?.()?.getTime() || 0) -
+      (a.createdAt?.toDate?.()?.getTime() || 0)
+    );
+  } catch (e) {
+    console.error('loadAllPosts error:', e);
+    allPosts = [];
+  }
+}
+
+/* ============================================================
+   UI INIT
+   ============================================================ */
+function initUI() {
+  const avatar = $('studioAvatar');
+  if (avatar) {
+    avatar.src = currentProfile?.photo || defaultAvatar(currentProfile?.name);
+    avatar.onclick = () => { window.location.href = 'index.html'; };
+  }
+
+  // Nav items
+  document.querySelectorAll('.studio-nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.studio-nav-item').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeTab = btn.dataset.tab;
+      closeSidebar();
+      renderCurrentTab();
+    });
+  });
+
+  // Sidebar toggle
+  $('studioMenuToggle')?.addEventListener('click', toggleSidebar);
+
+  // Upload button
+  $('studioUploadBtn')?.addEventListener('click', openUploadModal);
+  $('studioUploadClose')?.addEventListener('click', closeUploadModal);
+  $('studioUploadModal')?.addEventListener('click', (e) => {
+    if (e.target === $('studioUploadModal')) closeUploadModal();
+  });
+
+  // Upload tabs
+  document.querySelectorAll('.studio-upload-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.studio-upload-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentUploadType = tab.dataset.type;
+      resetUploadPreview();
+      updatePickerText();
+    });
+  });
+
+  // File select + Upload
+  $('studioFileInput')?.addEventListener('change', handleFileSelect);
+  $('studioSubmitBtn')?.addEventListener('click', handleUpload);
+
+  // Search
+  $('studioSearch')?.addEventListener('input', (e) => {
+    searchTerm = e.target.value.trim().toLowerCase();
+    if (activeTab === 'videos') renderVideosTab();
+  });
+}
+
+function toggleSidebar() {
+  $('studioSidebar').classList.toggle('open');
+}
+
+function closeSidebar() {
+  if (window.innerWidth <= 768) {
+    $('studioSidebar').classList.remove('open');
+  }
+}
+
+/* ============================================================
+   TAB RENDER
+   ============================================================ */
+function renderCurrentTab() {
+  if (activeTab === 'home') renderDashboard();
+  else if (activeTab === 'videos') renderVideosTab();
+  else if (activeTab === 'audience') renderAudienceTab();
+  else if (activeTab === 'settings') renderSettingsTab();
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function renderDashboard() {
+  const totalViews    = allPosts.reduce((s, p) => s + (p.views || 0), 0);
+  const totalLikes    = allPosts.reduce((s, p) => s + ((p.likes || []).length), 0);
+  const totalComments = allPosts.reduce((s, p) => s + (p.commentsCount || 0), 0);
+  const totalShares   = allPosts.reduce((s, p) => s + (p.shares || 0), 0);
+  const followers     = (currentProfile?.followers || []).length;
+  const following     = (currentProfile?.following || []).length;
+  const videoCount    = allPosts.length;
+
+  $('studioContent').innerHTML = `
+    <div class="studio-hero">
+      <h1>Welcome back, ${escapeHtml(currentProfile?.name || 'Creator')} 👋</h1>
+      <p>Here's how your content is performing</p>
+    </div>
+
+    <div class="studio-stats-grid">
+      ${statCard('Total Views', totalViews, 'eye', 'across all videos')}
+      ${statCard('Likes', totalLikes, 'heart', 'from your community')}
+      ${statCard('Comments', totalComments, 'comment', 'engagement')}
+      ${statCard('Shares', totalShares, 'share', 'reach boost')}
+      ${statCard('Followers', followers, 'users', 'people following you')}
+      ${statCard('Following', following, 'userPlus', 'people you follow')}
+      ${statCard('Videos', videoCount, 'video', 'uploaded so far')}
+      ${statCard('Avg Views', videoCount ? Math.round(totalViews / videoCount) : 0, 'trend', 'per video')}
+    </div>
+
+    <div class="studio-section">
+      <div class="studio-section-header">
+        <div class="studio-section-title">Last 7 Days Views</div>
+        <button class="studio-section-link" data-goto="videos">View all videos</button>
+      </div>
+      <div class="studio-chart" id="studioChart"></div>
+    </div>
+
+    <div class="studio-section">
+      <div class="studio-section-header">
+        <div class="studio-section-title">Top Videos</div>
+        <button class="studio-section-link" data-goto="videos">See all</button>
+      </div>
+      <div id="studioTopVideos"></div>
+    </div>
+  `;
+
+  drawWeekChart();
+  drawTopVideos();
+
+  document.querySelectorAll('[data-goto]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeTab = btn.dataset.goto;
+      document.querySelectorAll('.studio-nav-item').forEach(b => {
+        b.classList.toggle('active', b.dataset.tab === activeTab);
+      });
+      renderCurrentTab();
+    });
+  });
+}
+
+function statCard(label, value, icon, sub) {
+  return `
+    <div class="studio-stat-card">
+      <div class="studio-stat-header">
+        <div class="studio-stat-label">${label}</div>
+        <div class="studio-stat-icon">${iconSvg(icon)}</div>
+      </div>
+      <div class="studio-stat-value">${formatNum(value)}</div>
+      <div class="studio-stat-sub">${sub}</div>
+    </div>
+  `;
+}
+
+function iconSvg(name) {
+  const icons = {
+    eye: '<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+    heart: '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+    comment: '<svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
+    share: '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>',
+    users: '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    userPlus: '<svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>',
+    video: '<svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>',
+    trend: '<svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
+  };
+  return icons[name] || icons.eye;
+}
+
+/* ============================================================
+   WEEK CHART
+   ============================================================ */
+function drawWeekChart() {
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    d.setHours(0, 0, 0, 0);
+    const next = new Date(d);
+    next.setDate(next.getDate() + 1);
+
+    const views = allPosts.reduce((sum, p) => {
+      const t = p.createdAt?.toDate?.()?.getTime?.() || 0;
+      if (t >= d.getTime() && t < next.getTime()) return sum + (p.views || 0);
+      return sum;
+    }, 0);
+
+    days.push({
+      label: d.toLocaleDateString('en', { weekday: 'short' }),
+      views
+    });
+  }
+
+  const max = Math.max(1, ...days.map(d => d.views));
+  const chart = $('studioChart');
+  if (!chart) return;
+
+  chart.innerHTML = days.map(d => {
+    const h = Math.max(4, (d.views / max) * 100);
+    return `
+      <div class="studio-chart-bar-wrap">
+        <div class="studio-chart-bar" style="height: ${h}%"></div>
+        <div class="studio-chart-label">${d.label}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function drawTopVideos() {
+  const wrap = $('studioTopVideos');
+  if (!wrap) return;
+
+  const top = [...allPosts]
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 5);
+
+  if (top.length === 0) {
+    wrap.innerHTML = `
+      <div class="studio-empty">
+        <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10,8 16,12 10,16"/></svg>
+        <h3>No videos yet</h3>
+        <p>Upload your first video to see stats here</p>
+      </div>
+    `;
+    return;
+  }
+
+  wrap.innerHTML = `
+    <table class="studio-videos-table">
+      <thead>
+        <tr>
+          <th>Video</th>
+          <th style="width:80px">Views</th>
+          <th style="width:70px">Likes</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${top.map(p => `
+          <tr>
+            <td>
+              <div class="studio-video-cell">
+                <img class="studio-video-thumb ${p.type === 'long' ? 'wide' : ''}" src="${p.thumbnail || p.url}" alt="">
+                <div class="studio-video-info">
+                  <div class="studio-video-title">${escapeHtml(p.caption || 'Untitled')}</div>
+                  <div class="studio-video-meta">
+                    <span class="studio-video-type-badge ${p.type}">${p.type}</span>
+                    <span>${timeAgo(p.createdAt?.toDate?.())}</span>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td><span class="studio-num">${formatNum(p.views || 0)}</span></td>
+            <td><span class="studio-num">${formatNum((p.likes || []).length)}</span></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+/* ============================================================
+   VIDEOS TAB
+   ============================================================ */
+function renderVideosTab() {
+  const filtered = searchTerm
+    ? allPosts.filter(p => (p.caption || '').toLowerCase().includes(searchTerm))
+    : allPosts;
+
+  if (filtered.length === 0) {
+    $('studioContent').innerHTML = `
+      <div class="studio-hero">
+        <h1>My Videos</h1>
+        <p>${searchTerm ? 'No videos match your search' : 'You have not uploaded any videos yet'}</p>
+      </div>
+      <div class="studio-section">
+        <div class="studio-empty">
+          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10,8 16,12 10,16"/></svg>
+          <h3>${searchTerm ? 'No results' : 'No videos yet'}</h3>
+          <p>${searchTerm ? 'Try a different search term' : 'Upload your first video to get started'}</p>
+          ${!searchTerm ? '<button class="studio-upload-btn" id="emptyUploadBtn" style="margin:0 auto"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Upload Video</span></button>' : ''}
+        </div>
+      </div>
+    `;
+    $('emptyUploadBtn')?.addEventListener('click', openUploadModal);
+    return;
+  }
+
+  $('studioContent').innerHTML = `
+    <div class="studio-hero">
+      <h1>My Videos</h1>
+      <p>${filtered.length} video${filtered.length !== 1 ? 's' : ''} ${searchTerm ? 'matching' : 'uploaded'}</p>
+    </div>
+
+    <div class="studio-section">
+      <table class="studio-videos-table">
+        <thead>
+          <tr>
+            <th>Video</th>
+            <th style="width:80px">Views</th>
+            <th style="width:70px">Likes</th>
+            <th style="width:80px">Comments</th>
+            <th style="width:70px">Shares</th>
+            <th style="width:44px"></th>
+          </tr>
+        </thead>
+        <tbody id="studioVideosBody"></tbody>
+      </table>
+    </div>
+  `;
+
+  const body = $('studioVideosBody');
+  filtered.forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td data-label="Video">
+        <div class="studio-video-cell">
+          <img class="studio-video-thumb ${p.type === 'long' ? 'wide' : ''}" src="${p.thumbnail || p.url}" alt="">
+          <div class="studio-video-info">
+            <div class="studio-video-title">${escapeHtml(p.caption || 'Untitled')}</div>
+            <div class="studio-video-meta">
+              <span class="studio-video-type-badge ${p.type}">${p.type}</span>
+              <span>${timeAgo(p.createdAt?.toDate?.())}</span>
+            </div>
+          </div>
+        </div>
+      </td>
+      <td data-label="Views"><span class="studio-num">${formatNum(p.views || 0)}</span></td>
+      <td data-label="Likes"><span class="studio-num">${formatNum((p.likes || []).length)}</span></td>
+      <td data-label="Comments"><span class="studio-num">${formatNum(p.commentsCount || 0)}</span></td>
+      <td data-label="Shares"><span class="studio-num">${formatNum(p.shares || 0)}</span></td>
+      <td>
+        <button class="studio-video-menu-btn" data-id="${p.id}">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+        </button>
+      </td>
+    `;
+    body.appendChild(tr);
+
+    tr.querySelector('.studio-video-menu-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      showVideoMenu(e.currentTarget, p);
+    });
+  });
+}
+
+function showVideoMenu(anchor, post) {
+  document.querySelectorAll('.studio-menu-dropdown').forEach(el => el.remove());
+
+  const menu = document.createElement('div');
+  menu.className = 'studio-menu-dropdown';
+  menu.style.cssText = `
+    position: fixed;
+    background: #1e1e28;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 6px;
+    min-width: 170px;
+    z-index: 9999;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  `;
+  menu.innerHTML = `
+    <button data-act="view" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;background:none;border:none;color:#fff;font-size:13px;font-weight:600;text-align:left;border-radius:6px;cursor:pointer;">
+      👁 View in app
+    </button>
+    <button data-act="edit" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;background:none;border:none;color:#fff;font-size:13px;font-weight:600;text-align:left;border-radius:6px;cursor:pointer;">
+      ✏️ Edit caption
+    </button>
+    <div style="height:1px;background:#333;margin:4px 0;"></div>
+    <button data-act="delete" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;background:none;border:none;color:#ff4d4d;font-size:13px;font-weight:600;text-align:left;border-radius:6px;cursor:pointer;">
+      🗑 Delete
+    </button>
+  `;
+  document.body.appendChild(menu);
+
+  const r = anchor.getBoundingClientRect();
+  const mr = menu.getBoundingClientRect();
+  let top = r.bottom + 5;
+  let left = r.right - mr.width;
+  if (top + mr.height > window.innerHeight - 10) top = r.top - mr.height - 5;
+  if (left < 10) left = 10;
+  menu.style.top = top + 'px';
+  menu.style.left = left + 'px';
+
+  menu.querySelectorAll('button').forEach(b => {
+    b.onmouseenter = () => b.style.background = '#2a2a34';
+    b.onmouseleave = () => b.style.background = 'none';
+    b.onclick = async (e) => {
+      e.stopPropagation();
+      menu.remove();
+      const act = b.dataset.act;
+      if (act === 'view') window.open('index.html', '_blank');
+      else if (act === 'edit') await editCaption(post);
+      else if (act === 'delete') await deletePost(post);
+    };
+  });
+
+  setTimeout(() => {
+    const close = (ev) => {
+      if (!menu.contains(ev.target) && ev.target !== anchor) {
+        menu.remove();
+        document.removeEventListener('click', close);
+      }
+    };
+    document.addEventListener('click', close);
+  }, 100);
+}
+
+async function editCaption(post) {
+  const newCap = prompt('Edit caption:', post.caption || '');
+  if (newCap === null || newCap === post.caption) return;
+
+  try {
+    await updateDoc(doc(db, 'posts', post.id), { caption: newCap.trim() });
+    const p = allPosts.find(x => x.id === post.id);
+    if (p) p.caption = newCap.trim();
+    toast('✅ Caption updated');
+    renderVideosTab();
+  } catch (e) {
+    toast('❌ Update failed');
+  }
+}
+
+async function deletePost(post) {
+  if (!confirm('Delete this post permanently?')) return;
+
+  try {
+    await deleteDoc(doc(db, 'posts', post.id));
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      videoCount: Math.max(0, (currentProfile.videoCount || 1) - 1)
+    });
+    currentProfile.videoCount = Math.max(0, (currentProfile.videoCount || 1) - 1);
+    allPosts = allPosts.filter(p => p.id !== post.id);
+    toast('🗑 Deleted');
+    renderVideosTab();
+  } catch (e) {
+    toast('❌ Delete failed');
+  }
+}
+
+/* ============================================================
+   AUDIENCE TAB
+   ============================================================ */
+async function renderAudienceTab() {
+  const followers = currentProfile?.followers || [];
+  const following = currentProfile?.following || [];
+
+  $('studioContent').innerHTML = `
+    <div class="studio-hero">
+      <h1>Audience</h1>
+      <p>People connected to your account</p>
+    </div>
+
+    <div class="studio-stats-grid" style="grid-template-columns: repeat(2, 1fr)">
+      ${statCard('Followers', followers.length, 'users', 'people following you')}
+      ${statCard('Following', following.length, 'userPlus', 'people you follow')}
+    </div>
+
+    <div class="studio-section">
+      <div class="studio-section-header">
+        <div class="studio-section-title">Followers (${followers.length})</div>
+      </div>
+      <div id="studioFollowersList"><div class="studio-empty"><p>Loading...</p></div></div>
+    </div>
+
+    <div class="studio-section">
+      <div class="studio-section-header">
+        <div class="studio-section-title">Following (${following.length})</div>
+      </div>
+      <div id="studioFollowingList"><div class="studio-empty"><p>Loading...</p></div></div>
+    </div>
+  `;
+
+  await loadUserList(followers, 'studioFollowersList');
+  await loadUserList(following, 'studioFollowingList');
+}
+
+async function loadUserList(uids, containerId) {
+  const wrap = $(containerId);
+  if (!wrap) return;
+
+  if (uids.length === 0) {
+    wrap.innerHTML = `<div class="studio-empty"><p>No users yet</p></div>`;
+    return;
+  }
+
+  const users = [];
+  for (const uid of uids.slice(0, 50)) {
+    try {
+      const snap = await getDoc(doc(db, 'users', uid));
+      if (snap.exists()) users.push({ uid, ...snap.data() });
+    } catch (e) {}
+  }
+
+  if (users.length === 0) {
+    wrap.innerHTML = `<div class="studio-empty"><p>Users not found</p></div>`;
+    return;
+  }
+
+  wrap.innerHTML = users.map(u => `
+    <div class="studio-user-row" style="display:flex;align-items:center;gap:12px;padding:10px 4px;">
+      <img src="${u.photo || defaultAvatar(u.name)}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;" alt="">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;">${escapeHtml(u.name || 'User')}</div>
+        <div style="font-size:12px;color:#888;">@${escapeHtml(u.user || '')}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   SETTINGS TAB
+   ============================================================ */
+function renderSettingsTab() {
+  $('studioContent').innerHTML = `
+    <div class="studio-hero">
+      <h1>Account Settings</h1>
+      <p>Manage your profile and preferences</p>
+    </div>
+
+    <div class="studio-section">
+      <div class="studio-section-header">
+        <div class="studio-section-title">Profile</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;padding:8px 0;">
+        <img src="${currentProfile?.photo || defaultAvatar(currentProfile?.name)}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;" alt="">
+        <div>
+          <div style="font-size:16px;font-weight:800;">${escapeHtml(currentProfile?.name || '')}</div>
+          <div style="font-size:13px;color:#888;">@${escapeHtml(currentProfile?.user || '')}</div>
+          <div style="font-size:12px;color:#666;margin-top:4px;">${escapeHtml(currentUser.email || '')}</div>
+        </div>
+      </div>
+      <button class="studio-upload-btn" style="margin-top:16px" onclick="window.location.href='index.html'">
+        Open Full Settings
+      </button>
+    </div>
+
+    <div class="studio-section">
+      <div class="studio-section-header">
+        <div class="studio-section-title">Quick Actions</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="studio-upload-btn" id="settingsUploadBtn" style="width:100%;justify-content:center;">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Upload New Video
+        </button>
+        <button class="studio-upload-btn" style="background:#1a1a24;box-shadow:none;width:100%;justify-content:center;" id="settingsLogoutBtn">
+          Log Out
+        </button>
+      </div>
+    </div>
+  `;
+
+  $('settingsUploadBtn')?.addEventListener('click', openUploadModal);
+  $('settingsLogoutBtn')?.addEventListener('click', handleSignOut);
+}
+
+async function handleSignOut() {
+  if (!confirm('Log out?')) return;
+  await signOut(auth);
+  window.location.href = 'index.html';
+}
+
+/* ============================================================
+   UPLOAD MODAL
+   ============================================================ */
+function openUploadModal() {
+  resetUploadPreview();
+  currentUploadType = 'short';
+  document.querySelectorAll('.studio-upload-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.type === 'short');
+  });
+  updatePickerText();
+  $('studioCaption').value = '';
+  $('studioMsg').textContent = '';
+  $('studioMsg').className = 'studio-msg';
+  $('studioProgressWrap').style.display = 'none';
+  $('studioProgressBar').style.width = '0%';
+  $('studioProgressText').textContent = '0%';
+  $('studioUploadModal').classList.add('show');
+}
+
+function closeUploadModal() {
+  $('studioUploadModal').classList.remove('show');
+  resetUploadPreview();
+}
+
+function resetUploadPreview() {
+  selectedFile = null;
+  selectedFileDuration = 0;
+  $('studioFileInput').value = '';
+  $('studioPreviewWrap').style.display = 'none';
+  $('studioPreviewVid').src = '';
+  $('studioPreviewImg').src = '';
+  $('studioPreviewImg').style.display = 'none';
+  $('studioPreviewVid').style.display = 'none';
+  $('studioPickerWrap').style.display = 'flex';
+  $('studioSubmitBtn').disabled = true;
+}
+
+function updatePickerText() {
+  if (currentUploadType === 'photo') {
+    $('studioPickerTitle').textContent = 'Choose a photo';
+    $('studioPickerSub').textContent = 'JPG / PNG · Max 5 MB';
+    $('studioPickerLabel').textContent = 'Select photo';
+    $('studioFileInput').accept = 'image/*';
+  } else if (currentUploadType === 'long') {
+    $('studioPickerTitle').textContent = 'Choose a video';
+    $('studioPickerSub').textContent = 'Max 1 min · 16:9';
+    $('studioPickerLabel').textContent = 'Select video';
+    $('studioFileInput').accept = 'video/*';
+  } else {
+    $('studioPickerTitle').textContent = 'Choose a short video';
+    $('studioPickerSub').textContent = 'Max 60 sec · 9:16';
+    $('studioPickerLabel').textContent = 'Select video';
+    $('studioFileInput').accept = 'video/*';
+  }
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  $('studioMsg').textContent = '';
+  $('studioMsg').className = 'studio-msg';
+
+  if (currentUploadType === 'photo') {
+    if (!file.type.startsWith('image/')) {
+      $('studioMsg').textContent = 'Choose an image.';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      $('studioMsg').textContent = 'Max 5 MB.';
+      return;
+    }
+    selectedFile = file;
+    $('studioPreviewImg').src = URL.createObjectURL(file);
+    $('studioPreviewImg').style.display = 'block';
+    $('studioPreviewVid').style.display = 'none';
+    $('studioPreviewWrap').style.display = 'block';
+    $('studioPickerWrap').style.display = 'none';
+    $('studioSubmitBtn').disabled = false;
+    return;
+  }
+
+  if (!file.type.startsWith('video/')) {
+    $('studioMsg').textContent = 'Choose a video.';
+    return;
+  }
+  if (file.size > 500 * 1024 * 1024) {
+    $('studioMsg').textContent = 'Max 500 MB.';
+    return;
+  }
+
+  const url = URL.createObjectURL(file);
+  const tempVid = document.createElement('video');
+  tempVid.preload = 'metadata';
+  tempVid.src = url;
+
+  tempVid.onloadedmetadata = () => {
+    const dur = tempVid.duration;
+    if (!isFinite(dur) || dur <= 0) {
+      $('studioMsg').textContent = 'Could not read duration.';
+      return;
+    }
+    selectedFile = file;
+    selectedFileDuration = dur;
+
+    $('studioPreviewVid').src = url;
+    $('studioPreviewVid').style.display = 'block';
+    $('studioPreviewImg').style.display = 'none';
+    $('studioPreviewInfo').textContent = `${Math.round(dur)}s · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+    $('studioPreviewWrap').style.display = 'block';
+    $('studioPickerWrap').style.display = 'none';
+    $('studioSubmitBtn').disabled = false;
+  };
+
+  tempVid.onerror = () => {
+    $('studioMsg').textContent = 'Could not load video.';
+  };
+}
+
+async function handleUpload() {
+  if (!selectedFile) {
+    $('studioMsg').textContent = 'Select a file.';
+    return;
+  }
+
+  $('studioSubmitBtn').disabled = true;
+  $('studioSubmitBtn').textContent = 'Uploading...';
+  $('studioMsg').textContent = '';
+  $('studioMsg').className = 'studio-msg';
+  $('studioProgressWrap').style.display = 'block';
+
+  try {
+    const result = await uploadToCloudinary(selectedFile, (pct) => {
+      $('studioProgressBar').style.width = pct + '%';
+      $('studioProgressText').textContent = pct + '%';
+    });
+
+    const postData = {
+      userId: currentUser.uid,
+      userName: currentProfile.name,
+      userHandle: currentProfile.user,
+      userPhoto: currentProfile.photo || '',
+      userVerified: currentProfile.verified || false,
+      type: currentUploadType,
+      url: result.secure_url,
+      thumbnail: buildThumbnailUrl(result.secure_url, currentUploadType),
+      caption: $('studioCaption').value.trim(),
+      duration: selectedFileDuration || 0,
+      aspectRatio: currentUploadType === 'long' ? '16:9' : (currentUploadType === 'short' ? '9:16' : '1:1'),
+      likes: [],
+      commentsCount: 0,
+      views: 0,
+      shares: 0,
+      createdAt: serverTimestamp()
+    };
+
+    await addDoc(collection(db, 'posts'), postData);
+
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      videoCount: (currentProfile.videoCount || 0) + 1
+    });
+    currentProfile.videoCount = (currentProfile.videoCount || 0) + 1;
+
+    $('studioMsg').className = 'studio-msg success';
+    $('studioMsg').textContent = '✅ Uploaded!';
+
+    await loadAllPosts();
+
+    setTimeout(() => {
+      closeUploadModal();
+      renderCurrentTab();
+    }, 1200);
+
+  } catch (e) {
+    console.error(e);
+    $('studioMsg').className = 'studio-msg';
+    $('studioMsg').textContent = e.message || 'Upload failed.';
+    $('studioSubmitBtn').disabled = false;
+    $('studioSubmitBtn').textContent = 'Upload to ReelHub';
+  }
+}
+
+function uploadToCloudinary(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const resourceType = currentUploadType === 'photo' ? 'image' : 'video';
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/${resourceType}/upload`;
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY.preset);
+    fd.append('api_key', CLOUDINARY.apiKey);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.timeout = 180000;
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const res = JSON.parse(xhr.responseText);
+          if (!res.secure_url) reject(new Error('No URL returned'));
+          else resolve(res);
+        } catch (e) {
+          reject(new Error('Invalid response'));
+        }
+      } else {
+        let msg = 'Upload failed';
+        try {
+          const d = JSON.parse(xhr.responseText);
+          if (d.error?.message) msg = d.error.message;
+        } catch (e) {}
+        reject(new Error(msg));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.ontimeout = () => reject(new Error('Timeout'));
+    xhr.send(fd);
+  });
+}
+
+function buildThumbnailUrl(url, type) {
+  if (!url) return '';
+
+  try {
+    if (type === 'photo') return url;
+
+    if (url.includes('/video/upload/')) {
+      const parts = url.split('/video/upload/');
+      if (parts.length === 2) {
+        let pid = parts[1].replace(/^v\d+\//, '').replace(/\.[^.]+$/, '');
+        return `https://res.cloudinary.com/${CLOUDINARY.cloudName}/video/upload/so_auto,w_400,h_711,c_fill,q_auto/${pid}.jpg`;
+      }
+    }
+  } catch (e) {}
+
+  return '';
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function defaultAvatar(name) {
+  const raw = (name || '?').trim().charAt(0).toUpperCase();
+  const letter = raw.replace(/[<>&"']/g, '') || '?';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e1e28"/><text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${letter}</text></svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+function formatNum(n) {
+  n = parseInt(n) || 0;
+  if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return n.toString();
+}
+
+function timeAgo(date) {
+  if (!date) return 'just now';
+  const s = Math.floor((new Date() - date) / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  const d = Math.floor(h / 24);
+  if (d < 7) return d + 'd ago';
+  return Math.floor(d / 7) + 'w ago';
+}
+
+function toast(msg) {
+  let t = document.getElementById('studioToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'studioToast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._stToast);
+  window._stToast = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+console.log('✅ ReelHub Studio loaded');
