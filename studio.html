@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<title>ReelHub Studio</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='55' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='middle'>R</text></svg>">
+<link rel="preconnect" href="https://www.gstatic.com">
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com">
+<link rel="stylesheet" href="studio.css">
+</head>
+<body>
+
+<!-- ============================================================
+     LOADING SCREEN
+     ============================================================ -->
+<div id="studioLoading" class="studio-loading">
+  <div class="studio-spinner"></div>
+  <div class="studio-loading-text">Loading Studio...</div>
+</div>
+
+<!-- ============================================================
+     APP
+     ============================================================ -->
+<div id="studioApp" class="studio-app" style="display:none">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="studio-sidebar" id="studioSidebar">
+
+    <div class="studio-logo">
+      <span class="studio-logo-text">ReelHub</span>
+      <span class="studio-logo-badge">STUDIO</span>
+    </div>
+
+    <nav class="studio-nav">
+      <button class="studio-nav-item active" data-tab="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>Dashboard</span>
+      </button>
+
+      <button class="studio-nav-item" data-tab="videos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2"/>
+          <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/>
+        </svg>
+        <span>My Videos</span>
+      </button>
+
+      <button class="studio-nav-item" data-tab="audience">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Audience</span>
+      </button>
+
+      <button class="studio-nav-item" data-tab="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+    <div class="studio-sidebar-footer">
+      <button class="studio-back-btn" onclick="window.location.href='index.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back to App
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="studio-main">
+
+    <!-- TOP BAR -->
+    <header class="studio-topbar">
+
+      <button class="studio-menu-toggle" id="studioMenuToggle" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+
+      <div class="studio-search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="studioSearch" placeholder="Search your videos..." autocomplete="off">
+      </div>
+
+      <div class="studio-topbar-right">
+
+        <button class="studio-upload-btn" id="studioUploadBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>Upload</span>
+        </button>
+
+        <img class="studio-avatar" id="studioAvatar" src="" alt="Profile">
+
+      </div>
+
+    </header>
+
+    <!-- CONTENT (dynamically filled) -->
+    <div class="studio-content" id="studioContent"></div>
+
+  </main>
+
+</div>
+
+<!-- ============================================================
+     UPLOAD MODAL
+     ============================================================ -->
+<div class="studio-modal-overlay" id="studioUploadModal">
+  <div class="studio-modal">
+
+    <div class="studio-modal-header">
+      <h3>Upload Video</h3>
+      <button class="studio-modal-close" id="studioUploadClose" aria-label="Close">✕</button>
+    </div>
+
+    <!-- Upload type tabs -->
+    <div class="studio-upload-tabs">
+      <button class="studio-upload-tab active" data-type="short">Short</button>
+      <button class="studio-upload-tab" data-type="long">Long</button>
+      <button class="studio-upload-tab" data-type="photo">Photo</button>
+    </div>
+
+    <!-- File picker -->
+    <div id="studioPickerWrap" class="studio-picker">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <div class="studio-picker-title" id="studioPickerTitle">Choose a short video</div>
+      <div class="studio-picker-sub" id="studioPickerSub">Max 60 sec · 9:16 vertical</div>
+      <label for="studioFileInput" class="studio-picker-btn" id="studioPickerLabel">Select video</label>
+      <input type="file" id="studioFileInput" accept="video/*" style="display:none">
+    </div>
+
+    <!-- Preview -->
+    <div id="studioPreviewWrap" class="studio-preview" style="display:none">
+      <video id="studioPreviewVid" controls playsinline style="display:none"></video>
+      <img id="studioPreviewImg" style="display:none" alt="">
+      <div class="studio-preview-info" id="studioPreviewInfo"></div>
+    </div>
+
+    <!-- Caption -->
+    <div class="studio-input-wrap">
+      <label for="studioCaption">Caption</label>
+      <input type="text" id="studioCaption" placeholder="Write a caption..." maxlength="200" autocomplete="off">
+    </div>
+
+    <!-- Progress -->
+    <div class="studio-progress-wrap" id="studioProgressWrap" style="display:none">
+      <div class="studio-progress-track">
+        <div class="studio-progress-bar" id="studioProgressBar"></div>
+      </div>
+      <div class="studio-progress-text" id="studioProgressText">0%</div>
+    </div>
+
+    <!-- Submit -->
+    <button class="studio-submit-btn" id="studioSubmitBtn" disabled>Upload to ReelHub</button>
+
+    <!-- Message -->
+    <div class="studio-msg" id="studioMsg"></div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN SCRIPT
+     ============================================================ -->
+<script type="module" src="studio.js"></script>
+
+</body>
+</html>
