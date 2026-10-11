@@ -6,147 +6,443 @@
 <meta name="theme-color" content="#0a0a0a">
 <title>ReelHub Studio</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='55' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='middle'>R</text></svg>">
-<link rel="stylesheet" href="studio.css">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;min-height:100%;background:#0a0a0a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit;outline:none;border:none}
+img{display:block;max-width:100%}
+svg{display:block;flex-shrink:0}
+
+/* Loading */
+#loading{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#0a0a0a;z-index:9999;padding:20px;text-align:center}
+.spinner{width:44px;height:44px;border:3px solid #1e1e28;border-top-color:#ff2e63;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading h2{font-size:15px;font-weight:700;color:#fff}
+#loading p{font-size:13px;color:#888;line-height:1.5;max-width:340px}
+#loading .btn{display:inline-block;background:linear-gradient(90deg,#ff2e63,#ff8a00);color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;margin-top:10px}
+
+/* App Layout */
+#app{display:none;flex-direction:column;min-height:100vh}
+#app.show{display:flex}
+.topbar{height:60px;flex-shrink:0;display:flex;align-items:center;gap:12px;padding:0 16px;background:#0f0f16;border-bottom:1px solid #1a1a1a;position:sticky;top:0;z-index:50}
+.logo{font-size:18px;font-weight:900;background:linear-gradient(90deg,#ff2e63,#ff8a00);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.logo-badge{font-size:8px;font-weight:800;padding:3px 5px;background:#ff2e63;color:#fff;border-radius:4px;margin-left:4px}
+.search-box{flex:1;position:relative;max-width:400px}
+.search-box input{width:100%;height:38px;background:#121212;border:1px solid #262626;border-radius:20px;padding:0 16px 0 40px;color:#fff;font-size:13px}
+.search-box input:focus{border-color:#ff2e63}
+.search-box svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:#666;fill:none;stroke-width:2}
+.upload-btn{display:flex;align-items:center;gap:6px;height:38px;padding:0 16px;background:linear-gradient(90deg,#ff2e63,#ff8a00);border-radius:20px;color:#fff;font-size:12px;font-weight:700;box-shadow:0 4px 12px rgba(255,46,99,.3)}
+.upload-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5}
+.avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;background:#1a1a1a;border:2px solid #1e1e28;cursor:pointer}
+
+/* Content */
+.content{flex:1;padding:20px;padding-bottom:40px}
+.hero{margin-bottom:24px}
+.hero h1{font-size:24px;font-weight:900;margin-bottom:6px;letter-spacing:-.5px}
+.hero p{font-size:13px;color:#888}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.stat{background:#121212;border:1px solid #1e1e28;border-radius:14px;padding:16px;position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#ff2e63,#ff8a00);opacity:.7}
+.stat-label{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.stat-value{font-size:26px;font-weight:900;color:#fff;line-height:1}
+.stat-sub{font-size:11px;color:#666;margin-top:6px}
+
+.section{background:#121212;border:1px solid #1e1e28;border-radius:14px;padding:18px;margin-bottom:18px}
+.section-title{font-size:15px;font-weight:800;margin-bottom:14px}
+
+.video-row{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #1a1a1a}
+.video-row:last-child{border-bottom:none}
+.video-thumb{width:60px;height:90px;border-radius:8px;object-fit:cover;background:#1a1a1a;flex-shrink:0}
+.video-thumb.wide{width:90px;height:60px}
+.video-info{flex:1;min-width:0}
+.video-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.video-meta{font-size:11px;color:#666;display:flex;gap:8px}
+.badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:800;text-transform:uppercase;background:#1a1a24;color:#888}
+.badge.short{color:#ff2e63}
+.badge.long{color:#4ea8ff}
+.badge.photo{color:#4ade80}
+
+.empty{text-align:center;padding:40px 20px;color:#666;font-size:13px}
+.empty svg{width:48px;height:48px;stroke:#333;fill:none;stroke-width:1.5;margin:0 auto 12px}
+
+.nav-tabs{display:flex;gap:6px;padding:0 16px 12px;overflow-x:auto;border-bottom:1px solid #1a1a1a}
+.nav-tab{padding:8px 16px;background:#1a1a24;border-radius:18px;color:#888;font-size:12px;font-weight:700;white-space:nowrap}
+.nav-tab.active{background:linear-gradient(90deg,#ff2e63,#ff8a00);color:#fff}
+
+@media(max-width:500px){
+  .hero h1{font-size:20px}
+  .stat{padding:14px}
+  .stat-value{font-size:20px}
+  .logo-badge{display:none}
+  .search-box{display:none}
+}
+</style>
 </head>
 <body>
 
-<div id="studioLoading" class="studio-loading">
-  <div class="studio-spinner"></div>
-  <div class="studio-loading-text">Loading Studio...</div>
-  <div id="studioError" style="color:#ff4d4d;font-size:12px;margin-top:12px;text-align:center;padding:0 20px;max-width:400px;line-height:1.5;"></div>
+<div id="loading">
+  <div class="spinner"></div>
+  <h2>Loading Studio...</h2>
+  <p id="loadingMsg">Please wait</p>
 </div>
 
-<div id="studioApp" class="studio-app" style="display:none">
-  <aside class="studio-sidebar" id="studioSidebar">
-    <div class="studio-logo">
-      <span class="studio-logo-text">ReelHub</span>
-      <span class="studio-logo-badge">STUDIO</span>
+<div id="app">
+  <div class="topbar">
+    <div class="logo">ReelHub<span class="logo-badge">STUDIO</span></div>
+    <div class="search-box">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search videos...">
     </div>
-    <nav class="studio-nav">
-      <button class="studio-nav-item active" data-tab="home">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span>Dashboard</span>
-      </button>
-      <button class="studio-nav-item" data-tab="videos">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>
-        <span>My Videos</span>
-      </button>
-      <button class="studio-nav-item" data-tab="audience">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span>Audience</span>
-      </button>
-      <button class="studio-nav-item" data-tab="settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>Settings</span>
-      </button>
-    </nav>
-    <div class="studio-sidebar-footer">
-      <button class="studio-back-btn" onclick="window.location.href='index.html'">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        Back to App
-      </button>
-    </div>
-  </aside>
-
-  <main class="studio-main">
-    <header class="studio-topbar">
-      <button class="studio-menu-toggle" id="studioMenuToggle">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
-      <div class="studio-search-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="studioSearch" placeholder="Search your videos...">
-      </div>
-      <div class="studio-topbar-right">
-        <button class="studio-upload-btn" id="studioUploadBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span>Upload</span>
-        </button>
-        <img class="studio-avatar" id="studioAvatar" src="" alt="">
-      </div>
-    </header>
-    <div class="studio-content" id="studioContent"></div>
-  </main>
-</div>
-
-<div class="studio-modal-overlay" id="studioUploadModal">
-  <div class="studio-modal">
-    <div class="studio-modal-header">
-      <h3>Upload Video</h3>
-      <button class="studio-modal-close" id="studioUploadClose">✕</button>
-    </div>
-    <div class="studio-upload-tabs">
-      <button class="studio-upload-tab active" data-type="short">Short</button>
-      <button class="studio-upload-tab" data-type="long">Long</button>
-      <button class="studio-upload-tab" data-type="photo">Photo</button>
-    </div>
-    <div id="studioPickerWrap" class="studio-picker">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      <div class="studio-picker-title" id="studioPickerTitle">Choose a short video</div>
-      <div class="studio-picker-sub" id="studioPickerSub">Max 60 sec · 9:16 vertical</div>
-      <label for="studioFileInput" class="studio-picker-btn" id="studioPickerLabel">Select video</label>
-      <input type="file" id="studioFileInput" accept="video/*" style="display:none">
-    </div>
-    <div id="studioPreviewWrap" class="studio-preview" style="display:none">
-      <video id="studioPreviewVid" controls playsinline style="display:none"></video>
-      <img id="studioPreviewImg" style="display:none" alt="">
-      <div class="studio-preview-info" id="studioPreviewInfo"></div>
-    </div>
-    <div class="studio-input-wrap">
-      <label for="studioCaption">Caption</label>
-      <input type="text" id="studioCaption" placeholder="Write a caption..." maxlength="200">
-    </div>
-    <div class="studio-progress-wrap" id="studioProgressWrap" style="display:none">
-      <div class="studio-progress-track"><div class="studio-progress-bar" id="studioProgressBar"></div></div>
-      <div class="studio-progress-text" id="studioProgressText">0%</div>
-    </div>
-    <button class="studio-submit-btn" id="studioSubmitBtn" disabled>Upload to ReelHub</button>
-    <div class="studio-msg" id="studioMsg"></div>
+    <button class="upload-btn" onclick="alert('Upload coming soon!')">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Upload
+    </button>
+    <img class="avatar" id="userAvatar" src="" alt="">
   </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('dashboard', this)">📊 Dashboard</button>
+    <button class="nav-tab" onclick="switchTab('videos', this)">🎬 My Videos</button>
+    <button class="nav-tab" onclick="switchTab('audience', this)">👥 Audience</button>
+  </div>
+
+  <div class="content" id="content"></div>
 </div>
 
-<!-- ⚠️ DIAGNOSTIC — Ye check karega kya problem hai -->
-<script>
-console.log('===== REELHUB STUDIO DIAGNOSTIC =====');
-console.log('STEP 1: HTML loaded');
+<script type="module">
+console.log('=== Studio: Starting ===');
 
-// Test 1: Firebase CDN reachable?
-fetch('https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js', { method: 'HEAD' })
-  .then(r => {
-    console.log('STEP 2: Firebase CDN reachable:', r.status);
-    if (r.status === 200) {
-      console.log('✅ CDN OK — problem studio.js me hai');
-      document.getElementById('studioError').innerHTML = 
-        '⚠️ Studio 12 sec me load nahi hua<br>' +
-        '<small style="color:#888;font-size:10px;">Firebase CDN OK — studio.js me issue hai<br>Console (F12) kholo actual error ke liye</small>';
-    } else {
-      console.log('❌ CDN bad status:', r.status);
-      document.getElementById('studioError').innerHTML = 
-        '❌ Firebase CDN fail (status ' + r.status + ')';
-    }
-  })
-  .catch(e => {
-    console.log('❌ CDN fetch failed:', e);
-    document.getElementById('studioError').innerHTML = 
-      '❌ Firebase CDN block ho raha hai<br>' +
-      '<small style="color:#888;font-size:10px;">' + (e.message || e) + '</small><br>' +
-      '<small style="color:#888;font-size:10px;">VPN ya DNS change karke try karo</small>';
-  });
+// Import Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-// Fallback after 15s if studio.js never loads
-setTimeout(function() {
-  var loading = document.getElementById('studioLoading');
-  var errBox = document.getElementById('studioError');
-  if (loading && loading.style.display !== 'none' && errBox && !errBox.innerHTML) {
-    errBox.innerHTML = 
-      '⚠️ Studio load nahi ho raha<br>' +
-      '<a href="index.html" style="color:#ff2e63;text-decoration:underline;font-weight:700;">← Back to App</a><br>' +
-      '<button onclick="location.reload()" style="background:#ff2e63;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:700;margin-top:8px;cursor:pointer;">Reload Studio</button>';
+console.log('=== Studio: Imports OK ===');
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC6421R1kr0jYwUJFbjB2YzIerlJw_cdLc",
+  authDomain: "reelhub-24616.firebaseapp.com",
+  projectId: "reelhub-24616",
+  storageBucket: "reelhub-24616.appspot.com",
+  messagingSenderId: "397521504045",
+  appId: "1:397521504045:web:bf6d3652a7375fd632b5a4",
+  measurementId: "G-81RN37XN6H"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+console.log('=== Studio: Firebase Ready ===');
+
+let currentUser = null;
+let currentProfile = null;
+let allPosts = [];
+let currentTab = 'dashboard';
+
+// Helper: Escape HTML
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function defaultAvatar(name) {
+  const letter = ((name || '?').charAt(0) || '?').toUpperCase().replace(/[<>&"']/g, '');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e1e28"/><text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${letter}</text></svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+function formatNum(n) {
+  n = parseInt(n) || 0;
+  if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+  if (n >= 1000) return (n/1000).toFixed(1).replace(/\.0$/,'') + 'K';
+  return n.toString();
+}
+
+function timeAgo(date) {
+  if (!date) return 'just now';
+  const s = Math.floor((new Date() - date) / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s/60);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m/60);
+  if (h < 24) return h + 'h ago';
+  const d = Math.floor(h/24);
+  if (d < 7) return d + 'd ago';
+  return Math.floor(d/7) + 'w ago';
+}
+
+// Auth flow
+onAuthStateChanged(auth, async (user) => {
+  console.log('=== Studio: Auth fired ===', user ? user.uid : 'no user');
+
+  if (!user) {
+    console.log('=== Studio: No user → redirect ===');
+    document.getElementById('loadingMsg').innerHTML = 
+      'Not logged in. Redirecting...<br><br>' +
+      '<a class="btn" href="index.html">← Go to Login</a>';
+    setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+    return;
   }
-}, 15000);
-</script>
 
-<script type="module" src="studio.js"></script>
+  currentUser = user;
+
+  // Load profile
+  try {
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    currentProfile = snap.exists() ? { uid: snap.id, ...snap.data() } : { name: 'User' };
+    if (!Array.isArray(currentProfile.followers)) currentProfile.followers = [];
+    if (!Array.isArray(currentProfile.following)) currentProfile.following = [];
+
+    console.log('=== Studio: Profile loaded ===', currentProfile.name);
+
+    // Load posts
+    const q = query(collection(db, 'posts'), where('userId', '==', user.uid));
+    const postsSnap = await getDocs(q);
+    allPosts = postsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allPosts.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
+
+    console.log('=== Studio: Posts loaded ===', allPosts.length);
+
+    // Setup UI
+    document.getElementById('userAvatar').src = currentProfile.photo || defaultAvatar(currentProfile.name);
+    document.getElementById('userAvatar').onclick = () => window.location.href = 'index.html';
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      if (currentTab === 'videos') renderVideos(e.target.value.trim().toLowerCase());
+    });
+
+    // Show app
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').classList.add('show');
+
+    // Render dashboard
+    switchTab('dashboard');
+
+  } catch (e) {
+    console.error('=== Studio: Error ===', e);
+    document.getElementById('loadingMsg').innerHTML = 
+      '❌ Error: ' + (e.message || e) + '<br><br>' +
+      '<a class="btn" href="index.html">← Back to App</a>';
+  }
+});
+
+// Tab switching
+window.switchTab = function(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    document.querySelectorAll('.nav-tab').forEach(b => {
+      if (b.textContent.toLowerCase().includes(tab === 'dashboard' ? 'dashboard' : tab === 'videos' ? 'video' : 'audience')) {
+        b.classList.add('active');
+      }
+    });
+  }
+
+  if (tab === 'dashboard') renderDashboard();
+  else if (tab === 'videos') renderVideos('');
+  else if (tab === 'audience') renderAudience();
+};
+
+// Dashboard
+function renderDashboard() {
+  const totalViews = allPosts.reduce((s, p) => s + (p.views || 0), 0);
+  const totalLikes = allPosts.reduce((s, p) => s + ((p.likes || []).length), 0);
+  const totalComments = allPosts.reduce((s, p) => s + (p.commentsCount || 0), 0);
+  const totalShares = allPosts.reduce((s, p) => s + (p.shares || 0), 0);
+  const followers = (currentProfile.followers || []).length;
+  const following = (currentProfile.following || []).length;
+
+  document.getElementById('content').innerHTML = `
+    <div class="hero">
+      <h1>Welcome back, ${esc(currentProfile.name || 'Creator')} 👋</h1>
+      <p>Here's how your content is performing</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Total Views</div>
+        <div class="stat-value">${formatNum(totalViews)}</div>
+        <div class="stat-sub">across all videos</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Likes</div>
+        <div class="stat-value">${formatNum(totalLikes)}</div>
+        <div class="stat-sub">from community</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Comments</div>
+        <div class="stat-value">${formatNum(totalComments)}</div>
+        <div class="stat-sub">engagement</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Shares</div>
+        <div class="stat-value">${formatNum(totalShares)}</div>
+        <div class="stat-sub">reach boost</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Followers</div>
+        <div class="stat-value">${formatNum(followers)}</div>
+        <div class="stat-sub">following you</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Following</div>
+        <div class="stat-value">${formatNum(following)}</div>
+        <div class="stat-sub">you follow</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Videos</div>
+        <div class="stat-value">${formatNum(allPosts.length)}</div>
+        <div class="stat-sub">uploaded</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Avg Views</div>
+        <div class="stat-value">${allPosts.length ? formatNum(Math.round(totalViews / allPosts.length)) : 0}</div>
+        <div class="stat-sub">per video</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🏆 Top Videos</div>
+      ${allPosts.length === 0 ? `
+        <div class="empty">
+          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10,8 16,12 10,16"/></svg>
+          <div>No videos yet — upload your first!</div>
+        </div>
+      ` : allPosts.sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5).map(p => `
+        <div class="video-row">
+          <img class="video-thumb ${p.type === 'long' ? 'wide' : ''}" src="${p.thumbnail || p.url}" alt="">
+          <div class="video-info">
+            <div class="video-title">${esc(p.caption || 'Untitled')}</div>
+            <div class="video-meta">
+              <span class="badge ${p.type}">${p.type || 'short'}</span>
+              <span>👁 ${formatNum(p.views || 0)}</span>
+              <span>❤ ${formatNum((p.likes || []).length)}</span>
+              <span>${timeAgo(p.createdAt?.toDate?.())}</span>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// Videos tab
+function renderVideos(searchTerm) {
+  const filtered = searchTerm 
+    ? allPosts.filter(p => (p.caption || '').toLowerCase().includes(searchTerm))
+    : allPosts;
+
+  document.getElementById('content').innerHTML = `
+    <div class="hero">
+      <h1>My Videos</h1>
+      <p>${filtered.length} video${filtered.length !== 1 ? 's' : ''} ${searchTerm ? 'found' : 'uploaded'}</p>
+    </div>
+
+    <div class="section">
+      ${filtered.length === 0 ? `
+        <div class="empty">
+          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10,8 16,12 10,16"/></svg>
+          <div>${searchTerm ? 'No videos match your search' : 'No videos yet'}</div>
+        </div>
+      ` : filtered.map(p => `
+        <div class="video-row">
+          <img class="video-thumb ${p.type === 'long' ? 'wide' : ''}" src="${p.thumbnail || p.url}" alt="">
+          <div class="video-info">
+            <div class="video-title">${esc(p.caption || 'Untitled')}</div>
+            <div class="video-meta">
+              <span class="badge ${p.type}">${p.type || 'short'}</span>
+              <span>👁 ${formatNum(p.views || 0)}</span>
+              <span>❤ ${formatNum((p.likes || []).length)}</span>
+              <span>💬 ${formatNum(p.commentsCount || 0)}</span>
+              <span>📤 ${formatNum(p.shares || 0)}</span>
+            </div>
+            <div class="video-meta" style="margin-top:4px;color:#555;">
+              ${timeAgo(p.createdAt?.toDate?.())}
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// Audience tab
+async function renderAudience() {
+  const followers = currentProfile.followers || [];
+  const following = currentProfile.following || [];
+
+  document.getElementById('content').innerHTML = `
+    <div class="hero">
+      <h1>Audience</h1>
+      <p>People connected to your account</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Followers</div>
+        <div class="stat-value">${formatNum(followers.length)}</div>
+        <div class="stat-sub">people following you</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Following</div>
+        <div class="stat-value">${formatNum(following.length)}</div>
+        <div class="stat-sub">people you follow</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Followers (${followers.length})</div>
+      <div id="followersList" class="empty">Loading...</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Following (${following.length})</div>
+      <div id="followingList" class="empty">Loading...</div>
+    </div>
+  `;
+
+  loadUsers(followers, 'followersList');
+  loadUsers(following, 'followingList');
+}
+
+async function loadUsers(uids, containerId) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+
+  if (uids.length === 0) {
+    wrap.innerHTML = '<div>No users yet</div>';
+    return;
+  }
+
+  const users = [];
+  for (const uid of uids.slice(0, 30)) {
+    try {
+      const snap = await getDoc(doc(db, 'users', uid));
+      if (snap.exists()) users.push({ uid, ...snap.data() });
+    } catch (e) {}
+  }
+
+  if (users.length === 0) {
+    wrap.innerHTML = '<div>Users not found</div>';
+    return;
+  }
+
+  wrap.innerHTML = users.map(u => `
+    <div class="video-row">
+      <img src="${u.photo || defaultAvatar(u.name)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;background:#1a1a1a;">
+      <div class="video-info">
+        <div class="video-title">${esc(u.name || 'User')}</div>
+        <div class="video-meta">@${esc(u.user || '')}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+console.log('=== Studio: Ready ===');
+</script>
 
 </body>
 </html>
