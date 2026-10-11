@@ -6,26 +6,7 @@
 <meta name="theme-color" content="#0a0a0a">
 <title>ReelHub Studio</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='55' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='middle'>R</text></svg>">
-<link rel="preconnect" href="https://www.gstatic.com">
-<link rel="preconnect" href="https://firestore.googleapis.com">
-<link rel="preconnect" href="https://identitytoolkit.googleapis.com">
 <link rel="stylesheet" href="studio.css">
-
-<!-- ✅ DIAGNOSTIC -->
-<script>
-  window.addEventListener('error', function(e) {
-    var d = document.createElement('div');
-    d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#d00;color:#fff;padding:12px;z-index:999999;font-size:11px;font-family:monospace;word-break:break-all;max-height:45vh;overflow:auto;line-height:1.4;';
-    d.textContent = '❌ ERROR: ' + (e.message || 'Unknown') + '\nLine: ' + (e.lineno || '?') + '\nFile: ' + (e.filename || '?');
-    document.body.appendChild(d);
-  });
-  window.addEventListener('unhandledrejection', function(e) {
-    var d = document.createElement('div');
-    d.style.cssText = 'position:fixed;top:45vh;left:0;right:0;background:#800;color:#fff;padding:12px;z-index:999999;font-size:11px;font-family:monospace;word-break:break-all;max-height:45vh;overflow:auto;line-height:1.4;';
-    d.textContent = '❌ PROMISE: ' + (e.reason && e.reason.message ? e.reason.message : e.reason);
-    document.body.appendChild(d);
-  });
-</script>
 </head>
 <body>
 
@@ -55,7 +36,7 @@
         <span>Audience</span>
       </button>
       <button class="studio-nav-item" data-tab="settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>Settings</span>
       </button>
     </nav>
@@ -69,19 +50,19 @@
 
   <main class="studio-main">
     <header class="studio-topbar">
-      <button class="studio-menu-toggle" id="studioMenuToggle" aria-label="Menu">
+      <button class="studio-menu-toggle" id="studioMenuToggle">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <div class="studio-search-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="studioSearch" placeholder="Search your videos..." autocomplete="off">
+        <input type="text" id="studioSearch" placeholder="Search your videos...">
       </div>
       <div class="studio-topbar-right">
         <button class="studio-upload-btn" id="studioUploadBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <span>Upload</span>
         </button>
-        <img class="studio-avatar" id="studioAvatar" src="" alt="Profile">
+        <img class="studio-avatar" id="studioAvatar" src="" alt="">
       </div>
     </header>
     <div class="studio-content" id="studioContent"></div>
@@ -113,7 +94,7 @@
     </div>
     <div class="studio-input-wrap">
       <label for="studioCaption">Caption</label>
-      <input type="text" id="studioCaption" placeholder="Write a caption..." maxlength="200" autocomplete="off">
+      <input type="text" id="studioCaption" placeholder="Write a caption..." maxlength="200">
     </div>
     <div class="studio-progress-wrap" id="studioProgressWrap" style="display:none">
       <div class="studio-progress-track"><div class="studio-progress-bar" id="studioProgressBar"></div></div>
@@ -124,21 +105,16 @@
   </div>
 </div>
 
-<!-- ✅ FALLBACK -->
 <script>
-  setTimeout(function() {
-    var loading = document.getElementById('studioLoading');
-    var app = document.getElementById('studioApp');
-    var errBox = document.getElementById('studioError');
-    if (loading && loading.style.display !== 'none') {
-      console.warn('⚠️ Studio fallback triggered');
-      if (errBox) {
-        errBox.innerHTML = '⚠️ Studio load nahi ho raha.<br><br>' +
-          '<a href="index.html" style="color:#ff2e63;text-decoration:underline;font-weight:700;">← Back to App</a><br><br>' +
-          '<button onclick="location.reload()" style="background:#ff2e63;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:700;margin-top:8px;cursor:pointer;">Reload Studio</button>';
-      }
-    }
-  }, 12000);
+setTimeout(function() {
+  var loading = document.getElementById('studioLoading');
+  var errBox = document.getElementById('studioError');
+  if (loading && loading.style.display !== 'none' && errBox) {
+    errBox.innerHTML = '⚠️ Studio load nahi ho raha.<br><br>' +
+      '<a href="index.html" style="color:#ff2e63;text-decoration:underline;font-weight:700;">← Back to App</a><br><br>' +
+      '<button onclick="location.reload()" style="background:#ff2e63;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:700;margin-top:8px;cursor:pointer;">Reload Studio</button>';
+  }
+}, 12000);
 </script>
 
 <script type="module" src="studio.js"></script>
