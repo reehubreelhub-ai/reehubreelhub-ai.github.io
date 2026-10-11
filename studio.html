@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#0a0a0a">
 <title>ReelHub Studio</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='55' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='middle'>R</text></svg>">
-
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;min-height:100%;background:#0a0a0a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow-x:hidden}
@@ -15,7 +14,6 @@ input{font-family:inherit;outline:none;border:none}
 img{display:block;max-width:100%}
 svg{display:block;flex-shrink:0}
 
-/* Loading */
 #loading{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#0a0a0a;z-index:9999;padding:20px;text-align:center}
 .spinner{width:44px;height:44px;border:3px solid #1e1e28;border-top-color:#ff2e63;border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -23,12 +21,11 @@ svg{display:block;flex-shrink:0}
 #loading p{font-size:13px;color:#888;line-height:1.5;max-width:340px}
 #loading .btn{display:inline-block;background:linear-gradient(90deg,#ff2e63,#ff8a00);color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;margin-top:10px}
 
-/* App Layout */
 #app{display:none;flex-direction:column;min-height:100vh}
 #app.show{display:flex}
 .topbar{height:60px;flex-shrink:0;display:flex;align-items:center;gap:12px;padding:0 16px;background:#0f0f16;border-bottom:1px solid #1a1a1a;position:sticky;top:0;z-index:50}
 .logo{font-size:18px;font-weight:900;background:linear-gradient(90deg,#ff2e63,#ff8a00);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.logo-badge{font-size:8px;font-weight:800;padding:3px 5px;background:#ff2e63;color:#fff;border-radius:4px;margin-left:4px}
+.logo-badge{font-size:8px;font-weight:800;padding:3px 5px;background:#ff2e63;color:#fff;border-radius:4px;margin-left:4px;-webkit-text-fill-color:#fff}
 .search-box{flex:1;position:relative;max-width:400px}
 .search-box input{width:100%;height:38px;background:#121212;border:1px solid #262626;border-radius:20px;padding:0 16px 0 40px;color:#fff;font-size:13px}
 .search-box input:focus{border-color:#ff2e63}
@@ -37,7 +34,6 @@ svg{display:block;flex-shrink:0}
 .upload-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5}
 .avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;background:#1a1a1a;border:2px solid #1e1e28;cursor:pointer}
 
-/* Content */
 .content{flex:1;padding:20px;padding-bottom:40px}
 .hero{margin-bottom:24px}
 .hero h1{font-size:24px;font-weight:900;margin-bottom:6px;letter-spacing:-.5px}
@@ -58,7 +54,7 @@ svg{display:block;flex-shrink:0}
 .video-thumb.wide{width:90px;height:60px}
 .video-info{flex:1;min-width:0}
 .video-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.video-meta{font-size:11px;color:#666;display:flex;gap:8px}
+.video-meta{font-size:11px;color:#666;display:flex;gap:8px;flex-wrap:wrap}
 .badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:800;text-transform:uppercase;background:#1a1a24;color:#888}
 .badge.short{color:#ff2e63}
 .badge.long{color:#4ea8ff}
@@ -77,6 +73,7 @@ svg{display:block;flex-shrink:0}
   .stat-value{font-size:20px}
   .logo-badge{display:none}
   .search-box{display:none}
+  .upload-btn span{display:none}
 }
 </style>
 </head>
@@ -95,9 +92,9 @@ svg{display:block;flex-shrink:0}
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="searchInput" placeholder="Search videos...">
     </div>
-    <button class="upload-btn" onclick="alert('Upload coming soon!')">
+    <button class="upload-btn" onclick="window.location.href='index.html'">
       <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Upload
+      <span>Upload in App</span>
     </button>
     <img class="avatar" id="userAvatar" src="" alt="">
   </div>
@@ -114,7 +111,6 @@ svg{display:block;flex-shrink:0}
 <script type="module">
 console.log('=== Studio: Starting ===');
 
-// Import Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
@@ -142,7 +138,6 @@ let currentProfile = null;
 let allPosts = [];
 let currentTab = 'dashboard';
 
-// Helper: Escape HTML
 function esc(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -150,7 +145,7 @@ function esc(s) {
 
 function defaultAvatar(name) {
   const letter = ((name || '?').charAt(0) || '?').toUpperCase().replace(/[<>&"']/g, '');
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e1e28"/><text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${letter}</text></svg>`;
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e1e28"/><text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">' + letter + '</text></svg>';
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
 
@@ -174,12 +169,10 @@ function timeAgo(date) {
   return Math.floor(d/7) + 'w ago';
 }
 
-// Auth flow
 onAuthStateChanged(auth, async (user) => {
   console.log('=== Studio: Auth fired ===', user ? user.uid : 'no user');
 
   if (!user) {
-    console.log('=== Studio: No user → redirect ===');
     document.getElementById('loadingMsg').innerHTML = 
       'Not logged in. Redirecting...<br><br>' +
       '<a class="btn" href="index.html">← Go to Login</a>';
@@ -189,35 +182,26 @@ onAuthStateChanged(auth, async (user) => {
 
   currentUser = user;
 
-  // Load profile
   try {
     const snap = await getDoc(doc(db, 'users', user.uid));
     currentProfile = snap.exists() ? { uid: snap.id, ...snap.data() } : { name: 'User' };
     if (!Array.isArray(currentProfile.followers)) currentProfile.followers = [];
     if (!Array.isArray(currentProfile.following)) currentProfile.following = [];
 
-    console.log('=== Studio: Profile loaded ===', currentProfile.name);
-
-    // Load posts
     const q = query(collection(db, 'posts'), where('userId', '==', user.uid));
     const postsSnap = await getDocs(q);
     allPosts = postsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     allPosts.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
 
-    console.log('=== Studio: Posts loaded ===', allPosts.length);
-
-    // Setup UI
     document.getElementById('userAvatar').src = currentProfile.photo || defaultAvatar(currentProfile.name);
     document.getElementById('userAvatar').onclick = () => window.location.href = 'index.html';
     document.getElementById('searchInput').addEventListener('input', (e) => {
       if (currentTab === 'videos') renderVideos(e.target.value.trim().toLowerCase());
     });
 
-    // Show app
     document.getElementById('loading').style.display = 'none';
     document.getElementById('app').classList.add('show');
 
-    // Render dashboard
     switchTab('dashboard');
 
   } catch (e) {
@@ -228,25 +212,16 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Tab switching
 window.switchTab = function(tab, btn) {
   currentTab = tab;
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  else {
-    document.querySelectorAll('.nav-tab').forEach(b => {
-      if (b.textContent.toLowerCase().includes(tab === 'dashboard' ? 'dashboard' : tab === 'videos' ? 'video' : 'audience')) {
-        b.classList.add('active');
-      }
-    });
-  }
 
   if (tab === 'dashboard') renderDashboard();
   else if (tab === 'videos') renderVideos('');
   else if (tab === 'audience') renderAudience();
 };
 
-// Dashboard
 function renderDashboard() {
   const totalViews = allPosts.reduce((s, p) => s + (p.views || 0), 0);
   const totalLikes = allPosts.reduce((s, p) => s + ((p.likes || []).length), 0);
@@ -255,6 +230,26 @@ function renderDashboard() {
   const followers = (currentProfile.followers || []).length;
   const following = (currentProfile.following || []).length;
 
+  const topVideos = allPosts.length === 0 ? `
+    <div class="empty">
+      <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10,8 16,12 10,16"/></svg>
+      <div>No videos yet — upload your first!</div>
+    </div>
+  ` : [...allPosts].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5).map(p => `
+    <div class="video-row">
+      <img class="video-thumb ${p.type === 'long' ? 'wide' : ''}" src="${p.thumbnail || p.url}" alt="" onerror="this.style.display='none'">
+      <div class="video-info">
+        <div class="video-title">${esc(p.caption || 'Untitled')}</div>
+        <div class="video-meta">
+          <span class="badge ${p.type}">${p.type || 'short'}</span>
+          <span>👁 ${formatNum(p.views || 0)}</span>
+          <span>❤ ${formatNum((p.likes || []).length)}</span>
+          <span>${timeAgo(p.createdAt?.toDate?.())}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
   document.getElementById('content').innerHTML = `
     <div class="hero">
       <h1>Welcome back, ${esc(currentProfile.name || 'Creator')} 👋</h1>
@@ -262,114 +257,61 @@ function renderDashboard() {
     </div>
 
     <div class="stats">
-      <div class="stat">
-        <div class="stat-label">Total Views</div>
-        <div class="stat-value">${formatNum(totalViews)}</div>
-        <div class="stat-sub">across all videos</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Likes</div>
-        <div class="stat-value">${formatNum(totalLikes)}</div>
-        <div class="stat-sub">from community</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Comments</div>
-        <div class="stat-value">${formatNum(totalComments)}</div>
-        <div class="stat-sub">engagement</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Shares</div>
-        <div class="stat-value">${formatNum(totalShares)}</div>
-        <div class="stat-sub">reach boost</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Followers</div>
-        <div class="stat-value">${formatNum(followers)}</div>
-        <div class="stat-sub">following you</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Following</div>
-        <div class="stat-value">${formatNum(following)}</div>
-        <div class="stat-sub">you follow</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Videos</div>
-        <div class="stat-value">${formatNum(allPosts.length)}</div>
-        <div class="stat-sub">uploaded</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Avg Views</div>
-        <div class="stat-value">${allPosts.length ? formatNum(Math.round(totalViews / allPosts.length)) : 0}</div>
-        <div class="stat-sub">per video</div>
-      </div>
+      <div class="stat"><div class="stat-label">Total Views</div><div class="stat-value">${formatNum(totalViews)}</div><div class="stat-sub">across all videos</div></div>
+      <div class="stat"><div class="stat-label">Likes</div><div class="stat-value">${formatNum(totalLikes)}</div><div class="stat-sub">from community</div></div>
+      <div class="stat"><div class="stat-label">Comments</div><div class="stat-value">${formatNum(totalComments)}</div><div class="stat-sub">engagement</div></div>
+      <div class="stat"><div class="stat-label">Shares</div><div class="stat-value">${formatNum(totalShares)}</div><div class="stat-sub">reach boost</div></div>
+      <div class="stat"><div class="stat-label">Followers</div><div class="stat-value">${formatNum(followers)}</div><div class="stat-sub">following you</div></div>
+      <div class="stat"><div class="stat-label">Following</div><div class="stat-value">${formatNum(following)}</div><div class="stat-sub">you follow</div></div>
+      <div class="stat"><div class="stat-label">Videos</div><div class="stat-value">${formatNum(allPosts.length)}</div><div class="stat-sub">uploaded</div></div>
+      <div class="stat"><div class="stat-label">Avg Views</div><div class="stat-value">${allPosts.length ? formatNum(Math.round(totalViews / allPosts.length)) : 0}</div><div class="stat-sub">per video</div></div>
     </div>
 
     <div class="section">
       <div class="section-title">🏆 Top Videos</div>
-      ${allPosts.length === 0 ? `
-        <div class="empty">
-          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10,8 16,12 10,16"/></svg>
-          <div>No videos yet — upload your first!</div>
-        </div>
-      ` : allPosts.sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5).map(p => `
-        <div class="video-row">
-          <img class="video-thumb ${p.type === 'long' ? 'wide' : ''}" src="${p.thumbnail || p.url}" alt="">
-          <div class="video-info">
-            <div class="video-title">${esc(p.caption || 'Untitled')}</div>
-            <div class="video-meta">
-              <span class="badge ${p.type}">${p.type || 'short'}</span>
-              <span>👁 ${formatNum(p.views || 0)}</span>
-              <span>❤ ${formatNum((p.likes || []).length)}</span>
-              <span>${timeAgo(p.createdAt?.toDate?.())}</span>
-            </div>
-          </div>
-        </div>
-      `).join('')}
+      ${topVideos}
     </div>
   `;
 }
 
-// Videos tab
 function renderVideos(searchTerm) {
   const filtered = searchTerm 
     ? allPosts.filter(p => (p.caption || '').toLowerCase().includes(searchTerm))
     : allPosts;
+
+  const list = filtered.length === 0 ? `
+    <div class="empty">
+      <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10,8 16,12 10,16"/></svg>
+      <div>${searchTerm ? 'No videos match your search' : 'No videos yet'}</div>
+    </div>
+  ` : filtered.map(p => `
+    <div class="video-row">
+      <img class="video-thumb ${p.type === 'long' ? 'wide' : ''}" src="${p.thumbnail || p.url}" alt="" onerror="this.style.display='none'">
+      <div class="video-info">
+        <div class="video-title">${esc(p.caption || 'Untitled')}</div>
+        <div class="video-meta">
+          <span class="badge ${p.type}">${p.type || 'short'}</span>
+          <span>👁 ${formatNum(p.views || 0)}</span>
+          <span>❤ ${formatNum((p.likes || []).length)}</span>
+          <span>💬 ${formatNum(p.commentsCount || 0)}</span>
+          <span>📤 ${formatNum(p.shares || 0)}</span>
+        </div>
+        <div class="video-meta" style="margin-top:4px;color:#555;">
+          ${timeAgo(p.createdAt?.toDate?.())}
+        </div>
+      </div>
+    </div>
+  `).join('');
 
   document.getElementById('content').innerHTML = `
     <div class="hero">
       <h1>My Videos</h1>
       <p>${filtered.length} video${filtered.length !== 1 ? 's' : ''} ${searchTerm ? 'found' : 'uploaded'}</p>
     </div>
-
-    <div class="section">
-      ${filtered.length === 0 ? `
-        <div class="empty">
-          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10,8 16,12 10,16"/></svg>
-          <div>${searchTerm ? 'No videos match your search' : 'No videos yet'}</div>
-        </div>
-      ` : filtered.map(p => `
-        <div class="video-row">
-          <img class="video-thumb ${p.type === 'long' ? 'wide' : ''}" src="${p.thumbnail || p.url}" alt="">
-          <div class="video-info">
-            <div class="video-title">${esc(p.caption || 'Untitled')}</div>
-            <div class="video-meta">
-              <span class="badge ${p.type}">${p.type || 'short'}</span>
-              <span>👁 ${formatNum(p.views || 0)}</span>
-              <span>❤ ${formatNum((p.likes || []).length)}</span>
-              <span>💬 ${formatNum(p.commentsCount || 0)}</span>
-              <span>📤 ${formatNum(p.shares || 0)}</span>
-            </div>
-            <div class="video-meta" style="margin-top:4px;color:#555;">
-              ${timeAgo(p.createdAt?.toDate?.())}
-            </div>
-          </div>
-        </div>
-      `).join('')}
-    </div>
+    <div class="section">${list}</div>
   `;
 }
 
-// Audience tab
 async function renderAudience() {
   const followers = currentProfile.followers || [];
   const following = currentProfile.following || [];
@@ -381,16 +323,8 @@ async function renderAudience() {
     </div>
 
     <div class="stats">
-      <div class="stat">
-        <div class="stat-label">Followers</div>
-        <div class="stat-value">${formatNum(followers.length)}</div>
-        <div class="stat-sub">people following you</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Following</div>
-        <div class="stat-value">${formatNum(following.length)}</div>
-        <div class="stat-sub">people you follow</div>
-      </div>
+      <div class="stat"><div class="stat-label">Followers</div><div class="stat-value">${formatNum(followers.length)}</div><div class="stat-sub">people following you</div></div>
+      <div class="stat"><div class="stat-label">Following</div><div class="stat-value">${formatNum(following.length)}</div><div class="stat-sub">people you follow</div></div>
     </div>
 
     <div class="section">
