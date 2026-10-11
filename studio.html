@@ -13,7 +13,7 @@
 <div id="studioLoading" class="studio-loading">
   <div class="studio-spinner"></div>
   <div class="studio-loading-text">Loading Studio...</div>
-  <div id="studioError" style="color:#ff4d4d;font-size:12px;margin-top:12px;text-align:center;padding:0 20px;max-width:400px;"></div>
+  <div id="studioError" style="color:#ff4d4d;font-size:12px;margin-top:12px;text-align:center;padding:0 20px;max-width:400px;line-height:1.5;"></div>
 </div>
 
 <div id="studioApp" class="studio-app" style="display:none">
@@ -105,16 +105,45 @@
   </div>
 </div>
 
+<!-- ⚠️ DIAGNOSTIC — Ye check karega kya problem hai -->
 <script>
+console.log('===== REELHUB STUDIO DIAGNOSTIC =====');
+console.log('STEP 1: HTML loaded');
+
+// Test 1: Firebase CDN reachable?
+fetch('https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js', { method: 'HEAD' })
+  .then(r => {
+    console.log('STEP 2: Firebase CDN reachable:', r.status);
+    if (r.status === 200) {
+      console.log('✅ CDN OK — problem studio.js me hai');
+      document.getElementById('studioError').innerHTML = 
+        '⚠️ Studio 12 sec me load nahi hua<br>' +
+        '<small style="color:#888;font-size:10px;">Firebase CDN OK — studio.js me issue hai<br>Console (F12) kholo actual error ke liye</small>';
+    } else {
+      console.log('❌ CDN bad status:', r.status);
+      document.getElementById('studioError').innerHTML = 
+        '❌ Firebase CDN fail (status ' + r.status + ')';
+    }
+  })
+  .catch(e => {
+    console.log('❌ CDN fetch failed:', e);
+    document.getElementById('studioError').innerHTML = 
+      '❌ Firebase CDN block ho raha hai<br>' +
+      '<small style="color:#888;font-size:10px;">' + (e.message || e) + '</small><br>' +
+      '<small style="color:#888;font-size:10px;">VPN ya DNS change karke try karo</small>';
+  });
+
+// Fallback after 15s if studio.js never loads
 setTimeout(function() {
   var loading = document.getElementById('studioLoading');
   var errBox = document.getElementById('studioError');
-  if (loading && loading.style.display !== 'none' && errBox) {
-    errBox.innerHTML = '⚠️ Studio load nahi ho raha.<br><br>' +
-      '<a href="index.html" style="color:#ff2e63;text-decoration:underline;font-weight:700;">← Back to App</a><br><br>' +
+  if (loading && loading.style.display !== 'none' && errBox && !errBox.innerHTML) {
+    errBox.innerHTML = 
+      '⚠️ Studio load nahi ho raha<br>' +
+      '<a href="index.html" style="color:#ff2e63;text-decoration:underline;font-weight:700;">← Back to App</a><br>' +
       '<button onclick="location.reload()" style="background:#ff2e63;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:700;margin-top:8px;cursor:pointer;">Reload Studio</button>';
   }
-}, 12000);
+}, 15000);
 </script>
 
 <script type="module" src="studio.js"></script>
