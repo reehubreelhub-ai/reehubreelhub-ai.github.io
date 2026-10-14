@@ -1,6 +1,5 @@
 /* ============================================================
-   ReelHub — style.css (FINAL — All Fixes Integrated)
-   IG/WA Chat + Typing Fix + Mobile Dots + Wallpapers + Polish
+   ReelHub — style.css (FINAL with HIGHLIGHTS)
    ============================================================ */
 
 /* ============================================================
@@ -1189,7 +1188,7 @@ a { color: inherit; }
 .chats-empty p { font-size: 13px; color: #555; margin-bottom: 20px; }
 
 /* ============================================================
-   💬 CHAT WINDOW — IG/WA STYLE
+   CHAT WINDOW
    ============================================================ */
 #chatWindowModal { background: rgba(0, 0, 0, 0.9); align-items: center; padding: 0; }
 .chat-window {
@@ -1245,7 +1244,7 @@ a { color: inherit; }
 }
 .chat-header-handle { font-size: 12px; color: #888; margin-top: 1px; }
 
-/* ✅ TYPING INDICATOR */
+/* TYPING INDICATOR */
 .typing-indicator {
   display: none;
   align-items: center;
@@ -1278,7 +1277,6 @@ a { color: inherit; }
 }
 .typing-text { font-style: italic; }
 
-/* Chat Messages Area */
 .chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -1290,7 +1288,6 @@ a { color: inherit; }
 .chat-messages::-webkit-scrollbar { width: 4px; }
 .chat-messages::-webkit-scrollbar-thumb { background: #262626; border-radius: 2px; }
 
-/* ✅ WALLPAPERS */
 .chat-messages.wallpaper-1 {
   background-color: #0a0a0a;
   background-image:
@@ -1309,7 +1306,6 @@ a { color: inherit; }
     radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
 }
 
-/* Recording Indicator */
 .recording-indicator {
   padding: 12px 16px;
   background: #1a0e0e;
@@ -1339,9 +1335,6 @@ a { color: inherit; }
   font-weight: 600;
 }
 
-/* ============================================================
-   INPUT BAR — IG/WA Style
-   ============================================================ */
 .chat-input-wrap {
   flex-shrink: 0;
   background: #0f0f16;
@@ -1546,7 +1539,6 @@ a { color: inherit; }
 }
 .deleted-text { display: flex; align-items: center; gap: 6px; }
 
-/* QUOTED MESSAGE */
 .msg-quoted {
   display: flex;
   gap: 8px;
@@ -1579,7 +1571,6 @@ a { color: inherit; }
   text-overflow: ellipsis;
 }
 
-/* REACTIONS */
 .msg-reactions {
   display: flex;
   gap: 2px;
@@ -1608,7 +1599,6 @@ a { color: inherit; }
 .msg-reaction-pill .emoji { font-size: 13px; line-height: 1; }
 .msg-reaction-pill .count { color: #ddd; font-weight: 700; font-size: 11px; }
 
-/* REACTION PICKER */
 .reaction-picker {
   position: fixed;
   background: #1e1e28;
@@ -1640,7 +1630,6 @@ a { color: inherit; }
 .reaction-picker button:hover { transform: scale(1.25); background: #2a2a34; }
 .reaction-picker button:active { transform: scale(1.05); }
 
-/* SWIPE HINT */
 .swipe-reply-icon {
   position: absolute;
   left: 8px;
@@ -1674,9 +1663,7 @@ a { color: inherit; }
   30%      { box-shadow: 0 0 0 3px rgba(255, 46, 99, 0.5); }
 }
 
-/* ============================================================
-   ✅ MSG DOTS — MOBILE FIX
-   ============================================================ */
+/* MSG DOTS */
 .msg-dots-btn {
   background: none;
   border: none;
@@ -1694,8 +1681,6 @@ a { color: inherit; }
   align-self: center;
 }
 .msg-dots-btn svg { width: 16px; height: 16px; }
-
-/* Own messages — always visible */
 .msg-row.me .msg-dots-btn {
   opacity: 0.55;
   transition: opacity 0.15s;
@@ -1704,18 +1689,14 @@ a { color: inherit; }
   opacity: 1;
   background: rgba(255, 255, 255, 0.15);
 }
-/* Other messages — visible on hover (desktop) */
 .msg-row:hover .msg-dots-btn,
 .msg-row:focus-within .msg-dots-btn { opacity: 1; }
 .msg-dots-btn:hover { background: #1a1a24; color: #fff; }
-
-/* Mobile — other messages dots semi-visible */
 @media (hover: none) {
   .msg-row.other .msg-dots-btn { opacity: 0.4; }
   .msg-row.other .msg-dots-btn:active { opacity: 1; background: rgba(255, 255, 255, 0.1); }
 }
 
-/* SENDER NAME (group) */
 .msg-sender-name {
   font-size: 11px;
   font-weight: 700;
@@ -1725,7 +1706,6 @@ a { color: inherit; }
   align-items: center;
 }
 
-/* VOICE */
 .voice-bubble {
   display: flex;
   align-items: center;
@@ -1789,7 +1769,6 @@ a { color: inherit; }
 }
 .chat-empty { text-align: center; padding: 60px 20px; color: #555; font-size: 13px; }
 
-/* FILE */
 .file-bubble { padding: 8px !important; max-width: 280px; }
 .file-download-wrap {
   display: flex;
@@ -1824,7 +1803,6 @@ a { color: inherit; }
 .file-size { font-size: 11px; opacity: 0.75; }
 .edited-label { font-size: 11px; opacity: 0.6; font-style: italic; margin-left: 3px; }
 
-/* PINNED BANNER */
 .pinned-banner {
   display: flex;
   align-items: center;
@@ -1869,7 +1847,6 @@ a { color: inherit; }
 }
 .chat-messages.has-pinned { padding-top: 8px; }
 
-/* MSG ACTION MENU */
 .msg-actions-menu {
   position: fixed;
   background: #1e1e28;
@@ -1907,7 +1884,6 @@ a { color: inherit; }
 }
 .msg-actions-menu .menu-divider { height: 1px; background: #333; margin: 4px 0; }
 
-/* EDIT MESSAGE MODAL */
 .edit-msg-modal {
   position: fixed;
   inset: 0;
@@ -1956,7 +1932,6 @@ a { color: inherit; }
 .edit-msg-actions .cancel-btn { background: #1e1e28; color: #ccc; border: 1px solid #333; }
 .edit-msg-actions .save-btn { background: linear-gradient(90deg, #ff2e63, #ff8a00); color: #fff; }
 
-/* MEMBER CHIPS */
 .member-chip {
   display: inline-flex;
   align-items: center;
@@ -2128,7 +2103,6 @@ a { color: inherit; }
 .modal .input-group { margin-bottom: 14px; }
 .modal label { display: block; font-size: 12px; color: #888; margin-bottom: 6px; font-weight: 600; }
 
-/* UPLOAD TABS */
 .upload-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
 .upload-tab {
   flex: 1;
@@ -2151,7 +2125,6 @@ a { color: inherit; }
 .upload-tab:hover { border-color: #444; }
 .upload-tab.active { background: #1a1520; border-color: #ff2e63; color: #fff; }
 
-/* PHOTO PREVIEW */
 .photo-preview {
   display: flex;
   align-items: center;
@@ -2171,7 +2144,6 @@ a { color: inherit; }
 }
 .photo-preview .info { flex: 1; font-size: 12px; color: #888; }
 
-/* USER LIST */
 .user-list { display: flex; flex-direction: column; gap: 4px; }
 .user-row {
   display: flex;
@@ -2211,7 +2183,6 @@ a { color: inherit; }
 .user-row button.unfollow { background: #1e1e1e; color: #ccc; border: 1px solid #333; }
 .empty-msg { text-align: center; padding: 30px 10px; color: #555; font-size: 14px; }
 
-/* BOTTOM NAV */
 .bottom-nav-wrap {
   position: relative;
   flex-shrink: 0;
@@ -2285,7 +2256,6 @@ a { color: inherit; }
   fill: none;
 }
 
-/* SHARE BUTTON */
 .share-btn {
   width: 100%;
   height: 44px;
@@ -2310,7 +2280,6 @@ a { color: inherit; }
   stroke-width: 1.8;
 }
 
-/* NOTIFICATION DOT */
 .notif-dot {
   position: absolute;
   top: 6px; right: 6px;
@@ -2325,7 +2294,6 @@ a { color: inherit; }
   50%      { transform: scale(1.3); opacity: 0.7; }
 }
 
-/* NOTIFICATIONS PAGE */
 .notif-page { padding: 12px 16px; }
 .notif-item {
   background: #121212;
@@ -2360,7 +2328,6 @@ a { color: inherit; }
 .empty-notif { text-align: center; padding: 60px 20px; color: #555; font-size: 14px; }
 .empty-notif svg { width: 60px; height: 60px; stroke: #444; fill: none; stroke-width: 1.5; margin-bottom: 12px; }
 
-/* SEARCH PAGE */
 .search-page { padding: 16px; }
 .search-bar-wrap { position: relative; margin-bottom: 16px; }
 .search-bar-wrap svg {
@@ -2431,7 +2398,6 @@ a { color: inherit; }
 .search-user button.unfollow { background: #1e1e1e; color: #ccc; border: 1px solid #333; }
 .search-empty { text-align: center; padding: 60px 20px; color: #555; font-size: 14px; }
 
-/* PUBLIC PROFILE */
 #backFromProfileBtn {
   background: none;
   border: none;
@@ -2487,7 +2453,6 @@ a { color: inherit; }
 #pubShareBtn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; }
 .profile-page > .profile-grid { margin-left: -20px; margin-right: -20px; }
 
-/* VIDEO PLAYER MODAL */
 #playerModal { align-items: center; padding: 16px; }
 #playerModal .modal-header {
   padding: 14px 16px;
@@ -2505,7 +2470,6 @@ a { color: inherit; }
 #playerContent video { width: 100%; max-height: 70vh; background: #000; display: block; }
 #playerContent img { width: 100%; max-height: 70vh; object-fit: contain; background: #000; display: block; }
 
-/* STORY BAR */
 .stories-bar {
   display: flex;
   gap: 12px;
@@ -2567,7 +2531,6 @@ a { color: inherit; }
 }
 .story-name.you { color: #4ea8ff; font-weight: 600; }
 
-/* STORY UPLOAD */
 .story-upload-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
 .story-upload-tab {
   flex: 1;
@@ -2587,7 +2550,6 @@ a { color: inherit; }
 }
 .story-upload-tab.active { background: #1a1520; border-color: #ff2e63; color: #fff; }
 
-/* STORY VIEWER */
 #storyViewer { animation: storyFadeIn 0.2s ease; z-index: 9000; }
 @keyframes storyFadeIn {
   from { opacity: 0; }
@@ -2611,7 +2573,6 @@ a { color: inherit; }
 #storyMedia img,
 #storyMedia video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
 
-/* SAVE POSTS */
 .save-btn {
   background: none;
   border: none;
@@ -2632,7 +2593,6 @@ a { color: inherit; }
 .save-btn.saved svg { fill: #ff8a00; stroke: #ff8a00; }
 .saved-empty { text-align: center; padding: 60px 20px; color: #555; font-size: 14px; grid-column: 1 / -1; }
 
-/* STORY VIEWERS SHEET */
 .story-viewers-sheet {
   position: fixed;
   bottom: 0;
@@ -2705,9 +2665,6 @@ a { color: inherit; }
 }
 .story-viewers-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
 
-/* ============================================================
-   SETTINGS MODAL
-   ============================================================ */
 .settings-modal {
   max-height: 85vh;
   padding: 0;
@@ -2758,7 +2715,6 @@ a { color: inherit; }
   line-height: 1.3;
 }
 
-/* Toggle Switch */
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -2801,9 +2757,6 @@ a { color: inherit; }
 }
 .settings-select option { background: #1a1a1a; color: #fff; }
 
-/* ============================================================
-   DELETE ACCOUNT
-   ============================================================ */
 .delete-account-btn {
   width: 100%;
   padding: 14px 16px;
@@ -2925,7 +2878,6 @@ a { color: inherit; }
 }
 .delete-progress .progress-text { font-size: 12px; color: #888; }
 
-/* POST MENU DROPDOWN */
 .post-menu-dropdown {
   position: fixed;
   background: #1e1e28;
@@ -2962,7 +2914,6 @@ a { color: inherit; }
 }
 #blockedUsersModal .modal { max-height: 70vh; }
 
-/* COMPACT MODE */
 body.compact-mode .shorts-shelf-item,
 body.compact-mode .shorts-shelf-thumb { width: 120px; }
 body.compact-mode .shorts-shelf-thumb { height: 214px; }
@@ -2972,7 +2923,6 @@ body.compact-mode .yt-title { font-size: 13px; }
 body.compact-mode .chat-item { padding: 8px 12px; }
 body.compact-mode .profile-avatar { width: 70px; height: 70px; }
 
-/* LIGHT MODE */
 body.light-mode { background: #fff; color: #000; }
 body.light-mode .header { background: #fff; border-bottom-color: #e5e5e5; }
 body.light-mode .header .icon-btn svg { stroke: #000; }
@@ -2990,7 +2940,6 @@ body.light-mode .modal { background: #fff; color: #000; }
 body.light-mode .settings-item-label { color: #000; }
 body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; }
 
-/* PERFORMANCE */
 .yt-card,
 .shorts-shelf-item { contain: layout style paint; }
 .yt-thumb img,
@@ -3010,9 +2959,6 @@ body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; 
   -webkit-overflow-scrolling: touch;
 }
 
-/* ============================================================
-   MOBILE
-   ============================================================ */
 @media (max-width: 480px) {
   .chat-window { max-width: 100%; }
   .msg-bubble { max-width: 82%; }
@@ -3030,9 +2976,6 @@ body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; 
   .reaction-picker button { width: 40px; height: 40px; font-size: 22px; }
 }
 
-/* ============================================================
-   TOAST
-   ============================================================ */
 #toast {
   position: fixed;
   bottom: 90px;
@@ -3059,14 +3002,211 @@ body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; 
   transform: translateX(-50%) translateY(0);
 }
 
-/* ============================================================
-   STORY TAP ZONES
-   ============================================================ */
 #storyTapLeft, #storyTapRight { cursor: pointer; }
 
-/* ============================================================
-   KEYFRAMES
-   ============================================================ */
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   HIGHLIGHTS SYSTEM (Instagram style)
+   ============================================================ */
+
+.highlights-bar {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid #1a1a1a;
+  margin: 0 -20px;
+}
+.highlights-bar::-webkit-scrollbar { display: none; }
+
+.highlight-item {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  width: 72px;
+  position: relative;
+}
+
+.highlight-ring {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  padding: 2.5px;
+  background: linear-gradient(45deg, #ff2e63, #ff8a00);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+
+.highlight-item:active .highlight-ring {
+  transform: scale(0.94);
+}
+
+.highlight-ring img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #0a0a0a;
+  background: #1a1a1a;
+}
+
+.highlight-ring.add {
+  background: #1e1e28;
+  border: 2px dashed #4ea8ff;
+}
+
+.highlight-ring.add svg {
+  width: 26px;
+  height: 26px;
+  stroke: #4ea8ff;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.highlight-name {
+  font-size: 11px;
+  color: #ccc;
+  font-weight: 500;
+  max-width: 72px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.highlight-menu-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.8);
+  border: 1.5px solid #0a0a0a;
+  color: #fff;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  font-weight: 700;
+}
+
+.highlight-menu {
+  position: fixed;
+  background: #1e1e28;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 6px;
+  min-width: 180px;
+  z-index: 9999;
+  box-shadow: 0 8px 24px rgba(0,0,0,.6);
+}
+
+.highlight-menu button {
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.highlight-menu button:hover { background: #2a2a34; }
+.highlight-menu button.danger { color: #ff4d4d; }
+
+.highlight-stories-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid #262636;
+  border-radius: 12px;
+  background: #0f0f16;
+}
+
+.story-pick {
+  aspect-ratio: 9/16;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  cursor: pointer;
+  background: #1a1a1a;
+  position: relative;
+  transition: border-color .15s;
+}
+
+.story-pick.selected { border-color: #ff2e63; }
+.story-pick img { width: 100%; height: 100%; object-fit: cover; }
+
+.story-pick.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  background: #ff2e63;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #fff;
+}
+
+.highlight-cover-picker {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px 4px;
+  scrollbar-width: none;
+  border: 1px solid #262636;
+  border-radius: 12px;
+  background: #0f0f16;
+  min-height: 70px;
+  align-items: center;
+}
+.highlight-cover-picker::-webkit-scrollbar { display: none; }
+
+.cover-option {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  background: #1a1a1a;
+  transition: border-color .15s;
+}
+
+.cover-option.selected { border-color: #ff2e63; }
+.cover-option img { width: 100%; height: 100%; object-fit: cover; }
+
+#storyViewer.highlight-mode #storyDeleteBtn,
+#storyViewer.highlight-mode #storyViewersBtn {
+  display: none !important;
 }
