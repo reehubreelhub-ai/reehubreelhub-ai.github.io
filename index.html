@@ -14,25 +14,6 @@
   <link rel="preconnect" href="https://identitytoolkit.googleapis.com">
 
   <link rel="stylesheet" href="style.css">
-
-  <!-- ============================================================
-       ✅ DIAGNOSTIC SCRIPT — Show JS errors on screen
-       Remove this after debugging
-       ============================================================ -->
-  <script>
-    window.addEventListener('error', function(e) {
-      var d = document.createElement('div');
-      d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#d00;color:#fff;padding:12px;z-index:999999;font-size:11px;font-family:monospace;word-break:break-all;max-height:45vh;overflow:auto;line-height:1.4;';
-      d.textContent = '❌ ERROR: ' + (e.message || 'Unknown') + '\nLine: ' + (e.lineno || '?') + ' Col: ' + (e.colno || '?') + '\nFile: ' + (e.filename || '?');
-      document.body.appendChild(d);
-    });
-    window.addEventListener('unhandledrejection', function(e) {
-      var d = document.createElement('div');
-      d.style.cssText = 'position:fixed;top:45vh;left:0;right:0;background:#800;color:#fff;padding:12px;z-index:999999;font-size:11px;font-family:monospace;word-break:break-all;max-height:45vh;overflow:auto;line-height:1.4;';
-      d.textContent = '❌ PROMISE: ' + (e.reason && e.reason.message ? e.reason.message : e.reason);
-      document.body.appendChild(d);
-    });
-  </script>
 </head>
 
 <body>
@@ -472,6 +453,34 @@
     </div>
   </div>
 
+  <!-- ================= HIGHLIGHT MODAL ================= -->
+  <div class="modal-overlay" id="highlightModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="highlightModalTitle">New Highlight</h3>
+        <button class="modal-close" id="closeHighlightModal">&times;</button>
+      </div>
+
+      <div class="input-group">
+        <label>Highlight Name</label>
+        <input type="text" id="highlightNameInput" placeholder="Enter name..." maxlength="20">
+      </div>
+
+      <div class="input-group">
+        <label>Select Stories <span style="color:#666;font-weight:500;text-transform:none;font-size:11px;">(tap to select)</span></label>
+        <div class="highlight-stories-picker" id="highlightStoriesPicker"></div>
+      </div>
+
+      <div class="input-group">
+        <label>Choose Cover</label>
+        <div class="highlight-cover-picker" id="highlightCoverPicker"></div>
+      </div>
+
+      <button class="btn-primary" id="saveHighlightBtn">Create Highlight</button>
+      <div class="error-msg" id="highlightMsg"></div>
+    </div>
+  </div>
+
   <!-- ================= SETTINGS MODAL ================= -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal settings-modal">
@@ -481,7 +490,6 @@
       </div>
       <div class="settings-content">
 
-        <!-- ✅ Creator Tools -->
         <div class="settings-section">
           <div class="settings-section-title">Creator Tools</div>
           <div class="settings-item" style="cursor:pointer;" onclick="window.location.href='studio.html'">
@@ -728,20 +736,6 @@
       </div>
     </div>
   </div>
-
-  <!-- ✅ FALLBACK: If app.js fails to load, show auth in 10 seconds -->
-  <script>
-    setTimeout(function() {
-      var ls = document.getElementById('loadingScreen');
-      var auth = document.getElementById('auth');
-      if (ls && ls.style.display !== 'none' && auth && !auth.classList.contains('show')) {
-        console.warn('⚠️ Fallback triggered — app.js did not start');
-        ls.style.display = 'none';
-        auth.classList.add('show');
-        auth.style.display = 'block';
-      }
-    }, 10000);
-  </script>
 
   <script type="module" src="app.js"></script>
 
