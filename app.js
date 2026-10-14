@@ -1,7 +1,7 @@
 /* ============================================================
    ReelHub — app.js (PART 1/4) — FULL FIXED
    Imports, Config, DOM, State, Auth, Signup, Login
-   ✅ Fixed: Memory leak (split seen sets) + Orphan user cleanup
+   ✅ Login/Signup fixes + Memory leak fix + Robust error handling
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -51,7 +51,10 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
-const db   = getFirestore(firebaseApp);
+const db = firebaseFirestore();
+function firebaseFirestore() {
+  return getFirestore(firebaseApp);
+}
 
 /* ============================================================
    CLOUDINARY ACCOUNTS
@@ -59,13 +62,13 @@ const db   = getFirestore(firebaseApp);
 const CLOUDINARY_ACCOUNTS = {
   videos: {
     cloudName: "s3eresx6",
-    apiKey:    "349223397331644",
-    preset:    "reelhub_video"
+    apiKey: "349223397331644",
+    preset: "reelhub_video"
   },
   stories: {
     cloudName: "fepzqr9t",
-    apiKey:    "287332161532267",
-    preset:    "reelhub_story"
+    apiKey: "287332161532267",
+    preset: "reelhub_story"
   }
 };
 
@@ -74,127 +77,127 @@ const CLOUDINARY_ACCOUNTS = {
    ============================================================ */
 function $id(id) { return document.getElementById(id); }
 
-const authScreen     = $id('auth');
-const loadingScreen  = $id('loadingScreen');
-const appScreen      = $id('app');
-const loginForm      = $id('loginForm');
-const signupForm     = $id('signupForm');
-const loginMsg       = $id('loginMsg');
-const signupMsg      = $id('signupMsg');
-const loginBtn       = $id('loginBtn');
-const signupBtn      = $id('signupBtn');
-const content        = $id('content');
+const authScreen = $id('auth');
+const loadingScreen = $id('loadingScreen');
+const appScreen = $id('app');
+const loginForm = $id('loginForm');
+const signupForm = $id('signupForm');
+const loginMsg = $id('loginMsg');
+const signupMsg = $id('signupMsg');
+const loginBtn = $id('loginBtn');
+const signupBtn = $id('signupBtn');
+const content = $id('content');
 
-const editModal      = $id('editModal');
+const editModal = $id('editModal');
 const editPreviewImg = $id('editPreviewImg');
 const editPhotoInput = $id('editPhoto');
-const editNameInput  = $id('editName');
-const editUserInput  = $id('editUser');
-const editBioInput   = $id('editBio');
+const editNameInput = $id('editName');
+const editUserInput = $id('editUser');
+const editBioInput = $id('editBio');
 const saveProfileBtn = $id('saveProfileBtn');
-const editMsg        = $id('editMsg');
+const editMsg = $id('editMsg');
 
 const listModal = $id('listModal');
 const listTitle = $id('listTitle');
-const userList  = $id('userList');
+const userList = $id('userList');
 
-const forgotModal  = $id('forgotModal');
-const forgotEmail  = $id('forgotEmail');
-const forgotMsg    = $id('forgotMsg');
+const forgotModal = $id('forgotModal');
+const forgotEmail = $id('forgotEmail');
+const forgotMsg = $id('forgotMsg');
 const sendResetBtn = $id('sendResetBtn');
 
-const notifBtn    = $id('notifBtn');
-const notifDot    = $id('notifDot');
-const searchBtn   = $id('searchBtn');
-const chatsDot    = $id('chatsDot');
+const notifBtn = $id('notifBtn');
+const notifDot = $id('notifDot');
+const searchBtn = $id('searchBtn');
+const chatsDot = $id('chatsDot');
 const settingsBtn = $id('settingsBtn');
 
-const uploadModal            = $id('uploadModal');
-const uploadFileInput        = $id('uploadFileInput');
-const uploadCaption          = $id('uploadCaption');
-const uploadSubmitBtn        = $id('uploadSubmitBtn');
-const uploadMsg              = $id('uploadMsg');
-const uploadPreview          = $id('uploadPreview');
-const uploadPreviewWrap      = $id('uploadPreviewWrap');
-const uploadPreviewInfo      = $id('uploadPreviewInfo');
-const uploadPhotoPreview     = $id('uploadPhotoPreview');
+const uploadModal = $id('uploadModal');
+const uploadFileInput = $id('uploadFileInput');
+const uploadCaption = $id('uploadCaption');
+const uploadSubmitBtn = $id('uploadSubmitBtn');
+const uploadMsg = $id('uploadMsg');
+const uploadPreview = $id('uploadPreview');
+const uploadPreviewWrap = $id('uploadPreviewWrap');
+const uploadPreviewInfo = $id('uploadPreviewInfo');
+const uploadPhotoPreview = $id('uploadPhotoPreview');
 const uploadPhotoPreviewWrap = $id('uploadPhotoPreviewWrap');
-const uploadPickerWrap       = $id('uploadPickerWrap');
-const pickerTitle            = $id('pickerTitle');
-const pickerSubtitle         = $id('pickerSubtitle');
-const pickerLabel            = $id('pickerLabel');
-const uploadProgressWrap     = $id('uploadProgressWrap');
-const uploadProgressBar      = $id('uploadProgressBar');
-const uploadProgressText     = $id('uploadProgressText');
+const uploadPickerWrap = $id('uploadPickerWrap');
+const pickerTitle = $id('pickerTitle');
+const pickerSubtitle = $id('pickerSubtitle');
+const pickerLabel = $id('pickerLabel');
+const uploadProgressWrap = $id('uploadProgressWrap');
+const uploadProgressBar = $id('uploadProgressBar');
+const uploadProgressText = $id('uploadProgressText');
 
-const playerModal   = $id('playerModal');
-const playerTitle   = $id('playerTitle');
+const playerModal = $id('playerModal');
+const playerTitle = $id('playerTitle');
 const playerContent = $id('playerContent');
 
-const commentsModal      = $id('commentsModal');
-const commentsTitle      = $id('commentsTitle');
-const commentsList       = $id('commentsList');
-const commentInput       = $id('commentInput');
-const postCommentBtn     = $id('postCommentBtn');
+const commentsModal = $id('commentsModal');
+const commentsTitle = $id('commentsTitle');
+const commentsList = $id('commentsList');
+const commentInput = $id('commentInput');
+const postCommentBtn = $id('postCommentBtn');
 const myAvatarForComment = $id('myAvatarForComment');
-const replyIndicator     = $id('replyIndicator');
+const replyIndicator = $id('replyIndicator');
 const replyIndicatorText = $id('replyIndicatorText');
-const cancelReplyBtn     = $id('cancelReplyBtn');
+const cancelReplyBtn = $id('cancelReplyBtn');
 
-const newChatModal      = $id('newChatModal');
-const newChatSearch     = $id('newChatSearch');
-const newChatResults    = $id('newChatResults');
-const chatWindowModal   = $id('chatWindowModal');
-const chatHeaderAvatar  = $id('chatHeaderAvatar');
-const chatHeaderName    = $id('chatHeaderName');
-const chatHeaderHandle  = $id('chatHeaderHandle');
-const chatHeaderInfo    = $id('chatHeaderInfo');
-const chatMessages      = $id('chatMessages');
-const chatMessageInput  = $id('chatMessageInput');
-const sendTextBtn       = $id('sendTextBtn');
-const micBtn            = $id('micBtn');
+const newChatModal = $id('newChatModal');
+const newChatSearch = $id('newChatSearch');
+const newChatResults = $id('newChatResults');
+const chatWindowModal = $id('chatWindowModal');
+const chatHeaderAvatar = $id('chatHeaderAvatar');
+const chatHeaderName = $id('chatHeaderName');
+const chatHeaderHandle = $id('chatHeaderHandle');
+const chatHeaderInfo = $id('chatHeaderInfo');
+const chatMessages = $id('chatMessages');
+const chatMessageInput = $id('chatMessageInput');
+const sendTextBtn = $id('sendTextBtn');
+const micBtn = $id('micBtn');
 const recordingIndicator = $id('recordingIndicator');
-const recordingTimer    = $id('recordingTimer');
+const recordingTimer = $id('recordingTimer');
 const cancelRecordingBtn = $id('cancelRecordingBtn');
 
-const storyUploadModal      = $id('storyUploadModal');
-const storyFileInput        = $id('storyFileInput');
-const storyPickerWrap       = $id('storyPickerWrap');
-const storyPickerTitle      = $id('storyPickerTitle');
-const storyPickerSubtitle   = $id('storyPickerSubtitle');
-const storyPickerLabel      = $id('storyPickerLabel');
-const storyPreviewWrap      = $id('storyPreviewWrap');
-const storyPreviewImg       = $id('storyPreviewImg');
+const storyUploadModal = $id('storyUploadModal');
+const storyFileInput = $id('storyFileInput');
+const storyPickerWrap = $id('storyPickerWrap');
+const storyPickerTitle = $id('storyPickerTitle');
+const storyPickerSubtitle = $id('storyPickerSubtitle');
+const storyPickerLabel = $id('storyPickerLabel');
+const storyPreviewWrap = $id('storyPreviewWrap');
+const storyPreviewImg = $id('storyPreviewImg');
 const storyVideoPreviewWrap = $id('storyVideoPreviewWrap');
-const storyPreviewVideo     = $id('storyPreviewVideo');
-const storyPreviewInfo      = $id('storyPreviewInfo');
-const storySubmitBtn        = $id('storySubmitBtn');
-const storyUploadMsg        = $id('storyUploadMsg');
-const storyProgressWrap     = $id('storyProgressWrap');
-const storyProgressBar      = $id('storyProgressBar');
-const storyProgressText     = $id('storyProgressText');
+const storyPreviewVideo = $id('storyPreviewVideo');
+const storyPreviewInfo = $id('storyPreviewInfo');
+const storySubmitBtn = $id('storySubmitBtn');
+const storyUploadMsg = $id('storyUploadMsg');
+const storyProgressWrap = $id('storyProgressWrap');
+const storyProgressBar = $id('storyProgressBar');
+const storyProgressText = $id('storyProgressText');
 
-const storyViewer       = $id('storyViewer');
+const storyViewer = $id('storyViewer');
 const storyProgressBars = $id('storyProgressBars');
-const storyUserAvatar   = $id('storyUserAvatar');
-const storyUserName     = $id('storyUserName');
-const storyTime         = $id('storyTime');
-const storyDeleteBtn    = $id('storyDeleteBtn');
-const storyCloseBtn     = $id('storyCloseBtn');
-const storyMedia        = $id('storyMedia');
-const storyTapLeft      = $id('storyTapLeft');
-const storyTapRight     = $id('storyTapRight');
+const storyUserAvatar = $id('storyUserAvatar');
+const storyUserName = $id('storyUserName');
+const storyTime = $id('storyTime');
+const storyDeleteBtn = $id('storyDeleteBtn');
+const storyCloseBtn = $id('storyCloseBtn');
+const storyMedia = $id('storyMedia');
+const storyTapLeft = $id('storyTapLeft');
+const storyTapRight = $id('storyTapRight');
 
 /* ============================================================
    STATE
    ============================================================ */
-let currentUser    = null;
+let currentUser = null;
 let currentProfile = null;
 let selectedPhotoBase64 = null;
-let isLoggingIn    = false;
-let isSigningUp    = false;
+let isLoggingIn = false;
+let isSigningUp = false;
 let notifIntervalId = null;
-let viewingUserId  = null;
+let viewingUserId = null;
 
 let currentUploadType = 'short';
 let selectedFile = null;
@@ -237,7 +240,7 @@ let currentStoryMediaEl = null;
 let viewedPostsSession = new Set();
 let shortsSoundEnabled = localStorage.getItem('shortsSound') === 'true';
 
-/* ✅ CHAT REPLY + REACTION + TYPING STATE */
+/* ✅ CHAT STATE */
 let chatReplyTo = null;
 let activeReactionMsg = null;
 let longPressTimer = null;
@@ -247,16 +250,16 @@ let typingListenerUnsub = null;
 let typingTimeout = null;
 let isCurrentlyTyping = false;
 
-/* ✅ Track processed messages to avoid Firestore write spam */
+/* ✅ Firestore write dedup */
 const _readProcessed = new Set();
 const _deliveredProcessed = new Set();
 
-/* ✅ FIXED: Split seen sets (DM vs Group) + Size cap to prevent memory leak */
-const _seenDmMsgIds = new Set();      // ✅ NEW — DM messages only
-const _seenGroupMsgIds = new Set();   // ✅ NEW — Group messages only
-const SET_CAP = 1000;                 // ✅ NEW — max size before trimming
+/* ✅ Split seen sets (DM vs Group) + size cap */
+const _seenDmMsgIds = new Set();
+const _seenGroupMsgIds = new Set();
+const SET_CAP = 1000;
 
-function _trimSet(set) {              // ✅ NEW — helper to cap set size
+function _trimSet(set) {
   if (set.size <= SET_CAP) return;
   const toDelete = set.size - SET_CAP;
   const iter = set.values();
@@ -266,35 +269,34 @@ function _trimSet(set) {              // ✅ NEW — helper to cap set size
   }
 }
 
-/* ✅ REAL-TIME STATE */
+/* ✅ Real-time watchers */
 let chatListUnsub = null;
 let groupListUnsub = null;
 let notifUnsub = null;
 const _lastChatMsgTime = new Map();
 const _lastGroupMsgTime = new Map();
 
-/* Auth action flag */
+/* ✅ Auth flag to prevent duplicate listeners */
 let authActionInProgress = false;
+let authListenerStarted = false;
 
-/* Loading timeout */
-const LOADING_TIMEOUT_MS = 10000;
+/* ✅ Loading timeout */
+const LOADING_TIMEOUT_MS = 8000;
 let loadingTimeoutId = null;
 
 /* ============================================================
-   LOADING SCREEN SAFETY
+   LOADING SCREEN SAFETY — auto hide after timeout
    ============================================================ */
 function startLoadingTimeout() {
   clearTimeout(loadingTimeoutId);
   loadingTimeoutId = setTimeout(() => {
     const ls = $id('loadingScreen');
-    if (ls && ls.style.display !== 'none') {
+    const authEl = $id('auth');
+    if (ls && ls.style.display !== 'none' && authEl && !authEl.classList.contains('show')) {
       console.warn('⚠️ Loading timeout — showing auth');
       ls.style.display = 'none';
-      const authEl = $id('auth');
-      if (authEl) {
-        authEl.classList.add('show');
-        authEl.style.display = 'block';
-      }
+      authEl.classList.add('show');
+      authEl.style.display = 'block';
     }
   }, LOADING_TIMEOUT_MS);
 }
@@ -331,11 +333,10 @@ function showAuth() {
     typingListenerUnsub = null;
   }
 
-  /* ✅ Clear processed sets */
   _readProcessed.clear();
   _deliveredProcessed.clear();
-  _seenDmMsgIds.clear();      // ✅ NEW
-  _seenGroupMsgIds.clear();   // ✅ NEW
+  _seenDmMsgIds.clear();
+  _seenGroupMsgIds.clear();
   _lastChatMsgTime.clear();
   _lastGroupMsgTime.clear();
 }
@@ -437,16 +438,18 @@ $id('goLogin')?.addEventListener('click', () => {
    ============================================================ */
 signupForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
+  e.stopPropagation();
 
-  const name  = $id('signupName').value.trim();
-  const user  = $id('signupUser').value.trim().toLowerCase();
+  if (isSigningUp) return;
+
+  const name = $id('signupName').value.trim();
+  const user = $id('signupUser').value.trim().toLowerCase();
   const email = $id('signupEmail').value.trim().toLowerCase();
-  const pass  = $id('signupPass').value;
+  const pass = $id('signupPass').value;
 
   signupMsg.className = 'error-msg';
   signupMsg.textContent = '';
 
-  /* Validation */
   if (!name || !user || !email || !pass) {
     signupMsg.textContent = 'Please fill all fields.';
     return;
@@ -472,33 +475,27 @@ signupForm?.addEventListener('submit', async (e) => {
   let createdAuthUser = null;
 
   try {
-    /* STEP 1 — Create auth user PEHLE */
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    const uid  = cred.user.uid;
+    const uid = cred.user.uid;
     createdAuthUser = cred.user;
     console.log('✅ Auth user created:', uid);
 
-    /* STEP 2 — Wait for auth to settle */
     await new Promise(r => setTimeout(r, 300));
 
-    /* STEP 3 — Check username (now authenticated) */
     const usersRef = collection(db, 'users');
     const uq = query(usersRef, where('user', '==', user));
     const userSnap = await getDocs(uq);
 
     if (!userSnap.empty) {
-      /* ✅ FIXED: better orphan cleanup */
       try {
         await createdAuthUser.delete();
       } catch (delErr) {
-        console.warn('User delete failed, trying signOut:', delErr);
         try { await signOut(auth); } catch (e2) {}
       }
       signupMsg.textContent = 'Username already taken. Try another.';
       return;
     }
 
-    /* STEP 4 — Create Firestore profile */
     await setDoc(doc(db, 'users', uid), {
       uid: uid,
       name: name,
@@ -517,14 +514,12 @@ signupForm?.addEventListener('submit', async (e) => {
       createdAt: serverTimestamp()
     });
 
-    /* STEP 5 — Email verification */
     try {
       await sendEmailVerification(cred.user);
     } catch (e) {
       console.warn('Verification email failed:', e);
     }
 
-    /* STEP 6 — Set state */
     currentUser = cred.user;
     await loadProfile(uid);
 
@@ -543,12 +538,10 @@ signupForm?.addEventListener('submit', async (e) => {
   } catch (err) {
     console.error('Signup error:', err);
 
-    /* ✅ FIXED: robust cleanup on any error */
     if (createdAuthUser && !currentProfile) {
       try {
         await createdAuthUser.delete();
       } catch (delErr) {
-        console.warn('Cleanup delete failed, trying signOut:', delErr);
         try { await signOut(auth); } catch (e2) {}
       }
     }
@@ -578,13 +571,16 @@ signupForm?.addEventListener('submit', async (e) => {
 });
 
 /* ============================================================
-   LOGIN
+   LOGIN — FIXED & ROBUST
    ============================================================ */
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
+  e.stopPropagation();
+
+  if (isLoggingIn) return;
 
   const email = $id('loginEmail').value.trim().toLowerCase();
-  const pass  = $id('loginPass').value;
+  const pass = $id('loginPass').value;
 
   loginMsg.className = 'error-msg';
   loginMsg.textContent = '';
@@ -606,7 +602,6 @@ loginForm?.addEventListener('submit', async (e) => {
     currentUser = result.user;
     await loadProfile(result.user.uid);
 
-    /* BAN CHECK */
     if (currentProfile?.banned) {
       try { await signOut(auth); } catch (e) {}
       currentUser = null;
@@ -628,16 +623,18 @@ loginForm?.addEventListener('submit', async (e) => {
     currentProfile = null;
     loginMsg.className = 'error-msg';
 
-    if (err.code === 'auth/user-not-found' ||
-        err.code === 'auth/wrong-password' ||
-        err.code === 'auth/invalid-credential' ||
-        err.code === 'auth/invalid-login-credentials') {
+    const code = err.code || '';
+
+    if (code === 'auth/user-not-found' ||
+        code === 'auth/wrong-password' ||
+        code === 'auth/invalid-credential' ||
+        code === 'auth/invalid-login-credentials') {
       loginMsg.textContent = 'Invalid email or password.';
-    } else if (err.code === 'auth/too-many-requests') {
+    } else if (code === 'auth/too-many-requests') {
       loginMsg.textContent = 'Too many attempts. Try again later.';
-    } else if (err.code === 'auth/network-request-failed') {
+    } else if (code === 'auth/network-request-failed') {
       loginMsg.textContent = 'Network error. Check your connection.';
-    } else if (err.code === 'auth/invalid-email') {
+    } else if (code === 'auth/invalid-email') {
       loginMsg.textContent = 'Invalid email format.';
     } else {
       loginMsg.textContent = err.message || 'Login failed.';
@@ -742,11 +739,10 @@ $id('logoutBtn')?.addEventListener('click', async () => {
   viewingUserId = null;
   pinnedMessage = null;
 
-  /* ✅ Clear processed sets */
   _readProcessed.clear();
   _deliveredProcessed.clear();
-  _seenDmMsgIds.clear();      // ✅ NEW
-  _seenGroupMsgIds.clear();   // ✅ NEW
+  _seenDmMsgIds.clear();
+  _seenGroupMsgIds.clear();
   _lastChatMsgTime.clear();
   _lastGroupMsgTime.clear();
 
@@ -778,9 +774,11 @@ searchBtn?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   AUTH STATE LISTENER
+   AUTH STATE LISTENER — FIXED (single listener, no duplicates)
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
+  console.log('🔥 Auth state:', user ? 'logged in' : 'logged out');
+
   if (authActionInProgress) return;
 
   if (user) {
@@ -792,7 +790,6 @@ onAuthStateChanged(auth, async (user) => {
       console.error('Profile load failed:', e);
     }
 
-    /* BAN CHECK */
     if (currentProfile?.banned) {
       try { await signOut(auth); } catch (e) {}
       currentUser = null;
@@ -800,9 +797,12 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
 
-    showApp();
-    startNotifWatcher();
-    requestNotificationPermission();
+    const appEl = $id('app');
+    if (!appEl || !appEl.classList.contains('show')) {
+      showApp();
+      startNotifWatcher();
+      requestNotificationPermission();
+    }
 
   } else {
     currentUser = null;
@@ -821,11 +821,10 @@ onAuthStateChanged(auth, async (user) => {
       typingListenerUnsub = null;
     }
 
-    /* ✅ Clear processed sets */
     _readProcessed.clear();
     _deliveredProcessed.clear();
-    _seenDmMsgIds.clear();      // ✅ NEW
-    _seenGroupMsgIds.clear();   // ✅ NEW
+    _seenDmMsgIds.clear();
+    _seenGroupMsgIds.clear();
     _lastChatMsgTime.clear();
     _lastGroupMsgTime.clear();
 
@@ -846,15 +845,15 @@ async function loadProfile(uid) {
     if (snap.exists()) {
       const data = snap.data();
 
-      if (!Array.isArray(data.followers))    data.followers = [];
-      if (!Array.isArray(data.following))    data.following = [];
-      if (!Array.isArray(data.savedPosts))   data.savedPosts = [];
+      if (!Array.isArray(data.followers)) data.followers = [];
+      if (!Array.isArray(data.following)) data.following = [];
+      if (!Array.isArray(data.savedPosts)) data.savedPosts = [];
       if (!Array.isArray(data.blockedUsers)) data.blockedUsers = [];
 
-      if (typeof data.videoCount !== 'number')  data.videoCount = 0;
-      if (typeof data.isPrivate  !== 'boolean') data.isPrivate = false;
-      if (typeof data.verified   !== 'boolean') data.verified = false;
-      if (typeof data.banned     !== 'boolean') data.banned = false;
+      if (typeof data.videoCount !== 'number') data.videoCount = 0;
+      if (typeof data.isPrivate !== 'boolean') data.isPrivate = false;
+      if (typeof data.verified !== 'boolean') data.verified = false;
+      if (typeof data.banned !== 'boolean') data.banned = false;
 
       currentProfile = data;
     } else {
@@ -870,11 +869,11 @@ async function loadProfile(uid) {
    PAGE ROUTER
    ============================================================ */
 const pages = {
-  home:     'Home Feed',
-  shorts:   'Shorts',
-  upload:   'Upload',
+  home: 'Home Feed',
+  shorts: 'Shorts',
+  upload: 'Upload',
   messages: 'Chats',
-  profile:  'Profile'
+  profile: 'Profile'
 };
 
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -893,22 +892,24 @@ document.querySelector('.upload-btn')?.addEventListener('click', () => {
 });
 
 function renderPage(page) {
-  if (page === 'profile')            renderProfile();
-  else if (page === 'home')          renderHomeFeed();
-  else if (page === 'shorts')        renderShortsFeed();
-  else if (page === 'messages')      renderChatsPage();
+  if (page === 'profile') renderProfile();
+  else if (page === 'home') renderHomeFeed();
+  else if (page === 'shorts') renderShortsFeed();
+  else if (page === 'messages') renderChatsPage();
   else if (page === 'notifications') renderNotifications();
-  else if (page === 'search')        renderSearch();
+  else if (page === 'search') renderSearch();
   else if (page === 'upload') {
     if (content) {
       content.innerHTML = `<div class="page-placeholder"><div class="page-title">${pages[page]}</div></div>`;
     }
   }
 }
+
+console.log('✅ Part 1 loaded (Auth + State)');
 /* ============================================================
    ReelHub — app.js (PART 2/4) — FULL FIXED
-   Home Feed + Shorts + Stories
-   ✅ Fixed: Share counter (Studio) + Blob URL leak
+   Home Feed + Shorts + Stories + Upload
+   ✅ Share counter + Blob URL leak fix + Memory cleanup
    ============================================================ */
 
 let feedAutoplayObserver = null;
@@ -944,7 +945,6 @@ function buildViewsHTML(viewsCount) {
   `;
 }
 
-/* ✅ Format duration (mm:ss) */
 function formatDuration(seconds) {
   if (!seconds || seconds < 0) return '';
   const m = Math.floor(seconds / 60);
@@ -957,7 +957,6 @@ function formatDuration(seconds) {
   return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
-/* ✅ Format views (1.2M, 850K) */
 function formatViews(count) {
   const n = parseInt(count) || 0;
   if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + 'M';
@@ -965,7 +964,6 @@ function formatViews(count) {
   return n.toString();
 }
 
-/* ✅ Verified Badge */
 function verifiedBadgeHTML(isVerified, size = 'normal') {
   if (!isVerified) return '';
   const sizeClass = size === 'large' ? 'large' : '';
@@ -1062,6 +1060,7 @@ async function trackPostView(postId) {
   if (!currentUser || !postId) return;
   if (viewedPostsSession.has(postId)) return;
   viewedPostsSession.add(postId);
+
   try {
     const viewDocId = `${currentUser.uid}_${postId}`;
     const viewRef = doc(db, 'postViews', viewDocId);
@@ -1080,7 +1079,9 @@ async function trackPostView(postId) {
         await updateDoc(postRef, { views: currentViews + 1 });
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('trackPostView error:', e);
+  }
 }
 
 /* ============================================================
@@ -1261,7 +1262,7 @@ function showHeartAnimation(container, event) {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     heart.style.left = x + 'px';
-    heart.style.top  = y + 'px';
+    heart.style.top = y + 'px';
     heart.style.transform = 'translate(-50%, -50%) scale(0)';
   }
 
@@ -1270,7 +1271,7 @@ function showHeartAnimation(container, event) {
 }
 
 /* ============================================================
-   🎉 CONGRATULATIONS ANIMATION
+   CONGRATULATIONS ANIMATION
    ============================================================ */
 function showCongratsAnimation(userName, userEmail) {
   document.querySelectorAll('.congrats-overlay').forEach(el => el.remove());
@@ -1321,28 +1322,22 @@ function showCongratsAnimation(userName, userEmail) {
   overlay.innerHTML = `
     ${confettiHTML}
     ${sparklesHTML}
-
     <div class="congrats-icon">👑</div>
-
     <div class="congrats-check">
       <svg viewBox="0 0 100 100">
         <circle cx="50" cy="50" r="35"/>
         <polyline points="35 50 45 60 65 40"/>
       </svg>
     </div>
-
     <div class="congrats-title">Congratulations!</div>
-
     <div class="congrats-subtitle">
       You are now an official <b style="color:#ff2e63;">ReelHub Admin</b>! 🎊<br>
       You can manage users, videos, and reports from the admin panel.
     </div>
-
     <div class="congrats-user">
       Logged in as <b>${escapeHtml(userName || 'Admin')}</b><br>
       <span style="font-size:12px;">${escapeHtml(userEmail || '')}</span>
     </div>
-
     <button class="congrats-btn" id="congratsContinueBtn">
       <svg viewBox="0 0 24 24">
         <polyline points="20 6 9 17 4 12"/>
@@ -1451,6 +1446,7 @@ function showAdminPanelRedirect() {
     modal.remove();
   });
 
+  document.getElementById('closeAdminPanelBtn')?.addEventListener('click', () => modal.remove());
   document.getElementById('closeAdminRedirectBtn').addEventListener('click', () => {
     modal.remove();
   });
@@ -1476,7 +1472,7 @@ function saveFeedCache(posts) {
       likes: p.likes || [],
       commentsCount: p.commentsCount || 0,
       views: p.views || 0,
-      shares: p.shares || 0,     /* ✅ NEW: track shares too */
+      shares: p.shares || 0,
       createdAt: p.createdAt?.toDate?.()?.getTime?.() || Date.now()
     }));
     localStorage.setItem('reelhub_feed_cache', JSON.stringify(minimal));
@@ -1509,7 +1505,7 @@ function loadFeedCache() {
 }
 
 /* ============================================================
-   THUMBNAIL BUILDER (Cloudinary smart frame)
+   THUMBNAIL BUILDER (Cloudinary)
    ============================================================ */
 function buildThumbnailUrl(videoUrl, type) {
   if (!videoUrl) return '';
@@ -1576,7 +1572,6 @@ async function loadHomeFeedPosts() {
     return;
   }
 
-  /* STEP 1: Instant cache */
   const cached = loadFeedCache();
   if (cached && cached.length > 0) {
     container.innerHTML = '';
@@ -1606,7 +1601,6 @@ async function loadHomeFeedPosts() {
     `;
   }
 
-  /* STEP 2: Fresh fetch */
   try {
     const postsRef = collection(db, 'posts');
     const q = query(postsRef, limit(15));
@@ -1651,14 +1645,12 @@ async function loadHomeFeedPosts() {
   }
 }
 
-/* ✅ Shorts shelf + Long cards */
 function renderFeedWithShortsShelf(posts, container) {
   const shorts = posts.filter(p => p.type === 'short');
   const regular = posts.filter(p => p.type !== 'short');
 
   container.innerHTML = '';
 
-  /* 1️⃣ Shorts Shelf */
   if (shorts.length > 0) {
     const shelf = document.createElement('div');
     shelf.className = 'shorts-shelf';
@@ -1690,13 +1682,11 @@ function renderFeedWithShortsShelf(posts, container) {
     });
   }
 
-  /* 2️⃣ Regular Feed */
   if (regular.length > 0) {
     regular.forEach(post => container.appendChild(makeFeedPost(post)));
     setupFeedAutoplay();
   }
 
-  /* Empty state */
   if (posts.length === 0) {
     container.innerHTML = `
       <div class="feed-empty">
@@ -1711,7 +1701,6 @@ function renderFeedWithShortsShelf(posts, container) {
   }
 }
 
-/* ✅ Short Shelf Item */
 function makeShortShelfItem(short) {
   const item = document.createElement('div');
   item.className = 'shorts-shelf-item';
@@ -1732,7 +1721,6 @@ function makeShortShelfItem(short) {
     <div class="shorts-shelf-views">${viewsText} views</div>
   `;
 
-  /* ✅ FIXED: Fallback + cleanup URL on error */
   const img = item.querySelector('img');
   if (img) {
     img.addEventListener('error', () => {
@@ -1765,7 +1753,6 @@ function makeShortShelfItem(short) {
   return item;
 }
 
-/* ✅ YouTube-style Long Card */
 function makeFeedPost(post) {
   const card = document.createElement('div');
   card.className = 'yt-card';
@@ -2458,10 +2445,12 @@ function uploadToCloudinaryVoice(file, onProgress) {
     xhr.send(formData);
   });
 }
+
+console.log('✅ Part 2 loaded (Feed + Shorts + Stories + Upload)');
 /* ============================================================
    ReelHub — app.js (PART 3/4) — FULL FIXED
-   Story Viewer + Shorts Feed + Comments
-   ✅ Fixed: Share counter (Studio) + Story timer cleanup + Atomic comment count
+   Story Viewer + Shorts Feed + Comments + Share Counter
+   ✅ Share counter + Story timer cleanup + Atomic comment count
    ============================================================ */
 
 /* ============================================================
@@ -2478,7 +2467,7 @@ function formatVoiceDuration(seconds) {
 }
 
 /* ============================================================
-   ✅ NEW: SHARE COUNTER HELPER
+   ✅ SHARE COUNTER HELPER
    ============================================================ */
 async function incrementPostShare(postId) {
   if (!postId) return;
@@ -2510,7 +2499,6 @@ async function sharePost(post) {
         text: shareText,
         url: appUrl
       });
-      /* ✅ Share successful — increment counter */
       await incrementPostShare(post.id);
       return;
     } catch (err) {
@@ -2518,10 +2506,8 @@ async function sharePost(post) {
     }
   }
 
-  /* Fallback: clipboard */
   try {
     await navigator.clipboard.writeText(shareText);
-    /* ✅ Share via copy — increment counter */
     await incrementPostShare(post.id);
     showToast('✅ Link copied!');
   } catch (err) {
@@ -2617,7 +2603,6 @@ function renderCurrentStory() {
     }
   }
 
-  /* Progress bars */
   storyProgressBars.innerHTML = '';
   userGroup.stories.forEach((s, idx) => {
     const seg = document.createElement('div');
@@ -2629,7 +2614,6 @@ function renderCurrentStory() {
     storyProgressBars.appendChild(seg);
   });
 
-  /* Media */
   storyMedia.innerHTML = '';
 
   if (story.type === 'photo') {
@@ -2771,7 +2755,6 @@ function closeStoryViewer() {
 
   document.getElementById('storyViewersSheet')?.remove();
 
-  /* ✅ NEW: Pause any playing short videos to avoid audio overlap */
   document.querySelectorAll('.short-item video').forEach(v => {
     try { v.pause(); } catch (e) {}
   });
@@ -2985,7 +2968,6 @@ function getCurrentVisibleVideo(wrap) {
   return videos[0];
 }
 
-/* ✅ Short Item */
 function makeShortItem(short) {
   const item = document.createElement('div');
   item.className = 'short-item';
@@ -3073,7 +3055,6 @@ function makeShortItem(short) {
     await sharePost(short);
   });
 
-  /* Deferred mute toggle */
   let shortTapTimer = null;
   videoEl.addEventListener('click', (e) => {
     if (e.detail >= 2) {
@@ -3147,7 +3128,6 @@ async function toggleLike(postId, btnEl) {
   btnEl.disabled = true;
 
   if (isCurrentlyLiked) {
-    /* 💔 UNLIKE */
     btnEl.classList.remove('liked');
     if (countSpan) countSpan.textContent = Math.max(0, currentCount - 1);
 
@@ -3164,7 +3144,6 @@ async function toggleLike(postId, btnEl) {
       showToast('❌ Could not unlike');
     }
   } else {
-    /* ❤️ LIKE */
     btnEl.classList.add('liked');
     if (countSpan) countSpan.textContent = currentCount + 1;
 
@@ -3431,7 +3410,6 @@ postCommentBtn.addEventListener('click', async () => {
   postCommentBtn.disabled = true;
   postCommentBtn.textContent = '...';
 
-  /* ✅ Snapshot reply so async failures don't lose it */
   const replySnapshot = activeReplyTo;
 
   try {
@@ -3583,12 +3561,10 @@ async function toggleCommentLike(commentId, btnEl) {
   }
 }
 
-/* ✅ FIXED: Atomic comment count + parent refetch */
 async function deleteComment(commentId) {
   try {
     const commentRef = doc(db, 'comments', commentId);
     const commentSnap = await getDoc(commentRef);
-    const isReply = commentSnap.exists() && commentSnap.data().parentId;
 
     await deleteDoc(commentRef);
 
@@ -3604,7 +3580,6 @@ async function deleteComment(commentId) {
 
     if (activeCommentPostId) {
       try {
-        /* ✅ FIXED: refetch before decrement to reduce race */
         const postRef = doc(db, 'posts', activeCommentPostId);
         const postSnap = await getDoc(postRef);
 
@@ -3629,11 +3604,12 @@ async function deleteComment(commentId) {
     showToast('❌ Could not delete comment');
   }
 }
+
+console.log('✅ Part 3 loaded (Story Viewer + Shorts + Comments + Share)');
 /* ============================================================
-   ReelHub — app.js (PART 4/4) — FULL FIXED
-   Chat, Groups, Profile, Upload, Notifications, Search,
-   Settings, Delete Account
-   ✅ Fixed: Split seen sets + Chat storm + Trim calls
+   ReelHub — app.js (PART 4/5) — FULL FIXED
+   Sound System + Chat + Groups + Voice + Reply + Reactions
+   ✅ Chat storm fix + Split seen sets + Receive/Send sounds
    ============================================================ */
 
 /* ============================================================
@@ -3661,7 +3637,6 @@ function _unlockAudio() {
 document.addEventListener('click', _unlockAudio, { once: true });
 document.addEventListener('touchstart', _unlockAudio, { once: true });
 
-/* ✅ Send sound */
 function playSendSound() {
   const s = typeof getSettings === 'function' ? getSettings() : {};
   if (s.soundEffects === false) return;
@@ -3683,7 +3658,6 @@ function playSendSound() {
   } catch (e) {}
 }
 
-/* ✅ Receive sound */
 function playReceiveSound() {
   const s = typeof getSettings === 'function' ? getSettings() : {};
   if (s.soundEffects === false) return;
@@ -3711,7 +3685,6 @@ function playReceiveSound() {
   } catch (e) {}
 }
 
-/* ✅ Notification sound */
 function playNotificationSound() {
   const s = typeof getSettings === 'function' ? getSettings() : {};
   if (s.soundEffects === false) return;
@@ -4182,9 +4155,7 @@ async function sendTypingSignal(isTyping) {
     data[`typing.${currentUser.uid}`] = isTyping ? Date.now() : null;
 
     await setDoc(ref, data, { merge: true });
-  } catch (e) {
-    /* Silent fail */
-  }
+  } catch (e) {}
 }
 
 function setupTypingListener() {
@@ -4244,7 +4215,7 @@ async function clearTypingSignal() {
 }
 
 /* ============================================================
-   💬 REPLY SYSTEM
+   REPLY SYSTEM
    ============================================================ */
 function setChatReply(msg) {
   chatReplyTo = {
@@ -4272,7 +4243,7 @@ function clearChatReply() {
 document.getElementById('chatReplyClose')?.addEventListener('click', clearChatReply);
 
 /* ============================================================
-   😍 REACTION SYSTEM
+   REACTION SYSTEM
    ============================================================ */
 function showReactionPicker(msg, anchorEl) {
   const picker = document.getElementById('reactionPicker');
@@ -4354,7 +4325,7 @@ document.addEventListener('click', async (e) => {
 });
 
 /* ============================================================
-   ↔️ SWIPE TO REPLY
+   SWIPE TO REPLY
    ============================================================ */
 function setupSwipeReply(row, msg) {
   if (msg.deleted) return;
@@ -4436,7 +4407,7 @@ function setupSwipeReply(row, msg) {
 }
 
 /* ============================================================
-   RENDER QUOTED + REACTIONS
+   QUOTED + REACTIONS RENDER
    ============================================================ */
 function renderQuotedBlock(msg) {
   if (!msg.replyTo) return '';
@@ -4571,7 +4542,6 @@ function closeChatWindow() {
   activeGroupData = null;
   pinnedMessage = null;
 
-  /* ✅ Clear write-dedup sets (NOT seen sets — those stay for sound tracking) */
   _readProcessed.clear();
   _deliveredProcessed.clear();
 
@@ -4638,7 +4608,6 @@ async function loadGroupMessages() {
         return ta - tb;
       });
 
-      /* ✅ FIXED: Use _seenGroupMsgIds (not _seenMsgIds) */
       if (!isFirstSnapshot && currentUser) {
         const newFromOther = messages.some(m =>
           !_seenGroupMsgIds.has(m.id) &&
@@ -4649,7 +4618,7 @@ async function loadGroupMessages() {
       }
 
       messages.forEach(m => _seenGroupMsgIds.add(m.id));
-      _trimSet(_seenGroupMsgIds);   /* ✅ NEW: cap size */
+      _trimSet(_seenGroupMsgIds);
       isFirstSnapshot = false;
 
       paintGroupMessages(messages);
@@ -4662,7 +4631,6 @@ async function loadGroupMessages() {
   }
 }
 
-/* ✅ Scroll position preserved */
 function paintGroupMessages(messages) {
   if (messages.length === 0) {
     chatMessages.innerHTML = `<div class="chat-empty">No messages yet<br>Say hi! 👋</div>`;
@@ -4953,7 +4921,7 @@ async function sendMessage(msgData) {
 }
 
 /* ============================================================
-   DM MESSAGES — REAL-TIME + Receive Sound
+   DM MESSAGES — REAL-TIME
    ============================================================ */
 async function loadChatMessages() {
   if (!activeChatId) return;
@@ -4976,7 +4944,6 @@ async function loadChatMessages() {
         return ta - tb;
       });
 
-      /* ✅ FIXED: Use _seenDmMsgIds (not _seenMsgIds) */
       if (!isFirstSnapshot && currentUser) {
         const newFromOther = messages.some(m =>
           !_seenDmMsgIds.has(m.id) &&
@@ -4987,7 +4954,7 @@ async function loadChatMessages() {
       }
 
       messages.forEach(m => _seenDmMsgIds.add(m.id));
-      _trimSet(_seenDmMsgIds);   /* ✅ NEW: cap size */
+      _trimSet(_seenDmMsgIds);
       isFirstSnapshot = false;
 
       paintChatMessages(messages);
@@ -5237,10 +5204,10 @@ function showMessageActionsMenu(anchorEl, msg) {
       e.stopPropagation();
       const action = btn.dataset.action;
       menu.remove();
-      if (action === 'edit')        await openEditMessageModal(msg);
-      else if (action === 'reply')  setChatReply(msg);
-      else if (action === 'copy')   await copyMessageText(msg);
-      else if (action === 'pin')    await togglePinMessage(msg);
+      if (action === 'edit') await openEditMessageModal(msg);
+      else if (action === 'reply') setChatReply(msg);
+      else if (action === 'copy') await copyMessageText(msg);
+      else if (action === 'pin') await togglePinMessage(msg);
       else if (action === 'delete') {
         const settings = typeof getSettings === 'function' ? getSettings() : { confirmDelete: true };
         if (!settings.confirmDelete || confirm('Delete this message?')) await deleteMessage(msg.id);
@@ -5665,13 +5632,11 @@ function stopVoicePlayback() {
 }
 
 /* ============================================================
-   🔥 REAL-TIME CHAT LIST WATCHER (DM + Group)
-   ✅ FIXED: Storm reduced to 800ms debounce + page check
+   REAL-TIME CHAT LIST WATCHER
    ============================================================ */
 function startChatListWatcher() {
   stopChatListWatcher();
 
-  /* ✅ DM chats real-time */
   try {
     const dmQuery = query(
       collection(db, 'chats'),
@@ -5705,7 +5670,6 @@ function startChatListWatcher() {
 
       updateChatsDot(hasUnread);
 
-      /* ✅ FIXED: Only reload if chats page is open AND no active chat */
       if (document.getElementById('chatsList') && !activeChatId) {
         const activeTab = document.querySelector('.chats-tab.active')?.dataset.tab || 'all';
         _debouncedLoadChatsList(activeTab);
@@ -5713,7 +5677,6 @@ function startChatListWatcher() {
     }, (err) => console.warn('DM list watcher:', err));
   } catch (e) { console.warn(e); }
 
-  /* ✅ Group chats real-time */
   try {
     const groupQuery = query(
       collection(db, 'groups'),
@@ -5746,7 +5709,6 @@ function startChatListWatcher() {
 
       if (hasUnread) updateChatsDot(true);
 
-      /* ✅ FIXED: Only reload if chats page is open AND no active chat */
       if (document.getElementById('chatsList') && !activeChatId) {
         const activeTab = document.querySelector('.chats-tab.active')?.dataset.tab || 'all';
         _debouncedLoadChatsList(activeTab);
@@ -5766,12 +5728,10 @@ function updateChatsDot(show) {
   if (chatsDot) chatsDot.style.display = show ? 'block' : 'none';
 }
 
-/* ✅ FIXED: 800ms debounce (was 200ms) — reduces storm 4x */
 let _chatListLoadTimer = null;
 function _debouncedLoadChatsList(filter) {
   clearTimeout(_chatListLoadTimer);
   _chatListLoadTimer = setTimeout(() => {
-    /* Double-check the page is still open */
     if (document.getElementById('chatsList') && !activeChatId) {
       loadChatsList(filter);
     }
@@ -5799,6 +5759,18 @@ async function checkChatsUnread() {
   } catch (e) {}
 }
 
+function showGroupInfo(group) {
+  if (!group) return;
+  showToast(`${group.name} · ${group.members.length} members`);
+}
+
+console.log('✅ Part 4 loaded (Sound + Chat + Groups + Voice)');
+/* ============================================================
+   ReelHub — app.js (PART 5/5) — FULL FINAL
+   Profile + Highlights + Notifications + Search + Settings + Delete
+   ✅ Highlights system + Memory fixes + Robust helpers
+   ============================================================ */
+
 /* ============================================================
    PROFILE (OWN)
    ============================================================ */
@@ -5815,7 +5787,7 @@ async function renderProfile() {
     <div class="profile-page">
       <div class="profile-top">
         <div class="profile-avatar-wrap" id="avatarWrap">
-          <img class="profile-avatar" src="${avatarSrc}" alt="${p.name}">
+          <img class="profile-avatar" src="${avatarSrc}" alt="${escapeHtml(p.name)}">
           <div class="avatar-plus">+</div>
         </div>
         <div class="profile-stats">
@@ -5829,6 +5801,7 @@ async function renderProfile() {
         <div class="profile-username">@${escapeHtml(p.user)}</div>
         <div class="profile-bio">${p.bio ? escapeHtml(p.bio) : '<span style="color:#555">No bio yet.</span>'}</div>
       </div>
+      <div class="highlights-bar" id="highlightsBar"></div>
       <div class="profile-actions">
         <button class="btn-outline" id="editProfileBtn">Edit Profile</button>
         <button class="btn-outline share-btn" id="shareProfileBtn">
@@ -5843,6 +5816,9 @@ async function renderProfile() {
       <div class="profile-grid" id="myPostsGrid"><div class="grid-empty">Loading posts...</div></div>
     </div>
   `;
+
+  await loadUserHighlights(currentUser.uid);
+  renderHighlightsBar(currentUser.uid, true);
 
   document.getElementById('editProfileBtn')?.addEventListener('click', openEditModal);
   document.getElementById('avatarWrap')?.addEventListener('click', openEditModal);
@@ -5966,6 +5942,7 @@ async function openUserProfile(userId) {
           <div class="profile-username">@${escapeHtml(user.user)}</div>
           <div class="profile-bio">${user.bio ? escapeHtml(user.bio) : '<span style="color:#555">No bio yet.</span>'}</div>
         </div>
+        <div class="highlights-bar" id="highlightsBar"></div>
         <div class="profile-actions">
           <button id="pubFollowBtn" class="${isFollowing ? 'following' : ''}">
             <svg viewBox="0 0 24 24">${isFollowing ? '<polyline points="20 6 9 17 4 12"/>' : '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'}</svg>
@@ -5985,6 +5962,9 @@ async function openUserProfile(userId) {
       </div>
     `;
 
+    await loadUserHighlights(userId);
+    renderHighlightsBar(userId, false);
+
     document.getElementById('backFromProfileBtn').addEventListener('click', () => { viewingUserId = null; setActiveNav(null); renderPage('home'); });
     document.getElementById('profileMenuBtn').addEventListener('click', async (e) => { e.stopPropagation(); await showProfileMenu(e.currentTarget, userId, user.user); });
 
@@ -6001,7 +5981,7 @@ async function openUserProfile(userId) {
       }
     });
 
-    document.getElementById('pubMessageBtn')?.addEventListener('click', () => openChatWindow(user));
+    document.getElementById('pubMessageBtn')?.addEventListener('click', () => openChatWindow({ uid: userId, ...user }));
     document.getElementById('pubShareBtn')?.addEventListener('click', () => shareUser(user));
 
     await renderUserPosts(userId, 'pubPostsGrid');
@@ -6047,8 +6027,8 @@ async function showProfileMenu(anchorEl, userId, userHandle) {
       e.stopPropagation();
       const action = btn.dataset.action;
       menu.remove();
-      if (action === 'block')           await blockUser(userId, userHandle);
-      else if (action === 'unblock')    await unblockUser(userId, userHandle);
+      if (action === 'block') await blockUser(userId, userHandle);
+      else if (action === 'unblock') await unblockUser(userId, userHandle);
       else if (action === 'report-user') await reportUser(userId, userHandle);
     });
   });
@@ -6647,7 +6627,7 @@ async function handleAdminInviteAction(action, inviteId, notifId, itemEl) {
 }
 
 /* ============================================================
-   🔥 REAL-TIME NOTIFICATIONS WATCHER
+   REAL-TIME NOTIFICATIONS WATCHER
    ============================================================ */
 function startNotifWatcher() {
   stopNotifWatcher();
@@ -6866,6 +6846,471 @@ function formatDate(date) {
 }
 
 /* ============================================================
+   HIGHLIGHTS SYSTEM (Instagram style)
+   ============================================================ */
+let userHighlights = [];
+let pendingHighlightStories = [];
+let pendingHighlightCover = null;
+let viewingHighlight = null;
+let viewingHighlightIndex = 0;
+let highlightProgressInterval = null;
+let highlightMediaEl = null;
+
+async function loadUserHighlights(userId) {
+  try {
+    const q = query(collection(db, 'highlights'), where('userId', '==', userId));
+    const snap = await getDocs(q);
+    userHighlights = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    userHighlights.sort((a, b) =>
+      (a.createdAt?.toDate?.()?.getTime() || 0) -
+      (b.createdAt?.toDate?.()?.getTime() || 0)
+    );
+    return userHighlights;
+  } catch (e) {
+    console.warn('loadUserHighlights error:', e);
+    userHighlights = [];
+    return [];
+  }
+}
+
+function renderHighlightsBar(userId, isOwn) {
+  const bar = document.getElementById('highlightsBar');
+  if (!bar) return;
+
+  bar.innerHTML = '';
+
+  if (isOwn) {
+    const addItem = document.createElement('div');
+    addItem.className = 'highlight-item';
+    addItem.innerHTML = `
+      <div class="highlight-ring add">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <div class="highlight-name">New</div>
+    `;
+    addItem.addEventListener('click', openHighlightCreator);
+    bar.appendChild(addItem);
+  }
+
+  userHighlights.forEach(h => {
+    const item = document.createElement('div');
+    item.className = 'highlight-item';
+    const coverSrc = h.cover || (h.stories && h.stories[0] ? (h.stories[0].thumbnail || h.stories[0].url) : '');
+    item.innerHTML = `
+      <div class="highlight-ring">
+        <img src="${coverSrc}" alt="">
+      </div>
+      <div class="highlight-name">${escapeHtml(h.name || 'Highlight')}</div>
+      ${isOwn ? '<div class="highlight-menu-btn">⋯</div>' : ''}
+    `;
+    item.addEventListener('click', (e) => {
+      if (e.target.classList.contains('highlight-menu-btn')) {
+        e.stopPropagation();
+        showHighlightMenu(e.target, h);
+        return;
+      }
+      openHighlightViewer(h, 0);
+    });
+    bar.appendChild(item);
+  });
+
+  if (!isOwn && userHighlights.length === 0) {
+    bar.style.display = 'none';
+  } else {
+    bar.style.display = 'flex';
+  }
+}
+
+async function openHighlightCreator() {
+  const msg = document.getElementById('highlightMsg');
+  msg.textContent = '';
+  msg.className = 'error-msg';
+
+  try {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const storiesRef = collection(db, 'stories');
+    const q = query(storiesRef, where('userId', '==', currentUser.uid), limit(100));
+    const snap = await getDocs(q);
+
+    const myStories = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(s => {
+        const t = s.createdAt?.toDate?.();
+        return t && t.getTime() > cutoff.getTime();
+      });
+
+    if (myStories.length === 0) {
+      showToast('❌ No active stories to add');
+      return;
+    }
+
+    myStories.sort((a, b) =>
+      (a.createdAt?.toDate?.()?.getTime() || 0) - (b.createdAt?.toDate?.()?.getTime() || 0)
+    );
+
+    pendingHighlightStories = myStories.map(s => ({ ...s, _selected: false }));
+    pendingHighlightCover = null;
+
+    document.getElementById('highlightNameInput').value = '';
+    document.getElementById('highlightModalTitle').textContent = 'New Highlight';
+    document.getElementById('highlightModal').classList.add('show');
+
+    renderHighlightStoriesPicker();
+    updateHighlightCoverPicker();
+  } catch (e) {
+    console.error(e);
+    showToast('❌ Failed to load stories');
+  }
+}
+
+function renderHighlightStoriesPicker() {
+  const sp = document.getElementById('highlightStoriesPicker');
+  if (!sp) return;
+
+  sp.innerHTML = pendingHighlightStories.map((s, i) => `
+    <div class="story-pick ${s._selected ? 'selected' : ''}" data-idx="${i}">
+      <img src="${s.thumbnail || s.url}" alt="">
+    </div>
+  `).join('');
+
+  sp.querySelectorAll('.story-pick').forEach(el => {
+    el.addEventListener('click', () => {
+      const i = parseInt(el.dataset.idx);
+      pendingHighlightStories[i]._selected = !pendingHighlightStories[i]._selected;
+      el.classList.toggle('selected', pendingHighlightStories[i]._selected);
+      updateHighlightCoverPicker();
+    });
+  });
+}
+
+function updateHighlightCoverPicker() {
+  const cp = document.getElementById('highlightCoverPicker');
+  if (!cp) return;
+
+  const selected = pendingHighlightStories.filter(s => s._selected);
+
+  if (selected.length === 0) {
+    cp.innerHTML = '<div style="font-size:12px;color:#666;padding:14px 8px;width:100%;text-align:center;">Select stories first</div>';
+    return;
+  }
+
+  cp.innerHTML = selected.map(s => `
+    <div class="cover-option ${pendingHighlightCover === s.url ? 'selected' : ''}" data-url="${escapeHtml(s.url)}">
+      <img src="${s.thumbnail || s.url}" alt="">
+    </div>
+  `).join('');
+
+  cp.querySelectorAll('.cover-option').forEach(el => {
+    el.addEventListener('click', () => {
+      pendingHighlightCover = el.dataset.url;
+      cp.querySelectorAll('.cover-option').forEach(x => x.classList.remove('selected'));
+      el.classList.add('selected');
+    });
+  });
+}
+
+async function saveHighlight() {
+  const name = document.getElementById('highlightNameInput').value.trim();
+  const msg = document.getElementById('highlightMsg');
+  msg.className = 'error-msg';
+  msg.textContent = '';
+
+  if (!name) { msg.textContent = 'Enter a name.'; return; }
+
+  const selected = pendingHighlightStories.filter(s => s._selected);
+  if (selected.length === 0) { msg.textContent = 'Select at least one story.'; return; }
+
+  const btn = document.getElementById('saveHighlightBtn');
+  btn.disabled = true;
+  btn.textContent = 'Creating...';
+
+  try {
+    const storiesData = selected.map(s => ({
+      url: s.url,
+      thumbnail: s.thumbnail || s.url,
+      type: s.type || 'photo',
+      duration: s.duration || 5
+    }));
+
+    const cover = pendingHighlightCover || (storiesData[0].thumbnail || storiesData[0].url);
+
+    await addDoc(collection(db, 'highlights'), {
+      userId: currentUser.uid,
+      userName: currentProfile.name,
+      userHandle: currentProfile.user,
+      userPhoto: currentProfile.photo || '',
+      userVerified: currentProfile.verified || false,
+      name: name,
+      cover: cover,
+      stories: storiesData,
+      createdAt: serverTimestamp()
+    });
+
+    msg.className = 'success-msg';
+    msg.textContent = '✅ Highlight created!';
+
+    await loadUserHighlights(currentUser.uid);
+
+    setTimeout(() => {
+      document.getElementById('highlightModal').classList.remove('show');
+      renderProfile();
+    }, 800);
+  } catch (e) {
+    console.error(e);
+    msg.textContent = '❌ Failed: ' + (e.message || e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create Highlight';
+  }
+}
+
+function showHighlightMenu(anchor, highlight) {
+  document.querySelectorAll('.highlight-menu').forEach(el => el.remove());
+
+  const menu = document.createElement('div');
+  menu.className = 'highlight-menu';
+  menu.innerHTML = `
+    <button data-act="view">👁 View</button>
+    <button data-act="delete" class="danger">🗑 Delete Highlight</button>
+  `;
+  document.body.appendChild(menu);
+
+  const rect = anchor.getBoundingClientRect();
+  const menuRect = menu.getBoundingClientRect();
+  let top = rect.bottom + 5;
+  let left = Math.min(rect.left, window.innerWidth - menuRect.width - 10);
+  if (top + menuRect.height > window.innerHeight - 10) {
+    top = rect.top - menuRect.height - 5;
+  }
+  menu.style.top = top + 'px';
+  menu.style.left = left + 'px';
+
+  menu.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const act = btn.dataset.act;
+      menu.remove();
+      if (act === 'view') openHighlightViewer(highlight, 0);
+      else if (act === 'delete') await deleteHighlight(highlight);
+    });
+  });
+
+  setTimeout(() => {
+    const close = (e) => {
+      if (!menu.contains(e.target) && e.target !== anchor) {
+        menu.remove();
+        document.removeEventListener('click', close);
+      }
+    };
+    document.addEventListener('click', close);
+  }, 100);
+}
+
+async function deleteHighlight(highlight) {
+  if (!confirm('Delete this highlight?')) return;
+  try {
+    await deleteDoc(doc(db, 'highlights', highlight.id));
+    userHighlights = userHighlights.filter(h => h.id !== highlight.id);
+    showToast('🗑️ Highlight deleted');
+    renderProfile();
+  } catch (e) {
+    showToast('❌ Failed to delete');
+  }
+}
+
+function openHighlightViewer(highlight, startIdx) {
+  if (!highlight || !highlight.stories || highlight.stories.length === 0) return;
+
+  viewingHighlight = highlight;
+  viewingHighlightIndex = startIdx || 0;
+  window._isHighlightViewing = true;
+
+  const sv = document.getElementById('storyViewer');
+  sv.style.display = 'block';
+  sv.classList.add('highlight-mode');
+  document.body.style.overflow = 'hidden';
+
+  renderHighlightStory();
+}
+
+function renderHighlightStory() {
+  clearHighlightTimers();
+
+  const h = viewingHighlight;
+  if (!h || viewingHighlightIndex >= h.stories.length) {
+    closeHighlightViewer();
+    return;
+  }
+
+  const story = h.stories[viewingHighlightIndex];
+
+  const avatarEl = document.getElementById('storyUserAvatar');
+  const nameEl = document.getElementById('storyUserName');
+  const timeEl = document.getElementById('storyTime');
+
+  if (avatarEl) avatarEl.src = h.userPhoto || defaultAvatar(h.userName);
+  if (nameEl) nameEl.innerHTML = `${escapeHtml(h.userName || 'User')}${verifiedBadgeHTML(h.userVerified)}`;
+  if (timeEl) timeEl.textContent = h.name || 'Highlight';
+
+  document.getElementById('storyDeleteBtn').style.display = 'none';
+  const viewersBtn = document.getElementById('storyViewersBtn');
+  if (viewersBtn) viewersBtn.style.display = 'none';
+
+  const bars = document.getElementById('storyProgressBars');
+  bars.innerHTML = '';
+  h.stories.forEach((s, i) => {
+    const seg = document.createElement('div');
+    seg.className = 'story-progress-segment';
+    const fill = document.createElement('div');
+    fill.className = 'story-progress-fill';
+    if (i < viewingHighlightIndex) fill.style.width = '100%';
+    seg.appendChild(fill);
+    bars.appendChild(seg);
+  });
+
+  const media = document.getElementById('storyMedia');
+  media.innerHTML = '';
+
+  if (story.type === 'video') {
+    const vid = document.createElement('video');
+    vid.src = story.url;
+    vid.className = 'story-content';
+    vid.autoplay = true;
+    vid.playsInline = true;
+    vid.addEventListener('loadedmetadata', () => {
+      vid.play().catch(() => {});
+    });
+    vid.addEventListener('ended', () => nextHighlightStory());
+    media.appendChild(vid);
+    highlightMediaEl = vid;
+  } else {
+    const img = document.createElement('img');
+    img.src = story.url;
+    img.className = 'story-content';
+    media.appendChild(img);
+    highlightMediaEl = img;
+  }
+
+  const fills = bars.querySelectorAll('.story-progress-fill');
+  const currentFill = fills[viewingHighlightIndex];
+  if (!currentFill) return;
+
+  if (story.type === 'video') {
+    const vid = highlightMediaEl;
+    const update = () => {
+      if (vid.duration && isFinite(vid.duration)) {
+        currentFill.style.width = Math.min((vid.currentTime / vid.duration) * 100, 100) + '%';
+      }
+    };
+    vid.addEventListener('timeupdate', update);
+  } else {
+    const dur = (story.duration || 5) * 1000;
+    const start = Date.now();
+    highlightProgressInterval = setInterval(() => {
+      const p = Math.min(((Date.now() - start) / dur) * 100, 100);
+      currentFill.style.width = p + '%';
+      if (p >= 100) {
+        clearInterval(highlightProgressInterval);
+        highlightProgressInterval = null;
+        nextHighlightStory();
+      }
+    }, 50);
+  }
+}
+
+function nextHighlightStory() {
+  clearHighlightTimers();
+  const h = viewingHighlight;
+  if (!h) { closeHighlightViewer(); return; }
+
+  if (viewingHighlightIndex < h.stories.length - 1) {
+    viewingHighlightIndex++;
+    renderHighlightStory();
+  } else {
+    closeHighlightViewer();
+  }
+}
+
+function prevHighlightStory() {
+  clearHighlightTimers();
+  const h = viewingHighlight;
+  if (!h) { closeHighlightViewer(); return; }
+
+  if (viewingHighlightIndex > 0) {
+    viewingHighlightIndex--;
+    renderHighlightStory();
+  } else {
+    viewingHighlightIndex = 0;
+    renderHighlightStory();
+  }
+}
+
+function closeHighlightViewer() {
+  clearHighlightTimers();
+  const sv = document.getElementById('storyViewer');
+  sv.style.display = 'none';
+  sv.classList.remove('highlight-mode');
+  document.getElementById('storyMedia').innerHTML = '';
+  document.body.style.overflow = '';
+  viewingHighlight = null;
+  viewingHighlightIndex = 0;
+  highlightMediaEl = null;
+  window._isHighlightViewing = false;
+}
+
+function clearHighlightTimers() {
+  if (highlightProgressInterval) {
+    clearInterval(highlightProgressInterval);
+    highlightProgressInterval = null;
+  }
+  if (highlightMediaEl) {
+    if (highlightMediaEl.tagName === 'VIDEO') {
+      try { highlightMediaEl.pause(); } catch (e) {}
+    }
+    highlightMediaEl = null;
+  }
+}
+
+document.getElementById('closeHighlightModal')?.addEventListener('click', () => {
+  document.getElementById('highlightModal').classList.remove('show');
+});
+document.getElementById('highlightModal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'highlightModal') {
+    e.target.classList.remove('show');
+  }
+});
+document.getElementById('saveHighlightBtn')?.addEventListener('click', saveHighlight);
+
+(function interceptStoryViewerButtons() {
+  const closeBtn = document.getElementById('storyCloseBtn');
+  const tapLeft = document.getElementById('storyTapLeft');
+  const tapRight = document.getElementById('storyTapRight');
+  const deleteBtn = document.getElementById('storyDeleteBtn');
+
+  function intercept(el, highlightFn) {
+    if (!el) return;
+    el.addEventListener('click', (e) => {
+      if (window._isHighlightViewing) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        highlightFn();
+      }
+    }, true);
+  }
+
+  intercept(closeBtn, closeHighlightViewer);
+  intercept(tapLeft, prevHighlightStory);
+  intercept(tapRight, nextHighlightStory);
+  intercept(deleteBtn, () => {});
+
+  document.addEventListener('keydown', (e) => {
+    if (!window._isHighlightViewing) return;
+    if (e.key === 'Escape') closeHighlightViewer();
+    if (e.key === 'ArrowRight') nextHighlightStory();
+    if (e.key === 'ArrowLeft') prevHighlightStory();
+  });
+})();
+
+/* ============================================================
    DELETE ACCOUNT
    ============================================================ */
 function openDeleteAccountModal() {
@@ -6982,6 +7427,13 @@ async function deleteUserAccount(password) {
       if (storiesSnap.size > 0) await batchDeleteDocs(storiesSnap.docs.map(d => d.ref));
     } catch (e) {}
 
+    progressText.textContent = 'Deleting your highlights...';
+    try {
+      const hlQ = query(collection(db, 'highlights'), where('userId', '==', uid));
+      const hlSnap = await getDocs(hlQ);
+      if (hlSnap.size > 0) await batchDeleteDocs(hlSnap.docs.map(d => d.ref));
+    } catch (e) {}
+
     progressText.textContent = 'Deleting notifications...';
     try {
       const notifQ = query(collection(db, 'notifications'), where('userId', '==', uid));
@@ -7053,7 +7505,6 @@ async function deleteUserAccount(password) {
       currentUser = null; currentProfile = null;
       viewedPostsSession.clear();
 
-      /* ✅ Clear all dedup sets */
       _readProcessed.clear();
       _deliveredProcessed.clear();
       _seenDmMsgIds.clear();
@@ -7273,4 +7724,5 @@ window.handleDeleteClick = function(event) {
   if (typeof openDeleteAccountModal === 'function') openDeleteAccountModal();
 };
 
-console.log('✅ app.js loaded — PART 4 FIXED (Split sets + Chat storm fix + Sound)');
+console.log('✅ Part 5 loaded (Profile + Highlights + Notifs + Search + Settings + Delete)');
+console.log('🎉 ReelHub app.js fully loaded!');
