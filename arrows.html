@@ -10,41 +10,45 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none;touch-action:manipulation}
 
-#game{display:flex;flex-direction:column;height:100vh;max-width:500px;margin:0 auto;padding:10px;gap:12px}
+#game{display:flex;flex-direction:column;height:100vh;max-width:500px;margin:0 auto;padding:10px;gap:10px}
 
 /* Top Bar */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#0f0f16;border:1px solid #1e1e28;border-radius:14px;flex-shrink:0}
-.back-btn{background:none;border:none;color:#fff;cursor:pointer;padding:6px;display:flex;align-items:center;gap:6px;font-family:inherit;font-size:12px;font-weight:600}
-.back-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2}
-.stats{display:flex;gap:16px;align-items:center}
-.stat-item{text-align:center}
-.stat-label{font-size:9px;color:#888;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
-.stat-value{font-size:17px;font-weight:900;color:#fff;line-height:1}
-.stat-value.highlight{background:linear-gradient(90deg,#ff2e63,#ff8a00);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px 10px;background:#0f0f16;border:1px solid #1e1e28;border-radius:14px;flex-shrink:0}
+.top-btn{width:38px;height:38px;border-radius:50%;background:#1a1a24;border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.top-btn:active{transform:scale(.92);background:#2a2a34}
+.top-btn:disabled{opacity:.35;cursor:not-allowed}
+.top-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+.center-info{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}
+.level-pill{padding:5px 12px;background:#1a1a24;border-radius:20px;font-size:12px;font-weight:800;color:#fff;white-space:nowrap;border:1px solid #262636}
+.level-pill b{color:#ff2e63}
+.progress-wrap{flex:1;height:22px;background:#1a1a24;border-radius:11px;overflow:hidden;position:relative;min-width:50px;border:1px solid #262636}
+.progress-fill{height:100%;background:linear-gradient(90deg,#4ade80,#22c55e);transition:width .3s ease;border-radius:11px}
+.progress-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5);letter-spacing:.3px}
 
 /* Board */
-.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:4px}
-#board{display:grid;gap:6px;background:#121212;padding:12px;border-radius:20px;border:1px solid #1e1e28;width:100%;max-width:420px;margin:0 auto;box-shadow:0 8px 32px rgba(0,0,0,.5);transition:background .2s}
-.cell{aspect-ratio:1;background:#0a0a0a;border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;transition:all .15s;font-size:28px}
-.cell.arrow{background:linear-gradient(145deg,var(--c1),var(--c2));box-shadow:inset 0 -3px 0 rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.15)}
-.cell.arrow:active{transform:scale(.92)}
-.cell.arrow.blocked{opacity:.4;cursor:not-allowed}
-.cell.empty{background:#0a0a0a;box-shadow:none;cursor:default;pointer-events:none}
-.cell.arrow.escaped{animation:escapeAnim .4s ease forwards}
-@keyframes escapeAnim{0%{transform:scale(1);opacity:1}50%{transform:scale(1.2);opacity:1}100%{transform:scale(0);opacity:0}}
-.cell.arrow.hint{animation:hintGlow 1s infinite}
-@keyframes hintGlow{0%,100%{box-shadow:inset 0 -3px 0 rgba(0,0,0,.3)}50%{box-shadow:0 0 0 3px #fbbf24,inset 0 -3px 0 rgba(0,0,0,.3)}}
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:4px;position:relative}
+#board{display:grid;background:#121212;padding:10px;border-radius:16px;border:1px solid #1e1e28;width:100%;max-width:420px;margin:0 auto;box-shadow:0 8px 32px rgba(0,0,0,.5);aspect-ratio:1;gap:1px}
+.cell{display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;border-radius:4px;transition:all .12s;font-size:24px;line-height:1}
+.cell:active{transform:scale(.94)}
+.cell.arrow{background:transparent;color:#e8e8f0}
+.cell.arrow svg{width:80%;height:80%;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.cell.empty{pointer-events:none;visibility:hidden}
+.cell.escaped{animation:escapeAnim .35s ease forwards;pointer-events:none}
+@keyframes escapeAnim{0%{transform:scale(1);opacity:1}40%{transform:scale(1.3);opacity:1;color:#4ade80}100%{transform:scale(0);opacity:0}}
+.cell.hint{animation:hintGlow 1s ease-in-out infinite;background:rgba(251,191,36,.15);border-radius:6px}
+@keyframes hintGlow{0%,100%{background:rgba(251,191,36,.15)}50%{background:rgba(251,191,36,.35)}}
+.cell.blocked{animation:blockedShake .3s ease}
+@keyframes blockedShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.cell.blocked path{stroke:#ff4d4d !important}
 
-/* Direction visuals */
-.arrow-inner{width:60%;height:60%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:rgba(255,255,255,.95);filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
-
-/* Bottom actions */
-.actions{display:flex;gap:8px;flex-shrink:0}
-.action-btn{flex:1;height:48px;border-radius:14px;border:1px solid #333;background:linear-gradient(135deg,#1e1e28,#14141c);color:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
-.action-btn:active{transform:scale(.95);background:#2a2a34}
-.action-btn.primary{background:linear-gradient(135deg,#ff2e63,#ff8a00);border:none;box-shadow:0 4px 16px rgba(255,46,99,.4)}
-.action-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2}
-.action-btn:disabled{opacity:.4;cursor:not-allowed}
+/* Bottom controls */
+.bottom-bar{display:flex;align-items:center;justify-content:center;gap:12px;flex-shrink:0;padding:6px 0}
+.ctrl-btn{width:56px;height:56px;border-radius:50%;background:#1a1a24;border:1px solid #262636;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.ctrl-btn:active{transform:scale(.92);background:#2a2a34}
+.ctrl-btn svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ctrl-btn.palette svg{fill:currentColor;stroke:none}
+.ctrl-btn:disabled{opacity:.35;cursor:not-allowed}
 
 /* Overlays */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
@@ -64,13 +68,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0a;color:#fff;f
 .overlay-btn.secondary{background:#1e1e28;color:#ccc;border:1px solid #333}
 .overlay-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2}
 
-#toast{position:fixed;bottom:120px;left:50%;transform:translateX(-50%) translateY(20px);background:#1e1e28;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:10000;box-shadow:0 8px 24px rgba(0,0,0,.7);border:1px solid #333;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;max-width:90%}
+/* Toast */
+#toast{position:fixed;bottom:140px;left:50%;transform:translateX(-50%) translateY(20px);background:#1e1e28;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:10000;box-shadow:0 8px 24px rgba(0,0,0,.7);border:1px solid #333;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;max-width:90%}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* Light theme */
+body.light-theme{background:#f0f0f5;color:#0a0a0a}
+body.light-theme .topbar,body.light-theme .top-btn,body.light-theme .ctrl-btn,body.light-theme .level-pill,body.light-theme .progress-wrap{background:#fff;border-color:#ddd;color:#0a0a0a}
+body.light-theme .top-btn,body.light-theme .ctrl-btn{border-color:#ddd}
+body.light-theme #board{background:#fff;border-color:#ddd}
+body.light-theme .cell.arrow{color:#0a0a0a}
+body.light-theme .progress-fill{background:linear-gradient(90deg,#22c55e,#16a34a)}
+body.light-theme .progress-text{color:#fff}
+
 @media(max-width:380px){
-  .cell{font-size:22px}
-  .stat-value{font-size:15px}
-  .action-btn{height:44px;font-size:11px}
+  .cell{font-size:20px}
+  .ctrl-btn{width:48px;height:48px}
+  .ctrl-btn svg{width:20px;height:20px}
+  .top-btn{width:34px;height:34px}
 }
 </style>
 </head>
@@ -80,20 +95,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0a;color:#fff;f
 
   <!-- Top Bar -->
   <div class="topbar">
-    <button class="back-btn" onclick="window.location.href='index.html'">
+    <button class="top-btn" id="backBtn" title="Back">
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-      Back
     </button>
-    <div class="stats">
-      <div class="stat-item">
-        <div class="stat-label">Level</div>
-        <div class="stat-value highlight" id="levelValue">1</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-label">Arrows Left</div>
-        <div class="stat-value" id="arrowsLeft">0</div>
+
+    <div class="center-info">
+      <div class="level-pill">Level <b id="levelValue">1</b></div>
+      <div class="progress-wrap">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        <div class="progress-text" id="progressText">0%</div>
       </div>
     </div>
+
+    <button class="top-btn" id="undoBtn" title="Undo" disabled>
+      <svg viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+    </button>
+    <button class="top-btn" id="restartBtn" title="Restart">
+      <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+    </button>
   </div>
 
   <!-- Board -->
@@ -101,15 +120,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0a;color:#fff;f
     <div id="board"></div>
   </div>
 
-  <!-- Actions -->
-  <div class="actions">
-    <button class="action-btn" id="hintBtn">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-      Hint
+  <!-- Bottom Controls -->
+  <div class="bottom-bar">
+    <button class="ctrl-btn palette" id="paletteBtn" title="Theme">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="8" cy="10" r="1.5" fill="#000" stroke="none"/><circle cx="12" cy="8" r="1.5" fill="#000" stroke="none"/><circle cx="16" cy="10" r="1.5" fill="#000" stroke="none"/><circle cx="14" cy="15" r="1.5" fill="#000" stroke="none"/></svg>
     </button>
-    <button class="action-btn primary" id="restartBtn">
-      <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-      Restart
+    <button class="ctrl-btn" id="hintBtn" title="Hint">
+      <svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>
     </button>
   </div>
 
@@ -120,17 +137,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0a;color:#fff;f
   <div class="overlay-box">
     <div class="overlay-icon">🎉</div>
     <h2>Level Complete!</h2>
-    <p>All arrows escaped! Ready for the next challenge?</p>
+    <p>All arrows cleared! Ready for the next one?</p>
     <div class="overlay-stats">
-      <div class="overlay-stat"><b id="finalMoves">0</b><span>Moves</span></div>
-      <div class="overlay-stat"><b id="finalLevel">1</b><span>Level</span></div>
+      <div class="overlay-stat"><b id="finalLevel">1</b><span>LEVEL DONE</span></div>
+      <div class="overlay-stat"><b id="nextLevelPreview">2</b><span>NEXT</span></div>
     </div>
     <div class="overlay-buttons">
       <button class="overlay-btn primary" id="nextLevelBtn">
         <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
         Next Level
       </button>
-      <button class="overlay-btn secondary" onclick="window.location.href='index.html'">Back to ReelHub</button>
+      <button class="overlay-btn secondary" id="homeBtn1">Back to ReelHub</button>
     </div>
   </div>
 </div>
@@ -140,13 +157,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0a;color:#fff;f
   <div class="overlay-box">
     <div class="overlay-icon">😢</div>
     <h2>Stuck!</h2>
-    <p>No more arrows can escape. Try a different order.</p>
+    <p>No more arrows can escape. Try a different approach or restart.</p>
     <div class="overlay-buttons">
       <button class="overlay-btn primary" id="retryBtn">
         <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
         Try Again
       </button>
-      <button class="overlay-btn secondary" onclick="window.location.href='index.html'">Back to ReelHub</button>
+      <button class="overlay-btn secondary" id="homeBtn2">Back to ReelHub</button>
     </div>
   </div>
 </div>
@@ -155,25 +172,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0a;color:#fff;f
 
 <script>
 /* ============================================================
-   ReelHub Arrows — Arrow Puzzle Escape Game
+   ReelHub Arrows — Dense Arrow Puzzle Escape
    ============================================================ */
 
-const ARROW_COLORS = [
-  { c1: '#ff2e63', c2: '#b81e45' },
-  { c1: '#fbbf24', c2: '#c9970d' },
-  { c1: '#4ea8ff', c2: '#2a6fb8' },
-  { c1: '#4ade80', c2: '#2a9d5c' },
-  { c1: '#a78bfa', c2: '#7c5dd6' },
-  { c1: '#f472b6', c2: '#c94a8a' },
-  { c1: '#22d3ee', c2: '#0891b2' },
-  { c1: '#fb923c', c2: '#c2410c' }
-];
+const $ = id => document.getElementById(id);
 
-const DIR_ICONS = {
-  up: '↑',
-  down: '↓',
-  left: '←',
-  right: '→'
+/* Arrow SVG paths */
+const ARROW_SVG = {
+  up:    '<svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="6 11 12 5 18 11"/></svg>',
+  down:  '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="6 13 12 19 18 13"/></svg>',
+  left:  '<svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="11 6 5 12 11 18"/></svg>',
+  right: '<svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>'
 };
 
 const DIRS = {
@@ -183,135 +192,114 @@ const DIRS = {
   right: { dr: 0,  dc: 1 }
 };
 
-/* ============================================================
-   LEVELS — Handcrafted puzzles
-   ============================================================ */
-const LEVELS = [
-  // Level 1: Simple cross
-  {
-    size: 4,
-    arrows: [
-      { r: 0, c: 1, dir: 'up' },
-      { r: 3, c: 1, dir: 'down' },
-      { r: 1, c: 0, dir: 'left' },
-      { r: 1, c: 3, dir: 'right' },
-      { r: 1, c: 1, dir: 'up' },
-      { r: 2, c: 2, dir: 'down' }
-    ]
-  },
-  // Level 2: Small corners
-  {
-    size: 4,
-    arrows: [
-      { r: 0, c: 0, dir: 'up' },
-      { r: 0, c: 3, dir: 'right' },
-      { r: 3, c: 0, dir: 'left' },
-      { r: 3, c: 3, dir: 'down' },
-      { r: 1, c: 1, dir: 'up' },
-      { r: 2, c: 2, dir: 'down' },
-      { r: 1, c: 2, dir: 'up' },
-      { r: 2, c: 1, dir: 'down' }
-    ]
-  },
-  // Level 3: Spiral
-  {
-    size: 5,
-    arrows: [
-      { r: 0, c: 0, dir: 'up' },
-      { r: 0, c: 2, dir: 'up' },
-      { r: 0, c: 4, dir: 'right' },
-      { r: 2, c: 0, dir: 'left' },
-      { r: 2, c: 2, dir: 'up' },
-      { r: 2, c: 4, dir: 'right' },
-      { r: 4, c: 0, dir: 'left' },
-      { r: 4, c: 2, dir: 'down' },
-      { r: 4, c: 4, dir: 'down' },
-      { r: 1, c: 1, dir: 'up' },
-      { r: 1, c: 3, dir: 'up' },
-      { r: 3, c: 1, dir: 'down' },
-      { r: 3, c: 3, dir: 'down' }
-    ]
-  },
-  // Level 4: Dense
-  {
-    size: 5,
-    arrows: [
-      { r: 0, c: 0, dir: 'up' }, { r: 0, c: 1, dir: 'up' }, { r: 0, c: 2, dir: 'up' },
-      { r: 0, c: 3, dir: 'up' }, { r: 0, c: 4, dir: 'right' },
-      { r: 1, c: 0, dir: 'left' }, { r: 1, c: 4, dir: 'right' },
-      { r: 2, c: 0, dir: 'left' }, { r: 2, c: 2, dir: 'up' }, { r: 2, c: 4, dir: 'right' },
-      { r: 3, c: 0, dir: 'left' }, { r: 3, c: 4, dir: 'right' },
-      { r: 4, c: 0, dir: 'down' }, { r: 4, c: 1, dir: 'down' }, { r: 4, c: 2, dir: 'down' },
-      { r: 4, c: 3, dir: 'down' }, { r: 4, c: 4, dir: 'down' }
-    ]
-  },
-  // Level 5: Puzzle
-  {
-    size: 5,
-    arrows: [
-      { r: 0, c: 1, dir: 'up' }, { r: 0, c: 2, dir: 'up' }, { r: 0, c: 3, dir: 'up' },
-      { r: 1, c: 0, dir: 'left' }, { r: 1, c: 4, dir: 'right' },
-      { r: 2, c: 1, dir: 'up' }, { r: 2, c: 2, dir: 'up' }, { r: 2, c: 3, dir: 'up' },
-      { r: 3, c: 0, dir: 'left' }, { r: 3, c: 4, dir: 'right' },
-      { r: 4, c: 1, dir: 'down' }, { r: 4, c: 2, dir: 'down' }, { r: 4, c: 3, dir: 'down' },
-      { r: 1, c: 1, dir: 'up' }, { r: 3, c: 3, dir: 'down' }
-    ]
-  },
-  // Level 6: Complex
-  {
-    size: 6,
-    arrows: [
-      { r: 0, c: 0, dir: 'up' }, { r: 0, c: 1, dir: 'up' }, { r: 0, c: 2, dir: 'up' },
-      { r: 0, c: 3, dir: 'up' }, { r: 0, c: 4, dir: 'up' }, { r: 0, c: 5, dir: 'right' },
-      { r: 1, c: 0, dir: 'left' }, { r: 1, c: 5, dir: 'right' },
-      { r: 2, c: 0, dir: 'left' }, { r: 2, c: 2, dir: 'up' }, { r: 2, c: 3, dir: 'up' }, { r: 2, c: 5, dir: 'right' },
-      { r: 3, c: 0, dir: 'left' }, { r: 3, c: 2, dir: 'down' }, { r: 3, c: 3, dir: 'down' }, { r: 3, c: 5, dir: 'right' },
-      { r: 4, c: 0, dir: 'left' }, { r: 4, c: 5, dir: 'right' },
-      { r: 5, c: 0, dir: 'down' }, { r: 5, c: 1, dir: 'down' }, { r: 5, c: 2, dir: 'down' },
-      { r: 5, c: 3, dir: 'down' }, { r: 5, c: 4, dir: 'down' }, { r: 5, c: 5, dir: 'down' }
-    ]
-  }
-];
+const DIR_LIST = ['up', 'down', 'left', 'right'];
 
 /* ============================================================
    STATE
    ============================================================ */
-let currentLevelIdx = 0;
-let grid = [];               // 2D array: null or { dir, colorIdx, id }
-let gridSize = 4;
-let moves = 0;
+let level = 1;
+let grid = [];                 // grid[r][c] = null | 'up' | 'down' | 'left' | 'right'
+let initialGrid = [];          // snapshot for restart
+let gridSize = 6;
+let totalArrows = 0;
+let moveHistory = [];          // for undo
 let isAnimating = false;
 let hintTimer = null;
-
-const $ = id => document.getElementById(id);
+let currentPalette = localStorage.getItem('reelhub_arrows_theme') || 'dark';
 
 /* ============================================================
-   INIT
+   LEVEL CONFIG — Progressive difficulty
    ============================================================ */
-function loadLevel(idx) {
-  const levelData = LEVELS[idx];
-  if (!levelData) {
-    // All levels done — loop or show win
-    showToast('🎉 All levels complete!');
-    currentLevelIdx = 0;
-    return loadLevel(0);
+function getLevelConfig(lvl) {
+  if (lvl <= 3)  return { size: 5, arrows: 12 };
+  if (lvl <= 6)  return { size: 5, arrows: 16 };
+  if (lvl <= 10) return { size: 6, arrows: 20 };
+  if (lvl <= 15) return { size: 6, arrows: 26 };
+  if (lvl <= 20) return { size: 7, arrows: 30 };
+  if (lvl <= 30) return { size: 7, arrows: 36 };
+  if (lvl <= 40) return { size: 8, arrows: 40 };
+  if (lvl <= 55) return { size: 8, arrows: 46 };
+  return { size: 9, arrows: 55 };
+}
+
+/* ============================================================
+   PUZZLE GENERATOR — Reverse placement ensures solvable
+   ============================================================ */
+function generatePuzzle(size, targetArrows) {
+  const g = Array(size).fill(null).map(() => Array(size).fill(null));
+  const solution = [];   // order of placement (reverse = solution)
+  let placed = 0;
+
+  // Try many times to place target count
+  for (let attempt = 0; attempt < targetArrows * 20 && placed < targetArrows; attempt++) {
+    const r = Math.floor(Math.random() * size);
+    const c = Math.floor(Math.random() * size);
+    if (g[r][c] !== null) continue;
+
+    // Try random directions
+    const shuffledDirs = [...DIR_LIST].sort(() => Math.random() - 0.5);
+    for (const dir of shuffledDirs) {
+      if (pathClear(g, dir, r, c, size)) {
+        g[r][c] = dir;
+        solution.push({ r, c });
+        placed++;
+        break;
+      }
+    }
   }
 
-  gridSize = levelData.size;
-  moves = 0;
-  grid = Array(gridSize).fill(null).map(() => Array(gridSize).fill(null));
+  return { grid: g, solution, count: placed };
+}
 
-  levelData.arrows.forEach((arrow, i) => {
-    grid[arrow.r][arrow.c] = {
-      dir: arrow.dir,
-      colorIdx: i % ARROW_COLORS.length,
-      id: i
-    };
-  });
+function pathClear(g, dir, r, c, size) {
+  const { dr, dc } = DIRS[dir];
+  let nr = r + dr;
+  let nc = c + dc;
+  while (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+    if (g[nr][nc] !== null) return false;
+    nr += dr;
+    nc += dc;
+  }
+  return true;
+}
 
+/* ============================================================
+   LOAD LEVEL
+   ============================================================ */
+function loadLevel(lvl) {
+  level = lvl;
+  const cfg = getLevelConfig(lvl);
+  gridSize = cfg.size;
+
+  const puzzle = generatePuzzle(gridSize, cfg.arrows);
+  grid = puzzle.grid;
+  totalArrows = puzzle.count;
+
+  // Deep copy for restart
+  initialGrid = grid.map(row => [...row]);
+
+  moveHistory = [];
+  isAnimating = false;
+
+  saveProgress();
   renderBoard();
   updateUI();
   scheduleHint();
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem('reelhub_arrows_level', level.toString());
+  } catch (e) {}
+}
+
+function loadProgress() {
+  try {
+    const saved = parseInt(localStorage.getItem('reelhub_arrows_level') || '1');
+    return saved > 0 ? saved : 1;
+  } catch (e) {
+    return 1;
+  }
 }
 
 /* ============================================================
@@ -320,26 +308,22 @@ function loadLevel(idx) {
 function renderBoard() {
   const boardEl = $('board');
   boardEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+  boardEl.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
   boardEl.innerHTML = '';
 
   for (let r = 0; r < gridSize; r++) {
     for (let c = 0; c < gridSize; c++) {
-      const arrow = grid[r][c];
+      const dir = grid[r][c];
       const cell = document.createElement('div');
+      cell.dataset.row = r;
+      cell.dataset.col = c;
 
-      if (arrow) {
+      if (dir) {
         cell.className = 'cell arrow';
-        const colors = ARROW_COLORS[arrow.colorIdx];
-        cell.style.setProperty('--c1', colors.c1);
-        cell.style.setProperty('--c2', colors.c2);
-        cell.dataset.row = r;
-        cell.dataset.col = c;
-        cell.innerHTML = `<div class="arrow-inner">${DIR_ICONS[arrow.dir]}</div>`;
+        cell.innerHTML = ARROW_SVG[dir];
         cell.addEventListener('click', () => onArrowClick(r, c, cell));
       } else {
         cell.className = 'cell empty';
-        cell.dataset.row = r;
-        cell.dataset.col = c;
       }
 
       boardEl.appendChild(cell);
@@ -348,103 +332,90 @@ function renderBoard() {
 }
 
 function updateUI() {
-  $('levelValue').textContent = currentLevelIdx + 1;
+  $('levelValue').textContent = level;
+  const remaining = countArrows();
+  const cleared = totalArrows - remaining;
+  const percent = totalArrows > 0 ? Math.round((cleared / totalArrows) * 100) : 0;
+
+  $('progressFill').style.width = percent + '%';
+  $('progressText').textContent = percent + '%';
+
+  // Undo button state
+  $('undoBtn').disabled = moveHistory.length === 0;
+}
+
+function countArrows() {
   let count = 0;
   for (let r = 0; r < gridSize; r++) {
     for (let c = 0; c < gridSize; c++) {
       if (grid[r][c]) count++;
     }
   }
-  $('arrowsLeft').textContent = count;
+  return count;
 }
 
 /* ============================================================
-   ARROW CLICK — Check if can escape
+   CLICK HANDLER
    ============================================================ */
 function onArrowClick(row, col, cellEl) {
   if (isAnimating) return;
   clearHint();
 
-  const arrow = grid[row][col];
-  if (!arrow) return;
+  const dir = grid[row][col];
+  if (!dir) return;
 
-  const canEscape = canArrowEscape(arrow.dir, row, col);
+  const canEscape = pathClear(grid, dir, row, col, gridSize);
 
   if (!canEscape) {
-    // Blocked — shake animation
+    // Blocked
     cellEl.classList.add('blocked');
-    cellEl.style.animation = 'none';
-    setTimeout(() => {
-      cellEl.classList.remove('blocked');
-      cellEl.style.animation = '';
-    }, 300);
-    if (navigator.vibrate) navigator.vibrate([20, 50, 20]);
-    showToast('🚫 Blocked! Try another arrow.');
+    setTimeout(() => cellEl.classList.remove('blocked'), 300);
+    if (navigator.vibrate) navigator.vibrate([15, 40, 15]);
     return;
   }
 
-  // Escape!
   escapeArrow(row, col, cellEl);
-}
-
-function canArrowEscape(dir, row, col) {
-  const { dr, dc } = DIRS[dir];
-  let r = row + dr;
-  let c = col + dc;
-
-  while (r >= 0 && r < gridSize && c >= 0 && c < gridSize) {
-    if (grid[r][c] !== null) return false;  // blocked by another arrow
-    r += dr;
-    c += dc;
-  }
-  return true;  // path is clear all the way out
 }
 
 function escapeArrow(row, col, cellEl) {
   isAnimating = true;
 
-  // Vibrate
-  if (navigator.vibrate) navigator.vibrate(15);
+  const dir = grid[row][col];
+
+  // Save for undo
+  moveHistory.push({ r: row, c: col, dir });
 
   // Visual
   cellEl.classList.add('escaped');
+  if (navigator.vibrate) navigator.vibrate(10);
 
-  // Remove from grid data
+  // Remove from data
   grid[row][col] = null;
-  moves++;
 
-  // Update UI
+  // Update UI after animation
   setTimeout(() => {
-    renderBoard();
-    updateUI();
+    cellEl.className = 'cell empty';
+    cellEl.innerHTML = '';
     isAnimating = false;
 
-    // Check if level complete
-    let remaining = 0;
-    for (let r = 0; r < gridSize; r++) {
-      for (let c = 0; c < gridSize; c++) {
-        if (grid[r][c]) remaining++;
-      }
-    }
+    updateUI();
 
+    const remaining = countArrows();
     if (remaining === 0) {
       setTimeout(() => levelComplete(), 300);
+    } else if (!anyEscapePossible()) {
+      setTimeout(() => gameOver(), 400);
     } else {
-      // Check if game is stuck (no arrow can escape)
-      if (!anyArrowCanEscape()) {
-        setTimeout(() => gameOver(), 400);
-      } else {
-        scheduleHint();
-      }
+      scheduleHint();
     }
-  }, 400);
+  }, 350);
 }
 
-function anyArrowCanEscape() {
+function anyEscapePossible() {
   for (let r = 0; r < gridSize; r++) {
     for (let c = 0; c < gridSize; c++) {
-      const arrow = grid[r][c];
-      if (arrow && canArrowEscape(arrow.dir, r, c)) return true;
+      const dir = grid[r][c];
+      if (dir && pathClear(grid, dir, r, c, gridSize)) return true;
     }
   }
   return false;
@@ -454,8 +425,8 @@ function anyArrowCanEscape() {
    LEVEL COMPLETE / GAME OVER
    ============================================================ */
 function levelComplete() {
-  $('finalMoves').textContent = moves;
-  $('finalLevel').textContent = currentLevelIdx + 1;
+  $('finalLevel').textContent = level;
+  $('nextLevelPreview').textContent = level + 1;
   $('levelOverlay').classList.add('show');
   if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
 }
@@ -465,24 +436,46 @@ function gameOver() {
   if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 }
 
-$('nextLevelBtn').addEventListener('click', () => {
-  $('levelOverlay').classList.remove('show');
-  currentLevelIdx++;
-  if (currentLevelIdx >= LEVELS.length) currentLevelIdx = 0;  // loop
-  loadLevel(currentLevelIdx);
-});
+/* ============================================================
+   UNDO
+   ============================================================ */
+function undoMove() {
+  if (moveHistory.length === 0 || isAnimating) return;
 
-$('retryBtn').addEventListener('click', () => {
-  $('gameOverOverlay').classList.remove('show');
-  loadLevel(currentLevelIdx);
-});
+  const last = moveHistory.pop();
+  grid[last.r][last.c] = last.dir;
+
+  renderBoard();
+  updateUI();
+  clearHint();
+  scheduleHint();
+
+  if (navigator.vibrate) navigator.vibrate(10);
+}
 
 /* ============================================================
-   HINT SYSTEM
+   RESTART
+   ============================================================ */
+function restartLevel() {
+  grid = initialGrid.map(row => [...row]);
+  moveHistory = [];
+  isAnimating = false;
+  clearHint();
+
+  renderBoard();
+  updateUI();
+  scheduleHint();
+
+  if (navigator.vibrate) navigator.vibrate(15);
+  showToast('🔄 Restarted');
+}
+
+/* ============================================================
+   HINT
    ============================================================ */
 function scheduleHint() {
   clearHint();
-  hintTimer = setTimeout(() => findHint(false), 8000);
+  hintTimer = setTimeout(() => findHint(false), 10000);
 }
 
 function clearHint() {
@@ -496,31 +489,44 @@ function clearHint() {
 function findHint(showMsg) {
   clearHint();
 
+  // Find arrows that can escape
+  const candidates = [];
   for (let r = 0; r < gridSize; r++) {
     for (let c = 0; c < gridSize; c++) {
-      const arrow = grid[r][c];
-      if (arrow && canArrowEscape(arrow.dir, r, c)) {
-        const cell = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
-        if (cell) cell.classList.add('hint');
-        if (showMsg) showToast('💡 Tap this arrow');
-        scheduleHint();
-        return;
+      const dir = grid[r][c];
+      if (dir && pathClear(grid, dir, r, c, gridSize)) {
+        candidates.push({ r, c, dir });
       }
     }
   }
 
-  if (showMsg) showToast('🚫 No arrows can escape');
+  if (candidates.length === 0) {
+    if (showMsg) showToast('😢 No moves available');
+    return;
+  }
+
+  // Pick a random one (or the "best" one — prefer edges)
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  const cell = document.querySelector(`.cell[data-row="${pick.r}"][data-col="${pick.c}"]`);
+  if (cell) cell.classList.add('hint');
+
+  if (showMsg) showToast('💡 Tap the glowing arrow');
+
+  scheduleHint();
 }
 
-$('hintBtn').addEventListener('click', () => findHint(true));
-
 /* ============================================================
-   RESTART
+   PALETTE — Theme toggle
    ============================================================ */
-$('restartBtn').addEventListener('click', () => {
-  if (!confirm('Restart this level?')) return;
-  loadLevel(currentLevelIdx);
-});
+function toggleTheme() {
+  currentPalette = currentPalette === 'dark' ? 'light' : 'dark';
+  applyTheme();
+  localStorage.setItem('reelhub_arrows_theme', currentPalette);
+}
+
+function applyTheme() {
+  document.body.classList.toggle('light-theme', currentPalette === 'light');
+}
 
 /* ============================================================
    TOAST
@@ -530,14 +536,57 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(window._toastT);
-  window._toastT = setTimeout(() => t.classList.remove('show'), 1800);
+  window._toastT = setTimeout(() => t.classList.remove('show'), 1600);
 }
+
+/* ============================================================
+   EVENT LISTENERS
+   ============================================================ */
+$('backBtn').addEventListener('click', () => {
+  window.location.href = 'index.html';
+});
+
+$('undoBtn').addEventListener('click', undoMove);
+
+$('restartBtn').addEventListener('click', () => {
+  if (moveHistory.length > 0 || !anyEscapePossible() === false) {
+    restartLevel();
+  } else {
+    restartLevel();
+  }
+});
+
+$('hintBtn').addEventListener('click', () => findHint(true));
+
+$('paletteBtn').addEventListener('click', toggleTheme);
+
+$('nextLevelBtn').addEventListener('click', () => {
+  $('levelOverlay').classList.remove('show');
+  loadLevel(level + 1);
+});
+
+$('retryBtn').addEventListener('click', () => {
+  $('gameOverOverlay').classList.remove('show');
+  restartLevel();
+});
+
+$('homeBtn1').addEventListener('click', () => {
+  window.location.href = 'index.html';
+});
+
+$('homeBtn2').addEventListener('click', () => {
+  window.location.href = 'index.html';
+});
 
 /* ============================================================
    START
    ============================================================ */
-loadLevel(0);
-console.log('🎯 ReelHub Arrows loaded');
+(function start() {
+  applyTheme();
+  const savedLevel = loadProgress();
+  loadLevel(savedLevel);
+  console.log('🎯 ReelHub Arrows loaded — Level', savedLevel);
+})();
 </script>
 
 </body>
