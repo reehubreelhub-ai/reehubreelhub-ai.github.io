@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<title>ReelHub Games</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='55' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='middle'>R</text></svg>">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;min-height:100%;background:#0a0a0a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+
+#app{max-width:500px;margin:0 auto;padding:16px;padding-bottom:40px}
+
+/* Header */
+.header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #1a1a1a}
+.back-btn{width:40px;height:40px;border-radius:50%;background:#1a1a24;border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.back-btn:active{transform:scale(.92);background:#2a2a34}
+.back-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.header-title{flex:1}
+.header-title h1{font-size:22px;font-weight:900;background:linear-gradient(90deg,#ff2e63,#ff8a00);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.5px}
+.header-title p{font-size:11px;color:#888;margin-top:2px;font-weight:600}
+
+/* Search */
+.search-wrap{position:relative;margin-bottom:16px}
+.search-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:#666;fill:none;stroke-width:2}
+#searchInput{width:100%;height:44px;background:#121212;border:1px solid #262636;border-radius:22px;padding:0 16px 0 42px;color:#fff;font-size:13px;font-family:inherit;outline:none;transition:border-color .2s}
+#searchInput:focus{border-color:#ff2e63}
+#searchInput::placeholder{color:#666}
+
+/* Categories */
+.categories{display:flex;gap:6px;padding-bottom:14px;overflow-x:auto;scrollbar-width:none;margin-bottom:8px}
+.categories::-webkit-scrollbar{display:none}
+.cat-btn{flex-shrink:0;padding:8px 16px;background:#1a1a24;border:1px solid #262636;border-radius:20px;color:#888;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.cat-btn.active{background:linear-gradient(90deg,#ff2e63,#ff8a00);border-color:transparent;color:#fff}
+.cat-btn:active{transform:scale(.95)}
+
+/* Stats bar */
+.stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+.stat-box{background:#121212;border:1px solid #1e1e28;border-radius:12px;padding:12px;text-align:center}
+.stat-box .val{font-size:20px;font-weight:900;color:#fff;line-height:1}
+.stat-box .lbl{font-size:9px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+
+/* Featured */
+.featured{background:linear-gradient(135deg,#1a1a24 0%,#2a1520 100%);border:1px solid #ff2e63;border-radius:20px;padding:18px;cursor:pointer;display:flex;align-items:center;gap:14px;margin-bottom:20px;position:relative;overflow:hidden;transition:transform .15s}
+.featured:active{transform:scale(.98)}
+.featured::before{content:'';position:absolute;top:-50%;right:-50%;width:200px;height:200px;background:radial-gradient(circle,rgba(255,46,99,.3),transparent 70%);pointer-events:none}
+.featured-icon{font-size:52px;flex-shrink:0;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))}
+.featured-info{flex:1;min-width:0;position:relative;z-index:1}
+.featured-info .badge{display:inline-block;padding:2px 8px;background:#ff2e63;border-radius:8px;font-size:9px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
+.featured-info h3{font-size:17px;font-weight:900;color:#fff;margin-bottom:4px}
+.featured-info p{font-size:11px;color:#ccc;line-height:1.4;margin-bottom:8px}
+.featured-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:linear-gradient(90deg,#ff2e63,#ff8a00);border-radius:20px;color:#fff;font-size:11px;font-weight:800;box-shadow:0 4px 12px rgba(255,46,99,.4)}
+.featured-btn svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5}
+
+/* Section */
+.section{margin-bottom:24px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-header h2{font-size:15px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px}
+.section-header h2 svg{width:16px;height:16px;stroke:#ff2e63;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.section-header .count{font-size:11px;color:#666;font-weight:700}
+
+/* Games grid */
+.games-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.game-card{background:linear-gradient(145deg,#1a1a24,#0f0f16);border:1px solid #1e1e28;border-radius:16px;padding:14px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:8px;min-height:150px}
+.game-card:active{transform:scale(.97);border-color:#333}
+.game-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--c1),var(--c2));opacity:.9}
+.game-icon{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--c1),var(--c2));display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 6px 16px rgba(0,0,0,.4);flex-shrink:0}
+.game-name{font-size:14px;font-weight:800;color:#fff;line-height:1.2}
+.game-desc{font-size:10.5px;color:#888;line-height:1.3;flex:1}
+.game-meta{display:flex;align-items:center;gap:5px;font-size:9.5px;color:#666;font-weight:700}
+.game-meta svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2}
+.game-badge{position:absolute;top:10px;right:10px;padding:3px 7px;border-radius:10px;font-size:8px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;z-index:2}
+.game-badge.new{background:#ff2e63;color:#fff}
+.game-badge.hot{background:#ff8a00;color:#fff}
+.game-badge.popular{background:#4ea8ff;color:#fff}
+.game-badge.done{background:#4ade80;color:#000}
+
+/* New Section — highlight */
+.game-card.new-highlight{border-color:#ff2e63;box-shadow:0 0 20px rgba(255,46,99,.2)}
+
+/* Empty state */
+.empty-state{text-align:center;padding:60px 20px;color:#666}
+.empty-state svg{width:64px;height:64px;stroke:#333;fill:none;stroke-width:1.5;margin:0 auto 16px}
+.empty-state p{font-size:13px;font-weight:600}
+
+/* Footer */
+.footer{text-align:center;color:#555;font-size:11px;font-weight:600;padding:20px 0 10px}
+.footer b{color:#ff2e63}
+
+/* Animations */
+@keyframes popIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.game-card{animation:popIn .3s ease backwards}
+.game-card:nth-child(1){animation-delay:.02s}
+.game-card:nth-child(2){animation-delay:.04s}
+.game-card:nth-child(3){animation-delay:.06s}
+.game-card:nth-child(4){animation-delay:.08s}
+.game-card:nth-child(5){animation-delay:.1s}
+.game-card:nth-child(6){animation-delay:.12s}
+
+/* Category pills small */
+@media(max-width:380px){
+  .header-title h1{font-size:20px}
+  .game-icon{width:42px;height:42px;font-size:22px}
+  .game-name{font-size:13px}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Header -->
+  <div class="header">
+    <button class="back-btn" onclick="window.location.href='index.html'">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="header-title">
+      <h1>🎮 Games</h1>
+      <p>Play & chill on ReelHub</p>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="searchInput" placeholder="Search games...">
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-box">
+      <div class="val" id="statGames">12</div>
+      <div class="lbl">Games</div>
+    </div>
+    <div class="stat-box">
+      <div class="val" id="statPlayed">0</div>
+      <div class="lbl">Played</div>
+    </div>
+    <div class="stat-box">
+      <div class="val">∞</div>
+      <div class="lbl">Fun</div>
+    </div>
+  </div>
+
+  <!-- Categories -->
+  <div class="categories" id="categories">
+    <button class="cat-btn active" data-cat="all">All</button>
+    <button class="cat-btn" data-cat="puzzle">Puzzle</button>
+    <button class="cat-btn" data-cat="arcade">Arcade</button>
+    <button class="cat-btn" data-cat="3d">3D</button>
+    <button class="cat-btn" data-cat="idle">Idle</button>
+    <button class="cat-btn" data-cat="action">Action</button>
+  </div>
+
+  <!-- Featured -->
+  <div class="featured" onclick="playGame('car3d.html')">
+    <div class="featured-icon">🚗</div>
+    <div class="featured-info">
+      <div class="badge">🔥 New</div>
+      <h3>3D Car Racing</h3>
+      <p>Drive Baleno & WagonR in full 3D world!</p>
+      <div class="featured-btn">
+        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>
+        Play Now
+      </div>
+    </div>
+  </div>
+
+  <!-- Section: All Games -->
+  <div class="section">
+    <div class="section-header">
+      <h2>
+        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><circle cx="8" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
+        All Games
+      </h2>
+      <div class="count" id="gameCount">12 games</div>
+    </div>
+    <div class="games-grid" id="gamesGrid"></div>
+  </div>
+
+  <div class="footer">
+    Made with ❤️ by <b>ReelHub</b>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   ALL GAMES DATA
+   ============================================================ */
+const ALL_GAMES = [
+  // ============ MAIN 7 ============
+  {
+    id: 'breaker',
+    name: 'Breaker',
+    desc: 'Break bricks with ball',
+    icon: '🧱',
+    c1: '#4ea8ff',
+    c2: '#2a6fb8',
+    file: 'breaker.html',
+    badge: 'popular',
+    category: 'arcade',
+    meta: 'Arcade · Levels'
+  },
+  {
+    id: 'memory',
+    name: 'Memory Cards',
+    desc: 'Match pairs & 50 levels',
+    icon: '🎴',
+    c1: '#fbbf24',
+    c2: '#c9970d',
+    file: 'memory.html',
+    badge: null,
+    category: 'puzzle',
+    meta: 'Puzzle · 50 Levels'
+  },
+  {
+    id: 'shooter',
+    name: 'Space Shooter',
+    desc: 'Boss battles & weapons',
+    icon: '🚀',
+    c1: '#a78bfa',
+    c2: '#7c5dd6',
+    file: 'shooter.html',
+    badge: 'hot',
+    category: 'action',
+    meta: 'Action · Endless'
+  },
+  {
+    id: 'brickstyle',
+    name: 'Brick Style',
+    desc: 'Tetris-style stacking',
+    icon: '🎯',
+    c1: '#22d3ee',
+    c2: '#0891b2',
+    file: 'brickstyle.html',
+    badge: null,
+    category: 'puzzle',
+    meta: 'Puzzle · Endless'
+  },
+  {
+    id: 'bubble',
+    name: 'Bubble Master',
+    desc: 'Bubble shooter · 50 levels',
+    icon: '🫧',
+    c1: '#4ade80',
+    c2: '#2a9d5c',
+    file: 'bubble.html',
+    badge: null,
+    category: 'puzzle',
+    meta: 'Puzzle · 50 Levels'
+  },
+  {
+    id: 'fruitslice',
+    name: 'Fruit Slice',
+    desc: 'Slice fruits · Build combos',
+    icon: '🍉',
+    c1: '#ef4444',
+    c2: '#991b1b',
+    file: 'fruitslice.html',
+    badge: 'hot',
+    category: 'action',
+    meta: 'Action · Endless'
+  },
+  {
+    id: 'car3d',
+    name: '3D Car Racing',
+    desc: 'Real 3D · Baleno + WagonR',
+    icon: '🚗',
+    c1: '#ff2e63',
+    c2: '#b81e45',
+    file: 'car3d.html',
+    badge: 'new',
+    category: '3d',
+    meta: '3D · Racing'
+  },
+
+  // ============ BONUS ============
+  {
+    id: 'blocks',
+    name: 'Block Blast',
+    desc: 'Fill grid · Clear lines',
+    icon: '🧩',
+    c1: '#ff8a00',
+    c2: '#c96800',
+    file: 'blocks.html',
+    badge: null,
+    category: 'puzzle',
+    meta: 'Puzzle · Endless'
+  },
+  {
+    id: 'tiletrip',
+    name: 'Tile Trip',
+    desc: 'Match 3 tiles to clear',
+    icon: '🀄',
+    c1: '#f472b6',
+    c2: '#c94a8a',
+    file: 'tiletrip.html',
+    badge: null,
+    category: 'puzzle',
+    meta: 'Puzzle · Levels'
+  },
+  {
+    id: 'pizzaboss',
+    name: 'Pizza Boss',
+    desc: 'Idle cooking empire',
+    icon: '🍕',
+    c1: '#fbbf24',
+    c2: '#c9970d',
+    file: 'pizzaboss.html',
+    badge: null,
+    category: 'idle',
+    meta: 'Idle · Endless'
+  },
+  {
+    id: 'arrows',
+    name: 'Arrows',
+    desc: 'Escape puzzle challenge',
+    icon: '🎯',
+    c1: '#4ea8ff',
+    c2: '#2a6fb8',
+    file: 'arrows.html',
+    badge: null,
+    category: 'puzzle',
+    meta: 'Puzzle · Endless'
+  }
+];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let currentCategory = 'all';
+let searchTerm = '';
+
+const $ = id => document.getElementById(id);
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function renderGames() {
+  const grid = $('gamesGrid');
+  if (!grid) return;
+
+  let filtered = ALL_GAMES;
+
+  // Filter by category
+  if (currentCategory !== 'all') {
+    filtered = filtered.filter(g => g.category === currentCategory);
+  }
+
+  // Filter by search
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    filtered = filtered.filter(g =>
+      g.name.toLowerCase().includes(term) ||
+      g.desc.toLowerCase().includes(term)
+    );
+  }
+
+  // Update count
+  $('gameCount').textContent = filtered.length + ' game' + (filtered.length !== 1 ? 's' : '');
+
+  // Empty state
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <p>No games found</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Render cards
+  grid.innerHTML = '';
+  filtered.forEach((game, idx) => {
+    const card = document.createElement('div');
+    card.className = 'game-card' + (game.badge === 'new' ? ' new-highlight' : '');
+    card.style.setProperty('--c1', game.c1);
+    card.style.setProperty('--c2', game.c2);
+    card.style.animationDelay = (idx * 0.02) + 's';
+
+    const badgeHTML = game.badge
+      ? `<div class="game-badge ${game.badge}">${game.badge === 'new' ? 'NEW' : game.badge === 'hot' ? 'HOT' : 'POPULAR'}</div>`
+      : '';
+
+    card.innerHTML = `
+      ${badgeHTML}
+      <div class="game-icon">${game.icon}</div>
+      <div class="game-name">${escapeHtml(game.name)}</div>
+      <div class="game-desc">${escapeHtml(game.desc)}</div>
+      <div class="game-meta">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        ${escapeHtml(game.meta)}
+      </div>
+    `;
+
+    card.addEventListener('click', () => playGame(game.file));
+    grid.appendChild(card);
+  });
+}
+
+/* ============================================================
+   PLAY GAME
+   ============================================================ */
+function playGame(file) {
+  if (navigator.vibrate) navigator.vibrate(15);
+
+  // Save play stats
+  try {
+    const played = parseInt(localStorage.getItem('reelhub_games_played') || '0') + 1;
+    localStorage.setItem('reelhub_games_played', played.toString());
+    localStorage.setItem('reelhub_last_game', file);
+    localStorage.setItem('reelhub_last_game_time', Date.now().toString());
+  } catch (e) {}
+
+  // Redirect
+  window.location.href = file;
+}
+
+/* ============================================================
+   CATEGORY & SEARCH
+   ============================================================ */
+function initCategories() {
+  document.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentCategory = btn.dataset.cat;
+      renderGames();
+      if (navigator.vibrate) navigator.vibrate(8);
+    });
+  });
+}
+
+function initSearch() {
+  const input = $('searchInput');
+  if (!input) return;
+
+  let debounceTimer = null;
+  input.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      searchTerm = e.target.value.trim();
+      renderGames();
+    }, 200);
+  });
+}
+
+/* ============================================================
+   STATS
+   ============================================================ */
+function loadStats() {
+  // Total games
+  $('statGames').textContent = ALL_GAMES.length;
+
+  // Played count
+  try {
+    const played = parseInt(localStorage.getItem('reelhub_games_played') || '0');
+    $('statPlayed').textContent = played > 0 ? played : 0;
+  } catch (e) {}
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init() {
+  initCategories();
+  initSearch();
+  loadStats();
+  renderGames();
+  console.log('🎮 ReelHub Games Hub loaded — ' + ALL_GAMES.length + ' games');
+}
+
+init();
+</script>
+
+</body>
+</html>
