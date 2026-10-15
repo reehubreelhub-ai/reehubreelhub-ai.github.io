@@ -135,6 +135,10 @@
             <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </button>
         </div>
+        <button class="nav-item" data-page="games" onclick="window.location.href='games.html'">
+          <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><circle cx="8" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
+          <span>Games</span>
+        </button>
         <button class="nav-item" data-page="messages">
           <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
           <span>Chats</span>
@@ -460,22 +464,18 @@
         <h3 id="highlightModalTitle">New Highlight</h3>
         <button class="modal-close" id="closeHighlightModal">&times;</button>
       </div>
-
       <div class="input-group">
         <label>Highlight Name</label>
         <input type="text" id="highlightNameInput" placeholder="Enter name..." maxlength="20">
       </div>
-
       <div class="input-group">
         <label>Select Stories <span style="color:#666;font-weight:500;text-transform:none;font-size:11px;">(tap to select)</span></label>
         <div class="highlight-stories-picker" id="highlightStoriesPicker"></div>
       </div>
-
       <div class="input-group">
         <label>Choose Cover</label>
         <div class="highlight-cover-picker" id="highlightCoverPicker"></div>
       </div>
-
       <button class="btn-primary" id="saveHighlightBtn">Create Highlight</button>
       <div class="error-msg" id="highlightMsg"></div>
     </div>
@@ -496,6 +496,15 @@
             <div class="settings-item-info">
               <div class="settings-item-label">📊 ReelHub Studio</div>
               <div class="settings-item-desc">View your stats, upload videos, manage content</div>
+            </div>
+            <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+          <div class="settings-item" style="cursor:pointer;" onclick="window.location.href='games.html'">
+            <div class="settings-item-info">
+              <div class="settings-item-label">🎮 Play Games</div>
+              <div class="settings-item-desc">Arcade, puzzle, 3D & more</div>
             </div>
             <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24">
               <polyline points="9 18 15 12 9 6"/>
