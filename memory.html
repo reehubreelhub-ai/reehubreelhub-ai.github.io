@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<title>ReelHub Memory Cards</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='55' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='middle'>R</text></svg>">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none;touch-action:manipulation}
+
+#game{display:flex;flex-direction:column;height:100vh;max-width:500px;margin:0 auto;padding:10px;gap:10px}
+
+/* Top Bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#0f0f16;border:1px solid #1e1e28;border-radius:14px;flex-shrink:0;gap:8px}
+.back-btn{background:none;border:none;color:#fff;cursor:pointer;padding:6px;display:flex;align-items:center;gap:4px;font-family:inherit;font-size:11px;font-weight:700}
+.back-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2}
+.stats{display:flex;gap:10px;align-items:center}
+.stat-item{text-align:center}
+.stat-label{font-size:8px;color:#888;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+.stat-value{font-size:14px;font-weight:900;color:#fff;line-height:1}
+.stat-value.coin{color:#fbbf24}
+.stat-value.highlight{background:linear-gradient(90deg,#ff2e63,#ff8a00);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.coin-icon{display:inline-block;font-size:11px;margin-right:2px}
+
+/* Level indicator */
+.level-bar{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;background:linear-gradient(135deg,#1a1a24,#0f0f16);border:1px solid #1e1e28;border-radius:12px;flex-shrink:0}
+.level-current{font-size:13px;font-weight:900;color:#fff}
+.level-current b{background:linear-gradient(90deg,#ff2e63,#ff8a00);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.level-progress{flex:1;height:6px;background:#1a1a24;border-radius:3px;overflow:hidden;max-width:200px}
+.level-progress-fill{height:100%;background:linear-gradient(90deg,#4ade80,#22c55e);border-radius:3px;transition:width .3s}
+.level-total{font-size:11px;color:#888;font-weight:700}
+
+/* Board */
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:4px}
+#board{display:grid;gap:6px;width:100%;max-width:440px;margin:0 auto;aspect-ratio:1}
+
+/* Card */
+.card{position:relative;cursor:pointer;perspective:1000px;-webkit-perspective:1000px}
+.card-inner{position:relative;width:100%;height:100%;transition:transform .5s cubic-bezier(.4,.2,.2,1);transform-style:preserve-3d;-webkit-transform-style:preserve-3d}
+.card.flipped .card-inner{transform:rotateY(180deg)}
+.card.matched .card-inner{animation:matchPop .4s ease;transform:rotateY(180deg)}
+.card.matched{pointer-events:none}
+@keyframes matchPop{0%{transform:rotateY(180deg) scale(1)}50%{transform:rotateY(180deg) scale(1.15)}100%{transform:rotateY(180deg) scale(1);opacity:.85}}
+.card-face{position:absolute;inset:0;border-radius:10px;display:flex;align-items:center;justify-content:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;font-size:28px}
+.card-back{background:linear-gradient(135deg,#1e1e28,#2a2a34);border:1px solid #333;box-shadow:inset 0 -3px 0 rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.05)}
+.card-back::after{content:'?';font-size:20px;font-weight:900;color:rgba(255,255,255,.15);font-family:sans-serif}
+.card-front{background:linear-gradient(135deg,var(--c1),var(--c2));transform:rotateY(180deg);border:1px solid rgba(255,255,255,.15);box-shadow:inset 0 -3px 0 rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.15)}
+.card-front::after{content:'';position:absolute;top:8%;left:10%;width:30%;height:20%;background:rgba(255,255,255,.25);border-radius:50%;filter:blur(6px)}
+.card.matched .card-front{box-shadow:inset 0 -3px 0 rgba(0,0,0,.3),0 0 20px rgba(74,222,128,.6);border-color:#4ade80}
+.card.disabled{pointer-events:none}
+
+/* Bottom */
+.actions{display:flex;gap:8px;flex-shrink:0}
+.action-btn{flex:1;height:48px;border-radius:12px;border:1px solid #333;background:linear-gradient(135deg,#1e1e28,#14141c);color:#fff;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .15s;position:relative}
+.action-btn:active{transform:scale(.95);background:#2a2a34}
+.action-btn.primary{background:linear-gradient(135deg,#ff2e63,#ff8a00);border:none;box-shadow:0 4px 16px rgba(255,46,99,.4)}
+.action-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.action-btn:disabled{opacity:.4;cursor:not-allowed}
+.action-btn .cost-badge{font-size:9px;font-weight:900;color:#fbbf24;display:flex;align-items:center;gap:2px}
+.action-btn .cost-badge.can{color:#4ade80}
+.action-btn .cost-badge.cant{color:#ef4444}
+.action-btn .main-label{font-size:11px;font-weight:800;letter-spacing:.3px}
+
+/* Overlays */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.overlay.show{display:flex}
+.overlay-box{background:#14141c;border:1px solid #232332;border-radius:22px;padding:26px 22px;max-width:400px;width:100%;text-align:center;animation:popIn .3s ease;max-height:90vh;overflow-y:auto}
+@keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.overlay-icon{font-size:60px;margin-bottom:12px;animation:bounce 2s infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.overlay-box h2{font-size:22px;font-weight:900;background:linear-gradient(90deg,#ff2e63,#ff8a00);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.overlay-box p{font-size:12px;color:#888;line-height:1.6;margin-bottom:18px}
+.overlay-stats{display:flex;justify-content:center;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.overlay-stat{text-align:center;min-width:60px}
+.overlay-stat b{display:block;font-size:20px;font-weight:900;color:#fff}
+.overlay-stat span{font-size:9px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.overlay-buttons{display:flex;flex-direction:column;gap:10px}
+.overlay-btn{height:50px;border-radius:14px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.overlay-btn.primary{background:linear-gradient(90deg,#ff2e63,#ff8a00);color:#fff;box-shadow:0 6px 20px rgba(255,46,99,.35)}
+.overlay-btn.secondary{background:#1e1e28;color:#ccc;border:1px solid #333}
+.overlay-btn.gold{background:linear-gradient(90deg,#fbbf24,#f59e0b);color:#000;box-shadow:0 6px 20px rgba(251,191,36,.4)}
+.overlay-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2}
+.overlay-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Rewards row */
+.reward-row{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:#0a0a0a;border-radius:12px;margin-bottom:18px;border:1px solid #262636}
+.reward-row .coin-big{font-size:28px}
+.reward-row .reward-text{text-align:left}
+.reward-row .reward-text .amount{font-size:20px;font-weight:900;color:#fbbf24;line-height:1}
+.reward-row .reward-text .label{font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+
+/* Stars */
+.stars-row{font-size:32px;letter-spacing:4px;margin-bottom:16px;color:#fbbf24;text-shadow:0 2px 8px rgba(251,191,36,.4)}
+
+/* Peek info */
+.peek-info{background:#0a0a0a;border-radius:12px;padding:12px;margin-bottom:16px;border:1px solid #262636}
+.peek-info-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#ccc;padding:4px 0}
+.peek-info-row b{color:#fbbf24;font-size:14px;font-weight:900}
+
+/* Welcome */
+.welcome-features{text-align:left;background:#0a0a0a;border-radius:12px;padding:14px;margin-bottom:18px}
+.welcome-features li{list-style:none;font-size:12px;color:#ccc;line-height:1.8;display:flex;align-items:flex-start;gap:8px}
+.welcome-features li::before{content:'✓';color:#4ade80;font-weight:900;flex-shrink:0}
+
+/* Peek purchase modal */
+.purchase-detail{background:#0a0a0a;border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid #262636;text-align:center}
+.purchase-detail .big-icon{font-size:48px;margin-bottom:8px}
+.purchase-detail h3{font-size:15px;color:#fff;font-weight:800;margin-bottom:4px}
+.purchase-detail p{font-size:11px;color:#888;margin-bottom:14px}
+.purchase-cost{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:linear-gradient(135deg,#1a1a24,#2a2a34);border-radius:20px;font-size:16px;font-weight:900;color:#fbbf24;border:1px solid #fbbf24}
+.purchase-balance{font-size:11px;color:#888;margin-top:10px}
+.purchase-balance b{color:#4ade80}
+
+#toast{position:fixed;bottom:120px;left:50%;transform:translateX(-50%) translateY(20px);background:#1e1e28;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:10000;box-shadow:0 8px 24px rgba(0,0,0,.7);border:1px solid #333;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;max-width:90%;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Coin burst animation */
+.coin-burst{position:fixed;font-size:24px;pointer-events:none;z-index:9998;animation:coinFly 1s ease forwards}
+@keyframes coinFly{0%{transform:scale(0) rotate(0);opacity:0}20%{transform:scale(1.3) rotate(180deg);opacity:1}100%{transform:scale(1) translateY(-100px) rotate(360deg);opacity:0}}
+
+@media(max-width:380px){
+  .card-face{font-size:22px}
+  .stat-value{font-size:12px}
+  .action-btn{height:44px}
+  .action-btn .main-label{font-size:10px}
+  #board{gap:5px}
+  .overlay-box{padding:22px 18px}
+}
+</style>
+</head>
+<body>
+
+<div id="game">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <button class="back-btn" onclick="window.location.href='games.html'">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Back
+    </button>
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-label">Level</div>
+        <div class="stat-value highlight" id="levelValue">1</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Moves</div>
+        <div class="stat-value" id="movesValue">0</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Time</div>
+        <div class="stat-value" id="timeValue">0:00</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Coins</div>
+        <div class="stat-value coin" id="coinsValue"><span class="coin-icon">🪙</span>0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level Bar -->
+  <div class="level-bar">
+    <div class="level-current">Level <b id="levelCurrent">1</b></div>
+    <div class="level-progress"><div class="level-progress-fill" id="levelProgressFill" style="width:2%"></div></div>
+    <div class="level-total">/ 50</div>
+  </div>
+
+  <!-- Board -->
+  <div class="board-wrap">
+    <div id="board"></div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions">
+    <button class="action-btn" id="peekBtn">
+      <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span class="main-label">Peek</span>
+      <span class="cost-badge" id="peekCost">🪙 10</span>
+    </button>
+    <button class="action-btn primary" id="restartBtn">
+      <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      Restart
+    </button>
+  </div>
+
+</div>
+
+<!-- Welcome -->
+<div class="overlay show" id="welcomeOverlay">
+  <div class="overlay-box">
+    <div class="overlay-icon">🎴</div>
+    <h2>Memory Cards</h2>
+    <p>50 levels · Earn coins · Unlock peeks!</p>
+
+    <div class="welcome-features">
+      <li>Match all pairs to clear the level</li>
+      <li>Each level clear = <b style="color:#fbbf24;">+5 coins 🪙</b></li>
+      <li>Peek costs <b style="color:#fbbf24;">10 coins</b> — reveals all cards briefly</li>
+      <li>Complete 50 levels to become a Memory Master!</li>
+      <li>Earn bonus coins for fast clear</li>
+    </div>
+
+    <div class="peek-info">
+      <div class="peek-info-row">
+        <span>Your coins</span>
+        <b id="welcomeCoins">🪙 0</b>
+      </div>
+      <div class="peek-info-row">
+        <span>Current level</span>
+        <b id="welcomeLevel">1 / 50</b>
+      </div>
+    </div>
+
+    <button class="overlay-btn primary" id="startBtn">
+      <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>
+      <span id="startBtnText">Start Level 1</span>
+    </button>
+  </div>
+</div>
+
+<!-- Level Complete -->
+<div class="overlay" id="levelOverlay">
+  <div class="overlay-box">
+    <div class="overlay-icon" id="levelIcon">🎉</div>
+    <h2 id="levelTitle">Level Complete!</h2>
+    <p id="winMsg">All pairs matched!</p>
+
+    <div class="stars-row" id="starsRow">★★★</div>
+
+    <div class="reward-row">
+      <div class="coin-big">🪙</div>
+      <div class="reward-text">
+        <div class="amount" id="coinsEarned">+5</div>
+        <div class="label">Coins earned</div>
+      </div>
+    </div>
+
+    <div class="overlay-stats">
+      <div class="overlay-stat"><b id="finalMoves">0</b><span>Moves</span></div>
+      <div class="overlay-stat"><b id="finalTime">0:00</b><span>Time</span></div>
+      <div class="overlay-stat"><b id="totalCoins">🪙 0</b><span>Balance</span></div>
+    </div>
+
+    <div class="overlay-buttons">
+      <button class="overlay-btn primary" id="nextLevelBtn">
+        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        Next Level
+      </button>
+      <button class="overlay-btn secondary" onclick="window.location.href='games.html'">Back to Games</button>
+    </div>
+  </div>
+</div>
+
+<!-- Game Over (out of moves / gave up) -->
+<div class="overlay" id="gameOverOverlay">
+  <div class="overlay-box">
+    <div class="overlay-icon">😢</div>
+    <h2>Try Again!</h2>
+    <p>Complete the level to earn coins.</p>
+    <div class="overlay-buttons">
+      <button class="overlay-btn primary" id="retryBtn">
+        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        Retry Level
+      </button>
+      <button class="overlay-btn secondary" onclick="window.location.href='games.html'">Back to Games</button>
+    </div>
+  </div>
+</div>
+
+<!-- Peek Purchase Confirm -->
+<div class="overlay" id="peekOverlay">
+  <div class="overlay-box">
+    <div class="purchase-detail">
+      <div class="big-icon">👁️</div>
+      <h3>Use Peek?</h3>
+      <p>Reveals all cards for 1.5 seconds.</p>
+      <div class="purchase-cost">
+        <span>🪙</span> <span>10</span> <span style="font-size:11px;color:#888;font-weight:600;">coins</span>
+      </div>
+      <div class="purchase-balance">Your balance: <b id="peekBalance">🪙 0</b></div>
+    </div>
+    <div class="overlay-buttons">
+      <button class="overlay-btn gold" id="confirmPeekBtn">
+        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Buy & Peek
+      </button>
+      <button class="overlay-btn secondary" id="cancelPeekBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- All Levels Complete -->
+<div class="overlay" id="finalOverlay">
+  <div class="overlay-box">
+    <div class="overlay-icon">👑</div>
+    <h2>Memory Master!</h2>
+    <p>You completed all 50 levels! Amazing memory!</p>
+    <div class="overlay-stats">
+      <div class="overlay-stat"><b id="finalCoinsTotal">🪙 0</b><span>Total Coins</span></div>
+    </div>
+    <div class="overlay-buttons">
+      <button class="overlay-btn primary" id="playAllAgainBtn">
+        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        Play Again (Level 1)
+      </button>
+      <button class="overlay-btn secondary" onclick="window.location.href='games.html'">Back to Games</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   ReelHub Memory Cards — 50 Levels + Coin System
+   ============================================================ */
+
+const $ = id => document.getElementById(id);
+
+const SAVE_KEY = 'reelhub_memory_save_v2';
+const PEEK_COST = 10;
+const LEVEL_REWARD = 5;
+const MAX_LEVEL = 50;
+
+/* Symbols */
+const SYMBOLS = [
+  { emoji: '🍎', c1: '#ff2e63', c2: '#b81e45' },
+  { emoji: '🍋', c1: '#fbbf24', c2: '#c9970d' },
+  { emoji: '🫐', c1: '#4ea8ff', c2: '#2a6fb8' },
+  { emoji: '🥝', c1: '#4ade80', c2: '#2a9d5c' },
+  { emoji: '🍇', c1: '#a78bfa', c2: '#7c5dd6' },
+  { emoji: '🍑', c1: '#f472b6', c2: '#c94a8a' },
+  { emoji: '🍊', c1: '#fb923c', c2: '#c2410c' },
+  { emoji: '🍒', c1: '#ef4444', c2: '#991b1b' },
+  { emoji: '🥥', c1: '#22d3ee', c2: '#0891b2' },
+  { emoji: '🍓', c1: '#dc2626', c2: '#7f1d1d' },
+  { emoji: '🍉', c1: '#22c55e', c2: '#15803d' },
+  { emoji: '🍌', c1: '#eab308', c2: '#a16207' }
+];
+
+/* ============================================================
+   LEVEL CONFIG — 50 levels with progressive difficulty
+   ============================================================ */
+function getLevelConfig(lvl) {
+  // Progressive grid & pairs
+  // Level 1-5:   3x4 (6 pairs)
+  // Level 6-10:  4x4 (8 pairs)
+  // Level 11-15: 4x5 (10 pairs)
+  // Level 16-20: 5x4 (10 pairs)
+  // Level 21-25: 4x6 (12 pairs)
+  // Level 26-30: 5x6 (15 pairs)
+  // Level 31-35: 6x4 (12 pairs) — with less time
+  // Level 36-40: 6x5 (15 pairs)
+  // Level 41-45: 6x6 (18 pairs)
+  // Level 46-50: 6x6 (18 pairs) — elite mode
+  if (lvl <= 5)  return { cols: 4, rows: 3, pairs: 6 };
+  if (lvl <= 10) return { cols: 4, rows: 4, pairs: 8 };
+  if (lvl <= 15) return { cols: 5, rows: 4, pairs: 10 };
+  if (lvl <= 20) return { cols: 4, rows: 5, pairs: 10 };
+  if (lvl <= 25) return { cols: 6, rows: 4, pairs: 12 };
+  if (lvl <= 30) return { cols: 6, rows: 5, pairs: 15 };
+  if (lvl <= 35) return { cols: 6, rows: 4, pairs: 12 };
+  if (lvl <= 40) return { cols: 5, rows: 6, pairs: 15 };
+  if (lvl <= 45) return { cols: 6, rows: 6, pairs: 18 };
+  return { cols: 6, rows: 6, pairs: 18 };
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let level = 1;
+let coins = 0;
+let unlockedLevel = 1;
+
+let cards = [];
+let gridCols = 4;
+let gridRows = 3;
+let totalPairs = 6;
+
+let firstCard = null;
+let secondCard = null;
+let lockBoard = false;
+
+let moves = 0;
+let matchedPairs = 0;
+let startTime = 0;
+let elapsedTime = 0;
+let timerInterval = null;
+let gameActive = false;
+
+let peekAvailable = true;
+
+/* ============================================================
+   SAVE / LOAD
+   ============================================================ */
+function saveProgress() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      coins: coins,
+      level: level,
+      unlockedLevel: unlockedLevel
+    }));
+  } catch (e) {}
+}
+
+function loadProgress() {
+  try {
+    const saved = localStorage.getItem(SAVE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      coins = data.coins || 0;
+      level = data.level || 1;
+      unlockedLevel = data.unlockedLevel || 1;
+      // Cap
+      if (level > MAX_LEVEL) level = MAX_LEVEL;
+      if (unlockedLevel > MAX_LEVEL) unlockedLevel = MAX_LEVEL;
+    }
+  } catch (e) {}
+}
+
+/* ============================================================
+   UI UPDATE
+   ============================================================ */
+function updateTopBar() {
+  $('levelValue').textContent = level;
+  $('movesValue').textContent = moves;
+  $('coinsValue').innerHTML = `<span class="coin-icon">🪙</span>${coins}`;
+
+  // Level bar
+  $('levelCurrent').textContent = level;
+  const percent = Math.max(2, (level / MAX_LEVEL) * 100);
+  $('levelProgressFill').style.width = percent + '%';
+
+  // Peek button
+  const peekCost = $('peekCost');
+  if (peekAvailable) {
+    if (coins >= PEEK_COST) {
+      peekCost.textContent = `🪙 ${PEEK_COST}`;
+      peekCost.className = 'cost-badge can';
+      $('peekBtn').disabled = false;
+    } else {
+      peekCost.textContent = `🪙 ${PEEK_COST}`;
+      peekCost.className = 'cost-badge cant';
+      $('peekBtn').disabled = true;
+    }
+  } else {
+    peekCost.textContent = '✓ Used';
+    peekCost.className = 'cost-badge';
+    $('peekBtn').disabled = true;
+  }
+}
+
+function updateTimerUI() {
+  const m = Math.floor(elapsedTime / 60);
+  const s = elapsedTime % 60;
+  $('timeValue').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+/* ============================================================
+   START LEVEL
+   ============================================================ */
+function startLevel(lvl) {
+  level = lvl;
+  const cfg = getLevelConfig(level);
+  gridCols = cfg.cols;
+  gridRows = cfg.rows;
+  totalPairs = cfg.pairs;
+
+  // Build deck
+  const selectedSymbols = SYMBOLS.slice(0, totalPairs);
+  const deck = [];
+  selectedSymbols.forEach((sym, i) => {
+    deck.push({ symbol: sym, pairId: i });
+    deck.push({ symbol: sym, pairId: i });
+  });
+
+  // Shuffle
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+
+  cards = deck.map((d, i) => ({
+    id: i,
+    symbol: d.symbol,
+    pairId: d.pairId,
+    flipped: false,
+    matched: false
+  }));
+
+  // Reset
+  firstCard = null;
+  secondCard = null;
+  lockBoard = false;
+  moves = 0;
+  matchedPairs = 0;
+  elapsedTime = 0;
+  gameActive = true;
+  peekAvailable = true;
+
+  renderBoard();
+  updateTopBar();
+  startTimer();
+
+  // Brief peek at start
+  setTimeout(() => autoPeek(1000), 400);
+
+  saveProgress();
+}
+
+function renderBoard() {
+  const boardEl = $('board');
+  boardEl.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
+  boardEl.style.gridTemplateRows = `repeat(${gridRows}, 1fr)`;
+  boardEl.innerHTML = '';
+
+  cards.forEach(card => {
+    const cardEl = document.createElement('div');
+    cardEl.className = 'card';
+    cardEl.dataset.id = card.id;
+
+    cardEl.innerHTML = `
+      <div class="card-inner">
+        <div class="card-face card-back"></div>
+        <div class="card-face card-front" style="--c1:${card.symbol.c1};--c2:${card.symbol.c2}">${card.symbol.emoji}</div>
+      </div>
+    `;
+
+    cardEl.addEventListener('click', () => onCardClick(card, cardEl));
+    boardEl.appendChild(cardEl);
+  });
+}
+
+/* ============================================================
+   CARD CLICK
+   ============================================================ */
+function onCardClick(card, el) {
+  if (!gameActive || lockBoard) return;
+  if (card.flipped || card.matched) return;
+  if (firstCard && firstCard.el === el) return;
+
+  card.flipped = true;
+  el.classList.add('flipped');
+  if (navigator.vibrate) navigator.vibrate(8);
+
+  if (!firstCard) {
+    firstCard = { card, el };
+    return;
+  }
+
+  secondCard = { card, el };
+  moves++;
+  updateTopBar();
+  lockBoard = true;
+
+  if (firstCard.card.pairId === secondCard.card.pairId) {
+    // MATCH
+    setTimeout(() => {
+      firstCard.card.matched = true;
+      secondCard.card.matched = true;
+      firstCard.el.classList.add('matched');
+      secondCard.el.classList.add('matched');
+
+      matchedPairs++;
+      updateTopBar();
+
+      if (navigator.vibrate) navigator.vibrate([25, 25, 25]);
+
+      firstCard = null;
+      secondCard = null;
+      lockBoard = false;
+
+      if (matchedPairs === totalPairs) {
+        setTimeout(() => levelComplete(), 300);
+      }
+    }, 500);
+  } else {
+    // NO MATCH
+    setTimeout(() => {
+      firstCard.card.flipped = false;
+      secondCard.card.flipped = false;
+      firstCard.el.classList.remove('flipped');
+      secondCard.el.classList.remove('flipped');
+
+      if (navigator.vibrate) navigator.vibrate(15);
+
+      firstCard = null;
+      secondCard = null;
+      lockBoard = false;
+    }, 850);
+  }
+}
+
+/* ============================================================
+   PEEK
+   ============================================================ */
+function autoPeek(duration) {
+  const allCards = document.querySelectorAll('.card:not(.matched)');
+  allCards.forEach(el => el.classList.add('flipped'));
+
+  setTimeout(() => {
+    allCards.forEach(el => {
+      const id = parseInt(el.dataset.id);
+      const card = cards.find(c => c.id === id);
+      if (card && !card.matched && !card.flipped) {
+        el.classList.remove('flipped');
+      }
+    });
+  }, duration);
+}
+
+function requestPeek() {
+  if (!gameActive) return;
+  if (!peekAvailable) {
+    showToast('⏳ Peek already used this level');
+    return;
+  }
+  if (coins < PEEK_COST) {
+    showToast(`❌ Need ${PEEK_COST} coins (you have ${coins})`);
+    return;
+  }
+  // Show confirm modal
+  $('peekBalance').textContent = `🪙 ${coins}`;
+  $('peekOverlay').classList.add('show');
+}
+
+function confirmPeek() {
+  coins -= PEEK_COST;
+  saveProgress();
+  updateTopBar();
+  $('peekOverlay').classList.remove('show');
+
+  peekAvailable = false;
+  autoPeek(1500);
+
+  showCoinBurst();
+  showToast('👁️ Peek used! -10 coins');
+  if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
+}
+
+function showCoinBurst() {
+  const el = document.createElement('div');
+  el.className = 'coin-burst';
+  el.textContent = '-🪙';
+  el.style.left = '50%';
+  el.style.top = '50%';
+  el.style.transform = 'translate(-50%, -50%)';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+/* ============================================================
+   TIMER
+   ============================================================ */
+function startTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  startTime = Date.now();
+  timerInterval = setInterval(() => {
+    elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+    updateTimerUI();
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+/* ============================================================
+   LEVEL COMPLETE
+   ============================================================ */
+function levelComplete() {
+  gameActive = false;
+  stopTimer();
+
+  // Calculate stars
+  const optimalMoves = totalPairs * 1.5;
+  const ratio = optimalMoves / Math.max(moves, 1);
+  let stars = 1;
+  if (ratio > 0.75) stars = 3;
+  else if (ratio > 0.5) stars = 2;
+
+  // Coin reward
+  let reward = LEVEL_REWARD;
+  let bonusText = '';
+  if (stars === 3) { reward += 5; bonusText = ' (Perfect! +5 bonus)'; }
+  else if (stars === 2) { reward += 2; bonusText = ' (+2 bonus)'; }
+
+  coins += reward;
+  unlockedLevel = Math.max(unlockedLevel, level + 1);
+  if (unlockedLevel > MAX_LEVEL) unlockedLevel = MAX_LEVEL;
+  saveProgress();
+
+  // Update UI
+  const m = Math.floor(elapsedTime / 60);
+  const s = elapsedTime % 60;
+  const timeStr = `${m}:${s < 10 ? '0' : ''}${s}`;
+
+  $('finalMoves').textContent = moves;
+  $('finalTime').textContent = timeStr;
+  $('totalCoins').textContent = `🪙 ${coins}`;
+  $('coinsEarned').textContent = `+${reward}`;
+  $('starsRow').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+
+  let msg = 'Well played!' + bonusText;
+  if (stars === 3) msg = '🌟 Perfect memory! +5 bonus' + bonusText.replace(' (Perfect! +5 bonus)', '');
+  else if (stars === 2) msg = '😊 Great job! +2 bonus' + bonusText.replace(' (+2 bonus)', '');
+  else msg = '👍 Good! Keep improving!';
+  $('winMsg').textContent = msg;
+
+  // Check if final level
+  if (level >= MAX_LEVEL) {
+    $('levelIcon').textContent = '👑';
+    $('levelTitle').textContent = 'Memory Master!';
+  } else {
+    $('levelIcon').textContent = '🎉';
+    $('levelTitle').textContent = 'Level ' + level + ' Complete!';
+  }
+
+  updateTopBar();
+  $('levelOverlay').classList.add('show');
+  if (navigator.vibrate) navigator.vibrate([80, 50, 80, 50, 150]);
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+$('nextLevelBtn').addEventListener('click', () => {
+  $('levelOverlay').classList.remove('show');
+  if (level >= MAX_LEVEL) {
+    // All complete
+    $('finalCoinsTotal').textContent = `🪙 ${coins}`;
+    $('finalOverlay').classList.add('show');
+    return;
+  }
+  startLevel(level + 1);
+});
+
+$('retryBtn').addEventListener('click', () => {
+  $('gameOverOverlay').classList.remove('show');
+  startLevel(level);
+});
+
+$('restartBtn').addEventListener('click', () => {
+  if (!confirm('Restart this level?')) return;
+  startLevel(level);
+});
+
+$('peekBtn').addEventListener('click', requestPeek);
+$('confirmPeekBtn').addEventListener('click', confirmPeek);
+$('cancelPeekBtn').addEventListener('click', () => {
+  $('peekOverlay').classList.remove('show');
+});
+
+$('startBtn').addEventListener('click', () => {
+  $('welcomeOverlay').classList.remove('show');
+  startLevel(level);
+});
+
+$('playAllAgainBtn').addEventListener('click', () => {
+  $('finalOverlay').classList.remove('show');
+  level = 1;
+  unlockedLevel = 1;
+  // Keep coins
+  saveProgress();
+  startLevel(1);
+});
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init() {
+  loadProgress();
+  updateTopBar();
+  updateTimerUI();
+
+  // Welcome modal info
+  $('welcomeCoins').textContent = `🪙 ${coins}`;
+  $('welcomeLevel').textContent = `${level} / ${MAX_LEVEL}`;
+  $('startBtnText').textContent = level > 1 ? `Continue Level ${level}` : 'Start Level 1';
+}
+
+init();
+console.log('🎴 ReelHub Memory Cards — 50 Levels loaded');
+</script>
+
+</body>
+</html>
