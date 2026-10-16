@@ -1,7 +1,7 @@
 /* ============================================================
-   ReelHub — app.js (PART 1/4) — FULL FIXED
+   ReelHub — app.js (PART 1/5) — FULL FIXED
    Imports, Config, DOM, State, Auth, Signup, Login
-   ✅ Login/Signup fixes + Memory leak fix + Robust error handling
+   ✅ Login/Signup fixes + 1-second transition + Robust error handling
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -51,10 +51,7 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
-const db = firebaseFirestore();
-function firebaseFirestore() {
-  return getFirestore(firebaseApp);
-}
+const db = getFirestore(firebaseApp);
 
 /* ============================================================
    CLOUDINARY ACCOUNTS
@@ -278,14 +275,16 @@ const _lastGroupMsgTime = new Map();
 
 /* ✅ Auth flag to prevent duplicate listeners */
 let authActionInProgress = false;
-let authListenerStarted = false;
 
 /* ✅ Loading timeout */
 const LOADING_TIMEOUT_MS = 8000;
 let loadingTimeoutId = null;
 
+/* ✅ 1-SECOND TRANSITION */
+const TRANSITION_DELAY_MS = 1000;
+
 /* ============================================================
-   LOADING SCREEN SAFETY — auto hide after timeout
+   LOADING SCREEN SAFETY
    ============================================================ */
 function startLoadingTimeout() {
   clearTimeout(loadingTimeoutId);
@@ -304,7 +303,7 @@ function startLoadingTimeout() {
 if (loadingScreen) startLoadingTimeout();
 
 /* ============================================================
-   SCREEN SWITCHING
+   SCREEN SWITCHING — 1 SECOND TRANSITION
    ============================================================ */
 function showAuth() {
   clearTimeout(loadingTimeoutId);
@@ -434,7 +433,7 @@ $id('goLogin')?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   SIGNUP — FIXED
+   SIGNUP — FIXED + 1 SECOND TRANSITION
    ============================================================ */
 signupForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -529,11 +528,12 @@ signupForm?.addEventListener('submit', async (e) => {
 
     authActionInProgress = false;
 
+    /* ✅ 1 SECOND TRANSITION */
     setTimeout(() => {
       showApp();
       startNotifWatcher();
       requestNotificationPermission();
-    }, 800);
+    }, TRANSITION_DELAY_MS);
 
   } catch (err) {
     console.error('Signup error:', err);
@@ -571,7 +571,7 @@ signupForm?.addEventListener('submit', async (e) => {
 });
 
 /* ============================================================
-   LOGIN — FIXED & ROBUST
+   LOGIN — FIXED + 1 SECOND TRANSITION
    ============================================================ */
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -610,12 +610,17 @@ loginForm?.addEventListener('submit', async (e) => {
       return;
     }
 
-    loginMsg.textContent = '';
+    loginMsg.className = 'success-msg';
+    loginMsg.textContent = 'Welcome back! 🎉';
     authActionInProgress = false;
 
-    showApp();
-    startNotifWatcher();
-    requestNotificationPermission();
+    /* ✅ 1 SECOND TRANSITION */
+    setTimeout(() => {
+      loginMsg.textContent = '';
+      showApp();
+      startNotifWatcher();
+      requestNotificationPermission();
+    }, TRANSITION_DELAY_MS);
 
   } catch (err) {
     console.error('Login error:', err);
@@ -774,7 +779,7 @@ searchBtn?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   AUTH STATE LISTENER — FIXED (single listener, no duplicates)
+   AUTH STATE LISTENER
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
   console.log('🔥 Auth state:', user ? 'logged in' : 'logged out');
@@ -905,11 +910,11 @@ function renderPage(page) {
   }
 }
 
-console.log('✅ Part 1 loaded (Auth + State)');
+console.log('✅ Part 1 loaded (Auth + State + 1s Transition)');
 /* ============================================================
-   ReelHub — app.js (PART 2/4) — FULL FIXED
+   ReelHub — app.js (PART 2/5) — FULL FIXED
    Home Feed + Shorts + Stories + Upload
-   ✅ Share counter + Blob URL leak fix + Memory cleanup
+   ✅ Games Shelf + 1s transition + Blob URL fix
    ============================================================ */
 
 let feedAutoplayObserver = null;
@@ -1446,7 +1451,6 @@ function showAdminPanelRedirect() {
     modal.remove();
   });
 
-  document.getElementById('closeAdminPanelBtn')?.addEventListener('click', () => modal.remove());
   document.getElementById('closeAdminRedirectBtn').addEventListener('click', () => {
     modal.remove();
   });
@@ -1532,6 +1536,69 @@ function buildThumbnailUrl(videoUrl, type) {
   }
 
   return '';
+}
+
+/* ============================================================
+   GAMES SHELF — YouTube Playables Style
+   ============================================================ */
+function buildGamesShelf() {
+  const shelf = document.createElement('div');
+  shelf.className = 'games-shelf';
+
+  const games = [
+    { name: 'Breaker', icon: '🧱', file: 'breaker.html', c1: '#4ea8ff', c2: '#2a6fb8' },
+    { name: 'Memory', icon: '🎴', file: 'memory.html', c1: '#fbbf24', c2: '#c9970d' },
+    { name: 'Shooter', icon: '🚀', file: 'shooter.html', c1: '#a78bfa', c2: '#7c5dd6' },
+    { name: 'Brick Style', icon: '🎯', file: 'brickstyle.html', c1: '#22d3ee', c2: '#0891b2' },
+    { name: 'Bubble', icon: '🫧', file: 'bubble.html', c1: '#4ade80', c2: '#2a9d5c' },
+    { name: 'Fruit Slice', icon: '🍉', file: 'fruitslice.html', c1: '#ef4444', c2: '#991b1b' },
+    { name: '3D Car', icon: '🚗', file: 'car3d.html', c1: '#ff2e63', c2: '#b81e45' },
+    { name: 'Blocks', icon: '🧩', file: 'blocks.html', c1: '#ff8a00', c2: '#c96800' },
+    { name: 'Tile Trip', icon: '🀄', file: 'tiletrip.html', c1: '#f472b6', c2: '#c94a8a' },
+    { name: 'Arrows', icon: '🎯', file: 'arrows.html', c1: '#4ea8ff', c2: '#2a6fb8' }
+  ];
+
+  shelf.innerHTML = `
+    <div class="games-shelf-header">
+      <div class="games-shelf-title">
+        <svg viewBox="0 0 24 24" class="games-icon">
+          <rect x="2" y="6" width="20" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="8" cy="12" r="1.5" fill="currentColor"/>
+          <circle cx="16" cy="12" r="1.5" fill="currentColor"/>
+        </svg>
+        Games
+      </div>
+      <button class="games-shelf-more" id="gamesShelfMore">
+        View all
+        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <div class="games-shelf-scroll" id="gamesShelfScroll"></div>
+  `;
+
+  const scrollWrap = shelf.querySelector('#gamesShelfScroll');
+
+  games.forEach(game => {
+    const item = document.createElement('div');
+    item.className = 'game-shelf-item';
+    item.style.setProperty('--c1', game.c1);
+    item.style.setProperty('--c2', game.c2);
+    item.innerHTML = `
+      <div class="game-shelf-icon">${game.icon}</div>
+      <div class="game-shelf-name">${game.name}</div>
+    `;
+    item.addEventListener('click', () => {
+      if (navigator.vibrate) navigator.vibrate(10);
+      window.location.href = game.file;
+    });
+    scrollWrap.appendChild(item);
+  });
+
+  shelf.querySelector('#gamesShelfMore').addEventListener('click', () => {
+    window.location.href = 'games.html';
+  });
+
+  return shelf;
 }
 
 /* ============================================================
@@ -1645,12 +1712,17 @@ async function loadHomeFeedPosts() {
   }
 }
 
+/* ✅ MAIN FEED RENDERER — Games Shelf + Shorts Shelf + Regular Posts */
 function renderFeedWithShortsShelf(posts, container) {
   const shorts = posts.filter(p => p.type === 'short');
   const regular = posts.filter(p => p.type !== 'short');
 
   container.innerHTML = '';
 
+  // ✅ Games shelf — sabse upar
+  container.appendChild(buildGamesShelf());
+
+  // ✅ Shorts shelf
   if (shorts.length > 0) {
     const shelf = document.createElement('div');
     shelf.className = 'shorts-shelf';
@@ -1682,11 +1754,13 @@ function renderFeedWithShortsShelf(posts, container) {
     });
   }
 
+  // ✅ Regular feed posts
   if (regular.length > 0) {
     regular.forEach(post => container.appendChild(makeFeedPost(post)));
     setupFeedAutoplay();
   }
 
+  // ✅ Empty state
   if (posts.length === 0) {
     container.innerHTML = `
       <div class="feed-empty">
@@ -2446,9 +2520,9 @@ function uploadToCloudinaryVoice(file, onProgress) {
   });
 }
 
-console.log('✅ Part 2 loaded (Feed + Shorts + Stories + Upload)');
+console.log('✅ Part 2 loaded (Feed + Shorts + Stories + Upload + Games Shelf)');
 /* ============================================================
-   ReelHub — app.js (PART 3/4) — FULL FIXED
+   ReelHub — app.js (PART 3/5) — FULL FIXED
    Story Viewer + Shorts Feed + Comments + Share Counter
    ✅ Share counter + Story timer cleanup + Atomic comment count
    ============================================================ */
@@ -3564,7 +3638,7 @@ async function toggleCommentLike(commentId, btnEl) {
 async function deleteComment(commentId) {
   try {
     const commentRef = doc(db, 'comments', commentId);
-    const commentSnap = await getDoc(commentRef);
+    await getDoc(commentRef);
 
     await deleteDoc(commentRef);
 
@@ -5768,7 +5842,6 @@ console.log('✅ Part 4 loaded (Sound + Chat + Groups + Voice)');
 /* ============================================================
    ReelHub — app.js (PART 5/5) — FULL FINAL
    Profile + Highlights + Notifications + Search + Settings + Delete
-   ✅ Highlights system + Memory fixes + Robust helpers
    ============================================================ */
 
 /* ============================================================
@@ -6926,6 +6999,9 @@ async function openHighlightCreator() {
   msg.textContent = '';
   msg.className = 'error-msg';
 
+  pendingHighlightStories = [];
+  pendingHighlightCover = null;
+
   try {
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const storiesRef = collection(db, 'stories');
@@ -6939,17 +7015,11 @@ async function openHighlightCreator() {
         return t && t.getTime() > cutoff.getTime();
       });
 
-    if (myStories.length === 0) {
-      showToast('❌ No active stories to add');
-      return;
-    }
-
     myStories.sort((a, b) =>
       (a.createdAt?.toDate?.()?.getTime() || 0) - (b.createdAt?.toDate?.()?.getTime() || 0)
     );
 
-    pendingHighlightStories = myStories.map(s => ({ ...s, _selected: false }));
-    pendingHighlightCover = null;
+    pendingHighlightStories = myStories.map(s => ({ ...s, _selected: false, _isNew: false }));
 
     document.getElementById('highlightNameInput').value = '';
     document.getElementById('highlightModalTitle').textContent = 'New Highlight';
@@ -6958,8 +7028,11 @@ async function openHighlightCreator() {
     renderHighlightStoriesPicker();
     updateHighlightCoverPicker();
   } catch (e) {
-    console.error(e);
-    showToast('❌ Failed to load stories');
+    console.error('openHighlightCreator error:', e);
+    document.getElementById('highlightNameInput').value = '';
+    document.getElementById('highlightModal').classList.add('show');
+    renderHighlightStoriesPicker();
+    updateHighlightCoverPicker();
   }
 }
 
@@ -6967,20 +7040,173 @@ function renderHighlightStoriesPicker() {
   const sp = document.getElementById('highlightStoriesPicker');
   if (!sp) return;
 
-  sp.innerHTML = pendingHighlightStories.map((s, i) => `
-    <div class="story-pick ${s._selected ? 'selected' : ''}" data-idx="${i}">
-      <img src="${s.thumbnail || s.url}" alt="">
-    </div>
-  `).join('');
+  let html = '';
 
-  sp.querySelectorAll('.story-pick').forEach(el => {
+  html += `
+    <div class="story-pick story-pick-add" id="storyPickAdd" style="
+      display:flex;align-items:center;justify-content:center;
+      background:#1a1a24;border:2px dashed #4ea8ff;cursor:pointer;
+    ">
+      <div style="text-align:center;color:#4ea8ff;pointer-events:none;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="margin:0 auto 4px;">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <div style="font-size:9px;font-weight:700;">UPLOAD</div>
+      </div>
+    </div>
+  `;
+
+  if (pendingHighlightStories.length === 0) {
+    html += `
+      <div style="grid-column: span 3; display:flex; align-items:center; justify-content:center; padding:20px; font-size:11px; color:#666; text-align:center; line-height:1.5;">
+        No active stories from last 24h.<br>Tap <b style="color:#4ea8ff;">UPLOAD</b> to add a photo or video.
+      </div>
+    `;
+  } else {
+    html += pendingHighlightStories.map((s, i) => `
+      <div class="story-pick ${s._selected ? 'selected' : ''}" data-idx="${i}">
+        <img src="${s.thumbnail || s.url}" alt="">
+      </div>
+    `).join('');
+  }
+
+  sp.innerHTML = html;
+
+  document.getElementById('storyPickAdd')?.addEventListener('click', () => {
+    openHighlightFilePicker();
+  });
+
+  sp.querySelectorAll('.story-pick:not(.story-pick-add)').forEach(el => {
     el.addEventListener('click', () => {
       const i = parseInt(el.dataset.idx);
+      if (isNaN(i)) return;
       pendingHighlightStories[i]._selected = !pendingHighlightStories[i]._selected;
       el.classList.toggle('selected', pendingHighlightStories[i]._selected);
       updateHighlightCoverPicker();
     });
   });
+}
+
+function openHighlightFilePicker() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*,video/*';
+  input.style.display = 'none';
+
+  input.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    await handleHighlightFileUpload(file);
+  });
+
+  document.body.appendChild(input);
+  input.click();
+  setTimeout(() => input.remove(), 1000);
+}
+
+async function handleHighlightFileUpload(file) {
+  const msg = document.getElementById('highlightMsg');
+  msg.className = 'error-msg';
+  msg.textContent = '';
+
+  const isImage = file.type.startsWith('image/');
+  const isVideo = file.type.startsWith('video/');
+
+  if (!isImage && !isVideo) {
+    msg.textContent = '❌ Only photos and videos allowed.';
+    return;
+  }
+
+  if (isImage && file.size > 10 * 1024 * 1024) {
+    msg.textContent = '❌ Photo max 10 MB.';
+    return;
+  }
+  if (isVideo && file.size > 50 * 1024 * 1024) {
+    msg.textContent = '❌ Video max 50 MB.';
+    return;
+  }
+
+  let videoDuration = 5;
+  if (isVideo) {
+    msg.textContent = '⏳ Checking video...';
+    try {
+      const url = URL.createObjectURL(file);
+      const tempVid = document.createElement('video');
+      tempVid.preload = 'metadata';
+      tempVid.src = url;
+
+      await new Promise((resolve, reject) => {
+        tempVid.onloadedmetadata = () => {
+          videoDuration = tempVid.duration;
+          URL.revokeObjectURL(url);
+          if (!isFinite(videoDuration) || videoDuration <= 0) {
+            reject(new Error('Invalid video'));
+            return;
+          }
+          if (videoDuration > 30.5) {
+            reject(new Error('Video max 30 seconds'));
+            return;
+          }
+          resolve();
+        };
+        tempVid.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('Could not load video'));
+        };
+        setTimeout(() => reject(new Error('Video load timeout')), 10000);
+      });
+    } catch (err) {
+      msg.textContent = '❌ ' + (err.message || 'Video error');
+      return;
+    }
+  }
+
+  msg.className = 'success-msg';
+  msg.textContent = '⏳ Uploading...';
+
+  try {
+    const result = await uploadToCloudinaryStory(file, (percent) => {
+      msg.className = 'success-msg';
+      msg.textContent = `⏳ Uploading... ${percent}%`;
+    });
+
+    const thumbnail = isVideo
+      ? buildThumbnailUrl(result.secure_url, 'video')
+      : result.secure_url;
+
+    const newStory = {
+      id: 'new_' + Date.now(),
+      url: result.secure_url,
+      thumbnail: thumbnail || result.secure_url,
+      type: isImage ? 'photo' : 'video',
+      duration: isImage ? 5 : videoDuration,
+      _selected: true,
+      _isNew: true
+    };
+
+    pendingHighlightStories.push(newStory);
+
+    msg.className = 'success-msg';
+    msg.textContent = '✅ Uploaded! Tap "Create Highlight" to save.';
+
+    renderHighlightStoriesPicker();
+    updateHighlightCoverPicker();
+
+    if (!pendingHighlightCover) {
+      pendingHighlightCover = newStory.url;
+      updateHighlightCoverPicker();
+    }
+
+    setTimeout(() => {
+      const sp = document.getElementById('highlightStoriesPicker');
+      if (sp) sp.scrollTop = sp.scrollHeight;
+    }, 100);
+  } catch (err) {
+    console.error('Highlight upload error:', err);
+    msg.className = 'error-msg';
+    msg.textContent = '❌ Upload failed: ' + (err.message || err);
+  }
 }
 
 function updateHighlightCoverPicker() {
@@ -7033,6 +7259,28 @@ async function saveHighlight() {
     }));
 
     const cover = pendingHighlightCover || (storiesData[0].thumbnail || storiesData[0].url);
+
+    for (const s of selected) {
+      if (s._isNew) {
+        try {
+          await addDoc(collection(db, 'stories'), {
+            userId: currentUser.uid,
+            userName: currentProfile.name,
+            userHandle: currentProfile.user,
+            userPhoto: currentProfile.photo || '',
+            userVerified: currentProfile.verified || false,
+            type: s.type || 'photo',
+            url: s.url,
+            thumbnail: s.thumbnail || s.url,
+            duration: s.duration || 5,
+            viewers: [],
+            createdAt: serverTimestamp()
+          });
+        } catch (e) {
+          console.warn('Could not save as story:', e);
+        }
+      }
+    }
 
     await addDoc(collection(db, 'highlights'), {
       userId: currentUser.uid,
