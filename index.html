@@ -194,18 +194,9 @@
       </div>
 
       <div class="upload-tabs">
-        <button class="upload-tab active" data-type="short">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/></svg>
-          Short
-        </button>
-        <button class="upload-tab" data-type="long">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
-          Long
-        </button>
-        <button class="upload-tab" data-type="photo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Photo
-        </button>
+        <button class="upload-tab active" data-type="short"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/></svg>Short</button>
+        <button class="upload-tab" data-type="long"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>Long</button>
+        <button class="upload-tab" data-type="photo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Photo</button>
       </div>
 
       <div id="uploadPickerWrap" style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 20px;background:#0a0a0a;border:1px dashed #333;border-radius:12px;margin-bottom:14px;">
@@ -228,9 +219,7 @@
       <div class="input-group"><label>Caption</label><input type="text" id="uploadCaption" placeholder="Write a caption..." maxlength="200"></div>
 
       <div id="uploadProgressWrap" style="display:none;margin-bottom:12px;">
-        <div style="height:6px;background:#1e1e28;border-radius:3px;overflow:hidden;margin-bottom:6px;">
-          <div id="uploadProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#ff2e63,#ff8a00);transition:width 0.2s;"></div>
-        </div>
+        <div style="height:6px;background:#1e1e28;border-radius:3px;overflow:hidden;margin-bottom:6px;"><div id="uploadProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#ff2e63,#ff8a00);transition:width 0.2s;"></div></div>
         <div id="uploadProgressText" style="font-size:12px;color:#888;text-align:center;">0%</div>
       </div>
 
@@ -331,12 +320,7 @@
         </div>
       </div>
       <div id="reactionPicker" class="reaction-picker" style="display:none;">
-        <button data-emoji="❤️">❤️</button>
-        <button data-emoji="😂">😂</button>
-        <button data-emoji="😮">😮</button>
-        <button data-emoji="😢">😢</button>
-        <button data-emoji="👍">👍</button>
-        <button data-emoji="🔥">🔥</button>
+        <button data-emoji="❤️">❤️</button><button data-emoji="😂">😂</button><button data-emoji="😮">😮</button><button data-emoji="😢">😢</button><button data-emoji="👍">👍</button><button data-emoji="🔥">🔥</button>
       </div>
     </div>
   </div>
@@ -349,14 +333,8 @@
         <button class="modal-close" id="closeStoryUpload">&times;</button>
       </div>
       <div class="story-upload-tabs">
-        <button class="story-upload-tab active" data-type="photo">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Photo
-        </button>
-        <button class="story-upload-tab" data-type="video">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>
-          Video
-        </button>
+        <button class="story-upload-tab active" data-type="photo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Photo</button>
+        <button class="story-upload-tab" data-type="video"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>Video</button>
       </div>
       <div id="storyPickerWrap" style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 20px;background:#0a0a0a;border:1px dashed #333;border-radius:12px;margin-bottom:14px;">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -365,19 +343,9 @@
         <label for="storyFileInput" id="storyPickerLabel" style="padding:10px 20px;background:linear-gradient(90deg,#ff2e63,#ff8a00);color:#fff;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">Select photo</label>
         <input type="file" id="storyFileInput" accept="image/*" style="display:none;">
       </div>
-      <div id="storyPreviewWrap" style="display:none;margin-bottom:14px;">
-        <img id="storyPreviewImg" style="width:100%;max-height:300px;object-fit:contain;background:#000;border-radius:12px;">
-      </div>
-      <div id="storyVideoPreviewWrap" style="display:none;margin-bottom:14px;">
-        <video id="storyPreviewVideo" controls playsinline style="width:100%;max-height:300px;background:#000;border-radius:12px;"></video>
-        <div id="storyPreviewInfo" style="font-size:12px;color:#888;margin-top:8px;text-align:center;"></div>
-      </div>
-      <div id="storyProgressWrap" style="display:none;margin-bottom:12px;">
-        <div style="height:6px;background:#1e1e28;border-radius:3px;overflow:hidden;margin-bottom:6px;">
-          <div id="storyProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#ff2e63,#ff8a00);transition:width 0.2s;"></div>
-        </div>
-        <div id="storyProgressText" style="font-size:12px;color:#888;text-align:center;">0%</div>
-      </div>
+      <div id="storyPreviewWrap" style="display:none;margin-bottom:14px;"><img id="storyPreviewImg" style="width:100%;max-height:300px;object-fit:contain;background:#000;border-radius:12px;"></div>
+      <div id="storyVideoPreviewWrap" style="display:none;margin-bottom:14px;"><video id="storyPreviewVideo" controls playsinline style="width:100%;max-height:300px;background:#000;border-radius:12px;"></video><div id="storyPreviewInfo" style="font-size:12px;color:#888;margin-top:8px;text-align:center;"></div></div>
+      <div id="storyProgressWrap" style="display:none;margin-bottom:12px;"><div style="height:6px;background:#1e1e28;border-radius:3px;overflow:hidden;margin-bottom:6px;"><div id="storyProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#ff2e63,#ff8a00);transition:width 0.2s;"></div></div><div id="storyProgressText" style="font-size:12px;color:#888;text-align:center;">0%</div></div>
       <button class="btn-primary" id="storySubmitBtn" disabled>Share to Story</button>
       <div class="error-msg" id="storyUploadMsg"></div>
     </div>
@@ -394,10 +362,7 @@
             <div id="storyUserName" style="font-size:14px;font-weight:700;color:#fff;"></div>
             <div id="storyTime" style="font-size:11px;color:#ddd;"></div>
           </div>
-          <button id="storyViewersBtn" class="story-viewers-btn" style="display:none;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            <span id="storyViewersCount">0</span>
-          </button>
+          <button id="storyViewersBtn" class="story-viewers-btn" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span id="storyViewersCount">0</span></button>
           <button id="storyDeleteBtn" style="display:none;background:rgba(0,0,0,0.5);border:none;color:#fff;font-size:16px;padding:6px 10px;border-radius:50%;cursor:pointer;">🗑️</button>
           <button id="storyCloseBtn" style="background:rgba(0,0,0,0.5);border:none;color:#fff;font-size:20px;padding:4px 10px;border-radius:50%;cursor:pointer;">✕</button>
         </div>
@@ -411,19 +376,9 @@
   <!-- ================= NEW GROUP MODAL ================= -->
   <div class="modal-overlay" id="newGroupModal">
     <div class="modal" style="max-height:85vh;">
-      <div class="modal-header">
-        <h3>New Group</h3>
-        <button class="modal-close" id="closeNewGroup">&times;</button>
-      </div>
+      <div class="modal-header"><h3>New Group</h3><button class="modal-close" id="closeNewGroup">&times;</button></div>
       <div class="input-group"><label>Group Name</label><input type="text" id="groupNameInput" placeholder="Enter group name" maxlength="50"></div>
-      <div class="input-group">
-        <label>Group Photo (optional)</label>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <img id="groupPhotoPreview" style="width:50px;height:50px;border-radius:50%;object-fit:cover;background:#1a1a1a;">
-          <label for="groupPhotoInput" style="padding:8px 14px;background:#1e1e1e;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Choose Photo</label>
-          <input type="file" id="groupPhotoInput" accept="image/*" style="display:none;">
-        </div>
-      </div>
+      <div class="input-group"><label>Group Photo (optional)</label><div style="display:flex;align-items:center;gap:12px;"><img id="groupPhotoPreview" style="width:50px;height:50px;border-radius:50%;object-fit:cover;background:#1a1a1a;"><label for="groupPhotoInput" style="padding:8px 14px;background:#1e1e1e;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Choose Photo</label><input type="file" id="groupPhotoInput" accept="image/*" style="display:none;"></div></div>
       <div class="input-group"><label>Add Members</label><input type="text" id="groupSearchInput" placeholder="Search users..."></div>
       <div id="selectedMembersList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
       <div class="search-results" id="groupSearchResults" style="max-height:200px;overflow-y:auto;"></div>
@@ -434,10 +389,7 @@
   <!-- ================= BLOCKED USERS MODAL ================= -->
   <div class="modal-overlay" id="blockedUsersModal">
     <div class="modal" style="max-height:70vh;">
-      <div class="modal-header">
-        <h3>Blocked Users</h3>
-        <button class="modal-close" id="closeBlockedUsers">&times;</button>
-      </div>
+      <div class="modal-header"><h3>Blocked Users</h3><button class="modal-close" id="closeBlockedUsers">&times;</button></div>
       <div class="user-list" id="blockedUsersList"><div class="empty-msg">Loading...</div></div>
     </div>
   </div>
@@ -445,10 +397,7 @@
   <!-- ================= USER LIST MODAL ================= -->
   <div class="modal-overlay" id="listModal">
     <div class="modal" style="max-height:70vh;">
-      <div class="modal-header">
-        <h3 id="listTitle">Followers</h3>
-        <button class="modal-close" id="closeList">&times;</button>
-      </div>
+      <div class="modal-header"><h3 id="listTitle">Followers</h3><button class="modal-close" id="closeList">&times;</button></div>
       <div class="user-list" id="userList"><div class="empty-msg">Loading...</div></div>
     </div>
   </div>
@@ -456,22 +405,10 @@
   <!-- ================= HIGHLIGHT MODAL ================= -->
   <div class="modal-overlay" id="highlightModal">
     <div class="modal">
-      <div class="modal-header">
-        <h3 id="highlightModalTitle">New Highlight</h3>
-        <button class="modal-close" id="closeHighlightModal">&times;</button>
-      </div>
-      <div class="input-group">
-        <label>Highlight Name</label>
-        <input type="text" id="highlightNameInput" placeholder="Enter name..." maxlength="20">
-      </div>
-      <div class="input-group">
-        <label>Select Stories <span style="color:#666;font-weight:500;text-transform:none;font-size:11px;">(tap to select)</span></label>
-        <div class="highlight-stories-picker" id="highlightStoriesPicker"></div>
-      </div>
-      <div class="input-group">
-        <label>Choose Cover</label>
-        <div class="highlight-cover-picker" id="highlightCoverPicker"></div>
-      </div>
+      <div class="modal-header"><h3 id="highlightModalTitle">New Highlight</h3><button class="modal-close" id="closeHighlightModal">&times;</button></div>
+      <div class="input-group"><label>Highlight Name</label><input type="text" id="highlightNameInput" placeholder="Enter name..." maxlength="20"></div>
+      <div class="input-group"><label>Select Stories <span style="color:#666;font-weight:500;text-transform:none;font-size:11px;">(tap to select)</span></label><div class="highlight-stories-picker" id="highlightStoriesPicker"></div></div>
+      <div class="input-group"><label>Choose Cover</label><div class="highlight-cover-picker" id="highlightCoverPicker"></div></div>
       <button class="btn-primary" id="saveHighlightBtn">Create Highlight</button>
       <div class="error-msg" id="highlightMsg"></div>
     </div>
@@ -480,71 +417,109 @@
   <!-- ================= SETTINGS MODAL ================= -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal settings-modal">
-      <div class="modal-header">
-        <h3>Settings</h3>
-        <button class="modal-close" id="closeSettings">&times;</button>
-      </div>
+      <div class="modal-header"><h3>Settings</h3><button class="modal-close" id="closeSettings">&times;</button></div>
       <div class="settings-content">
 
         <div class="settings-section">
           <div class="settings-section-title">Creator Tools</div>
           <div class="settings-item" style="cursor:pointer;" onclick="window.location.href='studio.html'">
-            <div class="settings-item-info">
-              <div class="settings-item-label">📊 ReelHub Studio</div>
-              <div class="settings-item-desc">View your stats, upload videos, manage content</div>
-            </div>
+            <div class="settings-item-info"><div class="settings-item-label">📊 ReelHub Studio</div><div class="settings-item-desc">View your stats, upload videos, manage content</div></div>
             <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
           <div class="settings-item" style="cursor:pointer;" onclick="window.location.href='games.html'">
-            <div class="settings-item-info">
-              <div class="settings-item-label">🎮 Play Games</div>
-              <div class="settings-item-desc">Play Breaker, Memory, 3D Car, Shooter & more</div>
-            </div>
+            <div class="settings-item-info"><div class="settings-item-label">🎮 Play Games</div><div class="settings-item-desc">Play Breaker, Memory, 3D Car, Shooter & more</div></div>
             <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
 
-        <!-- ================= PREMIUM BUTTON (NAYA) ================= -->
+        <!-- ================= PREMIUM (NAYA) ================= -->
         <div class="settings-section" style="margin-top:20px;">
           <div class="settings-section-title" style="color:#ff8a00; border-bottom-color:rgba(255,138,0,0.2);">Premium Services</div>
           <div class="settings-item" style="cursor:pointer; background: linear-gradient(90deg, rgba(255,46,99,0.1), transparent); border-radius: 12px;" onclick="openPremiumModal()">
-            <div class="settings-item-info">
-              <div class="settings-item-label">💎 Buy Blue Tick</div>
-              <div class="settings-item-desc">Get verified badge on your profile</div>
-            </div>
+            <div class="settings-item-info"><div class="settings-item-label">💎 Buy Blue Tick</div><div class="settings-item-desc">Get verified badge on your profile</div></div>
             <svg style="width:16px;height:16px;stroke:#ff8a00;fill:none;stroke-width:2;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
-        <!-- ========================================================= -->
 
         <div class="settings-section">
           <div class="settings-section-title">Appearance</div>
-          <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label">🌙 Dark Mode</div>
-              <div class="settings-item-desc">Switch between dark and light theme</div>
-            </div>
-            <label class="toggle-switch"><input type="checkbox" id="settingDarkMode"><span class="toggle-slider"></span></label>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🌙 Dark Mode</div><div class="settings-item-desc">Switch between dark and light theme</div></div><label class="toggle-switch"><input type="checkbox" id="settingDarkMode"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🔤 Font Size</div></div><select class="settings-select" id="settingFontSize"><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📐 Compact Mode</div><div class="settings-item-desc">Smaller cards and padding</div></div><label class="toggle-switch"><input type="checkbox" id="settingCompactMode"><span class="toggle-slider"></span></label></div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Playback</div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">▶️ Auto Play</div><div class="settings-item-desc">Play videos automatically</div></div><label class="toggle-switch"><input type="checkbox" id="settingAutoPlay"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🔊 Autoplay Sound</div><div class="settings-item-desc">Play sound on autoplay</div></div><label class="toggle-switch"><input type="checkbox" id="settingAutoplaySound"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🔁 Video Loop</div><div class="settings-item-desc">Loop videos continuously</div></div><label class="toggle-switch"><input type="checkbox" id="settingVideoLoop"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🎬 Video Quality</div></div><select class="settings-select" id="settingVideoQuality"><option value="auto">Auto</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📉 Data Saver</div><div class="settings-item-desc">Reduce data usage</div></div><label class="toggle-switch"><input type="checkbox" id="settingDataSaver"><span class="toggle-slider"></span></label></div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Notifications</div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🔔 Push Notifications</div><div class="settings-item-desc">Receive all notifications</div></div><label class="toggle-switch"><input type="checkbox" id="settingPushNotif"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item sub-setting"><div class="settings-item-info"><div class="settings-item-label">❤️ Likes</div></div><label class="toggle-switch"><input type="checkbox" id="settingNotifLikes"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item sub-setting"><div class="settings-item-info"><div class="settings-item-label">💬 Comments</div></div><label class="toggle-switch"><input type="checkbox" id="settingNotifComments"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item sub-setting"><div class="settings-item-info"><div class="settings-item-label">👤 New Followers</div></div><label class="toggle-switch"><input type="checkbox" id="settingNotifFollows"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item sub-setting"><div class="settings-item-info"><div class="settings-item-label">💌 Messages</div></div><label class="toggle-switch"><input type="checkbox" id="settingNotifMessages"><span class="toggle-slider"></span></label></div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Privacy & Safety</div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🔐 Private Account</div><div class="settings-item-desc" id="privateAccountDesc">Public — Everyone can see</div></div><label class="toggle-switch"><input type="checkbox" id="settingPrivateAccount"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">✓✓ Read Receipts</div><div class="settings-item-desc">Show when you've read messages</div></div><label class="toggle-switch"><input type="checkbox" id="settingReadReceipts"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🟢 Show Activity Status</div></div><label class="toggle-switch"><input type="checkbox" id="settingShowActivity"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📶 Show Online</div></div><label class="toggle-switch"><input type="checkbox" id="settingShowOnline"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🏷️ Allow Tagging</div></div><label class="toggle-switch"><input type="checkbox" id="settingAllowTagging"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📤 Allow Story Sharing</div></div><label class="toggle-switch"><input type="checkbox" id="settingAllowStorySharing"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🚫 Blocked Users</div><div class="settings-item-desc" id="blockedUsersCount">No users blocked</div></div><button id="settingBlockedUsersBtn" style="background:none;border:1px solid #333;color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;">Manage</button></div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Content</div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📊 Show View Counts</div></div><label class="toggle-switch"><input type="checkbox" id="settingShowViews"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">♾️ Infinite Scroll</div></div><label class="toggle-switch"><input type="checkbox" id="settingInfiniteScroll"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📋 Feed Order</div></div><select class="settings-select" id="settingFeedOrder"><option value="newest">Newest First</option><option value="trending">Trending</option><option value="following">Following</option></select></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">👆 Double Tap Like</div><div class="settings-item-desc">Double tap to like posts</div></div><label class="toggle-switch"><input type="checkbox" id="settingDoubleTapLike"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🗑️ Confirm Delete</div><div class="settings-item-desc">Ask before deleting</div></div><label class="toggle-switch"><input type="checkbox" id="settingConfirmDelete"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📳 Vibration</div></div><label class="toggle-switch"><input type="checkbox" id="settingVibration"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🔊 Sound Effects</div></div><label class="toggle-switch"><input type="checkbox" id="settingSoundEffects"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🌐 Language</div></div><select class="settings-select" id="settingLanguage"><option value="en">English</option><option value="hi">हिंदी</option></select></div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Data & Storage</div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📥 Auto Download</div><div class="settings-item-desc">Auto-save viewed videos</div></div><label class="toggle-switch"><input type="checkbox" id="settingAutoDownload"><span class="toggle-slider"></span></label></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">⚡ Video Preload</div></div><select class="settings-select" id="settingVideoPreload"><option value="none">None</option><option value="metadata">Metadata</option><option value="auto">Auto</option></select></div>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📝 Show Captions</div></div><label class="toggle-switch"><input type="checkbox" id="settingShowCaptions"><span class="toggle-slider"></span></label></div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">About & Legal</div>
+          <div class="settings-item" style="cursor:pointer;" onclick="window.open('privacy.html','_blank')">
+            <div class="settings-item-info"><div class="settings-item-label">🔒 Privacy Policy</div><div class="settings-item-desc">How we handle your data</div></div>
+            <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="settings-item" style="cursor:pointer;" onclick="window.open('terms.html','_blank')">
+            <div class="settings-item-info"><div class="settings-item-label">📜 Terms of Service</div><div class="settings-item-desc">Rules for using ReelHub</div></div>
+            <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="settings-item" style="cursor:pointer;" onclick="alert('📱 ReelHub v1.0.0')">
+            <div class="settings-item-info"><div class="settings-item-label">ℹ️ About ReelHub</div><div class="settings-item-desc">Version 1.0.0</div></div>
+            <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
 
         <div class="settings-section">
           <div class="settings-section-title" style="color:#ff4d4d;border-bottom-color:rgba(255,77,77,0.2);">⚠️ Danger Zone</div>
-          <div class="settings-item">
-            <div class="settings-item-info">
-              <div class="settings-item-label" style="color:#ff4d4d;">🗑️ Delete Account</div>
-              <div class="settings-item-desc">Permanently delete your account and all data</div>
-            </div>
-          </div>
-          <button class="delete-account-btn" id="deleteAccountBtn" onclick="window.handleDeleteClick ? window.handleDeleteClick(event) : alert('Please refresh the page')" style="margin-top:8px;">
-            Delete My Account
-          </button>
+          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label" style="color:#ff4d4d;">🗑️ Delete Account</div><div class="settings-item-desc">Permanently delete your account and all data</div></div></div>
+          <button class="delete-account-btn" id="deleteAccountBtn" onclick="window.handleDeleteClick ? window.handleDeleteClick(event) : alert('Please refresh the page')" style="margin-top:8px;">Delete My Account</button>
         </div>
 
         <div class="settings-section" style="margin-top:24px;">
-          <button id="logoutBtn" style="width:100%;height:48px;background:#1e1e28;border:1px solid #333;border-radius:12px;color:#ff4d4d;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">
-            Log Out
-          </button>
+          <button id="logoutBtn" style="width:100%;height:48px;background:#1e1e28;border:1px solid #333;border-radius:12px;color:#ff4d4d;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">Log Out</button>
         </div>
 
       </div>
@@ -558,36 +533,25 @@
         <h3>💎 Buy Blue Tick</h3>
         <button class="modal-close" onclick="document.getElementById('premiumModal').classList.remove('show')">&times;</button>
       </div>
-      
-      <!-- Plans List -->
       <div id="premiumPlansList">
         <div id="dynamicPlansContainer" style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom:15px;">
           <div style="color:#888; width:100%; text-align:center;">Loading plans...</div>
         </div>
       </div>
-
-      <!-- QR & Timer View -->
       <div id="premiumQrView" style="display:none;">
         <h4 id="payAmountText" style="margin-bottom:10px; color:#ff2e63;">Pay ₹0</h4>
-        
         <div style="background:#fff; padding:10px; border-radius:12px; width:220px; margin:0 auto; border:2px solid #333;">
           <img id="payQrImage" src="" style="width:100%; height:auto; border-radius:8px;">
         </div>
-        
         <p style="font-size:12px; color:#888; margin-top:10px;">Scan with any UPI App (GPay, PhonePe, Paytm)</p>
-        
         <div style="margin-top:8px;">
           <span style="font-size:12px; color:#aaa;">Or pay to UPI ID:</span><br>
           <span id="payUpiId" style="font-size:15px; font-weight:bold; background:#1a1a1a; padding:6px 12px; border-radius:8px; display:inline-block; margin-top:5px; cursor:pointer; border:1px dashed #444;" onclick="navigator.clipboard.writeText(this.innerText); if(typeof payToast==='function') payToast('UPI ID Copied!')">upi@id</span>
         </div>
-        
-        <!-- 30 Second Timer -->
         <div id="paymentTimerWrap" style="margin-top:20px; padding:12px; background:rgba(255,46,99,0.1); border-radius:10px; border: 1px solid rgba(255,46,99,0.3);">
           <span style="font-size:14px; color:#ff2e63; font-weight:bold;">⏳ Please wait <span id="payTimerVal">30</span>s</span>
           <div style="font-size:11px; color:#888; margin-top:4px;">(Take a screenshot after paying)</div>
         </div>
-
-        <!-- Upload Section -->
         <div id="paymentUploadWrap" style="display:none; margin-top:20px;">
           <label for="paymentScreenshot" class="btn-primary" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border-radius:10px; cursor:pointer; background:linear-gradient(90deg,#4ea8ff,#2a6fb8); color:#fff; font-weight:bold; font-size:14px;">
             <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -599,7 +563,6 @@
       </div>
     </div>
   </div>
-  <!-- ============================================================== -->
 
   <script type="module" src="app.js"></script>
   <script type="module" src="payment.js"></script>
