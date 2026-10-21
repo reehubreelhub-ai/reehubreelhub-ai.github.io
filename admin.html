@@ -10,13 +10,13 @@
 
 <body>
 
-  <!-- ================= TOAST CONTAINER (NEW) ================= -->
+  <!-- ================= TOAST CONTAINER (For Notifications) ================= -->
   <div id="toastContainer" style="position:fixed; top:20px; right:20px; z-index:99999; display:flex; flex-direction:column; gap:10px;"></div>
 
   <!-- ================= LOADER ================= -->
   <div class="loader-screen" id="loader">
     <div class="spinner"></div>
-    <div style="color:#888;font-size:13px;">Checking access...</div>
+    <div style="color:#888;font-size:13px; margin-top:10px;">Checking access...</div>
   </div>
 
   <!-- ================= LOGIN ================= -->
@@ -115,6 +115,27 @@
     </div>
   </div>
 
+  <!-- ================= ERROR CATCHER & FALLBACK ================= -->
+  <script>
+    // 1. Agar JS me error aaye toh alert me dikhao
+    window.onerror = function(msg, url, line, col, error) {
+      alert("⚠️ JavaScript ERROR:\n" + msg + "\n\nLine: " + line + "\nFile: " + (url ? url.split('/').pop() : ''));
+      return false;
+    };
+
+    // 2. Agar 5 second tak loader na hate, toh auto-fix karo
+    setTimeout(() => {
+      const loader = document.getElementById('loader');
+      const login = document.getElementById('adminLogin');
+      if (loader && loader.style.display !== 'none') {
+        console.warn("Firebase Auth timeout. Forcing UI to show.");
+        loader.style.display = 'none';
+        login.style.display = 'flex';
+      }
+    }, 5000);
+  </script>
+
+  <!-- Main JS File -->
   <script type="module" src="admin.js"></script>
 
 </body>
