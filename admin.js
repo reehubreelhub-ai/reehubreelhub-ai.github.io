@@ -1,7 +1,9 @@
 /* ============================================================
-   ReelHub Admin — admin.js (FINAL FIXED)
-   ✅ All bugs fixed: inline-onclick, duplicate handlers,
-      button loading, orderBy, dedupe, toast overflow
+   ReelHub Admin — admin.js (FINAL FIXED v3)
+   ✅ "00" bug fixed — video counts from posts
+   ✅ Safe number parsing (no string concat)
+   ✅ Sync Counts button to repair data
+   ✅ Full error handling
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -11,7 +13,7 @@ import {
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
   collection, query, where, getDocs, addDoc, serverTimestamp,
-  limit, writeBatch, Timestamp
+  writeBatch, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 /* ============================================================
@@ -42,11 +44,9 @@ async function loadAdminEmails() {
     const snap = await getDoc(doc(db, 'admin_config', 'emails'));
     if (snap.exists()) {
       const list = snap.data().list || [];
-      // ✅ FIX #6: Lowercase before dedupe
-      const merged = [...new Set(
+      ADMIN_EMAILS = [...new Set(
         [...HARDCODED_ADMIN_EMAILS, ...list].map(e => String(e).toLowerCase().trim())
       )];
-      ADMIN_EMAILS = merged;
     }
   } catch (e) {
     ADMIN_EMAILS = [...HARDCODED_ADMIN_EMAILS];
@@ -72,8 +72,6 @@ let currentAdminProfile = null;
 let currentPage = 'dashboard';
 let isLoggingIn = false;
 let cachedData = { users: [], videos: [], comments: [], invites: [], reports: [] };
-
-// ✅ Payment page state (module-level so init handlers can share)
 let currentUpi = '';
 let currentQr = '';
 
@@ -92,15 +90,29 @@ const modalTitle   = document.getElementById('modalTitle');
 const modalBody    = document.getElementById('modalBody');
 
 /* ============================================================
-   HELPERS
+   ✅ CORE HELPERS — Safe Parsing (Bug #1 & #2 fix)
    ============================================================ */
+function safeNum(v) {
+  if (v === null || v === undefined) return 0;
+  const n = Number(v);
+  return isNaN(n) || !isFinite(n) ? 0 : n;
+}
+
+function safeArray(v) {
+  return Array.isArray(v) ? v : [];
+}
+
+function safeStr(v) {
+  if (v === null || v === undefined) return '';
+  return String(v);
+}
+
 function showToast(message, type = 'info', duration = 3000) {
   const container = document.getElementById('toastContainer');
   if (!container) return;
   const icons = { success: '✅', error: '❌', info: 'ℹ️', warn: '⚠️' };
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  // ✅ FIX #7: max-width + word-wrap
   toast.style.cssText = `
     background:#1e1e28; color:#fff; padding:12px 16px; border-radius:10px;
     margin-bottom:8px; font-size:13px; display:flex; gap:8px; align-items:center;
@@ -145,7 +157,6 @@ function defaultAvatar(name) {
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
 
-// ✅ FIX #3: Safe button loading
 function setButtonLoading(btn, loading = true) {
   if (!btn) return;
   if (loading) {
@@ -165,10 +176,11 @@ function setButtonLoading(btn, loading = true) {
   }
 }
 
-// ✅ Video thumbnail builder (Cloudinary fallback)
 function getVideoThumbnail(v) {
-  if (v.thumbnail) return v.thumbnail;
-  if (!v.url) return defaultAvatar(v.userName || 'V');
+  if (!v || !v.url) return defaultAvatar(v?.userName || 'V');
+  if (v.thumbnail && typeof v.thumbnail === 'string' && v.thumbnail.startsWith('http')) {
+    return v.thumbnail;
+  }
   if (v.type === 'photo') return v.url;
   if (v.url.includes('/video/upload/')) {
     return v.url
@@ -338,193 +350,311 @@ async function renderPage(page) {
     else if (page === 'reports')       await renderReports();
   } catch (err) {
     console.error('renderPage error:', err);
-    adminContent.innerHTML = `<div class="empty-box">Error: ${escapeHtml(err.message)}</div>`;
+    adminContent.innerHTML = `
+      <div class="empty-box" style="color:#ff4d4d;">
+        ⚠️ Error: ${escapeHtml(err.message || String(err))}
+      </div>`;
+    showToast('Page load failed: ' + (err.message || 'unknown'), 'error', 5000);
   }
 }
 
 /* ============================================================
-   DASHBOARD
+   📊 DASHBOARD — ✅ FIXED "00" via safeNum
    ============================================================ */
 async function renderDashboard() {
-  const [usersSnap, videosSnap, commentsSnap, reportsSnap] = await Promise.all([
-    getDocs(collection(db, 'users')),
-    getDocs(collection(db, 'posts')),
-    getDocs(collection(db, 'comments')),
-    getDocs(collection(db, 'reports'))
-  ]);
+  try {
+    const [usersSnap, videosSnap, commentsSnap, reportsSnap] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'posts')),
+      getDocs(collection(db, 'comments')),
+      getDocs(collection(db, 'reports'))
+    ]);
 
-  const totalUsers = usersSnap.size;
-  const totalVideos = videosSnap.size;
-  const totalComments = commentsSnap.size;
-  const totalReports = reportsSnap.size;
+    const totalUsers = usersSnap.size;
+    const totalVideos = videosSnap.size;
+    const totalComments = commentsSnap.size;
+    const totalReports = reportsSnap.size;
 
-  let totalLikes = 0, totalViews = 0, shortsCount = 0, longCount = 0;
-  videosSnap.forEach(d => {
-    const data = d.data();
-    totalLikes += (data.likes || []).length;
-    totalViews += data.views || 0;
-    if (data.type === 'short') shortsCount++;
-    else if (data.type === 'long') longCount++;
-  });
+    // ✅ SAFE: no string concat, no NaN
+    let totalLikes = 0, totalViews = 0, shortsCount = 0, longCount = 0;
+    let photosCount = 0;
 
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  let todaySignups = 0, todayVideos = 0;
-  usersSnap.forEach(d => {
-    const created = d.data().createdAt?.toDate?.();
-    if (created && created >= today) todaySignups++;
-  });
-  videosSnap.forEach(d => {
-    const created = d.data().createdAt?.toDate?.();
-    if (created && created >= today) todayVideos++;
-  });
+    videosSnap.forEach(d => {
+      const data = d.data() || {};
+      totalLikes += safeArray(data.likes).length;
+      totalViews += safeNum(data.views);
+      if (data.type === 'short') shortsCount++;
+      else if (data.type === 'long') longCount++;
+      else if (data.type === 'photo') photosCount++;
+    });
 
-  adminContent.innerHTML = `
-    <div class="page-title-admin">
-      <div class="title-text">Dashboard</div>
-      <button class="refresh-btn" id="refreshDashBtn">Refresh</button>
-    </div>
-    <div class="stats-grid">
-      <div class="stat-card clickable" data-nav="users"><div class="label">Total Users</div><div class="value pink">${totalUsers}</div></div>
-      <div class="stat-card clickable" data-nav="videos"><div class="label">Total Videos</div><div class="value blue">${totalVideos}</div></div>
-      <div class="stat-card"><div class="label">Total Likes</div><div class="value orange">${totalLikes}</div></div>
-      <div class="stat-card clickable" data-nav="comments"><div class="label">Total Comments</div><div class="value green">${totalComments}</div></div>
-      <div class="stat-card"><div class="label">Total Views</div><div class="value">${totalViews}</div></div>
-      <div class="stat-card clickable" data-nav="reports"><div class="label">Pending Reports</div><div class="value" style="color:#ff8a00">${totalReports}</div></div>
-      <div class="stat-card"><div class="label">Today's Signups</div><div class="value">${todaySignups}</div></div>
-      <div class="stat-card"><div class="label">Today's Uploads</div><div class="value">${todayVideos}</div></div>
-    </div>
-    <div class="stats-grid" style="margin-top:14px;">
-      <div class="stat-card"><div class="label">Shorts</div><div class="value" style="color:#ff2e63">${shortsCount}</div></div>
-      <div class="stat-card"><div class="label">Long Videos</div><div class="value" style="color:#4ea8ff">${longCount}</div></div>
-    </div>
-  `;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  document.getElementById('refreshDashBtn')?.addEventListener('click', () => renderDashboard());
-  document.querySelectorAll('[data-nav]').forEach(card => {
-    card.addEventListener('click', () => goToPage(card.dataset.nav));
-  });
+    let todaySignups = 0, todayVideos = 0;
+    usersSnap.forEach(d => {
+      const created = d.data()?.createdAt?.toDate?.();
+      if (created && created >= today) todaySignups++;
+    });
+    videosSnap.forEach(d => {
+      const created = d.data()?.createdAt?.toDate?.();
+      if (created && created >= today) todayVideos++;
+    });
+
+    adminContent.innerHTML = `
+      <div class="page-title-admin">
+        <div class="title-text">Dashboard</div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-outline" id="syncCountsBtn" title="Recalculate all user video counts">🔄 Sync Counts</button>
+          <button class="refresh-btn" id="refreshDashBtn">Refresh</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card clickable" data-nav="users"><div class="label">Total Users</div><div class="value pink">${totalUsers}</div></div>
+        <div class="stat-card clickable" data-nav="videos"><div class="label">Total Videos</div><div class="value blue">${totalVideos}</div></div>
+        <div class="stat-card"><div class="label">Total Likes</div><div class="value orange">${totalLikes}</div></div>
+        <div class="stat-card clickable" data-nav="comments"><div class="label">Total Comments</div><div class="value green">${totalComments}</div></div>
+        <div class="stat-card"><div class="label">Total Views</div><div class="value">${totalViews}</div></div>
+        <div class="stat-card clickable" data-nav="reports"><div class="label">Pending Reports</div><div class="value" style="color:#ff8a00">${totalReports}</div></div>
+        <div class="stat-card"><div class="label">Today's Signups</div><div class="value">${todaySignups}</div></div>
+        <div class="stat-card"><div class="label">Today's Uploads</div><div class="value">${todayVideos}</div></div>
+      </div>
+
+      <div class="stats-grid" style="margin-top:14px;">
+        <div class="stat-card"><div class="label">Shorts</div><div class="value" style="color:#ff2e63">${shortsCount}</div></div>
+        <div class="stat-card"><div class="label">Long Videos</div><div class="value" style="color:#4ea8ff">${longCount}</div></div>
+        <div class="stat-card"><div class="label">Photos</div><div class="value" style="color:#4ade80">${photosCount}</div></div>
+      </div>
+    `;
+
+    document.getElementById('refreshDashBtn')?.addEventListener('click', () => renderDashboard());
+    document.getElementById('syncCountsBtn')?.addEventListener('click', () => syncAllVideoCounts());
+
+    document.querySelectorAll('[data-nav]').forEach(card => {
+      card.addEventListener('click', () => goToPage(card.dataset.nav));
+    });
+  } catch (err) {
+    console.error('Dashboard error:', err);
+    adminContent.innerHTML = `
+      <div class="empty-box" style="color:#ff4d4d;">
+        ⚠️ Failed to load dashboard: ${escapeHtml(err.message || '')}
+        <br><br>
+        <button class="refresh-btn" onclick="location.reload()">Retry</button>
+      </div>`;
+    showToast('Dashboard failed: ' + (err.message || 'unknown'), 'error', 5000);
+  }
 }
 
 /* ============================================================
-   USERS
+   🔄 SYNC VIDEO COUNTS — Repair Firestore data
    ============================================================ */
-async function renderUsers() {
-  const snap = await getDocs(collection(db, 'users'));
-  cachedData.users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+async function syncAllVideoCounts() {
+  const btn = document.getElementById('syncCountsBtn');
+  if (!confirm('This will recalculate every user\'s videoCount from the posts collection. Continue?')) return;
+  setButtonLoading(btn, true);
 
-  const bannedCount = cachedData.users.filter(u => u.banned).length;
-  const verifiedCount = cachedData.users.filter(u => u.verified).length;
-
-  adminContent.innerHTML = `
-    <div class="page-title-admin">
-      <div class="title-text">Users (${cachedData.users.length})</div>
-      <button class="refresh-btn" id="refreshUsersBtn">Refresh</button>
-    </div>
-    <div class="table-wrap">
-      <div class="table-search"><input type="text" id="userSearch" placeholder="Search by name, username or email..."></div>
-      <div class="filter-tabs" id="userFilterTabs">
-        <button class="filter-tab active" data-filter="all">All (${cachedData.users.length})</button>
-        <button class="filter-tab" data-filter="verified">Verified (${verifiedCount})</button>
-        <button class="filter-tab" data-filter="banned">Banned (${bannedCount})</button>
-        <button class="filter-tab" data-filter="admin">Admins (${ADMIN_EMAILS.length})</button>
-      </div>
-      <div style="overflow-x:auto;">
-        <table class="admin-table">
-          <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Videos</th><th>Actions</th></tr></thead>
-          <tbody id="usersTbody"></tbody>
-        </table>
-      </div>
-    </div>
-  `;
-
-  let currentFilter = 'all';
-  let currentSearch = '';
-
-  function paint() {
-    const q = currentSearch.toLowerCase().trim();
-    const list = cachedData.users.filter(u => {
-      if (currentFilter === 'verified' && !u.verified) return false;
-      if (currentFilter === 'banned' && !u.banned) return false;
-      if (currentFilter === 'admin' && !isAdminEmail(u.email)) return false;
-      if (!q) return true;
-      return (u.name || '').toLowerCase().includes(q)
-        || (u.user || '').toLowerCase().includes(q)
-        || (u.email || '').toLowerCase().includes(q);
+  try {
+    showToast('Reading posts...', 'info');
+    const postsSnap = await getDocs(collection(db, 'posts'));
+    const counts = {};
+    postsSnap.forEach(d => {
+      const uid = d.data()?.userId;
+      if (uid) counts[uid] = (counts[uid] || 0) + 1;
     });
 
-    const tbody = document.getElementById('usersTbody');
-    if (!tbody) return;
-    if (list.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><h4>No users found</h4></div></td></tr>`;
-      return;
+    showToast('Updating users...', 'info');
+    const usersSnap = await getDocs(collection(db, 'users'));
+    let updated = 0;
+
+    for (const userDoc of usersSnap.docs) {
+      const expected = counts[userDoc.id] || 0;
+      const current = safeNum(userDoc.data()?.videoCount);
+
+      if (expected !== current) {
+        try {
+          await updateDoc(doc(db, 'users', userDoc.id), { videoCount: expected });
+          updated++;
+        } catch (e) {
+          console.warn('Update failed for', userDoc.id, e);
+        }
+      }
     }
 
-    tbody.innerHTML = '';
-    list.forEach(u => {
-      const tr = document.createElement('tr');
-      const avatar = u.photo || defaultAvatar(u.name);
-      const roleBadge = isAdminEmail(u.email)
-        ? `<span class="badge-pill admin">${isSuperAdmin(u.email) ? 'SUPER' : 'ADMIN'}</span>`
-        : `<span style="color:#666">user</span>`;
-      const verifiedBadge = u.verified ? ` <span class="badge-pill verified">✓</span>` : '';
-      const bannedBadge = u.banned ? ` <span class="badge-pill banned">BANNED</span>` : '';
-
-      tr.innerHTML = `
-        <td>
-          <div class="user-cell">
-            <img src="${avatar}" alt="">
-            <div class="info">
-              <b>${escapeHtml(u.name)}${verifiedBadge}${bannedBadge}</b>
-              <span>@${escapeHtml(u.user || '')}</span>
-            </div>
-          </div>
-        </td>
-        <td style="font-size:12px;">${escapeHtml(u.email || '')}</td>
-        <td>${roleBadge}</td>
-        <td>${u.videoCount || 0}</td>
-        <td>
-          <div class="actions-cell" style="flex-wrap:wrap; gap:4px;">
-            <button class="btn-sm primary" data-action="msg" data-uid="${u.id}">Msg</button>
-            <div style="display:flex; gap:4px; align-items:center; background:#0a0a12; padding:2px; border-radius:6px; border:1px solid #333;">
-              <select id="tick-select-${u.id}" style="background:transparent; color:#fff; border:none; padding:4px; font-size:11px; outline:none; cursor:pointer;">
-                <option value="none" style="background:#1a1a24;" ${!u.verified ? 'selected' : ''}>Remove Tick</option>
-                <option value="1" style="background:#1a1a24;">1 Day</option>
-                <option value="2" style="background:#1a1a24;">2 Days</option>
-                <option value="30" style="background:#1a1a24;">30 Days</option>
-                <option value="365" style="background:#1a1a24;">1 Year</option>
-              </select>
-              <button class="btn-sm primary" data-action="apply-tick" data-uid="${u.id}">Apply</button>
-            </div>
-            <button class="btn-sm ${u.banned ? 'green' : 'danger'}" data-action="ban" data-uid="${u.id}">${u.banned ? 'Unban' : 'Ban'}</button>
-            <button class="btn-sm danger" data-action="delete" data-uid="${u.id}">Delete</button>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    tbody.querySelectorAll('[data-action]').forEach(btn => {
-      btn.addEventListener('click', () => handleUserAction(btn.dataset.action, btn.dataset.uid, btn));
-    });
+    showToast(`✅ Synced! ${updated} users updated`, 'success', 4000);
+    await renderDashboard();
+  } catch (err) {
+    console.error('syncAllVideoCounts error:', err);
+    showToast('Sync failed: ' + (err.message || ''), 'error');
+  } finally {
+    setButtonLoading(btn, false);
   }
+}
 
-  paint();
+/* ============================================================
+   👥 USERS — ✅ FIXED: Video count from posts collection
+   ============================================================ */
+async function renderUsers() {
+  try {
+    adminContent.innerHTML = `<div class="loader-screen" style="min-height:200px;"><div class="spinner"></div></div>`;
 
-  document.getElementById('userSearch').addEventListener('input', (e) => {
-    currentSearch = e.target.value;
+    // ✅ FIX: Fetch users + posts in parallel to calculate real video counts
+    const [usersSnap, postsSnap] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'posts'))
+    ]);
+
+    cachedData.users = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // ✅ Build video count map from actual posts
+    const videoCountMap = {};
+    postsSnap.forEach(d => {
+      const uid = d.data()?.userId;
+      if (uid) videoCountMap[uid] = (videoCountMap[uid] || 0) + 1;
+    });
+
+    // ✅ Attach actual video count to each user
+    cachedData.users.forEach(u => {
+      u._realVideoCount = videoCountMap[u.id] || 0;
+    });
+
+    const bannedCount = cachedData.users.filter(u => u.banned).length;
+    const verifiedCount = cachedData.users.filter(u => u.verified).length;
+
+    adminContent.innerHTML = `
+      <div class="page-title-admin">
+        <div class="title-text">Users (${cachedData.users.length})</div>
+        <button class="refresh-btn" id="refreshUsersBtn">Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-search">
+          <input type="text" id="userSearch" placeholder="Search by name, username or email...">
+        </div>
+        <div class="filter-tabs" id="userFilterTabs">
+          <button class="filter-tab active" data-filter="all">All (${cachedData.users.length})</button>
+          <button class="filter-tab" data-filter="verified">Verified (${verifiedCount})</button>
+          <button class="filter-tab" data-filter="banned">Banned (${bannedCount})</button>
+          <button class="filter-tab" data-filter="admin">Admins (${ADMIN_EMAILS.length})</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Videos</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    let currentFilter = 'all';
+    let currentSearch = '';
+
+    function paint() {
+      const q = currentSearch.toLowerCase().trim();
+      const list = cachedData.users.filter(u => {
+        if (currentFilter === 'verified' && !u.verified) return false;
+        if (currentFilter === 'banned' && !u.banned) return false;
+        if (currentFilter === 'admin' && !isAdminEmail(u.email)) return false;
+        if (!q) return true;
+        return (u.name || '').toLowerCase().includes(q)
+          || (u.user || '').toLowerCase().includes(q)
+          || (u.email || '').toLowerCase().includes(q);
+      });
+
+      const tbody = document.getElementById('usersTbody');
+      if (!tbody) return;
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><h4>No users found</h4></div></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      list.forEach(u => {
+        const tr = document.createElement('tr');
+        const avatar = u.photo || defaultAvatar(u.name);
+        const roleBadge = isAdminEmail(u.email)
+          ? `<span class="badge-pill admin">${isSuperAdmin(u.email) ? 'SUPER' : 'ADMIN'}</span>`
+          : `<span style="color:#666">user</span>`;
+        const verifiedBadge = u.verified ? ` <span class="badge-pill verified">✓</span>` : '';
+        const bannedBadge = u.banned ? ` <span class="badge-pill banned">BANNED</span>` : '';
+
+        // ✅ FIX: Use real video count from posts, not broken videoCount field
+        const realCount = safeNum(u._realVideoCount);
+
+        tr.innerHTML = `
+          <td>
+            <div class="user-cell">
+              <img src="${avatar}" alt="">
+              <div class="info">
+                <b>${escapeHtml(u.name || 'Unknown')}${verifiedBadge}${bannedBadge}</b>
+                <span>@${escapeHtml(u.user || '')}</span>
+              </div>
+            </div>
+          </td>
+          <td style="font-size:12px;">${escapeHtml(u.email || '')}</td>
+          <td>${roleBadge}</td>
+          <td style="font-weight:700; color:${realCount > 0 ? '#4ade80' : '#666'};">${realCount}</td>
+          <td>
+            <div class="actions-cell" style="flex-wrap:wrap; gap:4px;">
+              <button class="btn-sm primary" data-action="msg" data-uid="${u.id}">Msg</button>
+              <div style="display:flex; gap:4px; align-items:center; background:#0a0a12; padding:2px; border-radius:6px; border:1px solid #333;">
+                <select id="tick-select-${u.id}" style="background:transparent; color:#fff; border:none; padding:4px; font-size:11px; outline:none; cursor:pointer;">
+                  <option value="none" style="background:#1a1a24;" ${!u.verified ? 'selected' : ''}>Remove Tick</option>
+                  <option value="1" style="background:#1a1a24;">1 Day</option>
+                  <option value="2" style="background:#1a1a24;">2 Days</option>
+                  <option value="30" style="background:#1a1a24;">30 Days</option>
+                  <option value="365" style="background:#1a1a24;">1 Year</option>
+                </select>
+                <button class="btn-sm primary" data-action="apply-tick" data-uid="${u.id}">Apply</button>
+              </div>
+              <button class="btn-sm ${u.banned ? 'green' : 'danger'}" data-action="ban" data-uid="${u.id}">${u.banned ? 'Unban' : 'Ban'}</button>
+              <button class="btn-sm danger" data-action="delete" data-uid="${u.id}">Delete</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      tbody.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', () => handleUserAction(btn.dataset.action, btn.dataset.uid, btn));
+      });
+    }
+
     paint();
-  });
 
-  document.getElementById('userFilterTabs').addEventListener('click', (e) => {
-    const tab = e.target.closest('.filter-tab');
-    if (!tab) return;
-    document.querySelectorAll('#userFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    currentFilter = tab.dataset.filter;
-    paint();
-  });
+    document.getElementById('userSearch')?.addEventListener('input', (e) => {
+      currentSearch = e.target.value;
+      paint();
+    });
 
-  document.getElementById('refreshUsersBtn')?.addEventListener('click', () => renderUsers());
+    document.getElementById('userFilterTabs')?.addEventListener('click', (e) => {
+      const tab = e.target.closest('.filter-tab');
+      if (!tab) return;
+      document.querySelectorAll('#userFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentFilter = tab.dataset.filter;
+      paint();
+    });
+
+    document.getElementById('refreshUsersBtn')?.addEventListener('click', () => renderUsers());
+  } catch (err) {
+    console.error('renderUsers error:', err);
+    adminContent.innerHTML = `
+      <div class="empty-box" style="color:#ff4d4d;">
+        ⚠️ Failed to load users: ${escapeHtml(err.message || '')}
+        <br><br>
+        <button class="refresh-btn" onclick="location.reload()">Retry</button>
+      </div>`;
+    showToast('Users failed: ' + (err.message || ''), 'error', 5000);
+  }
 }
 
 async function handleUserAction(action, uid, btnEl) {
@@ -567,7 +697,7 @@ async function handleUserAction(action, uid, btnEl) {
       await renderUsers();
     } catch (e) {
       console.error('apply-tick error:', e);
-      showToast('Action failed', 'error');
+      showToast('Action failed: ' + (e.message || ''), 'error');
       setButtonLoading(btnEl, false);
     }
     return;
@@ -604,7 +734,7 @@ async function handleUserAction(action, uid, btnEl) {
       showToast('User deleted', 'success');
       await renderUsers();
     } catch (e) {
-      showToast('Delete failed', 'error');
+      showToast('Delete failed: ' + (e.message || ''), 'error');
       setButtonLoading(btnEl, false);
     }
   }
@@ -632,81 +762,95 @@ async function batchDelete(refs) {
 }
 
 /* ============================================================
-   VIDEOS — ✅ FIX #1: No inline onclick
+   🎬 VIDEOS
    ============================================================ */
 async function renderVideos() {
-  const snap = await getDocs(collection(db, 'posts'));
-  cachedData.videos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  try {
+    const snap = await getDocs(collection(db, 'posts'));
+    cachedData.videos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  adminContent.innerHTML = `
-    <div class="page-title-admin">
-      <div class="title-text">Videos (${cachedData.videos.length})</div>
-      <button class="refresh-btn" id="refreshVideosBtn">Refresh</button>
-    </div>
-    <div class="table-wrap">
-      <div style="overflow-x:auto;">
-        <table class="admin-table">
-          <thead><tr><th>Preview</th><th>User</th><th>Type</th><th>Caption</th><th>Actions</th></tr></thead>
-          <tbody id="videosTbody"></tbody>
-        </table>
+    adminContent.innerHTML = `
+      <div class="page-title-admin">
+        <div class="title-text">Videos (${cachedData.videos.length})</div>
+        <button class="refresh-btn" id="refreshVideosBtn">Refresh</button>
       </div>
-    </div>
-  `;
+      <div class="table-wrap">
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Preview</th>
+                <th>User</th>
+                <th>Type</th>
+                <th>Views</th>
+                <th>Likes</th>
+                <th>Caption</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="videosTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    `;
 
-  const tbody = document.getElementById('videosTbody');
-  if (cachedData.videos.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><h4>No videos found</h4></div></td></tr>`;
-  } else {
-    cachedData.videos.forEach(v => {
-      const tr = document.createElement('tr');
-      const thumb = getVideoThumbnail(v);
-      const typeLabel = v.type === 'short' ? 'SHORT' : v.type === 'long' ? 'LONG' : 'PHOTO';
+    const tbody = document.getElementById('videosTbody');
+    if (cachedData.videos.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><h4>No videos found</h4></div></td></tr>`;
+    } else {
+      cachedData.videos.forEach(v => {
+        const tr = document.createElement('tr');
+        const thumb = getVideoThumbnail(v);
+        const typeLabel = v.type === 'short' ? 'SHORT' : v.type === 'long' ? 'LONG' : 'PHOTO';
+        const views = safeNum(v.views);
+        const likes = safeArray(v.likes).length;
 
-      tr.innerHTML = `
-        <td>
-          <img src="${thumb}" alt="" loading="lazy"
-            style="width:60px;height:80px;object-fit:cover;border-radius:6px;background:#1a1a24;"
-            onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='block')">
-          <video src="${v.url || ''}" muted preload="metadata"
-            style="display:none;width:60px;height:80px;object-fit:cover;border-radius:6px;background:#000;"
-            onloadeddata="this.currentTime=1"></video>
-        </td>
-        <td>
-          <div style="font-size:12px;">
-            <b>${escapeHtml(v.userName || '')}</b><br>
-            <span style="color:#666">@${escapeHtml(v.userHandle || '')}</span>
-          </div>
-        </td>
-        <td><span class="badge-pill" style="background:#2a2a3a;color:#4ea8ff;">${typeLabel}</span></td>
-        <td style="max-width:180px;font-size:12px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-          ${escapeHtml(v.caption || '—')}
-        </td>
-        <td>
-          <button class="btn-sm danger" data-del-vid="${v.id}">Delete</button>
-        </td>
-      `;
+        tr.innerHTML = `
+          <td>
+            <img src="${thumb}" alt="" loading="lazy"
+              style="width:60px;height:80px;object-fit:cover;border-radius:6px;background:#1a1a24;">
+          </td>
+          <td>
+            <div style="font-size:12px;">
+              <b>${escapeHtml(v.userName || 'Unknown')}</b><br>
+              <span style="color:#666">@${escapeHtml(v.userHandle || '')}</span>
+            </div>
+          </td>
+          <td><span class="badge-pill" style="background:#2a2a3a;color:#4ea8ff;">${typeLabel}</span></td>
+          <td style="font-weight:700; color:${views > 0 ? '#4ea8ff' : '#666'};">${views}</td>
+          <td style="font-weight:700; color:${likes > 0 ? '#ff2e63' : '#666'};">${likes}</td>
+          <td style="max-width:180px;font-size:12px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            ${escapeHtml(v.caption || '—')}
+          </td>
+          <td>
+            <button class="btn-sm danger" data-del-vid="${v.id}">Delete</button>
+          </td>
+        `;
 
-      // ✅ FIX: Proper event listener instead of broken inline onclick
-      tr.querySelector('[data-del-vid]')?.addEventListener('click', async (e) => {
-        if (!confirm('Delete this video permanently?')) return;
-        const btn = e.currentTarget;
-        setButtonLoading(btn, true);
-        try {
-          await deleteDoc(doc(db, 'posts', v.id));
-          showToast('Video deleted', 'success');
-          await renderVideos();
-        } catch (err) {
-          console.error('Delete video error:', err);
-          showToast('Delete failed: ' + (err.message || ''), 'error');
-          setButtonLoading(btn, false);
-        }
+        tr.querySelector('[data-del-vid]')?.addEventListener('click', async (e) => {
+          if (!confirm('Delete this video permanently?')) return;
+          const btn = e.currentTarget;
+          setButtonLoading(btn, true);
+          try {
+            await deleteDoc(doc(db, 'posts', v.id));
+            showToast('Video deleted', 'success');
+            await renderVideos();
+          } catch (err) {
+            console.error('Delete video error:', err);
+            showToast('Delete failed: ' + (err.message || ''), 'error');
+            setButtonLoading(btn, false);
+          }
+        });
+
+        tbody.appendChild(tr);
       });
+    }
 
-      tbody.appendChild(tr);
-    });
+    document.getElementById('refreshVideosBtn')?.addEventListener('click', () => renderVideos());
+  } catch (err) {
+    console.error('renderVideos error:', err);
+    adminContent.innerHTML = `<div class="empty-box" style="color:#ff4d4d;">⚠️ Failed: ${escapeHtml(err.message || '')}</div>`;
   }
-
-  document.getElementById('refreshVideosBtn')?.addEventListener('click', () => renderVideos());
 }
 
 async function renderComments() {
@@ -717,7 +861,7 @@ async function renderComments() {
 }
 
 /* ============================================================
-   ✅ PAYMENTS — ✅ FIX #2: Init handlers once, no duplicate
+   💳 PAYMENTS
    ============================================================ */
 async function renderPayments() {
   adminContent.innerHTML = `
@@ -741,14 +885,22 @@ async function renderPayments() {
       </div>
       <div style="overflow-x:auto;">
         <table class="admin-table">
-          <thead><tr><th>User</th><th>Plan</th><th>Screenshot</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Plan</th>
+              <th>Screenshot</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
           <tbody id="paymentsTbody"></tbody>
         </table>
       </div>
     </div>
   `;
 
-  // --- Load UPI settings into module-level state ---
   try {
     const snap = await getDoc(doc(db, 'admin_config', 'payment'));
     if (snap.exists()) {
@@ -763,7 +915,6 @@ async function renderPayments() {
     currentQr  = '';
   }
 
-  // --- Load plans ---
   async function loadPlans() {
     const plansList = document.getElementById('plansList');
     if (!plansList) return;
@@ -771,7 +922,7 @@ async function renderPayments() {
     try {
       const snap = await getDocs(collection(db, 'payment_plans'));
       const plans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      plans.sort((a, b) => (a.amount || 0) - (b.amount || 0));
+      plans.sort((a, b) => safeNum(a.amount) - safeNum(b.amount));
 
       if (plans.length === 0) {
         plansList.innerHTML = `<div class="empty-box" style="width:100%;">No plans added yet. Click "Add Plan".</div>`;
@@ -784,8 +935,8 @@ async function renderPayments() {
         card.className = 'invite-card';
         card.style.cssText = 'flex-direction:column; align-items:flex-start; padding:15px; min-width:120px;';
         card.innerHTML = `
-          <b style="font-size:20px; color:#ff2e63;">₹${p.amount}</b>
-          <span style="font-size:13px; color:#aaa;">${p.days} Days</span>
+          <b style="font-size:20px; color:#ff2e63;">₹${safeNum(p.amount)}</b>
+          <span style="font-size:13px; color:#aaa;">${safeNum(p.days)} Days</span>
           <button class="btn-sm danger" style="margin-top:10px; width:100%;">Delete</button>
         `;
         card.querySelector('button').addEventListener('click', async () => {
@@ -806,21 +957,18 @@ async function renderPayments() {
   }
   await loadPlans();
 
-  // --- ✅ Edit UPI button (fresh element each render - safe to attach here) ---
-  document.getElementById('editUpiBtn').addEventListener('click', () => {
+  document.getElementById('editUpiBtn')?.addEventListener('click', () => {
     document.getElementById('adminUpiId').value = currentUpi;
     document.getElementById('adminQrUrl').value = currentQr;
     document.getElementById('paymentSettingsModal').classList.add('show');
   });
 
-  // --- ✅ Add Plan button (fresh element each render - safe) ---
-  document.getElementById('addPlanBtn').addEventListener('click', () => {
+  document.getElementById('addPlanBtn')?.addEventListener('click', () => {
     document.getElementById('planAmount').value = '';
     document.getElementById('planDays').value = '';
     document.getElementById('addPlanModal').classList.add('show');
   });
 
-  // --- ✅ FIX #4: No orderBy — sort in JS (handles missing createdAt) ---
   let requests = [];
   try {
     const reqSnap = await getDocs(collection(db, 'payment_requests'));
@@ -858,7 +1006,7 @@ async function renderPayments() {
           <b>${escapeHtml(r.userName || 'Unknown')}</b><br>
           <span style="font-size:11px;color:#888;">@${escapeHtml(r.userHandle || '')}</span>
         </td>
-        <td><span class="badge-pill pending">₹${r.amount || 0} - ${r.days || 0} Days</span></td>
+        <td><span class="badge-pill pending">₹${safeNum(r.amount)} - ${safeNum(r.days)} Days</span></td>
         <td>
           ${r.screenshotUrl
             ? `<a href="${escapeHtml(r.screenshotUrl)}" target="_blank" rel="noopener">
@@ -867,27 +1015,22 @@ async function renderPayments() {
             : '<span style="color:#666;font-size:11px;">No image</span>'}
         </td>
         <td style="font-size:12px; color:#888;">${dateStr}</td>
-        <td><span class="badge-pill ${statusClass}">${escapeHtml((r.status || '').toUpperCase())}</span></td>
+        <td><span class="badge-pill ${statusClass}">${escapeHtml(String(r.status || '').toUpperCase())}</span></td>
         <td data-actions="${r.id}"></td>
       `;
 
-      // ✅ FIX #5: attach proper handlers instead of inline onclick
       const actionCell = tr.querySelector(`[data-actions="${r.id}"]`);
       if (r.status === 'pending') {
         const approveBtn = document.createElement('button');
         approveBtn.className = 'btn-sm green';
         approveBtn.textContent = 'Approve ✓';
-        approveBtn.addEventListener('click', async () => {
-          await approvePayment(r, approveBtn);
-        });
+        approveBtn.addEventListener('click', () => approvePayment(r, approveBtn));
 
         const rejectBtn = document.createElement('button');
         rejectBtn.className = 'btn-sm danger';
         rejectBtn.style.marginLeft = '4px';
         rejectBtn.textContent = 'Reject ✕';
-        rejectBtn.addEventListener('click', async () => {
-          await rejectPayment(r, rejectBtn);
-        });
+        rejectBtn.addEventListener('click', () => rejectPayment(r, rejectBtn));
 
         actionCell.appendChild(approveBtn);
         actionCell.appendChild(rejectBtn);
@@ -901,7 +1044,7 @@ async function renderPayments() {
 
   paintRequests();
 
-  document.getElementById('payFilterTabs').addEventListener('click', (e) => {
+  document.getElementById('payFilterTabs')?.addEventListener('click', (e) => {
     const tab = e.target.closest('.filter-tab');
     if (!tab) return;
     document.querySelectorAll('#payFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
@@ -913,14 +1056,11 @@ async function renderPayments() {
   document.getElementById('refreshPayBtn')?.addEventListener('click', () => renderPayments());
 }
 
-/* ============================================================
-   PAYMENT ACTIONS (proper functions, not window.*)
-   ============================================================ */
 async function approvePayment(req, btnEl) {
   if (!confirm('Approve this payment and give Blue Tick?')) return;
   setButtonLoading(btnEl, true);
   try {
-    const days = parseInt(req.days, 10) || 0;
+    const days = safeNum(req.days);
     const now = new Date();
     now.setDate(now.getDate() + days);
 
@@ -969,8 +1109,7 @@ async function rejectPayment(req, btnEl) {
 }
 
 /* ============================================================
-   ✅ FIX #2: Save handlers attached ONCE at module init
-   (modals persist across page renders)
+   MODULE-LEVEL SAVE HANDLERS (once)
    ============================================================ */
 document.getElementById('savePaymentSettingsBtn')?.addEventListener('click', async (e) => {
   const btn = e.currentTarget;
@@ -1039,11 +1178,15 @@ async function renderAdmins() {
   ADMIN_EMAILS.forEach(email => {
     const card = document.createElement('div');
     card.className = 'invite-card';
-    card.innerHTML = `<div class="info"><b>${escapeHtml(email)}</b>${isSuperAdmin(email) ? ' <span class="badge-pill admin">SUPER</span>' : ''}</div>`;
+    card.innerHTML = `
+      <div class="info">
+        <b>${escapeHtml(email)}</b>
+        ${isSuperAdmin(email) ? ' <span class="badge-pill admin">SUPER</span>' : ''}
+      </div>`;
     adminsList.appendChild(card);
   });
 
-  document.getElementById('inviteNewBtn').addEventListener('click', () => {
+  document.getElementById('inviteNewBtn')?.addEventListener('click', () => {
     openModal('Invite Admin', `<p>Admin invitation feature coming soon.</p>`);
   });
   document.getElementById('refreshAdminsBtn')?.addEventListener('click', () => renderAdmins());
@@ -1107,4 +1250,4 @@ async function pushNotification(userId, data) {
   }
 }
 
-console.log('✅ Admin Panel loaded — all bugs fixed');
+console.log('✅ Admin Panel v3 loaded — "00" bug fixed');
