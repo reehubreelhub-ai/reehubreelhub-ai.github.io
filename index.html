@@ -493,23 +493,27 @@
               <div class="settings-item-label">📊 ReelHub Studio</div>
               <div class="settings-item-desc">View your stats, upload videos, manage content</div>
             </div>
-            <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
+            <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-
-          <!-- ================= FIXED GAMES BUTTON ================= -->
-          <div class="settings-item" style="cursor:pointer;" onclick="window.location.href='3dcar.html'">
+          <div class="settings-item" style="cursor:pointer;" onclick="window.location.href='games.html'">
             <div class="settings-item-info">
               <div class="settings-item-label">🎮 Play Games</div>
-              <div class="settings-item-desc">3D Car Racer — Full speed racing</div>
+              <div class="settings-item-desc">Play Breaker, Memory, 3D Car, Shooter & more</div>
             </div>
-            <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
+            <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
-          <!-- ====================================================== -->
+        </div>
 
+        <!-- ✅ NAYA: PREMIUM SERVICES SECTION -->
+        <div class="settings-section" style="margin-top:20px;">
+          <div class="settings-section-title" style="color:#ff8a00; border-bottom-color:rgba(255,138,0,0.2);">Premium Services</div>
+          <div class="settings-item" style="cursor:pointer; background: linear-gradient(90deg, rgba(255,46,99,0.1), transparent); border-radius: 12px;" onclick="openPremiumModal()">
+            <div class="settings-item-info">
+              <div class="settings-item-label">💎 Buy Blue Tick</div>
+              <div class="settings-item-desc">Get verified badge on your profile</div>
+            </div>
+            <svg style="width:16px;height:16px;stroke:#ff8a00;fill:none;stroke-width:2;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
         </div>
 
         <div class="settings-section">
@@ -742,6 +746,55 @@
           </button>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= PREMIUM BLUE TICK MODAL (NEW) ================= -->
+  <div class="modal-overlay" id="premiumModal">
+    <div class="modal" style="text-align:center;">
+      <div class="modal-header">
+        <h3>💎 Buy Blue Tick</h3>
+        <button class="modal-close" onclick="document.getElementById('premiumModal').classList.remove('show')">&times;</button>
+      </div>
+      
+      <!-- Plans List -->
+      <div id="premiumPlansList">
+        <div id="dynamicPlansContainer" style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom:15px;">
+          <div style="color:#888; width:100%; text-align:center;">Loading plans...</div>
+        </div>
+      </div>
+
+      <!-- QR & Timer View -->
+      <div id="premiumQrView" style="display:none;">
+        <h4 id="payAmountText" style="margin-bottom:10px; color:#ff2e63;">Pay ₹0</h4>
+        
+        <div style="background:#fff; padding:10px; border-radius:12px; width:220px; margin:0 auto; border:2px solid #333;">
+          <img id="payQrImage" src="" style="width:100%; height:auto; border-radius:8px;">
+        </div>
+        
+        <p style="font-size:12px; color:#888; margin-top:10px;">Scan with any UPI App (GPay, PhonePe, Paytm)</p>
+        
+        <div style="margin-top:8px;">
+          <span style="font-size:12px; color:#aaa;">Or pay to UPI ID:</span><br>
+          <span id="payUpiId" style="font-size:15px; font-weight:bold; background:#1a1a1a; padding:6px 12px; border-radius:8px; display:inline-block; margin-top:5px; cursor:pointer; border:1px dashed #444;" onclick="navigator.clipboard.writeText(this.innerText); if(typeof showToast==='function') showToast('UPI ID Copied!')">upi@id</span>
+        </div>
+        
+        <!-- 30 Second Timer -->
+        <div id="paymentTimerWrap" style="margin-top:20px; padding:12px; background:rgba(255,46,99,0.1); border-radius:10px; border: 1px solid rgba(255,46,99,0.3);">
+          <span style="font-size:14px; color:#ff2e63; font-weight:bold;">⏳ Please wait <span id="payTimerVal">30</span>s</span>
+          <div style="font-size:11px; color:#888; margin-top:4px;">(Take a screenshot after paying)</div>
+        </div>
+
+        <!-- Upload Section -->
+        <div id="paymentUploadWrap" style="display:none; margin-top:20px;">
+          <label for="paymentScreenshot" class="btn-primary" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border-radius:10px; cursor:pointer; background:linear-gradient(90deg,#4ea8ff,#2a6fb8); color:#fff; font-weight:bold; font-size:14px;">
+            <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload Screenshot
+          </label>
+          <input type="file" id="paymentScreenshot" accept="image/*" style="display:none;">
+          <div id="paymentStatusMsg" style="font-size:12px; color:#4ade80; margin-top:10px; font-weight:600;"></div>
+        </div>
       </div>
     </div>
   </div>
