@@ -7,32 +7,34 @@
   <title>ReelHub Admin</title>
   <link rel="stylesheet" href="admin.css">
 </head>
-
 <body>
 
   <!-- TOAST CONTAINER -->
-  <div id="toastContainer" style="position:fixed; top:20px; right:20px; z-index:99999; display:flex; flex-direction:column; gap:10px;"></div>
+  <div id="toastContainer"></div>
 
   <!-- LOADER -->
   <div class="loader-screen" id="loader">
     <div class="spinner"></div>
-    <div style="color:#888;font-size:13px; margin-top:10px;">Checking access...</div>
+    <div class="loader-text">Checking access...</div>
   </div>
 
   <!-- LOGIN -->
-  <div id="adminLogin" style="display:none;">
+  <div id="adminLogin">
     <div class="login-box">
       <div class="login-logo">ReelHub</div>
       <div class="login-sub">Admin Panel</div>
       <div class="login-title">Sign in</div>
+
       <div class="input-group">
-        <label>Email</label>
-        <input type="email" id="adminEmail" placeholder="admin@reelhub.com">
+        <label for="adminEmail">Email</label>
+        <input type="email" id="adminEmail" placeholder="admin@reelhub.com" autocomplete="username">
       </div>
+
       <div class="input-group">
-        <label>Password</label>
-        <input type="password" id="adminPass" placeholder="••••••">
+        <label for="adminPass">Password</label>
+        <input type="password" id="adminPass" placeholder="••••••" autocomplete="current-password">
       </div>
+
       <button class="btn-primary" id="adminLoginBtn">Log In</button>
       <div class="error-msg" id="adminLoginMsg"></div>
     </div>
@@ -67,8 +69,8 @@
           <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
           <span>Comments</span>
         </button>
-        
-        <!-- NAYA: PAYMENTS BUTTON -->
+
+        <!-- PAYMENTS -->
         <button class="side-item" data-page="payments">
           <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
           <span>Payments</span>
@@ -97,68 +99,90 @@
     </div>
   </div>
 
-  <!-- MODAL (Generic) -->
+  <!-- ================= GENERIC MODAL ================= -->
   <div class="modal-overlay" id="adminModal">
     <div class="modal">
       <div class="modal-header">
         <h3 id="modalTitle">Modal</h3>
-        <button class="modal-close" id="modalClose">&times;</button>
+        <button class="modal-close" data-close="adminModal">&times;</button>
       </div>
-      <div id="modalBody"></div>
+      <div class="modal-body" id="modalBody"></div>
     </div>
   </div>
 
-  <!-- NAYA: UPI SETTINGS MODAL -->
+  <!-- ================= UPI SETTINGS MODAL ================= -->
   <div class="modal-overlay" id="paymentSettingsModal">
     <div class="modal">
       <div class="modal-header">
         <h3>⚙️ UPI Payment Settings</h3>
-        <button class="modal-close" onclick="document.getElementById('paymentSettingsModal').classList.remove('show')">&times;</button>
+        <button class="modal-close" data-close="paymentSettingsModal">&times;</button>
       </div>
-      <div class="input-group">
-        <label>UPI ID (e.g., yourname@ybl)</label>
-        <input type="text" id="adminUpiId" placeholder="Enter your UPI ID">
+      <div class="modal-body">
+        <div class="input-group">
+          <label for="adminUpiId">UPI ID (e.g. yourname@ybl)</label>
+          <input type="text" id="adminUpiId" placeholder="yourname@ybl" autocomplete="off">
+        </div>
+        <div class="input-group">
+          <label for="adminUpiName">Payee Name (optional)</label>
+          <input type="text" id="adminUpiName" placeholder="ReelHub" autocomplete="off">
+        </div>
+        <div class="input-group">
+          <label for="adminQrUrl">QR Code Image URL</label>
+          <input type="text" id="adminQrUrl" placeholder="https://res.cloudinary.com/....png" autocomplete="off">
+        </div>
+        <div id="qrPreviewWrap" class="qr-preview-wrap" style="display:none;">
+          <img id="qrPreview" alt="QR Preview">
+        </div>
+        <button class="btn-primary" id="savePaymentSettingsBtn">Save Settings</button>
       </div>
-      <div class="input-group">
-        <label>QR Code Image URL</label>
-        <input type="text" id="adminQrUrl" placeholder="Paste QR Image Link (Cloudinary/Imgur)">
-      </div>
-      <button class="btn-primary" id="savePaymentSettingsBtn">Save Settings</button>
     </div>
   </div>
 
-  <!-- NAYA: ADD PLAN MODAL -->
+  <!-- ================= ADD PLAN MODAL ================= -->
   <div class="modal-overlay" id="addPlanModal">
     <div class="modal">
       <div class="modal-header">
         <h3>➕ Add New Payment Plan</h3>
-        <button class="modal-close" onclick="document.getElementById('addPlanModal').classList.remove('show')">&times;</button>
+        <button class="modal-close" data-close="addPlanModal">&times;</button>
       </div>
-      <div class="input-group">
-        <label>Amount (₹)</label>
-        <input type="number" id="planAmount" placeholder="e.g., 29">
+      <div class="modal-body">
+        <div class="input-group">
+          <label for="planAmount">Amount (₹)</label>
+          <input type="number" id="planAmount" placeholder="e.g. 29" min="1" step="1">
+        </div>
+        <div class="input-group">
+          <label for="planDays">Validity (Days)</label>
+          <input type="number" id="planDays" placeholder="e.g. 30" min="1" step="1">
+        </div>
+        <div class="input-group">
+          <label for="planLabel">Plan Label (optional)</label>
+          <input type="text" id="planLabel" placeholder="e.g. 1 Month Premium" autocomplete="off">
+        </div>
+        <button class="btn-primary" id="savePlanBtn">Save Plan</button>
       </div>
-      <div class="input-group">
-        <label>Validity (Days)</label>
-        <input type="number" id="planDays" placeholder="e.g., 30">
-      </div>
-      <button class="btn-primary" id="savePlanBtn">Save Plan</button>
     </div>
   </div>
 
-  <!-- ERROR CATCHER & FALLBACK -->
+  <!-- ================= GLOBAL ERROR LOGGER (non-blocking) ================= -->
   <script>
-    window.onerror = function(msg, url, line, col, error) {
-      alert("⚠️ JavaScript ERROR:\n" + msg + "\n\nLine: " + line);
-      return false;
-    };
-    setTimeout(() => {
-      const loader = document.getElementById('loader');
-      const login = document.getElementById('adminLogin');
-      if (loader && loader.style.display !== 'none') {
-        loader.style.display = 'none'; login.style.display = 'flex';
+    window.addEventListener('error', function (e) {
+      console.error('[ReelHub Admin] JS Error:', e.message, '|', e.filename + ':' + e.lineno);
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      console.error('[ReelHub Admin] Promise Error:', e.reason);
+    });
+
+    /* Fallback: agar module load na ho paye to login screen dikha do */
+    setTimeout(function () {
+      var loader = document.getElementById('loader');
+      var login  = document.getElementById('adminLogin');
+      if (loader && getComputedStyle(loader).display !== 'none') {
+        loader.style.display = 'none';
+        if (login) login.style.display = 'flex';
+        var m = document.getElementById('adminLoginMsg');
+        if (m) m.textContent = 'Connection failed. Check admin.js path & Firebase config.';
       }
-    }, 5000);
+    }, 8000);
   </script>
 
   <script type="module" src="admin.js"></script>
