@@ -1,0 +1,34 @@
+/* ============================================================
+   ✅ FIXED: Share button — APKPure link + code
+   ============================================================ */
+document.getElementById('shareBtn').addEventListener('click', async () => {
+  const code = currentProfile?.referralCode;
+  if (!code) return;
+
+  const APK_URL = 'https://apkpure.com/p/com.webapp.reelhub';
+  const text = `🎬 Join me on ReelHub — India's new short video app!\n\n` +
+               `📥 Download app: ${APK_URL}\n\n` +
+               `🎁 Use my referral code: *${code}*\n` +
+               `(Get ₹5 bonus on first upload!)\n\n` +
+               `Open app → Refer & Earn → Enter code → Done!`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'Join ReelHub with my code',
+        text: text,
+        url: APK_URL
+      });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('✅ Copied! Share with friends');
+  } catch (e) {
+    showToast('❌ Copy failed');
+  }
+});
