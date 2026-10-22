@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
+  <title>ReelHub Monetization</title>
+  <style>
+    /* ============================================================
+       RESET & BASE
+       ============================================================ */
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      background: #0a0a0f;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+    img { max-width: 100%; display: block; }
+
+    /* ============================================================
+       LOADING / ERROR SCREENS
+       ============================================================ */
+    .center-screen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 100vh; padding: 24px; text-align: center;
+    }
+    .spinner {
+      width: 48px; height: 48px; border: 4px solid #1e1e28;
+      border-top-color: #ff2e63; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-icon { font-size: 60px; margin-bottom: 16px; }
+    .error-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .error-text { font-size: 14px; color: #888; margin-bottom: 20px; line-height: 1.5; }
+    .error-btn {
+      padding: 12px 24px; background: linear-gradient(135deg, #ff2e63, #ff8a00);
+      color: #fff; border-radius: 10px; font-weight: 700; font-size: 14px;
+    }
+
+    /* ============================================================
+       HEADER
+       ============================================================ */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px;
+      background: rgba(10, 10, 15, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #1a1a24;
+    }
+    .header-back, .header-refresh {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: #1a1a24; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .header-back:hover, .header-refresh:hover { background: #2a2a38; }
+    .header-back svg, .header-refresh svg { width: 20px; height: 20px; }
+    .header-title {
+      font-size: 17px; font-weight: 800;
+      background: linear-gradient(90deg, #ff2e63, #ff8a00);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ============================================================
+       MAIN CONTAINER
+       ============================================================ */
+    .container { padding: 20px 18px 100px; max-width: 560px; margin: 0 auto; }
+
+    /* ============================================================
+       HERO CARD
+       ============================================================ */
+    .hero {
+      background: linear-gradient(135deg, #121218, #1a1a24);
+      border: 1px solid #2a2a38;
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(255, 46, 99, 0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero-avatar {
+      width: 84px; height: 84px;
+      border-radius: 50%;
+      border: 3px solid #ff2e63;
+      margin: 0 auto 14px;
+      object-fit: cover;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-name {
+      font-size: 20px; font-weight: 800; margin-bottom: 4px;
+      position: relative; z-index: 1;
+    }
+    .hero-handle {
+      font-size: 13px; color: #888; margin-bottom: 14px;
+      position: relative; z-index: 1;
+    }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px; font-weight: 700;
+      position: relative; z-index: 1;
+    }
+    .status-badge.locked {
+      background: rgba(255, 138, 0, 0.15);
+      color: #ff8a00;
+      border: 1px solid rgba(255, 138, 0, 0.3);
+    }
+    .status-badge.eligible {
+      background: rgba(74, 222, 128, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(74, 222, 128, 0.3);
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+    .status-badge.active {
+      background: rgba(74, 222, 128, 0.2);
+      color: #4ade80;
+      border: 1px solid rgba(74, 222, 128, 0.5);
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(74, 222, 128, 0); }
+    }
+
+    /* ============================================================
+       SECTION TITLES
+       ============================================================ */
+    .section-title {
+      font-size: 14px; font-weight: 700;
+      color: #aaa; text-transform: uppercase;
+      letter-spacing: 0.5px; margin: 24px 0 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-title svg { width: 16px; height: 16px; stroke: currentColor; }
+
+    /* ============================================================
+       REQUIREMENT CARDS
+       ============================================================ */
+    .req-list { display: flex; flex-direction: column; gap: 12px; }
+    .req-card {
+      background: #121218;
+      border: 1px solid #2a2a38;
+      border-radius: 16px;
+      padding: 18px;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .req-card.done {
+      border-color: rgba(74, 222, 128, 0.4);
+      background: linear-gradient(135deg, #121218, rgba(74, 222, 128, 0.05));
+    }
+    .req-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .req-label {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; font-weight: 700; color: #fff;
+    }
+    .req-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(255, 46, 99, 0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .req-card.done .req-icon { background: rgba(74, 222, 128, 0.15); }
+    .req-count {
+      font-size: 14px; font-weight: 800;
+      color: #ff8a00;
+    }
+    .req-card.done .req-count { color: #4ade80; }
+    .req-count small { font-size: 11px; color: #666; font-weight: 600; }
+
+    .req-bar-wrap {
+      width: 100%; height: 10px;
+      background: #1a1a24;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .req-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #ff2e63, #ff8a00);
+      border-radius: 10px;
+      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 0%;
+    }
+    .req-card.done .req-bar {
+      background: linear-gradient(90deg, #22c55e, #4ade80);
+    }
+    .req-hint {
+      font-size: 11px; color: #666;
+      margin-top: 8px;
+    }
+
+    /* ============================================================
+       ACTION BUTTON
+       ============================================================ */
+    .action-area { margin: 28px 0 20px; }
+    .btn-monetize {
+      width: 100%; height: 60px;
+      border-radius: 16px;
+      font-size: 17px; font-weight: 800;
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s;
+    }
+    .btn-monetize:active { transform: scale(0.98); }
+    .btn-monetize.locked {
+      background: #1a1a24;
+      color: #444;
+      cursor: not-allowed;
+      border: 1px solid #2a2a38;
+    }
+    .btn-monetize.ready {
+      background: linear-gradient(135deg, #ff2e63, #ff8a00);
+      box-shadow: 0 8px 30px rgba(255, 46, 99, 0.4);
+      animation: glowPulse 2s ease-in-out infinite;
+    }
+    .btn-monetize.ready::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+      animation: shimmer 2.5s infinite;
+    }
+    @keyframes shimmer {
+      100% { left: 100%; }
+    }
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 8px 30px rgba(255, 46, 99, 0.4); }
+      50% { box-shadow: 0 8px 40px rgba(255, 46, 99, 0.7); }
+    }
+    .btn-monetize:disabled { cursor: not-allowed; }
+
+    /* ============================================================
+       ACTIVE STATE DASHBOARD
+       ============================================================ */
+    .active-panel {
+      background: linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(34, 197, 94, 0.05));
+      border: 2px solid rgba(74, 222, 128, 0.4);
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .active-trophy {
+      font-size: 64px; margin-bottom: 12px;
+      animation: bounce 2s ease-in-out infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .active-title {
+      font-size: 22px; font-weight: 800;
+      color: #4ade80; margin-bottom: 6px;
+    }
+    .active-sub {
+      font-size: 13px; color: #888; margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .active-stats {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; margin-bottom: 20px;
+    }
+    .active-stat {
+      background: #0a0a12;
+      border-radius: 12px;
+      padding: 14px 10px;
+    }
+    .active-stat b {
+      display: block; font-size: 20px;
+      color: #4ade80; margin-bottom: 4px;
+    }
+    .active-stat span { font-size: 11px; color: #666; }
+    .btn-payment-setup {
+      width: 100%; height: 50px;
+      background: #1a1a24;
+      border: 1px solid #2a2a38;
+      border-radius: 12px;
+      color: #fff; font-size: 14px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+
+    /* ============================================================
+       BENEFITS SECTION
+       ============================================================ */
+    .benefits {
+      background: #121218;
+      border: 1px solid #2a2a38;
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 24px;
+    }
+    .benefit-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #1a1a24;
+    }
+    .benefit-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .benefit-item:first-child { padding-top: 0; }
+    .benefit-emoji { font-size: 22px; flex-shrink: 0; }
+    .benefit-text b {
+      display: block; font-size: 14px;
+      font-weight: 700; margin-bottom: 2px;
+    }
+    .benefit-text span {
+      font-size: 12px; color: #888; line-height: 1.4;
+    }
+
+    /* ============================================================
+       CELEBRATION OVERLAY
+       ============================================================ */
+    .celebration-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 9999;
+      display: none;
+      align-items: center; justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(8px);
+    }
+    .celebration-overlay.show { display: flex; }
+    .celebration-box {
+      background: linear-gradient(135deg, #121218, #1a1a24);
+      border: 2px solid rgba(74, 222, 128, 0.5);
+      border-radius: 24px;
+      padding: 40px 28px;
+      text-align: center;
+      max-width: 380px;
+      position: relative;
+      z-index: 2;
+      animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .celebrate-emoji {
+      font-size: 80px; margin-bottom: 16px;
+      animation: bounce 1s ease-in-out infinite;
+    }
+    .celebrate-title {
+      font-size: 26px; font-weight: 800;
+      background: linear-gradient(90deg, #4ade80, #22c55e);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+    .celebrate-sub {
+      font-size: 14px; color: #aaa;
+      line-height: 1.6; margin-bottom: 24px;
+    }
+    .btn-done {
+      width: 100%; height: 50px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #fff; border-radius: 12px;
+      font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+
+    /* Confetti */
+    .confetti {
+      position: fixed;
+      width: 10px; height: 10px;
+      top: -20px;
+      z-index: 9998;
+      pointer-events: none;
+      animation: confettiFall linear forwards;
+    }
+    @keyframes confettiFall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOADING -->
+  <div id="loadingScreen" class="center-screen">
+    <div class="spinner"></div>
+    <div style="color:#888; font-size:13px;">Loading monetization status...</div>
+  </div>
+
+  <!-- NOT LOGGED IN -->
+  <div id="notLoggedIn" class="center-screen" style="display:none;">
+    <div class="error-icon">🔒</div>
+    <div class="error-title">Please log in</div>
+    <div class="error-text">You need to be logged in to view monetization.</div>
+    <button class="error-btn" onclick="window.location.href='index.html'">
+      Go to Login
+    </button>
+  </div>
+
+  <!-- MAIN -->
+  <div id="mainContent" style="display:none;">
+
+    <!-- HEADER -->
+    <div class="header">
+      <button class="header-back" id="backBtn" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <div class="header-title">💰 Monetization</div>
+      <button class="header-refresh" id="refreshBtn" aria-label="Refresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6M1 20v-6h6"/>
+          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="container">
+
+      <!-- HERO -->
+      <div class="hero">
+        <img id="heroAvatar" class="hero-avatar" alt="">
+        <div class="hero-name" id="heroName">—</div>
+        <div class="hero-handle" id="heroHandle">@—</div>
+        <div id="statusBadge" class="status-badge locked">
+          🔒 Locked — Complete requirements
+        </div>
+      </div>
+
+      <!-- ACTIVE PANEL (when monetized) -->
+      <div id="activePanel" class="active-panel" style="display:none;">
+        <div class="active-trophy">🏆</div>
+        <div class="active-title">Monetization Active!</div>
+        <div class="active-sub">
+          Your account is now eligible to earn from your content.
+        </div>
+        <div class="active-stats">
+          <div class="active-stat">
+            <b id="activeViews">0</b>
+            <span>Total Views</span>
+          </div>
+          <div class="active-stat">
+            <b id="activeLikes">0</b>
+            <span>Total Likes</span>
+          </div>
+        </div>
+        <button class="btn-payment-setup" onclick="window.location.href='index.html#profile'">
+          ⚙️ Setup Payment Method
+        </button>
+      </div>
+
+      <!-- REQUIREMENTS (when not monetized) -->
+      <div id="requirementsSection">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          Requirements (All 3 required)
+        </div>
+
+        <div class="req-list">
+
+          <!-- FOLLOWERS -->
+          <div class="req-card" id="reqFollowers">
+            <div class="req-header">
+              <div class="req-label">
+                <div class="req-icon">👥</div>
+                Followers
+              </div>
+              <div class="req-count">
+                <span id="followersCount">0</span>
+                <small>/ 50</small>
+              </div>
+            </div>
+            <div class="req-bar-wrap">
+              <div class="req-bar" id="followersBar"></div>
+            </div>
+            <div class="req-hint" id="followersHint">Need 50 followers</div>
+          </div>
+
+          <!-- VIEWS -->
+          <div class="req-card" id="reqViews">
+            <div class="req-header">
+              <div class="req-label">
+                <div class="req-icon">👁️</div>
+                Total Views
+              </div>
+              <div class="req-count">
+                <span id="viewsCount">0</span>
+                <small>/ 100</small>
+              </div>
+            </div>
+            <div class="req-bar-wrap">
+              <div class="req-bar" id="viewsBar"></div>
+            </div>
+            <div class="req-hint" id="viewsHint">Across all your videos</div>
+          </div>
+
+          <!-- LIKES -->
+          <div class="req-card" id="reqLikes">
+            <div class="req-header">
+              <div class="req-label">
+                <div class="req-icon">❤️</div>
+                Total Likes
+              </div>
+              <div class="req-count">
+                <span id="likesCount">0</span>
+                <small>/ 100</small>
+              </div>
+            </div>
+            <div class="req-bar-wrap">
+              <div class="req-bar" id="likesBar"></div>
+            </div>
+            <div class="req-hint" id="likesHint">Across all your videos</div>
+          </div>
+
+        </div>
+
+        <!-- ACTION BUTTON -->
+        <div class="action-area">
+          <button class="btn-monetize locked" id="monetizeBtn" disabled>
+            🔒 Complete Requirements to Unlock
+          </button>
+        </div>
+      </div>
+
+      <!-- BENEFITS -->
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v6l4 2"/>
+        </svg>
+        What you get
+      </div>
+
+      <div class="benefits">
+        <div class="benefit-item">
+          <div class="benefit-emoji">💵</div>
+          <div class="benefit-text">
+            <b>Earn from views</b>
+            <span>Get paid based on your video views and engagement</span>
+          </div>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-emoji">⭐</div>
+          <div class="benefit-text">
+            <b>Verified badge</b>
+            <span>Stand out with a blue tick on your profile</span>
+          </div>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-emoji">🎯</div>
+          <div class="benefit-text">
+            <b>Priority support</b>
+            <span>Get faster help from the ReelHub team</span>
+          </div>
+        </div>
+        <div class="benefit-item">
+          <div class="benefit-emoji">📊</div>
+          <div class="benefit-text">
+            <b>Advanced analytics</b>
+            <span>See detailed insights about your content</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CELEBRATION OVERLAY -->
+  <div class="celebration-overlay" id="celebrationOverlay">
+    <div class="celebration-box">
+      <div class="celebrate-emoji">🎉</div>
+      <div class="celebrate-title">Congratulations!</div>
+      <div class="celebrate-sub">
+        You are now a <b style="color:#4ade80;">ReelHub Monetized Creator</b>!<br>
+        Start earning from your amazing content.
+      </div>
+      <button class="btn-done" id="celebrationDoneBtn">
+        ✓ Awesome, Let's Go
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       JAVASCRIPT
+       ============================================================ -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import {
+      getAuth, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, updateDoc,
+      collection, query, where, getDocs, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+    /* ============================================================
+       FIREBASE CONFIG — Same as app.js
+       ============================================================ */
+    const firebaseConfig = {
+      apiKey: "AIzaSyC6421R1kr0jYwUJFbjB2YzIerlJw_cdLc",
+      authDomain: "reelhub-24616.firebaseapp.com",
+      projectId: "reelhub-24616",
+      storageBucket: "reelhub-24616.appspot.com",
+      messagingSenderId: "397521504045",
+      appId: "1:397521504045:web:bf6d3652a7375fd632b5a4",
+      measurementId: "G-81RN37XN6H"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    /* ============================================================
+       REQUIREMENTS — Configurable
+       ============================================================ */
+    const REQUIREMENTS = {
+      followers: 50,
+      views: 100,
+      likes: 100
+    };
+
+    /* ============================================================
+       STATE
+       ============================================================ */
+    let currentUser = null;
+    let currentProfile = null;
+    let stats = { followers: 0, views: 0, likes: 0 };
+    let isEligible = false;
+    let isMonetized = false;
+    let isProcessing = false;
+
+    /* ============================================================
+       DOM
+       ============================================================ */
+    const loadingScreen    = document.getElementById('loadingScreen');
+    const notLoggedIn      = document.getElementById('notLoggedIn');
+    const mainContent      = document.getElementById('mainContent');
+    const heroAvatar       = document.getElementById('heroAvatar');
+    const heroName         = document.getElementById('heroName');
+    const heroHandle       = document.getElementById('heroHandle');
+    const statusBadge      = document.getElementById('statusBadge');
+    const activePanel      = document.getElementById('activePanel');
+    const requirementsSection = document.getElementById('requirementsSection');
+    const monetizeBtn      = document.getElementById('monetizeBtn');
+    const celebrationOverlay = document.getElementById('celebrationOverlay');
+
+    /* ============================================================
+       HELPERS
+       ============================================================ */
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function defaultAvatar(name) {
+      const letter = (name || '?').trim().charAt(0).toUpperCase() || '?';
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e1e28"/><text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${letter}</text></svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
+    function safeNum(v) {
+      const n = Number(v);
+      return isNaN(n) || !isFinite(n) ? 0 : n;
+    }
+
+    function formatNum(n) {
+      const num = safeNum(n);
+      if (num >= 1000000) return (num / 1000000).toFixed(1).replace('.0', '') + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1).replace('.0', '') + 'K';
+      return num.toString();
+    }
+
+    /* ============================================================
+       AUTH CHECK
+       ============================================================ */
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        loadingScreen.style.display = 'none';
+        notLoggedIn.style.display = 'flex';
+        return;
+      }
+
+      currentUser = user;
+      await loadAndRender();
+    });
+
+    /* ============================================================
+       LOAD DATA
+       ============================================================ */
+    async function loadAndRender() {
+      loadingScreen.style.display = 'flex';
+      mainContent.style.display = 'none';
+
+      try {
+        // 1. Load user profile
+        const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+        if (!userSnap.exists()) {
+          loadingScreen.style.display = 'none';
+          notLoggedIn.style.display = 'flex';
+          return;
+        }
+        currentProfile = userSnap.data();
+
+        // 2. Compute stats
+        stats.followers = Array.isArray(currentProfile.followers)
+          ? currentProfile.followers.length : 0;
+
+        const postsQuery = query(
+          collection(db, 'posts'),
+          where('userId', '==', currentUser.uid)
+        );
+        const postsSnap = await getDocs(postsQuery);
+
+        let totalViews = 0;
+        let totalLikes = 0;
+        postsSnap.forEach(d => {
+          const p = d.data();
+          totalViews += safeNum(p.views);
+          totalLikes += Array.isArray(p.likes) ? p.likes.length : 0;
+        });
+
+        stats.views = totalViews;
+        stats.likes = totalLikes;
+
+        // 3. Eligibility
+        isEligible =
+          stats.followers >= REQUIREMENTS.followers &&
+          stats.views     >= REQUIREMENTS.views &&
+          stats.likes     >= REQUIREMENTS.likes;
+
+        isMonetized = currentProfile.monetized === true;
+
+        // 4. Render
+        render();
+      } catch (err) {
+        console.error('Load error:', err);
+        loadingScreen.innerHTML = `
+          <div class="error-icon">⚠️</div>
+          <div class="error-title">Could not load</div>
+          <div class="error-text">${escapeHtml(err.message || 'Unknown error')}</div>
+          <button class="error-btn" onclick="location.reload()">Retry</button>
+        `;
+      }
+    }
+
+    /* ============================================================
+       RENDER
+       ============================================================ */
+    function render() {
+      loadingScreen.style.display = 'none';
+      mainContent.style.display = 'block';
+
+      // Hero
+      heroAvatar.src = currentProfile.photo || defaultAvatar(currentProfile.name);
+      heroName.textContent = currentProfile.name || 'User';
+      heroHandle.textContent = '@' + (currentProfile.user || 'user');
+
+      // Status badge
+      if (isMonetized) {
+        statusBadge.className = 'status-badge active';
+        statusBadge.innerHTML = '✅ Monetization Active';
+      } else if (isEligible) {
+        statusBadge.className = 'status-badge eligible';
+        statusBadge.innerHTML = '✨ Eligible — Activate now!';
+      } else {
+        statusBadge.className = 'status-badge locked';
+        statusBadge.innerHTML = '🔒 Locked — Complete requirements';
+      }
+
+      // Active panel vs requirements
+      if (isMonetized) {
+        activePanel.style.display = 'block';
+        requirementsSection.style.display = 'none';
+        document.getElementById('activeViews').textContent = formatNum(stats.views);
+        document.getElementById('activeLikes').textContent = formatNum(stats.likes);
+      } else {
+        activePanel.style.display = 'none';
+        requirementsSection.style.display = 'block';
+        renderProgress();
+        updateButton();
+      }
+    }
+
+    /* ============================================================
+       RENDER PROGRESS BARS
+       ============================================================ */
+    function renderProgress() {
+      updateReqCard(
+        'reqFollowers', 'followersCount', 'followersBar', 'followersHint',
+        stats.followers, REQUIREMENTS.followers,
+        'Need {need} more followers'
+      );
+      updateReqCard(
+        'reqViews', 'viewsCount', 'viewsBar', 'viewsHint',
+        stats.views, REQUIREMENTS.views,
+        'Need {need} more views'
+      );
+      updateReqCard(
+        'reqLikes', 'likesCount', 'likesBar', 'likesHint',
+        stats.likes, REQUIREMENTS.likes,
+        'Need {need} more likes'
+      );
+    }
+
+    function updateReqCard(cardId, countId, barId, hintId, current, target, needMsg) {
+      const card = document.getElementById(cardId);
+      const countEl = document.getElementById(countId);
+      const barEl = document.getElementById(barId);
+      const hintEl = document.getElementById(hintId);
+
+      const pct = Math.min(100, (current / target) * 100);
+      const isDone = current >= target;
+
+      countEl.textContent = formatNum(current);
+      countEl.nextElementSibling.textContent = `/ ${formatNum(target)}`;
+
+      // Animate bar from 0
+      barEl.style.width = '0%';
+      setTimeout(() => {
+        barEl.style.width = pct + '%';
+      }, 100);
+
+      card.classList.toggle('done', isDone);
+
+      if (isDone) {
+        hintEl.textContent = '✅ Completed';
+        hintEl.style.color = '#4ade80';
+      } else {
+        const need = target - current;
+        hintEl.textContent = needMsg.replace('{need}', need);
+        hintEl.style.color = '#666';
+      }
+    }
+
+    /* ============================================================
+       UPDATE MAIN BUTTON
+       ============================================================ */
+    function updateButton() {
+      if (isEligible) {
+        monetizeBtn.className = 'btn-monetize ready';
+        monetizeBtn.disabled = false;
+        monetizeBtn.innerHTML = '🎉 Activate Monetization';
+      } else {
+        monetizeBtn.className = 'btn-monetize locked';
+        monetizeBtn.disabled = true;
+        monetizeBtn.innerHTML = '🔒 Complete Requirements to Unlock';
+      }
+    }
+
+    /* ============================================================
+       CLICK — ACTIVATE MONETIZATION
+       ============================================================ */
+    monetizeBtn.addEventListener('click', async () => {
+      if (!isEligible || isMonetized || isProcessing) return;
+      if (!confirm('Activate monetization? You will be eligible to earn from your content.')) return;
+
+      isProcessing = true;
+      monetizeBtn.disabled = true;
+      monetizeBtn.innerHTML = '⏳ Activating...';
+
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid), {
+          monetized: true,
+          monetizedAt: serverTimestamp(),
+          monetizationViews: stats.views,
+          monetizationLikes: stats.likes,
+          monetizationFollowers: stats.followers
+        });
+
+        isMonetized = true;
+        showCelebration();
+        render();
+      } catch (err) {
+        console.error('Activate error:', err);
+        alert('Failed to activate: ' + (err.message || 'Unknown error'));
+        monetizeBtn.disabled = false;
+        updateButton();
+      } finally {
+        isProcessing = false;
+      }
+    });
+
+    /* ============================================================
+       CELEBRATION + CONFETTI
+       ============================================================ */
+    function showCelebration() {
+      celebrationOverlay.classList.add('show');
+      spawnConfetti();
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+    }
+
+    function spawnConfetti() {
+      const colors = ['#ff2e63', '#ff8a00', '#4ade80', '#4ea8ff', '#ffd700', '#a78bfa'];
+      for (let i = 0; i < 60; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti';
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.width = (6 + Math.random() * 8) + 'px';
+        piece.style.height = (6 + Math.random() * 8) + 'px';
+        piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        piece.style.animationDuration = (2 + Math.random() * 2.5) + 's';
+        piece.style.animationDelay = (Math.random() * 0.5) + 's';
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), 5000);
+      }
+    }
+
+    document.getElementById('celebrationDoneBtn').addEventListener('click', () => {
+      celebrationOverlay.classList.remove('show');
+    });
+
+    /* ============================================================
+       HEADER BUTTONS
+       ============================================================ */
+    document.getElementById('backBtn').addEventListener('click', () => {
+      // Try to go back to app, fallback to home
+      if (document.referrer && document.referrer.includes(window.location.hostname)) {
+        history.back();
+      } else {
+        window.location.href = 'index.html';
+      }
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      loadAndRender();
+    });
+  </script>
+</body>
+</html>
