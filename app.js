@@ -6156,10 +6156,10 @@ function formatDate(date) {
 
 console.log('✅ Part 4 loaded (Sound + Chat + Groups + Voice + Reactions)');
 /* ============================================================
-   ReelHub — app.js (PART 5/5) — FINAL FIXED v2
+   ReelHub — app.js (PART 5/5) — FINAL v3
    Profile + Highlights + Notifications + Search + Settings + Delete
-   ✅ 3 Buttons added: Monetize / Wallet / Refer
-   ✅ All bugs fixed + full integration
+   ✅ UPDATED: 3 buttons (Monetize/Wallet/Refer) moved to Settings
+   ✅ All bugs fixed
    ============================================================ */
 
 /* ============================================================
@@ -6202,7 +6202,7 @@ function isCurrentlyVerified(user) {
 }
 
 /* ============================================================
-   PROFILE (OWN) — WITH 3 NEW BUTTONS
+   PROFILE (OWN) — 3 buttons REMOVED from here
    ============================================================ */
 async function renderProfile() {
   if (!currentProfile) {
@@ -6240,23 +6240,6 @@ async function renderProfile() {
           Share Profile
         </button>
       </div>
-
-      <!-- ✅ NEW: 3 QUICK ACTION BUTTONS -->
-      <div class="profile-quick-actions">
-        <button id="monetizationBtn" class="quick-action-btn monetize">
-          <span class="qa-icon">💰</span>
-          <span class="qa-label">Monetize</span>
-        </button>
-        <button id="walletBtn" class="quick-action-btn wallet">
-          <span class="qa-icon">💳</span>
-          <span class="qa-label">Wallet</span>
-        </button>
-        <button id="referEarnBtn" class="quick-action-btn refer">
-          <span class="qa-icon">🎁</span>
-          <span class="qa-label">Refer</span>
-        </button>
-      </div>
-
       <div class="profile-tabs two-tabs">
         <button class="profile-tab active" data-tab="posts">Posts</button>
         <button class="profile-tab" data-tab="saved">🔖 Saved</button>
@@ -6271,17 +6254,6 @@ async function renderProfile() {
   document.getElementById('editProfileBtn')?.addEventListener('click', openEditModal);
   document.getElementById('avatarWrap')?.addEventListener('click', openEditModal);
   document.getElementById('shareProfileBtn')?.addEventListener('click', () => shareProfile());
-
-  // ✅ NEW: 3 buttons — event listeners
-  document.getElementById('monetizationBtn')?.addEventListener('click', () => {
-    window.location.href = 'monetization.html';
-  });
-  document.getElementById('walletBtn')?.addEventListener('click', () => {
-    window.location.href = 'wallet.html';
-  });
-  document.getElementById('referEarnBtn')?.addEventListener('click', () => {
-    window.location.href = 'refer.html';
-  });
 
   document.querySelectorAll('.profile-stat').forEach(el => {
     el.addEventListener('click', () => {
@@ -6326,7 +6298,6 @@ async function renderUserPosts(uid, containerId) {
 function makeGridItem(post) {
   const item = document.createElement('div');
   item.className = 'grid-item';
-  // ✅ Photo ke liye 1:1 ratio
   item.style.aspectRatio = post.type === 'long' ? '16 / 9'
                           : post.type === 'photo' ? '1 / 1'
                           : '9 / 16';
@@ -6797,7 +6768,7 @@ uploadSubmitBtn?.addEventListener('click', async () => {
     await updateDoc(doc(db, 'users', currentUser.uid), { videoCount: (safeNum(currentProfile.videoCount) || 0) + 1 });
     currentProfile.videoCount = (safeNum(currentProfile.videoCount) || 0) + 1;
 
-    // ✅ REFERRAL: Check if this is first upload → complete referral
+    // ✅ REFERRAL: Check if first upload → complete referral
     try {
       if (currentProfile?.referredBy && !currentProfile?.referralCompleted) {
         const refQ = query(
@@ -7097,7 +7068,6 @@ async function renderNotifications() {
       }
     }
 
-    // ✅ FIX #8: Pending invites still count as unread
     const pendingInvites = notifications.filter(n =>
       n.type === 'admin_invite' && !n.read && !n.handled
     ).length;
@@ -7331,7 +7301,6 @@ async function loadUsersByIds(uids) {
   for (const uid of uids) {
     try {
       const snap = await getDoc(doc(db, 'users', uid));
-      // ✅ FIX #4: uid explicitly add
       if (snap.exists()) results.push({ uid: snap.id, ...snap.data() });
     } catch (e) {}
   }
@@ -8074,7 +8043,6 @@ function closeDeleteModal() {
 async function deleteUserAccount(password) {
   if (!currentUser || !currentUser.email) throw new Error('You are not logged in.');
 
-  // ✅ FIX #5: Prevent auth listener race condition
   authActionInProgress = true;
 
   const uid = currentUser.uid;
@@ -8401,6 +8369,22 @@ function initSettingsListeners() {
     document.getElementById('settingsModal')?.classList.remove('show');
     openBlockedUsersModal();
   });
+
+  // ✅ NEW: Earn Money buttons in Settings
+  document.getElementById('settingMonetizeBtn')?.addEventListener('click', () => {
+    document.getElementById('settingsModal')?.classList.remove('show');
+    window.location.href = 'monetization.html';
+  });
+
+  document.getElementById('settingWalletBtn')?.addEventListener('click', () => {
+    document.getElementById('settingsModal')?.classList.remove('show');
+    window.location.href = 'wallet.html';
+  });
+
+  document.getElementById('settingReferBtn')?.addEventListener('click', () => {
+    document.getElementById('settingsModal')?.classList.remove('show');
+    window.location.href = 'refer.html';
+  });
 }
 
 initSettingsListeners();
@@ -8420,5 +8404,6 @@ window.handleDeleteClick = function(event) {
   if (typeof openDeleteAccountModal === 'function') openDeleteAccountModal();
 };
 
-console.log('✅ Part 5 loaded (Profile + 3 Buttons + Highlights + Notifs + Search + Settings + Delete)');
+console.log('✅ Part 5 loaded (Profile + Highlights + Notifs + Search + Settings + Delete)');
+console.log('✅ 3 buttons (Monetize/Wallet/Refer) moved to Settings');
 console.log('🎉 ReelHub app.js fully loaded!');
