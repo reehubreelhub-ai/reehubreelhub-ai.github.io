@@ -1,5 +1,6 @@
 /* ============================================================
-   ReelHub — style.css (FINAL with HIGHLIGHTS)
+   ReelHub — style.css (FINAL with HIGHLIGHTS + QUICK ACTIONS)
+   ✅ All bugs fixed + 3 new buttons (Monetize/Wallet/Refer)
    ============================================================ */
 
 /* ============================================================
@@ -513,7 +514,16 @@ a { color: inherit; }
 }
 .profile-username { font-size: 13px; color: #888; margin-bottom: 8px; }
 .profile-bio { font-size: 14px; color: #ddd; line-height: 1.5; white-space: pre-wrap; }
-.profile-actions { display: flex; gap: 8px; margin-bottom: 20px; }
+
+/* ✅ FIXED: profile-actions — wrap support */
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.profile-actions .btn-outline { flex: 1; min-width: 120px; }
+
 .profile-tabs { display: flex; border-bottom: 1px solid #1a1a1a; margin: 0 -20px 16px; padding: 0 20px; }
 .profile-tab {
   flex: 1;
@@ -530,6 +540,95 @@ a { color: inherit; }
 }
 .profile-tab.active { color: #fff; border-bottom-color: #ff2e63; }
 .profile-tabs.two-tabs .profile-tab { flex: 1; }
+
+/* ============================================================
+   ✅ NEW: PROFILE QUICK ACTIONS — Monetize / Wallet / Refer
+   ============================================================ */
+.profile-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.quick-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 76px;
+}
+
+.quick-action-btn:active {
+  transform: scale(0.96);
+}
+
+.quick-action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  transition: left 0.55s ease;
+}
+
+.quick-action-btn:active::before {
+  left: 100%;
+}
+
+.quick-action-btn .qa-icon {
+  font-size: 24px;
+  line-height: 1;
+  display: block;
+}
+
+.quick-action-btn .qa-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  display: block;
+}
+
+.quick-action-btn.monetize {
+  background: linear-gradient(135deg, #ff2e63, #ff8a00);
+  box-shadow: 0 4px 14px rgba(255, 46, 99, 0.35);
+}
+
+.quick-action-btn.wallet {
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  box-shadow: 0 4px 14px rgba(74, 222, 128, 0.35);
+}
+
+.quick-action-btn.refer {
+  background: linear-gradient(135deg, #a78bfa, #7c5dd6);
+  box-shadow: 0 4px 14px rgba(167, 139, 250, 0.35);
+}
+
+@media (max-width: 380px) {
+  .quick-action-btn { padding: 12px 6px; min-height: 70px; }
+  .quick-action-btn .qa-icon { font-size: 20px; }
+  .quick-action-btn .qa-label { font-size: 11px; }
+}
+
+@media (max-width: 340px) {
+  .quick-action-btn { padding: 10px 4px; }
+  .quick-action-btn .qa-icon { font-size: 18px; }
+  .quick-action-btn .qa-label { font-size: 10px; }
+}
 
 /* ================= POSTS GRID ================= */
 .profile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin: 0 -20px; }
@@ -627,6 +726,18 @@ a { color: inherit; }
 }
 .yt-card:hover .yt-play-overlay { opacity: 1; }
 .yt-play-overlay svg { width: 24px; height: 24px; margin-left: 3px; }
+
+/* ✅ FIX: Mobile devices — always show play icon */
+@media (hover: none) {
+  .yt-play-overlay {
+    opacity: 1;
+    width: 44px;
+    height: 44px;
+    background: rgba(0, 0, 0, 0.5);
+  }
+  .yt-play-overlay svg { width: 20px; height: 20px; }
+}
+
 .yt-info { display: flex; gap: 12px; padding: 12px 12px 0; align-items: flex-start; }
 .yt-avatar {
   width: 40px; height: 40px;
@@ -1190,12 +1301,22 @@ a { color: inherit; }
 /* ============================================================
    CHAT WINDOW
    ============================================================ */
-#chatWindowModal { background: rgba(0, 0, 0, 0.9); align-items: center; padding: 0; }
+#chatWindowModal {
+  background: rgba(0, 0, 0, 0.9);
+  align-items: stretch;
+  padding: 0;
+}
+
+/* ✅ FIXED: chat-window — flex column for proper scroll */
 .chat-window {
   background: #0a0a0a;
   position: relative;
   max-width: 100% !important;
   width: 100% !important;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .chat-header {
@@ -2470,6 +2591,9 @@ a { color: inherit; }
 #playerContent video { width: 100%; max-height: 70vh; background: #000; display: block; }
 #playerContent img { width: 100%; max-height: 70vh; object-fit: contain; background: #000; display: block; }
 
+/* ============================================================
+   STORIES BAR
+   ============================================================ */
 .stories-bar {
   display: flex;
   gap: 12px;
@@ -2490,14 +2614,18 @@ a { color: inherit; }
   width: 70px;
   position: relative;
 }
+
+/* ✅ FIXED: story-ring matches 70px parent */
 .story-ring {
-  width: 66px; height: 66px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  padding: 3px;
+  padding: 2.5px;
   background: linear-gradient(45deg, #ff2e63, #ff8a00, #ff2e63);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 .story-ring.viewed { background: #333; }
 .story-ring.add { background: #1e1e28; border: 2px dashed #4ea8ff; }
@@ -2665,6 +2793,9 @@ a { color: inherit; }
 }
 .story-viewers-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
 
+/* ============================================================
+   SETTINGS
+   ============================================================ */
 .settings-modal {
   max-height: 85vh;
   padding: 0;
@@ -2914,6 +3045,9 @@ a { color: inherit; }
 }
 #blockedUsersModal .modal { max-height: 70vh; }
 
+/* ============================================================
+   MODES
+   ============================================================ */
 body.compact-mode .shorts-shelf-item,
 body.compact-mode .shorts-shelf-thumb { width: 120px; }
 body.compact-mode .shorts-shelf-thumb { height: 214px; }
@@ -2940,6 +3074,9 @@ body.light-mode .modal { background: #fff; color: #000; }
 body.light-mode .settings-item-label { color: #000; }
 body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; }
 
+/* ============================================================
+   PERFORMANCE
+   ============================================================ */
 .yt-card,
 .shorts-shelf-item { contain: layout style paint; }
 .yt-thumb img,
@@ -2959,11 +3096,14 @@ body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; 
   -webkit-overflow-scrolling: touch;
 }
 
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
 @media (max-width: 480px) {
   .chat-window { max-width: 100%; }
   .msg-bubble { max-width: 82%; }
   .short-side-actions { gap: 14px; }
-  .story-ring { width: 62px; height: 62px; }
+  .story-ring { width: 60px; height: 60px; }
   .story-item { width: 66px; }
   .story-name { font-size: 10px; max-width: 66px; }
   .post-menu-dropdown { min-width: 160px; }
@@ -2976,6 +3116,9 @@ body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; 
   .reaction-picker button { width: 40px; height: 40px; font-size: 22px; }
 }
 
+/* ============================================================
+   TOAST
+   ============================================================ */
 #toast {
   position: fixed;
   bottom: 90px;
@@ -3009,9 +3152,8 @@ body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; 
 }
 
 /* ============================================================
-   HIGHLIGHTS SYSTEM (Instagram style)
+   HIGHLIGHTS SYSTEM
    ============================================================ */
-
 .highlights-bar {
   display: flex;
   gap: 14px;
@@ -3032,6 +3174,7 @@ body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; 
   cursor: pointer;
   width: 72px;
   position: relative;
+  overflow: visible;
 }
 
 .highlight-ring {
@@ -3210,10 +3353,10 @@ body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; 
 #storyViewer.highlight-mode #storyViewersBtn {
   display: none !important;
 }
-/* ============================================================
-   GAMES SHELF — FIX (giant icon issue solved)
-   ============================================================ */
 
+/* ============================================================
+   GAMES SHELF — with mobile responsive fix
+   ============================================================ */
 .games-shelf {
   padding: 16px 0 12px;
   border-bottom: 8px solid #050505;
@@ -3237,7 +3380,6 @@ body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; 
   letter-spacing: -0.5px;
 }
 
-/* ✅ FIX: force small icon size */
 .games-icon,
 .games-shelf-title svg,
 .games-shelf svg {
@@ -3334,4 +3476,26 @@ body.light-mode .modal-header { background: #fff; border-bottom-color: #e5e5e5; 
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ✅ Game shelf responsive */
+@media (max-width: 400px) {
+  .game-shelf-item { width: 84px; }
+  .game-shelf-icon {
+    width: 84px;
+    height: 84px;
+    font-size: 36px;
+    border-radius: 16px;
+  }
+  .game-shelf-name { font-size: 11px; }
+}
+
+@media (max-width: 340px) {
+  .game-shelf-item { width: 76px; }
+  .game-shelf-icon {
+    width: 76px;
+    height: 76px;
+    font-size: 32px;
+  }
+  .game-shelf-name { font-size: 10px; }
 }
