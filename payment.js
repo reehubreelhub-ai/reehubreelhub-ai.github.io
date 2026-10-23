@@ -1,9 +1,8 @@
 /* ============================================================
-   ReelHub — payment.js (FINAL V3 — FULLY FIXED)
-   ✅ Firebase duplicate-init bug fixed
-   ✅ Default Plans: ₹1/1Day, ₹29/1Month, ₹99/1Year
-   ✅ Step-by-Step Flow: Plans → UPI App → Pay → Upload
-   ✅ Auto QR + UPI Deep Links
+   ReelHub — payment.js (APP VERSION — FINAL)
+   ✅ Firebase duplicate-init fixed
+   ✅ ₹1/1Day, ₹29/1Month, ₹99/1Year
+   ✅ Step-by-Step UPI Flow
    ============================================================ */
 
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -21,34 +20,23 @@ const firebaseConfig = {
   appId: "1:397521504045:web:bf6d3652a7375fd632b5a4"
 };
 
-/* ✅ FIX: Reuse existing Firebase app (don't re-initialize) */
+/* ✅ FIX: Reuse app if already initialized */
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-console.log("✅ payment.js loaded — Firebase ready");
-
-/* ============================================================
-   CLOUDINARY CONFIG
-   ============================================================ */
 const CLOUDINARY = {
   cloudName: "fepzqr9t",
   apiKey: "287332161532267",
   preset: "reelhub_story"
 };
 
-/* ============================================================
-   ✅ DEFAULT PLANS (agar admin ne custom plans nahi banaye)
-   ============================================================ */
 const DEFAULT_PLANS = [
   { amount: 1,  days: 1,   label: '1 Day',   badge: null },
   { amount: 29, days: 30,  label: '1 Month', badge: 'POPULAR' },
   { amount: 99, days: 365, label: '1 Year',  badge: 'BEST VALUE' }
 ];
 
-/* ============================================================
-   UPI APPS LIST
-   ============================================================ */
 const UPI_APPS = [
   { id: 'gpay',    name: 'Google Pay', icon: '🔵', scheme: 'tez' },
   { id: 'phonepe', name: 'PhonePe',    icon: '🟣', scheme: 'phonepe' },
@@ -58,50 +46,52 @@ const UPI_APPS = [
   { id: 'any',     name: 'Any UPI',    icon: '📱', scheme: 'upi' }
 ];
 
-/* ============================================================
-   STATE
-   ============================================================ */
 let currentUser = null;
 let adminUpi = '';
 let adminPayeeName = 'ReelHub';
 let selectedAmount = 0;
 let selectedDays = 0;
 let selectedLabel = '';
-let selectedApp = null;
 let uploadedScreenshotUrl = null;
-let qrInstance = null;
-let timerInterval = null;
 
 onAuthStateChanged(auth, (user) => {
   if (user) currentUser = user;
 });
 
 /* ============================================================
-   ✅ OPEN PREMIUM MODAL — Step 1: Show Plans
+   OPEN PREMIUM MODAL
    ============================================================ */
 window.openPremiumModal = async function() {
+  console.log("🔵 Buy Button Clicked");
+
   const modal = document.getElementById('premiumModal');
-  const container = document.getElementById('dynamicPlansContainer');
-  if (!modal || !container) {
-    console.error('Premium modal elements not found');
+  if (!modal) {
+    alert("❌ Error: Premium Modal HTML not found!\nPlease update your index.html.");
     return;
   }
 
-  // Reset views
-  document.getElementById('view1-plans').style.display = 'block';
-  document.getElementById('view2-apps').style.display = 'none';
-  document.getElementById('view3-payment').style.display = 'none';
+  const view1 = document.getElementById('view1-plans');
+  const view2 = document.getElementById('view2-apps');
+  const view3 = document.getElementById('view3-payment');
+  const container = document.getElementById('dynamicPlansContainer');
+
+  if (!view1 || !view2 || !view3 || !container) {
+    alert("❌ Error: Old Premium Modal detected!\nPlease update your index.html with the new modal code.");
+    return;
+  }
+
+  view1.style.display = 'block';
+  view2.style.display = 'none';
+  view3.style.display = 'none';
   document.getElementById('premiumModalTitle').textContent = '💎 Buy Blue Tick';
   
   const customAmt = document.getElementById('customPayAmount');
   if (customAmt) customAmt.value = '';
-  
-  container.innerHTML = '<div style="color:#888; grid-column:1/-1; text-align:center; padding:20px;">Loading plans...</div>';
 
   modal.classList.add('show');
+  renderPlans(DEFAULT_PLANS);
 
   try {
-    // 1. Load Admin UPI
     const paySnap = await getDoc(doc(db, 'admin_config', 'payment'));
     if (paySnap.exists()) {
       adminUpi = paySnap.data().upiId || '';
@@ -109,170 +99,107 @@ window.openPremiumModal = async function() {
     }
 
     if (!adminUpi) {
-      container.innerHTML = '<div style="color:#ff4d4d; grid-column:1/-1; text-align:center; padding:20px;">⚠️ Admin has not configured UPI yet. Please try again later.</div>';
+      container.innerHTML = '<div style="color:#ff4d4d; grid-column:1/-1; text-align:center; padding:20px;">⚠️ Admin has not set UPI yet.</div>';
       return;
     }
 
-    // 2. Load Plans (custom from admin or defaults)
-    let plans = [];
-    try {
-      const snap = await getDocs(collection(db, 'payment_plans'));
-      if (!snap.empty) {
-        plans = snap.docs.map(d => {
-          const data = d.data();
-          return {
-            id: d.id,
-            amount: Number(data.amount) || 0,
-            days: Number(data.days) || 0,
-            label: formatDaysLabel(Number(data.days)),
-            badge: null
-          };
-        });
+    const snap = await getDocs(collection(db, 'payment_plans'));
+    if (!snap.empty) {
+      const customPlans = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          amount: Number(data.amount) || 0,
+          days: Number(data.days) || 0,
+          label: formatDaysLabel(Number(data.days)),
+          badge: null
+        };
+      });
+      if (customPlans.length >= 3) {
+        customPlans[1].badge = 'POPULAR';
+        customPlans[customPlans.length - 1].badge = 'BEST VALUE';
       }
-    } catch (e) {
-      console.warn('Could not load custom plans, using defaults', e);
+      renderPlans(customPlans);
     }
-
-    // If no custom plans, use DEFAULT_PLANS
-    if (plans.length === 0) {
-      plans = DEFAULT_PLANS;
-    } else {
-      // Sort custom plans
-      plans.sort((a, b) => a.amount - b.amount);
-      // Mark badges
-      if (plans.length >= 3) {
-        plans[1].badge = 'POPULAR';
-        plans[plans.length - 1].badge = 'BEST VALUE';
-      } else if (plans.length === 2) {
-        plans[1].badge = 'POPULAR';
-      }
-    }
-
-    // 3. Render Plan Cards
-    container.innerHTML = '';
-    plans.forEach(p => {
-      const card = document.createElement('div');
-      card.style.cssText = `
-        background:#0a0a12;
-        border:2px solid ${p.badge ? '#ff2e63' : '#2a2a38'};
-        border-radius:14px;
-        padding:18px 10px;
-        cursor:pointer;
-        transition:0.2s;
-        position:relative;
-        text-align:center;
-      `;
-
-      if (p.badge) {
-        card.innerHTML = `<div style="position:absolute; top:-8px; left:50%; transform:translateX(-50%); background:#ff2e63; color:#fff; font-size:8px; font-weight:800; padding:3px 10px; border-radius:10px; letter-spacing:0.5px; white-space:nowrap;">${p.badge}</div>`;
-      }
-
-      card.innerHTML += `
-        <div style="font-size:26px; font-weight:900; color:#fff; margin-bottom:6px;">₹${p.amount}</div>
-        <div style="font-size:12px; color:${p.badge ? '#ff2e63' : '#888'}; font-weight:700;">${p.label}</div>
-      `;
-
-      card.onclick = () => {
-        selectedAmount = p.amount;
-        selectedDays = p.days;
-        selectedLabel = p.label;
-        showAppSelection();
-      };
-
-      card.onmouseover = () => card.style.transform = 'translateY(-3px)';
-      card.onmouseout = () => card.style.transform = 'translateY(0)';
-
-      container.appendChild(card);
-    });
-
   } catch (err) {
-    console.error('Payment modal error:', err);
-    container.innerHTML = '<div style="color:#ff4d4d; grid-column:1/-1; text-align:center; padding:20px;">Failed to load. Please retry.</div>';
+    console.warn("Firebase fetch failed:", err);
   }
 };
 
-/* ============================================================
-   Format Days into Label
-   ============================================================ */
+function renderPlans(plans) {
+  const container = document.getElementById('dynamicPlansContainer');
+  if (!container) return;
+
+  container.innerHTML = '';
+  plans.forEach(p => {
+    const card = document.createElement('div');
+    card.style.cssText = `
+      background:#0a0a12; border:2px solid ${p.badge ? '#ff2e63' : '#2a2a38'};
+      border-radius:14px; padding:18px 10px; cursor:pointer;
+      transition:0.2s; position:relative; text-align:center;
+    `;
+
+    if (p.badge) {
+      card.innerHTML = `<div style="position:absolute; top:-8px; left:50%; transform:translateX(-50%); background:#ff2e63; color:#fff; font-size:8px; font-weight:800; padding:3px 10px; border-radius:10px; white-space:nowrap;">${p.badge}</div>`;
+    }
+
+    card.innerHTML += `
+      <div style="font-size:26px; font-weight:900; color:#fff; margin-bottom:6px;">₹${p.amount}</div>
+      <div style="font-size:12px; color:${p.badge ? '#ff2e63' : '#888'}; font-weight:700;">${p.label}</div>
+    `;
+
+    card.onclick = () => {
+      selectedAmount = p.amount;
+      selectedDays = p.days;
+      selectedLabel = p.label;
+      showAppSelection();
+    };
+    container.appendChild(card);
+  });
+}
+
 function formatDaysLabel(days) {
   if (days === 1) return '1 Day';
   if (days === 7) return '1 Week';
   if (days === 30) return '1 Month';
   if (days === 90) return '3 Months';
-  if (days === 180) return '6 Months';
   if (days === 365) return '1 Year';
   return days + ' Days';
 }
 
-/* ============================================================
-   Custom Amount Input
-   ============================================================ */
 document.getElementById('customPayAmount')?.addEventListener('change', (e) => {
   const val = parseInt(e.target.value, 10);
   if (val && val > 0) {
     selectedAmount = val;
-    const matched = DEFAULT_PLANS.find(p => p.amount === val);
-    selectedDays = matched ? matched.days : 30;
-    selectedLabel = matched ? matched.label : '30 Days';
+    selectedDays = 30;
+    selectedLabel = '30 Days';
     showAppSelection();
   }
 });
 
-/* ============================================================
-   ✅ STEP 2: Choose UPI App
-   ============================================================ */
 function showAppSelection() {
   document.getElementById('view1-plans').style.display = 'none';
   document.getElementById('view2-apps').style.display = 'block';
-  document.getElementById('view3-payment').style.display = 'none';
   document.getElementById('premiumModalTitle').textContent = '📱 Choose Payment Method';
   document.getElementById('view2Amount').textContent = selectedAmount;
 
-  // Update sub-text with validity
   const subText = document.querySelector('#view2-apps p');
-  if (subText) {
-    subText.textContent = `You will get Blue Tick for ${selectedLabel || (selectedDays + ' days')}`;
-  }
+  if (subText) subText.textContent = `You will get Blue Tick for ${selectedLabel}`;
 
   const grid = document.getElementById('upiAppsGrid');
   grid.innerHTML = '';
 
   UPI_APPS.forEach(app => {
     const btn = document.createElement('button');
-    btn.style.cssText = `
-      background:#1a1a24;
-      border:1px solid #333;
-      border-radius:14px;
-      padding:18px 8px;
-      cursor:pointer;
-      transition:0.2s;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:8px;
-    `;
+    btn.style.cssText = `background:#1a1a24; border:1px solid #333; border-radius:14px; padding:18px 8px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:8px;`;
     btn.innerHTML = `
-      <div style="font-size:32px; line-height:1;">${app.icon}</div>
-      <div style="font-size:11px; font-weight:700; color:#fff; text-align:center;">${app.name}</div>
+      <div style="font-size:32px;">${app.icon}</div>
+      <div style="font-size:11px; font-weight:700; color:#fff;">${app.name}</div>
     `;
-
-    btn.onmouseover = () => {
-      btn.style.borderColor = '#ff2e63';
-      btn.style.background = '#1e1e2e';
-    };
-    btn.onmouseout = () => {
-      btn.style.borderColor = '#333';
-      btn.style.background = '#1a1a24';
-    };
-
     btn.onclick = () => handleAppSelect(app);
     grid.appendChild(btn);
   });
 }
 
-/* ============================================================
-   Back Buttons
-   ============================================================ */
 window.paymentGoBack = function() {
   document.getElementById('view1-plans').style.display = 'block';
   document.getElementById('view2-apps').style.display = 'none';
@@ -281,18 +208,12 @@ window.paymentGoBack = function() {
 };
 
 window.paymentGoBackToApps = function() {
-  clearInterval(timerInterval);
   document.getElementById('view2-apps').style.display = 'block';
   document.getElementById('view3-payment').style.display = 'none';
   document.getElementById('premiumModalTitle').textContent = '📱 Choose Payment Method';
 };
 
-/* ============================================================
-   ✅ STEP 3: Open Selected App
-   ============================================================ */
 function handleAppSelect(app) {
-  selectedApp = app;
-
   document.getElementById('view2-apps').style.display = 'none';
   document.getElementById('view3-payment').style.display = 'block';
   document.getElementById('premiumModalTitle').textContent = '💳 Complete Payment';
@@ -300,124 +221,57 @@ function handleAppSelect(app) {
   document.getElementById('view3AppName').textContent = app.icon + ' ' + app.name;
   document.getElementById('view3Amount').textContent = selectedAmount;
   document.getElementById('view3PayeeName').textContent = adminPayeeName;
-  document.getElementById('view3Upi').textContent = adminUpi;
+  document.getElementById('view3Upi').textContent = adminUpi || 'Not set';
 
-  // Build UPI Link
-  const upiLink = buildUpiLink(selectedAmount);
+  const upiLink = `upi://pay?pa=${encodeURIComponent(adminUpi)}&pn=${encodeURIComponent(adminPayeeName)}&am=${selectedAmount}&cu=INR`;
 
-  // Generate QR
-  generatePaymentQR(upiLink);
+  const qrContainer = document.getElementById('view3QRContainer');
+  if (qrContainer && typeof QRCode !== 'undefined') {
+    qrContainer.innerHTML = '';
+    try {
+      new QRCode(qrContainer, {
+        text: upiLink, width: 200, height: 200,
+        colorDark: '#000000', colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    } catch (e) { console.error(e); }
+  }
 
-  // Setup Pay Button
   const payBtn = document.getElementById('view3PayBtn');
   payBtn.textContent = `💳 Open ${app.name}`;
-  payBtn.onclick = () => openUpiApp(upiLink, app.scheme);
-
-  // Reset upload state
-  uploadedScreenshotUrl = null;
-  const statusMsg = document.getElementById('paymentStatusMsg');
-  if (statusMsg) statusMsg.textContent = '';
-  document.getElementById('view3QRWrap').style.display = 'none';
-
-  // Show timer
-  startPaymentTimer();
-}
-
-/* ============================================================
-   Build UPI Link
-   ============================================================ */
-function buildUpiLink(amount) {
-  return `upi://pay?pa=${encodeURIComponent(adminUpi)}&pn=${encodeURIComponent(adminPayeeName)}&am=${amount}&cu=INR`;
-}
-
-function buildAppLink(upiLink, scheme) {
-  if (scheme === 'upi') return upiLink;
-  return upiLink.replace('upi://', `${scheme}://`);
-}
-
-/* ============================================================
-   Open UPI App
-   ============================================================ */
-function openUpiApp(upiLink, scheme) {
-  const appLink = buildAppLink(upiLink, scheme);
-
-  if (isMobile()) {
-    try {
+  payBtn.onclick = () => {
+    const appLink = app.scheme === 'upi' ? upiLink : upiLink.replace('upi://', `${app.scheme}://`);
+    if (isMobile()) {
       window.location.href = appLink;
-
-      // Fallback
       setTimeout(() => {
-        if (!document.hidden) {
-          window.location.href = upiLink;
-        }
+        if (!document.hidden) window.location.href = upiLink;
       }, 2500);
-    } catch (e) {
-      window.location.href = upiLink;
+    } else {
+      document.getElementById('view3QRWrap').style.display = 'block';
+      document.getElementById('paymentStatusMsg').textContent = '💻 Desktop: Scan QR code.';
     }
-  } else {
-    // Desktop → show QR
-    document.getElementById('view3QRWrap').style.display = 'block';
-    showPaymentStatus('💻 Desktop detected. Scan QR or use UPI ID above.', '#4ea8ff');
-  }
-}
+  };
 
-/* ============================================================
-   Generate QR Code
-   ============================================================ */
-function generatePaymentQR(upiLink) {
-  const qrContainer = document.getElementById('view3QRContainer');
-  if (!qrContainer) return;
-  qrContainer.innerHTML = '';
-  
-  try {
-    if (typeof QRCode === 'undefined') {
-      console.error('QRCode library not loaded!');
-      return;
-    }
-    qrInstance = new QRCode(qrContainer, {
-      text: upiLink,
-      width: 200,
-      height: 200,
-      colorDark: '#000000',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.H
-    });
-  } catch (e) {
-    console.error('QR generation failed:', e);
-  }
+  uploadedScreenshotUrl = null;
+  document.getElementById('paymentStatusMsg').textContent = '';
+  document.getElementById('view3QRWrap').style.display = 'none';
 }
 
 window.toggleQRView = function() {
   const qrWrap = document.getElementById('view3QRWrap');
-  if (qrWrap) {
-    qrWrap.style.display = qrWrap.style.display === 'none' ? 'block' : 'none';
-  }
+  if (qrWrap) qrWrap.style.display = qrWrap.style.display === 'none' ? 'block' : 'none';
 };
 
-/* ============================================================
-   Payment Timer
-   ============================================================ */
-function startPaymentTimer() {
-  clearInterval(timerInterval);
-  const timerWrap = document.getElementById('view3TimerWrap');
-  if (timerWrap) {
-    timerWrap.innerHTML = `<span style="font-size:13px; color:#ff2e63; font-weight:700;">⏳ Payment complete karo, phir screenshot upload karo</span>`;
-  }
-}
-
-/* ============================================================
-   Screenshot Upload
-   ============================================================ */
 document.getElementById('paymentScreenshot')?.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
   if (file.size > 5 * 1024 * 1024) {
-    showPaymentStatus('❌ Max 5 MB allowed', '#ff4d4d');
+    showStatus('❌ Max 5 MB', '#ff4d4d');
     return;
   }
 
-  showPaymentStatus('⏳ Uploading screenshot...', '#4ea8ff');
+  showStatus('⏳ Uploading...', '#4ea8ff');
 
   try {
     const form = new FormData();
@@ -425,37 +279,22 @@ document.getElementById('paymentScreenshot')?.addEventListener('change', async (
     form.append('upload_preset', CLOUDINARY.preset);
     form.append('api_key', CLOUDINARY.apiKey);
 
-    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/image/upload`;
-    const res = await fetch(url, { method: 'POST', body: form });
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/image/upload`, { method: 'POST', body: form });
     const data = await res.json();
 
     if (!data.secure_url) throw new Error('Upload failed');
 
     uploadedScreenshotUrl = data.secure_url;
-    showPaymentStatus('✅ Screenshot uploaded. Submitting request...', '#4ade80');
+    showStatus('✅ Uploaded. Submitting...', '#4ade80');
 
-    await submitPaymentRequest();
+    if (!currentUser) {
+      showStatus('❌ Please login first', '#ff4d4d');
+      return;
+    }
 
-  } catch (err) {
-    console.error(err);
-    showPaymentStatus('❌ Upload failed. Please try again.', '#ff4d4d');
-  }
-});
-
-/* ============================================================
-   Submit Payment Request
-   ============================================================ */
-async function submitPaymentRequest() {
-  if (!currentUser) {
-    showPaymentStatus('❌ Please login first', '#ff4d4d');
-    return;
-  }
-
-  try {
     await addDoc(collection(db, 'payment_requests'), {
       userId: currentUser.uid,
       userName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
-      userHandle: '',
       amount: selectedAmount,
       days: selectedDays,
       label: selectedLabel,
@@ -464,24 +303,19 @@ async function submitPaymentRequest() {
       createdAt: serverTimestamp()
     });
 
-    showPaymentStatus('🎉 Payment submitted! Admin will verify within 24 hours.', '#4ade80');
+    showStatus('🎉 Submitted! Admin will verify in 24h.', '#4ade80');
 
     setTimeout(() => {
       document.getElementById('premiumModal').classList.remove('show');
-      uploadedScreenshotUrl = null;
-      selectedApp = null;
     }, 3000);
 
   } catch (err) {
-    console.error('Submit error:', err);
-    showPaymentStatus('❌ Failed to submit. Please try again or contact support.', '#ff4d4d');
+    console.error(err);
+    showStatus('❌ Upload failed. Try again.', '#ff4d4d');
   }
-}
+});
 
-/* ============================================================
-   Helpers
-   ============================================================ */
-function showPaymentStatus(msg, color) {
+function showStatus(msg, color) {
   const el = document.getElementById('paymentStatusMsg');
   if (el) {
     el.textContent = msg;
@@ -493,4 +327,4 @@ function isMobile() {
   return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 }
 
-console.log("✅ payment.js V3 loaded — Firebase fixed, Buy button working");
+console.log("✅ payment.js loaded — App ready");
