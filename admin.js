@@ -1,8 +1,9 @@
 /* ============================================================
-   ReelHub Admin — admin.js (FINAL V6 — FULLY FUNCTIONAL)
-   ✅ Dashboard on Top, Smooth App Feel
-   ✅ No "Coming Soon" buttons
-   ✅ Notify, Verify, Suspend, Msg (Notification), Payments, Wallet, Reports
+   ReelHub Admin — admin.js (FINAL V9)
+   ✅ Professional English Notification on Approve
+   ✅ Original Time-based Tick
+   ✅ No Page Reload
+   ✅ All Functions Working
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -28,6 +29,9 @@ const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db   = getFirestore(firebaseApp);
 
+/* ============================================================
+   ADMIN EMAILS
+   ============================================================ */
 const HARDCODED_ADMIN_EMAILS = ["reehubreelhub@gmail.com"];
 let ADMIN_EMAILS = [...HARDCODED_ADMIN_EMAILS];
 
@@ -42,12 +46,18 @@ async function loadAdminEmails() {
 }
 function isAdminEmail(email) { return email && ADMIN_EMAILS.includes(String(email).toLowerCase().trim()); }
 
+/* ============================================================
+   STATE
+   ============================================================ */
 let currentAdmin = null;
 let currentAdminProfile = null;
 let currentPage = 'dashboard';
 let isLoggingIn = false;
-let cachedData = { users: [], videos: [], payments: [], wallet: [] };
+let cachedData = { users: [], videos: [] };
 
+/* ============================================================
+   DOM
+   ============================================================ */
 const loader = document.getElementById('loader');
 const loginScreen = document.getElementById('adminLogin');
 const appScreen = document.getElementById('adminApp');
@@ -59,10 +69,31 @@ const modalOverlay = document.getElementById('adminModal');
 const modalTitle = document.getElementById('modalTitle');
 const modalBody = document.getElementById('modalBody');
 
+/* ============================================================
+   HELPERS
+   ============================================================ */
 function safeNum(v) { const n = Number(v); return isNaN(n) || !isFinite(n) ? 0 : n; }
+function safeArray(v) { return Array.isArray(v) ? v : []; }
 function escapeHtml(str) { if (str === null || str === undefined) return ''; return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 function defaultAvatar(name) { const l = (name || '?').trim().charAt(0).toUpperCase() || '?'; return 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e1e28"/><text x="50" y="50" font-size="44" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${l}</text></svg>`); }
 function timeAgo(d) { const s = Math.floor((new Date()-d)/1000); if (s<60) return 'now'; const m=Math.floor(s/60); if (m<60) return m+'m'; const h=Math.floor(m/60); if (h<24) return h+'h'; return Math.floor(h/24)+'d'; }
+
+function setButtonLoading(btn, loading = true) {
+  if (!btn) return;
+  if (loading) {
+    if (!btn.classList.contains('loading')) btn.dataset.originalText = btn.innerHTML;
+    btn.classList.add('loading');
+    btn.disabled = true;
+    btn.innerHTML = 'Wait...';
+  } else {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    if (btn.dataset.originalText) {
+      btn.innerHTML = btn.dataset.originalText;
+      delete btn.dataset.originalText;
+    }
+  }
+}
 
 function showToast(msg, type = 'success') {
   const container = document.getElementById('toastContainer');
@@ -101,6 +132,8 @@ loginBtn.addEventListener('click', async () => {
   } finally { loginBtn.disabled = false; loginBtn.textContent = 'Log In'; isLoggingIn = false; }
 });
 
+document.getElementById('adminPass')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') loginBtn.click(); });
+
 onAuthStateChanged(auth, async (user) => {
   if (isLoggingIn) return;
   if (user) {
@@ -138,7 +171,7 @@ async function renderPage(page) {
 }
 
 /* ============================================================
-   DASHBOARD (Top pe full stats)
+   DASHBOARD
    ============================================================ */
 async function renderDashboard() {
   const [u, v, c, r, w] = await Promise.all([
@@ -156,7 +189,7 @@ async function renderDashboard() {
   if(w.forEach) w.forEach(d => { if(d.data().status==='pending' && d.data().category==='withdrawal') pendingWd++; });
 
   adminContent.innerHTML = `
-    <div class="page-title-admin"><div class="title-text">Dashboard</div><button class="refresh-btn" onclick="renderDashboard()">Refresh</button></div>
+    <div class="page-title-admin"><div class="title-text">Dashboard</div><button type="button" class="refresh-btn" onclick="window.renderDashboard()">Refresh</button></div>
     <div class="stats-grid">
       <div class="stat-card"><div class="label">Total Users</div><div class="value" style="color:#4ea8ff">${u.size}</div></div>
       <div class="stat-card"><div class="label">Total Videos</div><div class="value" style="color:#ff2e63">${v.size}</div></div>
@@ -169,8 +202,10 @@ async function renderDashboard() {
   `;
 }
 
+window.renderDashboard = renderDashboard;
+
 /* ============================================================
-   USERS (Verify, Suspend, Msg - Full Functional)
+   USERS
    ============================================================ */
 async function renderUsers() {
   const [uSnap, pSnap] = await Promise.all([
@@ -184,7 +219,7 @@ async function renderUsers() {
   cachedData.users.forEach(u => u._realVids = vMap[u.id] || 0);
 
   adminContent.innerHTML = `
-    <div class="page-title-admin"><div class="title-text">Users (${cachedData.users.length})</div><button class="refresh-btn" onclick="renderUsers()">Refresh</button></div>
+    <div class="page-title-admin"><div class="title-text">Users (${cachedData.users.length})</div><button type="button" class="refresh-btn" onclick="window.renderUsers()">Refresh</button></div>
     <div class="table-wrap">
       <div class="table-search"><input type="text" id="userSearch" placeholder="Search by name or username..."></div>
       <div class="table-responsive">
@@ -222,10 +257,20 @@ async function renderUsers() {
         <td style="font-weight:bold;">${safeNum(u._realVids)}</td>
         <td style="font-weight:bold;color:#ff8a00;">₹${safeNum(u.walletBalance)}</td>
         <td>
-          <button class="btn-sm primary" onclick="window.toggleVerify('${u.id}', ${u.verified||false})">${u.verified ? 'Unverify' : 'Verify'}</button>
-          <button class="btn-sm warn" onclick="window.toggleSuspend('${u.id}', ${u.banned||false})">${u.banned ? 'Unsuspend' : 'Suspend'}</button>
-          <button class="btn-sm dark" onclick="window.msgUser('${u.id}', '${escapeHtml(u.name)}')">Msg</button>
-          <button class="btn-sm danger" onclick="window.delUser('${u.id}')">Del</button>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
+            <div style="display:flex; gap:2px; background:#0a0a12; padding:2px; border-radius:6px; border:1px solid #333;">
+              <select id="tick-${u.id}" style="background:transparent; color:#fff; border:none; padding:4px; font-size:11px; outline:none;">
+                <option value="none" ${!u.verified ? 'selected' : ''}>Remove</option>
+                <option value="1">1 Day</option>
+                <option value="30">30 Days</option>
+                <option value="365">1 Year</option>
+              </select>
+              <button type="button" class="btn-sm primary" onclick="window.applyTick('${u.id}')">Apply</button>
+            </div>
+            <button type="button" class="btn-sm primary" onclick="window.toggleVerify('${u.id}', ${u.verified||false})">${u.verified ? 'Unverify' : 'Verify'}</button>
+            <button type="button" class="btn-sm warn" onclick="window.toggleSuspend('${u.id}', ${u.banned||false})">${u.banned ? 'Unsuspend' : 'Suspend'}</button>
+            <button type="button" class="btn-sm dark" onclick="window.msgUser('${u.id}', '${escapeHtml(u.name)}')">Msg</button>
+          </div>
         </td>
       `;
       tbody.appendChild(tr);
@@ -235,6 +280,23 @@ async function renderUsers() {
   paint();
   document.getElementById('userSearch')?.addEventListener('input', paint);
 }
+
+window.renderUsers = renderUsers;
+
+window.applyTick = async (uid) => {
+  const val = document.getElementById('tick-' + uid).value;
+  try {
+    let isVerified = false, verifiedUntil = null;
+    if(val !== 'none') {
+      isVerified = true;
+      const d = new Date(); d.setDate(d.getDate() + parseInt(val));
+      verifiedUntil = Timestamp.fromDate(d);
+    }
+    await updateDoc(doc(db, 'users', uid), { verified: isVerified, verifiedUntil });
+    showToast('Blue Tick Updated!');
+    renderUsers();
+  } catch(e) { showToast(e.message, 'error'); }
+};
 
 window.toggleVerify = async (uid, current) => {
   try {
@@ -254,13 +316,12 @@ window.toggleSuspend = async (uid, current) => {
 };
 
 window.msgUser = (uid, name) => {
-  // Msg system ko Notification se jod diya hai, taaki Coming Soon na dikhe
   openModal(`Message to ${name}`, `
     <div class="input-group">
       <label>Notification Message</label>
       <textarea id="directMsgText" rows="3" placeholder="Type message to send..."></textarea>
     </div>
-    <button class="btn-primary" onclick="window.sendDirectMsg('${uid}')">Send Message</button>
+    <button type="button" class="btn-primary" onclick="window.sendDirectMsg('${uid}')">Send Message</button>
   `);
 };
 
@@ -276,17 +337,8 @@ window.sendDirectMsg = async (uid) => {
   } catch(e) { showToast(e.message, 'error'); }
 };
 
-window.delUser = async (uid) => {
-  if (!confirm('Delete this user permanently?')) return;
-  try {
-    await deleteDoc(doc(db, 'users', uid));
-    showToast('User Deleted');
-    renderUsers();
-  } catch(e) { showToast(e.message, 'error'); }
-};
-
 /* ============================================================
-   NOTIFY (Single / All Users)
+   NOTIFY (Single / All)
    ============================================================ */
 async function renderNotify() {
   if (cachedData.users.length === 0) {
@@ -315,7 +367,7 @@ async function renderNotify() {
 
       <div class="input-group"><label>Notification Title</label><input type="text" id="notifyTitle" placeholder="e.g. 🎉 New Update!"></div>
       <div class="input-group"><label>Message Body</label><textarea id="notifyMessage" rows="4" placeholder="Write your message here..."></textarea></div>
-      <button class="btn-primary" id="sendNotifyBtn">Send Notification 🚀</button>
+      <button type="button" class="btn-primary" id="sendNotifyBtn">Send Notification 🚀</button>
     </div>
   `;
 
@@ -354,7 +406,7 @@ async function renderNotify() {
 }
 
 /* ============================================================
-   PAYMENTS (UPI, Plans, Blue Tick Approvals)
+   PAYMENTS (UPI, Plans, Approvals)
    ============================================================ */
 async function renderPayments() {
   const [configSnap, plansSnap, reqSnap] = await Promise.all([
@@ -372,15 +424,15 @@ async function renderPayments() {
     <div class="page-title-admin">
       <div class="title-text">Payments & Plans</div>
       <div style="display:flex;gap:10px;">
-        <button class="btn-sm primary" onclick="document.getElementById('paymentSettingsModal').style.display='flex'">⚙️ UPI</button>
-        <button class="btn-sm green" onclick="document.getElementById('addPlanModal').style.display='flex'">➕ Plan</button>
+        <button type="button" class="btn-sm primary" onclick="document.getElementById('paymentSettingsModal').style.display='flex'">⚙️ UPI</button>
+        <button type="button" class="btn-sm green" onclick="document.getElementById('addPlanModal').style.display='flex'">➕ Plan</button>
       </div>
     </div>
 
     <div class="card-box" style="margin-bottom:20px;">
       <h3>Active Plans</h3>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
-        ${plans.length===0 ? 'No plans.' : plans.map(p => `<div style="background:#1a1a24;padding:10px;border-radius:8px;text-align:center;"><b style="color:#ff2e63;font-size:18px;">₹${p.amount}</b><br>${p.days} Days <button class="btn-sm danger" onclick="window.delPlan('${p.id}')">X</button></div>`).join('')}
+        ${plans.length===0 ? 'No plans.' : plans.map(p => `<div style="background:#1a1a24;padding:10px;border-radius:8px;text-align:center;"><b style="color:#ff2e63;font-size:18px;">₹${p.amount}</b><br>${p.days} Days <button type="button" class="btn-sm danger" onclick="window.delPlan('${p.id}')">X</button></div>`).join('')}
       </div>
     </div>
 
@@ -397,8 +449,8 @@ async function renderPayments() {
                 <td>${r.screenshotUrl ? `<a href="${r.screenshotUrl}" target="_blank" style="color:#4ea8ff;">View</a>` : '—'}</td>
                 <td>
                   ${r.status === 'pending' ? `
-                    <button class="btn-sm green" onclick="window.approvePayment('${r.id}', '${r.userId}', ${r.days})">Approve</button>
-                    <button class="btn-sm danger" onclick="window.rejectPayment('${r.id}')">Reject</button>
+                    <button type="button" class="btn-sm green" onclick="window.approvePayment('${r.id}', '${r.userId}', ${r.days})">Approve</button>
+                    <button type="button" class="btn-sm danger" onclick="window.rejectPayment('${r.id}')">Reject</button>
                   ` : r.status}
                 </td>
               </tr>
@@ -417,7 +469,7 @@ window.approvePayment = async (reqId, uid, days) => {
     const now = new Date(); now.setDate(now.getDate() + days);
     await updateDoc(doc(db, 'users', uid), { verified: true, verifiedUntil: Timestamp.fromDate(now) });
     await updateDoc(doc(db, 'payment_requests', reqId), { status: 'approved' });
-    await addDoc(collection(db, 'notifications'), { userId: uid, title: '✅ Approved!', message: `Blue Tick active for ${days} days.`, read: false, createdAt: serverTimestamp() });
+    await addDoc(collection(db, 'notifications'), { userId: uid, title: '✅ Payment Approved!', message: `Your Blue Tick is now active for ${days} days.`, read: false, createdAt: serverTimestamp() });
     showToast('Approved!'); renderPayments();
   } catch(e) { showToast(e.message, 'error'); }
 };
@@ -443,14 +495,14 @@ document.getElementById('savePlanBtn')?.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   WALLET (Withdrawals)
+   ✅ WALLET — PROFESSIONAL NOTIFICATION ON APPROVE
    ============================================================ */
 async function renderWallet() {
   const snap = await getDocs(collection(db, 'wallet_transactions'));
   const txs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.toDate?.()?.getTime()||0) - (a.createdAt?.toDate?.()?.getTime()||0));
   
   adminContent.innerHTML = `
-    <div class="page-title-admin"><div class="title-text">Wallet Requests</div><button class="refresh-btn" onclick="renderWallet()">Refresh</button></div>
+    <div class="page-title-admin"><div class="title-text">Wallet Requests</div><button type="button" class="refresh-btn" onclick="window.renderWallet()">Refresh</button></div>
     <div class="table-wrap">
       <div class="table-responsive">
         <table class="admin-table">
@@ -459,13 +511,13 @@ async function renderWallet() {
             ${txs.length===0 ? '<tr><td colspan="5" style="text-align:center;padding:20px;">No transactions</td></tr>' : txs.map(t => `
               <tr>
                 <td><b>${t.userName || 'Unknown'}</b></td>
-                <td>${t.category}<br><span style="font-size:10px;color:${t.status==='pending'?'#ff8a00':'#4ade80'}">${t.status.toUpperCase()}</span></td>
+                <td>${t.category}<br><span style="font-size:10px;color:${t.status==='pending'?'#ff8a00':(t.status==='completed'?'#4ade80':'#ff4d4d')}">${t.status.toUpperCase()}</span></td>
                 <td style="color:${t.type==='credit'?'#4ade80':'#ff2e63'}; font-weight:bold;">${t.type==='credit'?'+':'-'}₹${t.amount}</td>
                 <td>${t.upiId || '—'}</td>
                 <td>
                   ${t.status === 'pending' ? `
-                    <button class="btn-sm green" onclick="window.approveTx('${t.id}', '${t.userId}', ${t.amount}, '${t.category}')">Approve</button>
-                    <button class="btn-sm danger" onclick="window.rejectTx('${t.id}')">Reject</button>
+                    <button type="button" class="btn-sm green" onclick="window.approveTx('${t.id}', '${t.userId}', ${t.amount}, '${t.category}', '${t.upiId||''}')">Approve</button>
+                    <button type="button" class="btn-sm danger" onclick="window.rejectTx('${t.id}', '${t.userId}', ${t.amount}, '${t.category}')">Reject</button>
                   ` : 'Done'}
                 </td>
               </tr>
@@ -477,16 +529,92 @@ async function renderWallet() {
   `;
 }
 
-window.approveTx = async (txId, uid, amt, cat) => {
-  if(!confirm('Approve this transaction?')) return;
-  await updateDoc(doc(db, 'wallet_transactions', txId), { status: 'completed' });
-  if(cat === 'topup') await updateDoc(doc(db, 'users', uid), { walletBalance: increment(amt) });
-  showToast('Approved!'); renderWallet();
+window.renderWallet = renderWallet;
+
+// ✅ APPROVE WITH PROFESSIONAL NOTIFICATION
+window.approveTx = async (txId, uid, amt, cat, upiId) => {
+  const msg = cat === 'withdrawal' 
+    ? `Approve ₹${amt} WITHDRAWAL?\n\n⚠️ Confirm you SENT ₹${amt} to UPI: ${upiId}\n\nUser will get notification "Payment Sent Successfully".`
+    : `Approve ₹${amt} TOP-UP?\n\n⚠️ Confirm you RECEIVED ₹${amt} in your UPI.\n\n₹${amt} will be added to user's wallet.`;
+
+  if(!confirm(msg)) return;
+  
+  try {
+    await updateDoc(doc(db, 'wallet_transactions', txId), { 
+      status: 'completed',
+      approvedAt: serverTimestamp(),
+      approvedBy: currentAdmin?.email || 'admin'
+    });
+    
+    if(cat === 'topup') {
+      await updateDoc(doc(db, 'users', uid), { walletBalance: increment(amt) });
+    }
+
+    // ✅ PROFESSIONAL ENGLISH MESSAGE
+    let notifTitle, notifMessage;
+    if (cat === 'withdrawal') {
+      notifTitle = '💸 Payment Sent Successfully';
+      notifMessage = `Your money has been sent to your UPI ID: ${upiId}.\n\nAmount: ₹${amt}\n\nPlease check your UPI app or bank account. Thank you for using ReelHub!`;
+    } else if (cat === 'topup') {
+      notifTitle = '✅ Wallet Top-up Approved!';
+      notifMessage = `₹${amt} has been added to your wallet. You can now use it for withdrawals.`;
+    } else {
+      notifTitle = '✅ Transaction Approved';
+      notifMessage = `Your ₹${amt} transaction has been completed successfully.`;
+    }
+
+    await addDoc(collection(db, 'notifications'), {
+      userId: uid,
+      type: 'wallet',
+      title: notifTitle,
+      message: notifMessage,
+      fromUserId: currentAdmin?.uid || 'admin',
+      read: false,
+      createdAt: serverTimestamp()
+    });
+
+    showToast('✅ Approved & user notified!', 'success');
+    renderWallet();
+  } catch(e) { 
+    console.error(e);
+    showToast(e.message, 'error'); 
+  }
 };
-window.rejectTx = async (txId) => {
-  if(!confirm('Reject?')) return;
-  await updateDoc(doc(db, 'wallet_transactions', txId), { status: 'rejected' });
-  renderWallet();
+
+// ✅ REJECT WITH AUTO NOTIFICATION
+window.rejectTx = async (txId, uid, amt, cat) => {
+  const refundMsg = cat === 'withdrawal' ? `\n\n₹${amt} will be REFUNDED to user's wallet.` : '\n\nNo balance change.';
+  if(!confirm(`Reject ₹${amt} ${cat}?${refundMsg}`)) return;
+  
+  try {
+    await updateDoc(doc(db, 'wallet_transactions', txId), { 
+      status: 'rejected',
+      rejectedAt: serverTimestamp(),
+      rejectedBy: currentAdmin?.email || 'admin'
+    });
+
+    if (cat === 'withdrawal') {
+      await updateDoc(doc(db, 'users', uid), { walletBalance: increment(amt) });
+    }
+
+    await addDoc(collection(db, 'notifications'), {
+      userId: uid,
+      type: 'wallet',
+      title: '❌ Transaction Rejected',
+      message: cat === 'withdrawal'
+        ? `Your ₹${amt} withdrawal was rejected. ₹${amt} has been refunded to your wallet.`
+        : `Your ₹${amt} top-up request was rejected. Please upload a valid screenshot.`,
+      fromUserId: currentAdmin?.uid || 'admin',
+      read: false,
+      createdAt: serverTimestamp()
+    });
+
+    showToast('Rejected & user notified', 'info');
+    renderWallet();
+  } catch(e) { 
+    console.error(e);
+    showToast(e.message, 'error'); 
+  }
 };
 
 /* ============================================================
@@ -501,10 +629,10 @@ async function renderVideos() {
       <table class="admin-table">
         <thead><tr><th>Preview</th><th>User</th><th>Actions</th></tr></thead>
         <tbody>
-          ${vids.map(v => `<tr>
+          ${vids.length===0 ? '<tr><td colspan="3" style="text-align:center;padding:20px;">No videos</td></tr>' : vids.map(v => `<tr>
             <td><img src="${v.thumbnail||v.url}" style="width:40px;height:60px;border-radius:4px;object-fit:cover;"></td>
-            <td><b>${v.userName}</b></td>
-            <td><button class="btn-sm danger" onclick="window.delVid('${v.id}')">Delete</button></td>
+            <td><b>${escapeHtml(v.userName||'')}</b></td>
+            <td><button type="button" class="btn-sm danger" onclick="window.delVid('${v.id}')">Delete</button></td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -523,10 +651,10 @@ async function renderReports() {
         <thead><tr><th>Reported By</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
         <tbody>
           ${rpts.length===0 ? '<tr><td colspan="4" style="text-align:center;">No reports</td></tr>' : rpts.map(r => `<tr>
-            <td>${r.reportedBy}</td>
-            <td>${r.reason}</td>
-            <td>${r.status}</td>
-            <td><button class="btn-sm green" onclick="window.resolveReport('${r.id}')">Resolve</button></td>
+            <td>${escapeHtml(r.reportedBy||'')}</td>
+            <td>${escapeHtml(r.reason||'')}</td>
+            <td>${r.status||'pending'}</td>
+            <td><button type="button" class="btn-sm green" onclick="window.resolveReport('${r.id}')">Resolve</button></td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -545,4 +673,4 @@ function closeModal() { modalOverlay.style.display = 'none'; modalBody.innerHTML
 document.getElementById('modalClose')?.addEventListener('click', closeModal);
 modalOverlay?.addEventListener('click', (e) => { if(e.target === modalOverlay) closeModal(); });
 
-console.log("✅ Admin V6 Fully Functional Loaded — No Coming Soon!");
+console.log("✅ Admin V9 Loaded — Professional Notification Enabled");
