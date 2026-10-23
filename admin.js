@@ -1,9 +1,10 @@
 /* ============================================================
-   ReelHub Admin — admin.js (FINAL FIXED v3)
-   ✅ "00" bug fixed — video counts from posts
-   ✅ Safe number parsing (no string concat)
-   ✅ Sync Counts button to repair data
-   ✅ Full error handling
+   ReelHub Admin — admin.js (FINAL v4 — FULL UPDATED)
+   Dashboard + Users + Videos + Payments + Wallet + Admins + Reports
+   ✅ Wallet section added (approve/reject withdrawals)
+   ✅ Time-based Blue Tick
+   ✅ Payment Plans + UPI Settings
+   ✅ All bugs fixed
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -13,7 +14,8 @@ import {
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
   collection, query, where, getDocs, addDoc, serverTimestamp,
-  writeBatch, Timestamp
+  orderBy, limit, writeBatch, Timestamp,
+  increment  // ✅ IMPORTANT for wallet
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 /* ============================================================
@@ -90,7 +92,7 @@ const modalTitle   = document.getElementById('modalTitle');
 const modalBody    = document.getElementById('modalBody');
 
 /* ============================================================
-   ✅ CORE HELPERS — Safe Parsing (Bug #1 & #2 fix)
+   HELPERS
    ============================================================ */
 function safeNum(v) {
   if (v === null || v === undefined) return 0;
@@ -308,7 +310,7 @@ function showApp() {
   loginScreen.style.display = 'none';
   appScreen.classList.add('show');
   const hash = window.location.hash.replace('#', '');
-  const validPages = ['dashboard', 'users', 'videos', 'comments', 'payments', 'admins', 'notifications', 'reports'];
+  const validPages = ['dashboard', 'users', 'videos', 'comments', 'payments', 'wallet', 'admins', 'notifications', 'reports'];
   goToPage(validPages.includes(hash) ? hash : 'dashboard');
 }
 
@@ -325,7 +327,7 @@ function goToPage(page) {
 window.addEventListener('hashchange', () => {
   if (!currentAdmin) return;
   const hash = window.location.hash.replace('#', '');
-  const validPages = ['dashboard', 'users', 'videos', 'comments', 'payments', 'admins', 'notifications', 'reports'];
+  const validPages = ['dashboard', 'users', 'videos', 'comments', 'payments', 'wallet', 'admins', 'notifications', 'reports'];
   if (validPages.includes(hash) && hash !== currentPage) goToPage(hash);
 });
 
@@ -345,6 +347,7 @@ async function renderPage(page) {
     else if (page === 'videos')        await renderVideos();
     else if (page === 'comments')      await renderComments();
     else if (page === 'payments')      await renderPayments();
+    else if (page === 'wallet')        await renderWallet();
     else if (page === 'admins')        await renderAdmins();
     else if (page === 'notifications') await renderNotify();
     else if (page === 'reports')       await renderReports();
@@ -359,15 +362,16 @@ async function renderPage(page) {
 }
 
 /* ============================================================
-   📊 DASHBOARD — ✅ FIXED "00" via safeNum
+   DASHBOARD
    ============================================================ */
 async function renderDashboard() {
   try {
-    const [usersSnap, videosSnap, commentsSnap, reportsSnap] = await Promise.all([
+    const [usersSnap, videosSnap, commentsSnap, reportsSnap, walletSnap] = await Promise.all([
       getDocs(collection(db, 'users')),
       getDocs(collection(db, 'posts')),
       getDocs(collection(db, 'comments')),
-      getDocs(collection(db, 'reports'))
+      getDocs(collection(db, 'reports')),
+      getDocs(collection(db, 'wallet_transactions'))
     ]);
 
     const totalUsers = usersSnap.size;
@@ -375,10 +379,7 @@ async function renderDashboard() {
     const totalComments = commentsSnap.size;
     const totalReports = reportsSnap.size;
 
-    // ✅ SAFE: no string concat, no NaN
-    let totalLikes = 0, totalViews = 0, shortsCount = 0, longCount = 0;
-    let photosCount = 0;
-
+    let totalLikes = 0, totalViews = 0, shortsCount = 0, longCount = 0, photosCount = 0;
     videosSnap.forEach(d => {
       const data = d.data() || {};
       totalLikes += safeArray(data.likes).length;
@@ -388,9 +389,17 @@ async function renderDashboard() {
       else if (data.type === 'photo') photosCount++;
     });
 
+    // Pending withdrawals
+    let pendingWithdrawals = 0, pendingTopups = 0, totalPayout = 0;
+    walletSnap.forEach(d => {
+      const t = d.data();
+      if (t.status === 'pending' && t.category === 'withdrawal') pendingWithdrawals++;
+      if (t.status === 'pending' && t.category === 'topup') pendingTopups++;
+      if (t.status === 'completed' && t.category === 'withdrawal') totalPayout += safeNum(t.amount);
+    });
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     let todaySignups = 0, todayVideos = 0;
     usersSnap.forEach(d => {
       const created = d.data()?.createdAt?.toDate?.();
@@ -405,7 +414,6 @@ async function renderDashboard() {
       <div class="page-title-admin">
         <div class="title-text">Dashboard</div>
         <div style="display:flex; gap:8px;">
-          <button class="btn-outline" id="syncCountsBtn" title="Recalculate all user video counts">🔄 Sync Counts</button>
           <button class="refresh-btn" id="refreshDashBtn">Refresh</button>
         </div>
       </div>
@@ -422,6 +430,21 @@ async function renderDashboard() {
       </div>
 
       <div class="stats-grid" style="margin-top:14px;">
+        <div class="stat-card clickable" data-nav="wallet">
+          <div class="label">Pending Withdrawals</div>
+          <div class="value" style="color:#ff8a00">${pendingWithdrawals}</div>
+        </div>
+        <div class="stat-card clickable" data-nav="wallet">
+          <div class="label">Pending Top-ups</div>
+          <div class="value" style="color:#4ade80">${pendingTopups}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Paid Out</div>
+          <div class="value" style="color:#ff4d4d">₹${totalPayout}</div>
+        </div>
+      </div>
+
+      <div class="stats-grid" style="margin-top:14px;">
         <div class="stat-card"><div class="label">Shorts</div><div class="value" style="color:#ff2e63">${shortsCount}</div></div>
         <div class="stat-card"><div class="label">Long Videos</div><div class="value" style="color:#4ea8ff">${longCount}</div></div>
         <div class="stat-card"><div class="label">Photos</div><div class="value" style="color:#4ade80">${photosCount}</div></div>
@@ -429,76 +452,20 @@ async function renderDashboard() {
     `;
 
     document.getElementById('refreshDashBtn')?.addEventListener('click', () => renderDashboard());
-    document.getElementById('syncCountsBtn')?.addEventListener('click', () => syncAllVideoCounts());
-
     document.querySelectorAll('[data-nav]').forEach(card => {
       card.addEventListener('click', () => goToPage(card.dataset.nav));
     });
   } catch (err) {
     console.error('Dashboard error:', err);
-    adminContent.innerHTML = `
-      <div class="empty-box" style="color:#ff4d4d;">
-        ⚠️ Failed to load dashboard: ${escapeHtml(err.message || '')}
-        <br><br>
-        <button class="refresh-btn" onclick="location.reload()">Retry</button>
-      </div>`;
-    showToast('Dashboard failed: ' + (err.message || 'unknown'), 'error', 5000);
+    adminContent.innerHTML = `<div class="empty-box" style="color:#ff4d4d;">⚠️ Failed: ${escapeHtml(err.message || '')}</div>`;
   }
 }
 
 /* ============================================================
-   🔄 SYNC VIDEO COUNTS — Repair Firestore data
-   ============================================================ */
-async function syncAllVideoCounts() {
-  const btn = document.getElementById('syncCountsBtn');
-  if (!confirm('This will recalculate every user\'s videoCount from the posts collection. Continue?')) return;
-  setButtonLoading(btn, true);
-
-  try {
-    showToast('Reading posts...', 'info');
-    const postsSnap = await getDocs(collection(db, 'posts'));
-    const counts = {};
-    postsSnap.forEach(d => {
-      const uid = d.data()?.userId;
-      if (uid) counts[uid] = (counts[uid] || 0) + 1;
-    });
-
-    showToast('Updating users...', 'info');
-    const usersSnap = await getDocs(collection(db, 'users'));
-    let updated = 0;
-
-    for (const userDoc of usersSnap.docs) {
-      const expected = counts[userDoc.id] || 0;
-      const current = safeNum(userDoc.data()?.videoCount);
-
-      if (expected !== current) {
-        try {
-          await updateDoc(doc(db, 'users', userDoc.id), { videoCount: expected });
-          updated++;
-        } catch (e) {
-          console.warn('Update failed for', userDoc.id, e);
-        }
-      }
-    }
-
-    showToast(`✅ Synced! ${updated} users updated`, 'success', 4000);
-    await renderDashboard();
-  } catch (err) {
-    console.error('syncAllVideoCounts error:', err);
-    showToast('Sync failed: ' + (err.message || ''), 'error');
-  } finally {
-    setButtonLoading(btn, false);
-  }
-}
-
-/* ============================================================
-   👥 USERS — ✅ FIXED: Video count from posts collection
+   USERS — Time-based Blue Tick
    ============================================================ */
 async function renderUsers() {
   try {
-    adminContent.innerHTML = `<div class="loader-screen" style="min-height:200px;"><div class="spinner"></div></div>`;
-
-    // ✅ FIX: Fetch users + posts in parallel to calculate real video counts
     const [usersSnap, postsSnap] = await Promise.all([
       getDocs(collection(db, 'users')),
       getDocs(collection(db, 'posts'))
@@ -506,14 +473,12 @@ async function renderUsers() {
 
     cachedData.users = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // ✅ Build video count map from actual posts
     const videoCountMap = {};
     postsSnap.forEach(d => {
       const uid = d.data()?.userId;
       if (uid) videoCountMap[uid] = (videoCountMap[uid] || 0) + 1;
     });
 
-    // ✅ Attach actual video count to each user
     cachedData.users.forEach(u => {
       u._realVideoCount = videoCountMap[u.id] || 0;
     });
@@ -544,6 +509,7 @@ async function renderUsers() {
                 <th>Email</th>
                 <th>Role</th>
                 <th>Videos</th>
+                <th>Wallet</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -572,7 +538,7 @@ async function renderUsers() {
       if (!tbody) return;
 
       if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><h4>No users found</h4></div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><h4>No users found</h4></div></td></tr>`;
         return;
       }
 
@@ -585,9 +551,8 @@ async function renderUsers() {
           : `<span style="color:#666">user</span>`;
         const verifiedBadge = u.verified ? ` <span class="badge-pill verified">✓</span>` : '';
         const bannedBadge = u.banned ? ` <span class="badge-pill banned">BANNED</span>` : '';
-
-        // ✅ FIX: Use real video count from posts, not broken videoCount field
         const realCount = safeNum(u._realVideoCount);
+        const walletBal = safeNum(u.walletBalance);
 
         tr.innerHTML = `
           <td>
@@ -602,6 +567,7 @@ async function renderUsers() {
           <td style="font-size:12px;">${escapeHtml(u.email || '')}</td>
           <td>${roleBadge}</td>
           <td style="font-weight:700; color:${realCount > 0 ? '#4ade80' : '#666'};">${realCount}</td>
+          <td style="font-weight:700; color:${walletBal > 0 ? '#ff8a00' : '#666'};">₹${walletBal}</td>
           <td>
             <div class="actions-cell" style="flex-wrap:wrap; gap:4px;">
               <button class="btn-sm primary" data-action="msg" data-uid="${u.id}">Msg</button>
@@ -647,13 +613,7 @@ async function renderUsers() {
     document.getElementById('refreshUsersBtn')?.addEventListener('click', () => renderUsers());
   } catch (err) {
     console.error('renderUsers error:', err);
-    adminContent.innerHTML = `
-      <div class="empty-box" style="color:#ff4d4d;">
-        ⚠️ Failed to load users: ${escapeHtml(err.message || '')}
-        <br><br>
-        <button class="refresh-btn" onclick="location.reload()">Retry</button>
-      </div>`;
-    showToast('Users failed: ' + (err.message || ''), 'error', 5000);
+    adminContent.innerHTML = `<div class="empty-box" style="color:#ff4d4d;">⚠️ Failed: ${escapeHtml(err.message || '')}</div>`;
   }
 }
 
@@ -741,7 +701,7 @@ async function handleUserAction(action, uid, btnEl) {
 }
 
 async function cascadeDeleteUser(uid) {
-  const collections = ['posts', 'comments', 'stories', 'notifications'];
+  const collections = ['posts', 'comments', 'stories', 'notifications', 'wallet_transactions', 'referrals'];
   for (const col of collections) {
     try {
       const snap = await getDocs(query(collection(db, col), where('userId', '==', uid)));
@@ -762,7 +722,7 @@ async function batchDelete(refs) {
 }
 
 /* ============================================================
-   🎬 VIDEOS
+   VIDEOS
    ============================================================ */
 async function renderVideos() {
   try {
@@ -861,7 +821,7 @@ async function renderComments() {
 }
 
 /* ============================================================
-   💳 PAYMENTS
+   PAYMENTS — UPI Settings + Plans + Blue Tick Requests
    ============================================================ */
 async function renderPayments() {
   adminContent.innerHTML = `
@@ -1109,53 +1069,235 @@ async function rejectPayment(req, btnEl) {
 }
 
 /* ============================================================
-   MODULE-LEVEL SAVE HANDLERS (once)
+   💰 WALLET — Full Management (Flexible Amounts)
    ============================================================ */
-document.getElementById('savePaymentSettingsBtn')?.addEventListener('click', async (e) => {
-  const btn = e.currentTarget;
-  setButtonLoading(btn, true);
-  try {
-    const upi = document.getElementById('adminUpiId').value.trim();
-    const qr  = document.getElementById('adminQrUrl').value.trim();
-    await setDoc(doc(db, 'admin_config', 'payment'), { upiId: upi, qrUrl: qr });
-    currentUpi = upi;
-    currentQr  = qr;
-    showToast('Settings Saved!', 'success');
-    document.getElementById('paymentSettingsModal').classList.remove('show');
-    if (currentPage === 'payments') await renderPayments();
-  } catch (err) {
-    console.error('Save UPI error:', err);
-    showToast('Save failed: ' + (err.message || ''), 'error');
-  } finally {
-    setButtonLoading(btn, false);
-  }
-});
+async function renderWallet() {
+  adminContent.innerHTML = `
+    <div class="page-title-admin">
+      <div class="title-text">Wallet Transactions</div>
+      <button class="refresh-btn" id="refreshWalletBtn">Refresh</button>
+    </div>
 
-document.getElementById('savePlanBtn')?.addEventListener('click', async (e) => {
-  const btn = e.currentTarget;
-  const amount = parseInt(document.getElementById('planAmount').value, 10);
-  const days   = parseInt(document.getElementById('planDays').value, 10);
-  if (!amount || amount <= 0 || !days || days <= 0) {
-    showToast('Enter valid amount and days', 'error');
-    return;
-  }
-  setButtonLoading(btn, true);
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:16px;">
+      <div class="stat-card"><div class="label">Pending Top-ups</div><div class="value" style="color:#4ade80" id="pendingTopups">0</div></div>
+      <div class="stat-card"><div class="label">Pending Withdrawals</div><div class="value" style="color:#ff8a00" id="pendingWithdrawals">0</div></div>
+      <div class="stat-card"><div class="label">Total Transactions</div><div class="value" id="totalWtx">0</div></div>
+    </div>
+
+    <div class="filter-tabs" id="walletFilterTabs">
+      <button class="filter-tab active" data-filter="pending">Pending</button>
+      <button class="filter-tab" data-filter="topup">Top-ups</button>
+      <button class="filter-tab" data-filter="withdrawal">Withdrawals</button>
+      <button class="filter-tab" data-filter="all">All</button>
+    </div>
+
+    <div class="table-wrap">
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>UPI / Proof</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="walletTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  let transactions = [];
   try {
-    await addDoc(collection(db, 'payment_plans'), {
-      amount,
-      days,
-      createdAt: serverTimestamp()
+    const snap = await getDocs(collection(db, 'wallet_transactions'));
+    transactions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    transactions.sort((a, b) => {
+      const ta = a.createdAt?.toDate?.()?.getTime() || 0;
+      const tb = b.createdAt?.toDate?.()?.getTime() || 0;
+      return tb - ta;
     });
-    showToast('Plan Added!', 'success');
-    document.getElementById('addPlanModal').classList.remove('show');
-    if (currentPage === 'payments') await renderPayments();
-  } catch (err) {
-    console.error('Save plan error:', err);
-    showToast('Save failed: ' + (err.message || ''), 'error');
-  } finally {
-    setButtonLoading(btn, false);
+  } catch (e) { console.warn('Load wallet tx error:', e); }
+
+  const pendingTopups = transactions.filter(t => t.status === 'pending' && t.category === 'topup').length;
+  const pendingWithdrawals = transactions.filter(t => t.status === 'pending' && t.category === 'withdrawal').length;
+  document.getElementById('pendingTopups').textContent = pendingTopups;
+  document.getElementById('pendingWithdrawals').textContent = pendingWithdrawals;
+  document.getElementById('totalWtx').textContent = transactions.length;
+
+  let currentFilter = 'pending';
+
+  function paint() {
+    const tbody = document.getElementById('walletTbody');
+    if (!tbody) return;
+
+    let list = transactions;
+    if (currentFilter === 'pending') list = transactions.filter(t => t.status === 'pending');
+    else if (currentFilter === 'topup') list = transactions.filter(t => t.category === 'topup');
+    else if (currentFilter === 'withdrawal') list = transactions.filter(t => t.category === 'withdrawal');
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><h4>No transactions</h4></div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = '';
+    list.forEach(t => {
+      const tr = document.createElement('tr');
+      const dateStr = t.createdAt?.toDate?.() ? timeAgo(t.createdAt.toDate()) : 'now';
+      const statusColor = t.status === 'completed' ? '#4ade80'
+        : t.status === 'pending' ? '#ff8a00'
+        : '#ff4d4d';
+      const typeLabel = t.category === 'topup' ? '💰 Top-up'
+        : t.category === 'withdrawal' ? '💸 Withdrawal'
+        : t.category === 'referral' ? '🎁 Referral'
+        : t.category === 'verification' ? '⭐ Verification'
+        : t.category === 'refund' ? '↩️ Refund'
+        : t.category || 'Other';
+      const sign = t.type === 'credit' ? '+' : '−';
+      const amountColor = t.type === 'credit' ? '#4ade80' : '#ff2e63';
+
+      let upiOrProof = '—';
+      if (t.upiId) {
+        upiOrProof = `<div style="font-family:monospace;font-size:11px;">${escapeHtml(t.upiId)}</div>`;
+      } else if (t.screenshotUrl) {
+        upiOrProof = `<a href="${escapeHtml(t.screenshotUrl)}" target="_blank" rel="noopener">
+          <img src="${escapeHtml(t.screenshotUrl)}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #333;">
+        </a>`;
+      }
+
+      tr.innerHTML = `
+        <td>
+          <b>${escapeHtml(t.userName || 'Unknown')}</b><br>
+          <span style="font-size:11px;color:#888;">@${escapeHtml(t.userHandle || '')}</span>
+        </td>
+        <td style="font-size:12px;">${typeLabel}</td>
+        <td><b style="color:${amountColor};">${sign}₹${safeNum(t.amount)}</b></td>
+        <td>${upiOrProof}</td>
+        <td style="font-size:11px;color:#888;">${dateStr}</td>
+        <td><span style="color:${statusColor};font-weight:800;font-size:11px;">${escapeHtml((t.status||'').toUpperCase())}</span></td>
+        <td data-wa="${t.id}"></td>
+      `;
+
+      const actionsCell = tr.querySelector(`[data-wa="${t.id}"]`);
+      if (t.status === 'pending') {
+        const approveBtn = document.createElement('button');
+        approveBtn.className = 'btn-sm green';
+        approveBtn.textContent = 'Approve ✓';
+        approveBtn.addEventListener('click', () => approveWalletTx(t, approveBtn));
+
+        const rejectBtn = document.createElement('button');
+        rejectBtn.className = 'btn-sm danger';
+        rejectBtn.style.marginLeft = '4px';
+        rejectBtn.textContent = 'Reject ✕';
+        rejectBtn.addEventListener('click', () => rejectWalletTx(t, rejectBtn));
+
+        actionsCell.appendChild(approveBtn);
+        actionsCell.appendChild(rejectBtn);
+      } else {
+        actionsCell.innerHTML = '<span style="color:#555;font-size:11px;">—</span>';
+      }
+
+      tbody.appendChild(tr);
+    });
   }
-});
+
+  paint();
+
+  document.getElementById('walletFilterTabs')?.addEventListener('click', (e) => {
+    const tab = e.target.closest('.filter-tab');
+    if (!tab) return;
+    document.querySelectorAll('#walletFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentFilter = tab.dataset.filter;
+    paint();
+  });
+
+  document.getElementById('refreshWalletBtn')?.addEventListener('click', () => renderWallet());
+}
+
+async function approveWalletTx(tx, btnEl) {
+  const amt = safeNum(tx.amount);
+
+  let msg = '';
+  if (tx.category === 'topup') {
+    msg = `Approve ₹${amt} TOP-UP for ${tx.userName}?\n\n⚠️ Confirm you RECEIVED ₹${amt} in your UPI.\n\nOn approval: ₹${amt} will be ADDED to user's wallet.`;
+  } else if (tx.category === 'withdrawal') {
+    msg = `Approve ₹${amt} WITHDRAWAL for ${tx.userName}?\n\n⚠️ Confirm you SENT ₹${amt} to UPI: ${tx.upiId}\n\nOn approval: transaction marked complete.`;
+  } else {
+    msg = `Approve this ₹${amt} transaction?`;
+  }
+
+  if (!confirm(msg)) return;
+
+  setButtonLoading(btnEl, true);
+  try {
+    await updateDoc(doc(db, 'wallet_transactions', tx.id), {
+      status: 'completed',
+      approvedAt: serverTimestamp(),
+      approvedBy: currentAdmin?.email || 'admin'
+    });
+
+    if (tx.category === 'topup') {
+      await updateDoc(doc(db, 'users', tx.userId), {
+        walletBalance: increment(amt)
+      });
+    }
+
+    await pushNotification(tx.userId, {
+      type: 'wallet',
+      title: tx.category === 'topup' ? '✅ Wallet Top-up Approved!' : '✅ Withdrawal Approved!',
+      message: tx.category === 'topup'
+        ? `₹${amt} added to your wallet balance.`
+        : `₹${amt} sent to ${tx.upiId}. Check your UPI app.`
+    });
+
+    showToast('Approved', 'success');
+    await renderWallet();
+  } catch (e) {
+    console.error('Approve wallet error:', e);
+    showToast('Failed: ' + (e.message || ''), 'error');
+    setButtonLoading(btnEl, false);
+  }
+}
+
+async function rejectWalletTx(tx, btnEl) {
+  const amt = safeNum(tx.amount);
+  if (!confirm(`Reject ₹${amt} ${tx.category}?\n\n${tx.category === 'withdrawal' ? 'Balance will be REFUNDED.' : 'No balance change.'}`)) return;
+
+  setButtonLoading(btnEl, true);
+  try {
+    await updateDoc(doc(db, 'wallet_transactions', tx.id), {
+      status: 'rejected',
+      rejectedAt: serverTimestamp(),
+      rejectedBy: currentAdmin?.email || 'admin'
+    });
+
+    if (tx.category === 'withdrawal') {
+      await updateDoc(doc(db, 'users', tx.userId), {
+        walletBalance: increment(amt)
+      });
+    }
+
+    await pushNotification(tx.userId, {
+      type: 'wallet',
+      title: '❌ Transaction Rejected',
+      message: tx.category === 'withdrawal'
+        ? `₹${amt} refunded to your wallet.`
+        : `Your ₹${amt} top-up request was rejected.`
+    });
+
+    showToast('Rejected', 'warn');
+    await renderWallet();
+  } catch (e) {
+    console.error('Reject wallet error:', e);
+    showToast('Failed: ' + (e.message || ''), 'error');
+    setButtonLoading(btnEl, false);
+  }
+}
 
 /* ============================================================
    ADMINS / NOTIFS / REPORTS
@@ -1242,6 +1384,7 @@ async function pushNotification(userId, data) {
       type: data.type || 'info',
       title: data.title || '',
       message: data.message || '',
+      fromUserId: currentAdmin?.uid || 'admin',
       read: false,
       createdAt: serverTimestamp()
     });
@@ -1250,4 +1393,54 @@ async function pushNotification(userId, data) {
   }
 }
 
-console.log('✅ Admin Panel v3 loaded — "00" bug fixed');
+/* ============================================================
+   SAVE HANDLERS (once)
+   ============================================================ */
+document.getElementById('savePaymentSettingsBtn')?.addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  setButtonLoading(btn, true);
+  try {
+    const upi = document.getElementById('adminUpiId').value.trim();
+    const qr  = document.getElementById('adminQrUrl').value.trim();
+    await setDoc(doc(db, 'admin_config', 'payment'), { upiId: upi, qrUrl: qr });
+    currentUpi = upi;
+    currentQr  = qr;
+    showToast('Settings Saved!', 'success');
+    document.getElementById('paymentSettingsModal').classList.remove('show');
+    if (currentPage === 'payments') await renderPayments();
+  } catch (err) {
+    console.error('Save UPI error:', err);
+    showToast('Save failed: ' + (err.message || ''), 'error');
+  } finally {
+    setButtonLoading(btn, false);
+  }
+});
+
+document.getElementById('savePlanBtn')?.addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const amount = parseInt(document.getElementById('planAmount').value, 10);
+  const days   = parseInt(document.getElementById('planDays').value, 10);
+  if (!amount || amount <= 0 || !days || days <= 0) {
+    showToast('Enter valid amount and days', 'error');
+    return;
+  }
+  setButtonLoading(btn, true);
+  try {
+    await addDoc(collection(db, 'payment_plans'), {
+      amount,
+      days,
+      createdAt: serverTimestamp()
+    });
+    showToast('Plan Added!', 'success');
+    document.getElementById('addPlanModal').classList.remove('show');
+    if (currentPage === 'payments') await renderPayments();
+  } catch (err) {
+    console.error('Save plan error:', err);
+    showToast('Save failed: ' + (err.message || ''), 'error');
+  } finally {
+    setButtonLoading(btn, false);
+  }
+});
+
+console.log('✅ Admin Panel v4 loaded — Wallet + Payment + Blue Tick + Referral support');
+console.log('✅ Flexible amounts (₹5, ₹10, ₹20, ₹30, ₹100) — fully supported');
