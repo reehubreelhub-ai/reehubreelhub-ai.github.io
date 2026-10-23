@@ -1,11 +1,12 @@
 /* ============================================================
-   ReelHub — payment.js (FINAL V2)
+   ReelHub — payment.js (FINAL V3 — FULLY FIXED)
+   ✅ Firebase duplicate-init bug fixed
    ✅ Default Plans: ₹1/1Day, ₹29/1Month, ₹99/1Year
-   ✅ Step-by-Step Flow: Amount → Choose App → Pay
+   ✅ Step-by-Step Flow: Plans → UPI App → Pay → Upload
    ✅ Auto QR + UPI Deep Links
    ============================================================ */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, collection, getDocs, addDoc, serverTimestamp
@@ -20,10 +21,16 @@ const firebaseConfig = {
   appId: "1:397521504045:web:bf6d3652a7375fd632b5a4"
 };
 
-const app = initializeApp(firebaseConfig);
+/* ✅ FIX: Reuse existing Firebase app (don't re-initialize) */
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+console.log("✅ payment.js loaded — Firebase ready");
+
+/* ============================================================
+   CLOUDINARY CONFIG
+   ============================================================ */
 const CLOUDINARY = {
   cloudName: "fepzqr9t",
   apiKey: "287332161532267",
@@ -31,7 +38,7 @@ const CLOUDINARY = {
 };
 
 /* ============================================================
-   ✅ DEFAULT PLANS (Used when admin has no custom plans)
+   ✅ DEFAULT PLANS (agar admin ne custom plans nahi banaye)
    ============================================================ */
 const DEFAULT_PLANS = [
   { amount: 1,  days: 1,   label: '1 Day',   badge: null },
@@ -51,6 +58,9 @@ const UPI_APPS = [
   { id: 'any',     name: 'Any UPI',    icon: '📱', scheme: 'upi' }
 ];
 
+/* ============================================================
+   STATE
+   ============================================================ */
 let currentUser = null;
 let adminUpi = '';
 let adminPayeeName = 'ReelHub';
@@ -72,14 +82,20 @@ onAuthStateChanged(auth, (user) => {
 window.openPremiumModal = async function() {
   const modal = document.getElementById('premiumModal');
   const container = document.getElementById('dynamicPlansContainer');
-  if (!modal || !container) return;
+  if (!modal || !container) {
+    console.error('Premium modal elements not found');
+    return;
+  }
 
   // Reset views
   document.getElementById('view1-plans').style.display = 'block';
   document.getElementById('view2-apps').style.display = 'none';
   document.getElementById('view3-payment').style.display = 'none';
   document.getElementById('premiumModalTitle').textContent = '💎 Buy Blue Tick';
-  document.getElementById('customPayAmount').value = '';
+  
+  const customAmt = document.getElementById('customPayAmount');
+  if (customAmt) customAmt.value = '';
+  
   container.innerHTML = '<div style="color:#888; grid-column:1/-1; text-align:center; padding:20px;">Loading plans...</div>';
 
   modal.classList.add('show');
@@ -121,9 +137,9 @@ window.openPremiumModal = async function() {
     if (plans.length === 0) {
       plans = DEFAULT_PLANS;
     } else {
-      // Sort custom plans by amount
+      // Sort custom plans
       plans.sort((a, b) => a.amount - b.amount);
-      // Mark middle one as POPULAR
+      // Mark badges
       if (plans.length >= 3) {
         plans[1].badge = 'POPULAR';
         plans[plans.length - 1].badge = 'BEST VALUE';
@@ -163,7 +179,6 @@ window.openPremiumModal = async function() {
         showAppSelection();
       };
 
-      // Hover effect
       card.onmouseover = () => card.style.transform = 'translateY(-3px)';
       card.onmouseout = () => card.style.transform = 'translateY(0)';
 
@@ -196,7 +211,6 @@ document.getElementById('customPayAmount')?.addEventListener('change', (e) => {
   const val = parseInt(e.target.value, 10);
   if (val && val > 0) {
     selectedAmount = val;
-    // Default: 30 days for custom amount, unless matches default plans
     const matched = DEFAULT_PLANS.find(p => p.amount === val);
     selectedDays = matched ? matched.days : 30;
     selectedLabel = matched ? matched.label : '30 Days';
@@ -214,7 +228,7 @@ function showAppSelection() {
   document.getElementById('premiumModalTitle').textContent = '📱 Choose Payment Method';
   document.getElementById('view2Amount').textContent = selectedAmount;
 
-  // Update the sub-text to show validity
+  // Update sub-text with validity
   const subText = document.querySelector('#view2-apps p');
   if (subText) {
     subText.textContent = `You will get Blue Tick for ${selectedLabel || (selectedDays + ' days')}`;
@@ -301,7 +315,8 @@ function handleAppSelect(app) {
 
   // Reset upload state
   uploadedScreenshotUrl = null;
-  document.getElementById('paymentStatusMsg').textContent = '';
+  const statusMsg = document.getElementById('paymentStatusMsg');
+  if (statusMsg) statusMsg.textContent = '';
   document.getElementById('view3QRWrap').style.display = 'none';
 
   // Show timer
@@ -317,7 +332,6 @@ function buildUpiLink(amount) {
 
 function buildAppLink(upiLink, scheme) {
   if (scheme === 'upi') return upiLink;
-  // Convert upi:// to app-specific scheme
   return upiLink.replace('upi://', `${scheme}://`);
 }
 
@@ -331,7 +345,7 @@ function openUpiApp(upiLink, scheme) {
     try {
       window.location.href = appLink;
 
-      // Fallback: if app doesn't open in 2.5 sec, try generic upi://
+      // Fallback
       setTimeout(() => {
         if (!document.hidden) {
           window.location.href = upiLink;
@@ -341,9 +355,9 @@ function openUpiApp(upiLink, scheme) {
       window.location.href = upiLink;
     }
   } else {
-    // Desktop - show QR
+    // Desktop → show QR
     document.getElementById('view3QRWrap').style.display = 'block';
-    showPaymentStatus('💻 Desktop detected. Scan QR or copy UPI ID above.', '#4ea8ff');
+    showPaymentStatus('💻 Desktop detected. Scan QR or use UPI ID above.', '#4ea8ff');
   }
 }
 
@@ -352,8 +366,14 @@ function openUpiApp(upiLink, scheme) {
    ============================================================ */
 function generatePaymentQR(upiLink) {
   const qrContainer = document.getElementById('view3QRContainer');
+  if (!qrContainer) return;
   qrContainer.innerHTML = '';
+  
   try {
+    if (typeof QRCode === 'undefined') {
+      console.error('QRCode library not loaded!');
+      return;
+    }
     qrInstance = new QRCode(qrContainer, {
       text: upiLink,
       width: 200,
@@ -369,7 +389,9 @@ function generatePaymentQR(upiLink) {
 
 window.toggleQRView = function() {
   const qrWrap = document.getElementById('view3QRWrap');
-  qrWrap.style.display = qrWrap.style.display === 'none' ? 'block' : 'none';
+  if (qrWrap) {
+    qrWrap.style.display = qrWrap.style.display === 'none' ? 'block' : 'none';
+  }
 };
 
 /* ============================================================
@@ -421,7 +443,7 @@ document.getElementById('paymentScreenshot')?.addEventListener('change', async (
 });
 
 /* ============================================================
-   Submit Payment Request to Firestore
+   Submit Payment Request
    ============================================================ */
 async function submitPaymentRequest() {
   if (!currentUser) {
@@ -446,7 +468,6 @@ async function submitPaymentRequest() {
 
     setTimeout(() => {
       document.getElementById('premiumModal').classList.remove('show');
-      // Reset for next time
       uploadedScreenshotUrl = null;
       selectedApp = null;
     }, 3000);
@@ -472,4 +493,4 @@ function isMobile() {
   return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 }
 
-console.log("✅ payment.js V2 loaded — Plans: ₹1/1Day, ₹29/1Month, ₹99/1Year");
+console.log("✅ payment.js V3 loaded — Firebase fixed, Buy button working");
