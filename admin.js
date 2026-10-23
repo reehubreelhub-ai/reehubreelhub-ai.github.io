@@ -104,37 +104,6 @@ function safeArray(v) {
   return Array.isArray(v) ? v : [];
 }
 
-function safeStr(v) {
-  if (v === null || v === undefined) return '';
-  return String(v);
-}
-
-function showToast(message, type = 'info', duration = 3000) {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
-  const icons = { success: '✅', error: '❌', info: 'ℹ️', warn: '⚠️' };
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.style.cssText = `
-    background:#1e1e28; color:#fff; padding:12px 16px; border-radius:10px;
-    margin-bottom:8px; font-size:13px; display:flex; gap:8px; align-items:center;
-    box-shadow:0 4px 12px rgba(0,0,0,0.5);
-    border-left:3px solid ${
-      type === 'success' ? '#4ade80' :
-      type === 'error'   ? '#ff4d4d' :
-      type === 'warn'    ? '#ff8a00' : '#4ea8ff'
-    };
-    max-width:340px; word-wrap:break-word; line-height:1.4;
-  `;
-  toast.innerHTML = `<span style="flex-shrink:0;">${icons[type] || ''}</span><span>${escapeHtml(message)}</span>`;
-  container.appendChild(toast);
-  setTimeout(() => {
-    toast.style.transition = 'opacity .25s';
-    toast.style.opacity = '0';
-    setTimeout(() => toast.remove(), 250);
-  }, duration);
-}
-
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -176,6 +145,32 @@ function setButtonLoading(btn, loading = true) {
       delete btn.dataset.originalText;
     }
   }
+}
+
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const icons = { success: '✅', error: '❌', info: 'ℹ️', warn: '⚠️' };
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.style.cssText = `
+    background:#1e1e28; color:#fff; padding:12px 16px; border-radius:10px;
+    margin-bottom:8px; font-size:13px; display:flex; gap:8px; align-items:center;
+    box-shadow:0 4px 12px rgba(0,0,0,0.5);
+    border-left:3px solid ${
+      type === 'success' ? '#4ade80' :
+      type === 'error'   ? '#ff4d4d' :
+      type === 'warn'    ? '#ff8a00' : '#4ea8ff'
+    };
+    max-width:340px; word-wrap:break-word; line-height:1.4;
+  `;
+  toast.innerHTML = `<span style="flex-shrink:0;">${icons[type] || ''}</span><span>${escapeHtml(message)}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.transition = 'opacity .25s';
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 250);
+  }, duration);
 }
 
 function getVideoThumbnail(v) {
@@ -232,7 +227,7 @@ loginBtn.addEventListener('click', async () => {
     adminNameEl.textContent = currentAdminProfile.name || 'Admin';
     loader.style.display = 'none';
     loginScreen.style.display = 'none';
-    appScreen.classList.add('show');
+    appScreen.style.display = 'flex';
     goToPage('dashboard');
   } catch (err) {
     loginMsg.className = 'error-msg';
@@ -299,7 +294,7 @@ onAuthStateChanged(auth, async (user) => {
 function showLogin() {
   loader.style.display = 'none';
   loginScreen.style.display = 'flex';
-  appScreen.classList.remove('show');
+  appScreen.style.display = 'none';
   const passEl = document.getElementById('adminPass');
   if (passEl) passEl.value = '';
   if (window.location.hash) history.replaceState(null, '', window.location.pathname);
@@ -308,7 +303,7 @@ function showLogin() {
 function showApp() {
   loader.style.display = 'none';
   loginScreen.style.display = 'none';
-  appScreen.classList.add('show');
+  appScreen.style.display = 'flex';
   const hash = window.location.hash.replace('#', '');
   const validPages = ['dashboard', 'users', 'videos', 'comments', 'payments', 'wallet', 'admins', 'notifications', 'reports'];
   goToPage(validPages.includes(hash) ? hash : 'dashboard');
@@ -389,7 +384,6 @@ async function renderDashboard() {
       else if (data.type === 'photo') photosCount++;
     });
 
-    // Pending withdrawals
     let pendingWithdrawals = 0, pendingTopups = 0, totalPayout = 0;
     walletSnap.forEach(d => {
       const t = d.data();
@@ -462,7 +456,7 @@ async function renderDashboard() {
 }
 
 /* ============================================================
-   USERS — Time-based Blue Tick
+   USERS
    ============================================================ */
 async function renderUsers() {
   try {
@@ -821,7 +815,7 @@ async function renderComments() {
 }
 
 /* ============================================================
-   PAYMENTS — UPI Settings + Plans + Blue Tick Requests
+   PAYMENTS
    ============================================================ */
 async function renderPayments() {
   adminContent.innerHTML = `
@@ -920,13 +914,13 @@ async function renderPayments() {
   document.getElementById('editUpiBtn')?.addEventListener('click', () => {
     document.getElementById('adminUpiId').value = currentUpi;
     document.getElementById('adminQrUrl').value = currentQr;
-    document.getElementById('paymentSettingsModal').classList.add('show');
+    document.getElementById('paymentSettingsModal').style.display = 'flex';
   });
 
   document.getElementById('addPlanBtn')?.addEventListener('click', () => {
     document.getElementById('planAmount').value = '';
     document.getElementById('planDays').value = '';
-    document.getElementById('addPlanModal').classList.add('show');
+    document.getElementById('addPlanModal').style.display = 'flex';
   });
 
   let requests = [];
@@ -1069,7 +1063,7 @@ async function rejectPayment(req, btnEl) {
 }
 
 /* ============================================================
-   💰 WALLET — Full Management (Flexible Amounts)
+   💰 WALLET
    ============================================================ */
 async function renderWallet() {
   adminContent.innerHTML = `
@@ -1362,18 +1356,19 @@ function openModal(title, html) {
   if (!modalOverlay) return;
   modalTitle.textContent = title;
   modalBody.innerHTML = html;
-  modalOverlay.classList.add('show');
+  modalOverlay.style.display = 'flex';
 }
 
-function closeModal() {
-  if (!modalOverlay) return;
-  modalOverlay.classList.remove('show');
+document.getElementById('modalClose')?.addEventListener('click', () => {
+  modalOverlay.style.display = 'none';
   modalBody.innerHTML = '';
-}
+});
 
-document.getElementById('modalClose')?.addEventListener('click', closeModal);
 modalOverlay?.addEventListener('click', (e) => {
-  if (e.target === modalOverlay) closeModal();
+  if (e.target === modalOverlay) {
+    modalOverlay.style.display = 'none';
+    modalBody.innerHTML = '';
+  }
 });
 
 async function pushNotification(userId, data) {
@@ -1406,7 +1401,7 @@ document.getElementById('savePaymentSettingsBtn')?.addEventListener('click', asy
     currentUpi = upi;
     currentQr  = qr;
     showToast('Settings Saved!', 'success');
-    document.getElementById('paymentSettingsModal').classList.remove('show');
+    document.getElementById('paymentSettingsModal').style.display = 'none';
     if (currentPage === 'payments') await renderPayments();
   } catch (err) {
     console.error('Save UPI error:', err);
@@ -1432,7 +1427,7 @@ document.getElementById('savePlanBtn')?.addEventListener('click', async (e) => {
       createdAt: serverTimestamp()
     });
     showToast('Plan Added!', 'success');
-    document.getElementById('addPlanModal').classList.remove('show');
+    document.getElementById('addPlanModal').style.display = 'none';
     if (currentPage === 'payments') await renderPayments();
   } catch (err) {
     console.error('Save plan error:', err);
@@ -1443,4 +1438,3 @@ document.getElementById('savePlanBtn')?.addEventListener('click', async (e) => {
 });
 
 console.log('✅ Admin Panel v4 loaded — Wallet + Payment + Blue Tick + Referral support');
-console.log('✅ Flexible amounts (₹5, ₹10, ₹20, ₹30, ₹100) — fully supported');
