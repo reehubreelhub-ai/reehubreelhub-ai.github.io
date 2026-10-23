@@ -1,9 +1,7 @@
 /* ============================================================
-   ReelHub Admin — admin.js (FINAL V9)
-   ✅ Professional English Notification on Approve
-   ✅ Original Time-based Tick
-   ✅ No Page Reload
-   ✅ All Functions Working
+   ReelHub Admin — admin.js (FINAL V10)
+   ✅ Fixed: Failed Notification Issue (fromUserId added)
+   ✅ Professional English Message on Approve
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -201,7 +199,6 @@ async function renderDashboard() {
     </div>
   `;
 }
-
 window.renderDashboard = renderDashboard;
 
 /* ============================================================
@@ -280,7 +277,6 @@ async function renderUsers() {
   paint();
   document.getElementById('userSearch')?.addEventListener('input', paint);
 }
-
 window.renderUsers = renderUsers;
 
 window.applyTick = async (uid) => {
@@ -329,8 +325,15 @@ window.sendDirectMsg = async (uid) => {
   const msg = document.getElementById('directMsgText').value.trim();
   if(!msg) return showToast('Enter message', 'error');
   try {
+    // ✅ FIXED: fromUserId added
     await addDoc(collection(db, 'notifications'), {
-      userId: uid, type: 'admin', title: 'New Message from Admin', message: msg, read: false, createdAt: serverTimestamp()
+      userId: uid, 
+      type: 'admin', 
+      title: 'New Message from Admin', 
+      message: msg, 
+      fromUserId: currentAdmin.uid, 
+      read: false, 
+      createdAt: serverTimestamp()
     });
     showToast('Message Sent!');
     closeModal();
@@ -338,7 +341,7 @@ window.sendDirectMsg = async (uid) => {
 };
 
 /* ============================================================
-   NOTIFY (Single / All)
+   NOTIFY (Single / All) — ✅ FIXED
    ============================================================ */
 async function renderNotify() {
   if (cachedData.users.length === 0) {
@@ -389,7 +392,15 @@ async function renderNotify() {
         let batch = writeBatch(db); let count = 0;
         for(const u of cachedData.users) {
           const ref = doc(collection(db, 'notifications'));
-          batch.set(ref, { userId: u.id, type: 'admin', title, message: msg, read: false, createdAt: serverTimestamp() });
+          batch.set(ref, { 
+            userId: u.id, 
+            type: 'admin', 
+            title, 
+            message: msg, 
+            fromUserId: currentAdmin.uid, // ✅ FIXED
+            read: false, 
+            createdAt: serverTimestamp() 
+          });
           count++;
           if(count === 400) { await batch.commit(); batch = writeBatch(db); count = 0; }
         }
@@ -397,16 +408,30 @@ async function renderNotify() {
         showToast(`✅ Sent to ALL (${cachedData.users.length} users)!`);
       } else {
         const uid = document.getElementById('notifyUserSelect').value;
-        await addDoc(collection(db, 'notifications'), { userId: uid, type: 'admin', title, message: msg, read: false, createdAt: serverTimestamp() });
+        await addDoc(collection(db, 'notifications'), { 
+          userId: uid, 
+          type: 'admin', 
+          title, 
+          message: msg, 
+          fromUserId: currentAdmin.uid, // ✅ FIXED
+          read: false, 
+          createdAt: serverTimestamp() 
+        });
         showToast('✅ Sent successfully!');
       }
       document.getElementById('notifyTitle').value = ''; document.getElementById('notifyMessage').value = '';
-    } catch (err) { showToast('Failed to send.', 'error'); } finally { e.target.disabled = false; e.target.textContent = 'Send Notification 🚀'; }
+    } catch (err) { 
+      console.error(err); 
+      showToast('Failed: ' + err.message, 'error'); 
+    } finally { 
+      e.target.disabled = false; 
+      e.target.textContent = 'Send Notification 🚀'; 
+    }
   });
 }
 
 /* ============================================================
-   PAYMENTS (UPI, Plans, Approvals)
+   PAYMENTS (UPI, Plans, Approvals) — ✅ FIXED
    ============================================================ */
 async function renderPayments() {
   const [configSnap, plansSnap, reqSnap] = await Promise.all([
@@ -463,16 +488,28 @@ async function renderPayments() {
 }
 
 window.delPlan = async (id) => { if(confirm('Delete plan?')) { await deleteDoc(doc(db,'payment_plans',id)); renderPayments(); } };
+
 window.approvePayment = async (reqId, uid, days) => {
   if(!confirm('Approve payment and give tick?')) return;
   try {
     const now = new Date(); now.setDate(now.getDate() + days);
     await updateDoc(doc(db, 'users', uid), { verified: true, verifiedUntil: Timestamp.fromDate(now) });
     await updateDoc(doc(db, 'payment_requests', reqId), { status: 'approved' });
-    await addDoc(collection(db, 'notifications'), { userId: uid, title: '✅ Payment Approved!', message: `Your Blue Tick is now active for ${days} days.`, read: false, createdAt: serverTimestamp() });
+    
+    // ✅ FIXED: fromUserId added
+    await addDoc(collection(db, 'notifications'), { 
+      userId: uid, 
+      type: 'admin', 
+      title: '✅ Payment Approved!', 
+      message: `Your Blue Tick is now active for ${days} days.`, 
+      fromUserId: currentAdmin.uid, 
+      read: false, 
+      createdAt: serverTimestamp() 
+    });
     showToast('Approved!'); renderPayments();
   } catch(e) { showToast(e.message, 'error'); }
 };
+
 window.rejectPayment = async (reqId) => {
   if(!confirm('Reject?')) return;
   await updateDoc(doc(db, 'payment_requests', reqId), { status: 'rejected' });
@@ -495,7 +532,7 @@ document.getElementById('savePlanBtn')?.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   ✅ WALLET — PROFESSIONAL NOTIFICATION ON APPROVE
+   WALLET — ✅ FIXED + PROFESSIONAL MESSAGE
    ============================================================ */
 async function renderWallet() {
   const snap = await getDocs(collection(db, 'wallet_transactions'));
@@ -516,7 +553,7 @@ async function renderWallet() {
                 <td>${t.upiId || '—'}</td>
                 <td>
                   ${t.status === 'pending' ? `
-                    <button type="button" class="btn-sm green" onclick="window.approveTx('${t.id}', '${t.userId}', ${t.amount}, '${t.category}', '${t.upiId||''}')">Approve</button>
+                    <button type="button" class="btn-sm green" onclick="window.approveTx('${t.id}', '${t.userId}', ${t.amount}, '${t.category}', '${t.upiId||''}', '${t.userName}')">Approve</button>
                     <button type="button" class="btn-sm danger" onclick="window.rejectTx('${t.id}', '${t.userId}', ${t.amount}, '${t.category}')">Reject</button>
                   ` : 'Done'}
                 </td>
@@ -528,14 +565,12 @@ async function renderWallet() {
     </div>
   `;
 }
-
 window.renderWallet = renderWallet;
 
-// ✅ APPROVE WITH PROFESSIONAL NOTIFICATION
-window.approveTx = async (txId, uid, amt, cat, upiId) => {
+window.approveTx = async (txId, uid, amt, cat, upiId, userName) => {
   const msg = cat === 'withdrawal' 
-    ? `Approve ₹${amt} WITHDRAWAL?\n\n⚠️ Confirm you SENT ₹${amt} to UPI: ${upiId}\n\nUser will get notification "Payment Sent Successfully".`
-    : `Approve ₹${amt} TOP-UP?\n\n⚠️ Confirm you RECEIVED ₹${amt} in your UPI.\n\n₹${amt} will be added to user's wallet.`;
+    ? `Approve ₹${amt} WITHDRAWAL?\n\n⚠️ Confirm you SENT ₹${amt} to UPI: ${upiId}`
+    : `Approve ₹${amt} TOP-UP?\n\n⚠️ Confirm you RECEIVED ₹${amt} in your UPI.`;
 
   if(!confirm(msg)) return;
   
@@ -550,14 +585,14 @@ window.approveTx = async (txId, uid, amt, cat, upiId) => {
       await updateDoc(doc(db, 'users', uid), { walletBalance: increment(amt) });
     }
 
-    // ✅ PROFESSIONAL ENGLISH MESSAGE
+    // ✅ PROFESSIONAL MESSAGE & FIXED fromUserId
     let notifTitle, notifMessage;
     if (cat === 'withdrawal') {
       notifTitle = '💸 Payment Sent Successfully';
-      notifMessage = `Your money has been sent to your UPI ID: ${upiId}.\n\nAmount: ₹${amt}\n\nPlease check your UPI app or bank account. Thank you for using ReelHub!`;
+      notifMessage = `Dear ${userName || 'User'},\n\nYour money has been successfully sent to your UPI ID: ${upiId}.\n\nAmount: ₹${amt}\n\nPlease check your UPI app or bank account. Thank you for using ReelHub!`;
     } else if (cat === 'topup') {
-      notifTitle = '✅ Wallet Top-up Approved!';
-      notifMessage = `₹${amt} has been added to your wallet. You can now use it for withdrawals.`;
+      notifTitle = '✅ Wallet Top-up Approved';
+      notifMessage = `Dear ${userName || 'User'},\n\nAn amount of ₹${amt} has been successfully added to your wallet.`;
     } else {
       notifTitle = '✅ Transaction Approved';
       notifMessage = `Your ₹${amt} transaction has been completed successfully.`;
@@ -568,7 +603,7 @@ window.approveTx = async (txId, uid, amt, cat, upiId) => {
       type: 'wallet',
       title: notifTitle,
       message: notifMessage,
-      fromUserId: currentAdmin?.uid || 'admin',
+      fromUserId: currentAdmin.uid, // ✅ FIXED
       read: false,
       createdAt: serverTimestamp()
     });
@@ -581,7 +616,6 @@ window.approveTx = async (txId, uid, amt, cat, upiId) => {
   }
 };
 
-// ✅ REJECT WITH AUTO NOTIFICATION
 window.rejectTx = async (txId, uid, amt, cat) => {
   const refundMsg = cat === 'withdrawal' ? `\n\n₹${amt} will be REFUNDED to user's wallet.` : '\n\nNo balance change.';
   if(!confirm(`Reject ₹${amt} ${cat}?${refundMsg}`)) return;
@@ -597,6 +631,7 @@ window.rejectTx = async (txId, uid, amt, cat) => {
       await updateDoc(doc(db, 'users', uid), { walletBalance: increment(amt) });
     }
 
+    // ✅ FIXED fromUserId
     await addDoc(collection(db, 'notifications'), {
       userId: uid,
       type: 'wallet',
@@ -604,7 +639,7 @@ window.rejectTx = async (txId, uid, amt, cat) => {
       message: cat === 'withdrawal'
         ? `Your ₹${amt} withdrawal was rejected. ₹${amt} has been refunded to your wallet.`
         : `Your ₹${amt} top-up request was rejected. Please upload a valid screenshot.`,
-      fromUserId: currentAdmin?.uid || 'admin',
+      fromUserId: currentAdmin.uid, 
       read: false,
       createdAt: serverTimestamp()
     });
@@ -673,4 +708,4 @@ function closeModal() { modalOverlay.style.display = 'none'; modalBody.innerHTML
 document.getElementById('modalClose')?.addEventListener('click', closeModal);
 modalOverlay?.addEventListener('click', (e) => { if(e.target === modalOverlay) closeModal(); });
 
-console.log("✅ Admin V9 Loaded — Professional Notification Enabled");
+console.log("✅ Admin V10 Loaded — Failed Notification Issue Fixed & Professional Message Enabled");
