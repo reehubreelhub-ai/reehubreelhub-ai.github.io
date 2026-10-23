@@ -6156,10 +6156,10 @@ function formatDate(date) {
 
 console.log('✅ Part 4 loaded (Sound + Chat + Groups + Voice + Reactions)');
 /* ============================================================
-   ReelHub — app.js (PART 5/5) — FINAL v3
+   ReelHub — app.js (PART 5/5) — FINAL v4
    Profile + Highlights + Notifications + Search + Settings + Delete
-   ✅ UPDATED: 3 buttons (Monetize/Wallet/Refer) moved to Settings
-   ✅ All bugs fixed
+   ✅ UPDATED: 3 buttons moved to Settings
+   ✅ UPDATED: Referral completion on first upload
    ============================================================ */
 
 /* ============================================================
@@ -6202,7 +6202,7 @@ function isCurrentlyVerified(user) {
 }
 
 /* ============================================================
-   PROFILE (OWN) — 3 buttons REMOVED from here
+   PROFILE (OWN)
    ============================================================ */
 async function renderProfile() {
   if (!currentProfile) {
@@ -6768,77 +6768,128 @@ uploadSubmitBtn?.addEventListener('click', async () => {
     await updateDoc(doc(db, 'users', currentUser.uid), { videoCount: (safeNum(currentProfile.videoCount) || 0) + 1 });
     currentProfile.videoCount = (safeNum(currentProfile.videoCount) || 0) + 1;
 
-    // ✅ REFERRAL: Check if first upload → complete referral
+    /* ============================================================
+       ✅ REFERRAL: Complete referral on first upload
+       ============================================================ */
     try {
       if (currentProfile?.referredBy && !currentProfile?.referralCompleted) {
-        const refQ = query(
-          collection(db, 'referrals'),
-          where('referredId', '==', currentUser.uid),
-          where('status', '==', 'pending')
-        );
-        const refSnap = await getDocs(refQ);
-
-        if (!refSnap.empty) {
-          const refDoc = refSnap.docs[0];
-          const referrerId = refDoc.data().referrerId;
-          const referrerReward = 10;
-          const refereeReward = 5;
-
-          await updateDoc(refDoc.ref, {
+        console.log("🔍 Checking referral completion for user:", currentUser.uid);
+        
+        const refDocId = `${currentProfile.referredBy}_${currentUser.uid}`;
+        const refDocRef = doc(db, 'referrals', refDocId);
+        const refSnap = await getDoc(refDocRef);
+        
+        if (refSnap.exists() && refSnap.data().status === 'pending') {
+          console.log("✅ Pending referral found, completing...");
+          
+          const referrerId = refSnap.data().referrerId;
+          const refData = refSnap.data();
+          const REFERRER_REWARD = 10;
+          const REFEREE_REWARD = 5;
+          
+          // 1. Mark referral complete
+          await updateDoc(refDocRef, {
             status: 'completed',
             completedAt: serverTimestamp()
           });
-
-          await updateDoc(doc(db, 'users', referrerId), {
-            walletBalance: increment(referrerReward),
-            referralEarnings: increment(referrerReward)
-          });
-
-          await recordWalletTransaction({
-            userId: referrerId,
-            type: 'credit',
-            category: 'referral',
-            amount: referrerReward,
-            description: 'Referral bonus'
-          });
-
-          await updateDoc(doc(db, 'users', currentUser.uid), {
-            walletBalance: increment(refereeReward),
-            referralEarnings: increment(refereeReward),
-            referralCompleted: true
-          });
-
-          await recordWalletTransaction({
-            type: 'credit',
-            category: 'referral',
-            amount: refereeReward,
-            description: 'Welcome bonus'
-          });
-
-          await addDoc(collection(db, 'notifications'), {
-            userId: referrerId,
-            type: 'referral',
-            title: '💰 Referral Bonus!',
-            message: `You earned ₹${referrerReward}! Your friend completed their first upload.`,
-            read: false,
-            createdAt: serverTimestamp()
-          });
-
-          await addDoc(collection(db, 'notifications'), {
-            userId: currentUser.uid,
-            type: 'referral',
-            title: '🎁 Welcome Bonus!',
-            message: `You earned ₹${refereeReward} for joining via referral!`,
-            read: false,
-            createdAt: serverTimestamp()
-          });
-
-          showToast(`🎁 You earned ₹${refereeReward} welcome bonus!`);
+          console.log("✅ Referral marked complete");
+          
+          // 2. Credit referrer
+          try {
+            await updateDoc(doc(db, 'users', referrerId), {
+              walletBalance: increment(REFERRER_REWARD),
+              referralEarnings: increment(REFERRER_REWARD)
+            });
+            console.log("✅ Referrer credited ₹" + REFERRER_REWARD);
+          } catch (e) {
+            console.warn("⚠️ Referrer credit failed:", e.message);
+          }
+          
+          // 3. Credit referee (current user)
+          try {
+            await updateDoc(doc(db, 'users', currentUser.uid), {
+              walletBalance: increment(REFEREE_REWARD),
+              referralEarnings: increment(REFEREE_REWARD),
+              referralCompleted: true
+            });
+            console.log("✅ Referee credited ₹" + REFEREE_REWARD);
+          } catch (e) {
+            console.warn("⚠️ Referee credit failed:", e.message);
+          }
+          
+          // 4. Log wallet transactions
+          try {
+            await addDoc(collection(db, 'wallet_transactions'), {
+              userId: referrerId,
+              userName: refData.referrerName || 'User',
+              type: 'credit',
+              category: 'referral',
+              amount: REFERRER_REWARD,
+              status: 'completed',
+              description: 'Referral bonus',
+              createdAt: serverTimestamp()
+            });
+            
+            await addDoc(collection(db, 'wallet_transactions'), {
+              userId: currentUser.uid,
+              userName: currentProfile.name || 'User',
+              type: 'credit',
+              category: 'referral',
+              amount: REFEREE_REWARD,
+              status: 'completed',
+              description: 'Welcome bonus',
+              createdAt: serverTimestamp()
+            });
+            console.log("✅ Wallet transactions logged");
+          } catch (e) {
+            console.warn("⚠️ Wallet log failed:", e.message);
+          }
+          
+          // 5. Notifications
+          try {
+            await addDoc(collection(db, 'notifications'), {
+              userId: referrerId,
+              type: 'referral',
+              title: '💰 Referral Bonus!',
+              message: `You earned ₹${REFERRER_REWARD}! ${currentProfile.name} completed their first upload.`,
+              fromUserId: currentUser.uid,
+              read: false,
+              createdAt: serverTimestamp()
+            });
+            
+            await addDoc(collection(db, 'notifications'), {
+              userId: currentUser.uid,
+              type: 'referral',
+              title: '🎁 Welcome Bonus!',
+              message: `You earned ₹${REFEREE_REWARD} for joining via referral!`,
+              fromUserId: referrerId,
+              read: false,
+              createdAt: serverTimestamp()
+            });
+            console.log("✅ Notifications sent");
+          } catch (e) {
+            console.warn("⚠️ Notification failed:", e.message);
+          }
+          
+          // 6. Update local profile
+          currentProfile.referralCompleted = true;
+          
+          // 7. Success toast
+          showToast(`🎁 You earned ₹${REFEREE_REWARD} welcome bonus!`);
+          console.log("🎉 Referral completed successfully!");
+          
+        } else {
+          console.log("ℹ️ No pending referral or already completed");
         }
+      } else {
+        console.log("ℹ️ User not referred or already completed");
       }
     } catch (refErr) {
-      console.warn('Referral completion failed:', refErr);
+      console.error('❌ Referral completion error:', refErr);
     }
+    /* ============================================================
+       END REFERRAL
+       ============================================================ */
 
     localStorage.removeItem('reelhub_feed_cache');
     localStorage.removeItem('reelhub_feed_cache_time');
@@ -7285,7 +7336,7 @@ async function shareProfile() {
 }
 
 /* ============================================================
-   HELPERS (needed by Part 5)
+   HELPERS
    ============================================================ */
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -7308,7 +7359,7 @@ async function loadUsersByIds(uids) {
 }
 
 /* ============================================================
-   HIGHLIGHTS SYSTEM (Instagram style)
+   HIGHLIGHTS SYSTEM
    ============================================================ */
 let userHighlights = [];
 let pendingHighlightStories = [];
@@ -8370,7 +8421,7 @@ function initSettingsListeners() {
     openBlockedUsersModal();
   });
 
-  // ✅ NEW: Earn Money buttons in Settings
+  // ✅ Earn Money buttons in Settings
   document.getElementById('settingMonetizeBtn')?.addEventListener('click', () => {
     document.getElementById('settingsModal')?.classList.remove('show');
     window.location.href = 'monetization.html';
@@ -8405,5 +8456,6 @@ window.handleDeleteClick = function(event) {
 };
 
 console.log('✅ Part 5 loaded (Profile + Highlights + Notifs + Search + Settings + Delete)');
-console.log('✅ 3 buttons (Monetize/Wallet/Refer) moved to Settings');
+console.log('✅ 3 buttons in Settings (Monetize/Wallet/Refer)');
+console.log('✅ Referral completion integrated in upload');
 console.log('🎉 ReelHub app.js fully loaded!');
