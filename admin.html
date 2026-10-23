@@ -3,86 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
   <title>ReelHub Admin</title>
-  <style>
-    /* ============================================================
-       INLINE CSS: 100% Guaranteed to load
-       ============================================================ */
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { margin: 0; background: #0a0a0a; color: #fff; overflow-x: hidden; }
-    
-    /* Loader */
-    #loader { position: fixed; inset: 0; background: #0a0a0a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
-    .spinner { width: 50px; height: 50px; border: 4px solid #333; border-top-color: #ff2e63; border-radius: 50%; animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    
-    /* Error Box */
-    #errorBox { display: none; position: fixed; bottom: 20px; left: 20px; right: 20px; background: #ff4d4d; color: #fff; padding: 15px; border-radius: 8px; z-index: 10000; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-
-    /* Login */
-    #adminLogin { display: none; align-items: center; justify-content: center; height: 100vh; padding: 20px; }
-    .login-box { background: #121218; padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; border: 1px solid #333; }
-    .login-box h2 { text-align: center; color: #ff2e63; margin: 0 0 5px 0; }
-    .login-box p { text-align: center; color: #888; margin: 0 0 20px 0; font-size: 14px; }
-    .input-group { margin-bottom: 15px; }
-    .input-group label { display: block; font-size: 12px; color: #888; margin-bottom: 5px; }
-    .input-group input { width: 100%; padding: 12px; background: #0a0a12; border: 1px solid #333; color: #fff; border-radius: 8px; outline: none; }
-    .input-group input:focus { border-color: #ff2e63; }
-    .btn-login { width: 100%; padding: 14px; background: #ff2e63; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
-    
-    /* App */
-    #adminApp { display: none; height: 100vh; flex-direction: column; }
-    .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #121218; border-bottom: 1px solid #333; }
-    .header .logo { font-weight: bold; font-size: 18px; }
-    .header .badge { background: #ff2e63; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 5px; }
-    .header button { background: #ff4d4d; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-    
-    .body { display: flex; height: calc(100vh - 65px); }
-    .sidebar { width: 220px; background: #121218; border-right: 1px solid #333; padding: 15px; display: flex; flex-direction: column; gap: 5px; overflow-y: auto; }
-    .sidebar button { display: flex; align-items: center; gap: 12px; background: none; border: none; color: #888; text-align: left; padding: 12px 15px; cursor: pointer; border-radius: 8px; font-size: 14px; font-weight: 600; transition: 0.2s; }
-    .sidebar button:hover, .sidebar button.active { background: #1a1a24; color: #fff; }
-    .sidebar button svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; }
-    
-    .main { flex: 1; padding: 20px; overflow-y: auto; background: #0a0a0a; }
-    
-    /* Modals */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 10000; padding: 20px; }
-    .modal { background: #121218; padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid #333; }
-    .modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
-    .modal-header h3 { margin: 0; }
-    .modal-close { background: none; border: none; color: #888; font-size: 24px; cursor: pointer; }
-    .modal-body { display: flex; flex-direction: column; gap: 10px; }
-    
-    /* Tables */
-    .admin-table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
-    .admin-table th, .admin-table td { padding: 12px; border-bottom: 1px solid #333; }
-    .btn-sm { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
-    .btn-sm.green { background: #4ade80; color: #000; }
-    .btn-sm.danger { background: #ff4d4d; color: #fff; }
-    
-    @media (max-width: 768px) {
-      .body { flex-direction: column; }
-      .sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid #333; padding: 10px; }
-      .sidebar button { white-space: nowrap; padding: 8px 12px; }
-    }
-  </style>
+  <link rel="stylesheet" href="admin.css">
 </head>
 <body>
 
-  <!-- ERROR BOX (Agar code fail hua toh yahan error dikhega) -->
-  <div id="errorBox"></div>
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" style="position:fixed; top:20px; right:20px; z-index:99999; display:flex; flex-direction:column; gap:10px;"></div>
 
   <!-- LOADER -->
-  <div id="loader">
+  <div class="loader-screen" id="loader">
     <div class="spinner"></div>
-    <div style="color:#888; margin-top:15px; font-size:14px;">Checking access...</div>
+    <div style="color:#888;font-size:13px; margin-top:10px;">Checking access...</div>
   </div>
 
   <!-- LOGIN -->
-  <div id="adminLogin">
+  <div id="adminLogin" style="display:none;">
     <div class="login-box">
-      <h2>ReelHub</h2>
-      <p>Admin Panel</p>
+      <div class="login-logo">ReelHub</div>
+      <div class="login-sub">Admin Panel</div>
+      <div class="login-title">Sign in</div>
       <div class="input-group">
         <label>Email</label>
         <input type="email" id="adminEmail" placeholder="admin@reelhub.com">
@@ -91,29 +32,30 @@
         <label>Password</label>
         <input type="password" id="adminPass" placeholder="••••••">
       </div>
-      <button class="btn-login" id="adminLoginBtn">Log In</button>
-      <div id="adminLoginMsg" style="color:#ff4d4d; font-size:13px; text-align:center; margin-top:15px;"></div>
+      <button class="btn-primary" id="adminLoginBtn">Log In</button>
+      <div class="error-msg" id="adminLoginMsg"></div>
     </div>
   </div>
 
   <!-- ADMIN APP -->
-  <div id="adminApp">
-    <div class="header">
+  <div id="adminApp" style="display:none;">
+    <header class="admin-header">
       <div class="logo">ReelHub <span class="badge">ADMIN</span></div>
-      <div style="display:flex; gap:15px; align-items:center;">
-        <span id="adminName" style="font-size:14px;">Admin</span>
+      <div class="user-info">
+        <span id="adminName">Admin</span>
         <button id="adminLogout">Logout</button>
       </div>
-    </div>
+    </header>
 
-    <div class="body">
-      <div class="sidebar">
+    <div class="admin-body">
+      <!-- Sidebar -->
+      <aside class="admin-sidebar">
         <button class="side-item active" data-page="dashboard">
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
           <span>Dashboard</span>
         </button>
         <button class="side-item" data-page="users">
-          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span>Users</span>
         </button>
         <button class="side-item" data-page="videos">
@@ -128,10 +70,17 @@
           <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
           <span>Payments</span>
         </button>
+        
+        <!-- ✅ NAYA: WALLET BUTTON -->
         <button class="side-item" data-page="wallet">
-          <svg viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+          <svg viewBox="0 0 24 24">
+            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+            <path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>
+          </svg>
           <span>Wallet</span>
         </button>
+
         <button class="side-item" data-page="admins">
           <svg viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L17.5 20 12 17l-5.5 3 1-6.5L3 9l6-1z"/></svg>
           <span>Admins</span>
@@ -144,92 +93,51 @@
           <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <span>Reports</span>
         </button>
-      </div>
+      </aside>
 
-      <div class="main" id="adminContent">
-        <div style="display:flex; justify-content:center; align-items:center; height:100%;">
+      <!-- Main content -->
+      <main class="admin-main" id="adminContent">
+        <div class="loader-screen" style="min-height:200px;">
           <div class="spinner"></div>
         </div>
-      </div>
+      </main>
     </div>
   </div>
 
-  <!-- MODALS -->
+  <!-- MODAL (Generic) -->
   <div class="modal-overlay" id="adminModal">
     <div class="modal">
       <div class="modal-header">
         <h3 id="modalTitle">Modal</h3>
         <button class="modal-close" id="modalClose">&times;</button>
       </div>
-      <div class="modal-body" id="modalBody"></div>
+      <div id="modalBody"></div>
     </div>
   </div>
 
-  <div class="modal-overlay" id="paymentSettingsModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>⚙️ UPI Settings</h3>
-        <button class="modal-close" onclick="document.getElementById('paymentSettingsModal').style.display='none'">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="input-group">
-          <label>UPI ID</label>
-          <input type="text" id="adminUpiId" placeholder="yourname@ybl">
-        </div>
-        <div class="input-group">
-          <label>QR Code URL</label>
-          <input type="text" id="adminQrUrl" placeholder="https://...">
-        </div>
-        <button class="btn-login" id="savePaymentSettingsBtn">Save Settings</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="addPlanModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>➕ Add Plan</h3>
-        <button class="modal-close" onclick="document.getElementById('addPlanModal').style.display='none'">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="input-group">
-          <label>Amount (₹)</label>
-          <input type="number" id="planAmount" placeholder="e.g. 29">
-        </div>
-        <div class="input-group">
-          <label>Validity (Days)</label>
-          <input type="number" id="planDays" placeholder="e.g. 30">
-        </div>
-        <button class="btn-login" id="savePlanBtn">Save Plan</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- SCRIPT & ERROR CATCHER -->
+  <!-- ============================================================
+       ERROR CATCHER & FALLBACK
+       ============================================================ -->
   <script>
-    // Agar koi JS error aaye, toh screen pe Red Box me dikhao
+    // Agar JS me koi error aaye, toh alert karo
     window.onerror = function(msg, url, line, col, error) {
-      var errBox = document.getElementById('errorBox');
-      errBox.style.display = 'block';
-      errBox.innerHTML = "⚠️ <b>Error:</b> " + msg + "<br><small>Line: " + line + "</small>";
-      
-      // Loader ko hatao taaki login screen dikhe
-      document.getElementById('loader').style.display = 'none';
-      document.getElementById('adminLogin').style.display = 'flex';
+      alert("⚠️ Admin JS ERROR:\n" + msg + "\nLine: " + line);
       return false;
     };
 
-    // Agar 4 second me JS load na ho, toh Login screen dikha do
+    // Agar 5 second tak JS load na ho (ya crash ho jaye), toh Login screen dikha do
     setTimeout(function() {
       var loader = document.getElementById('loader');
+      var login = document.getElementById('adminLogin');
       if (loader && loader.style.display !== 'none') {
         loader.style.display = 'none';
-        document.getElementById('adminLogin').style.display = 'flex';
+        if (login) {
+          login.style.display = 'flex';
+        }
       }
-    }, 4000);
+    }, 5000);
   </script>
 
   <script type="module" src="admin.js"></script>
-
 </body>
 </html>
