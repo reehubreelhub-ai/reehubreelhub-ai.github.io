@@ -15,7 +15,6 @@
     button { font-family:inherit; cursor:pointer; border:none; outline:none; }
     img { max-width:100%; display:block; }
 
-    /* SCREENS */
     .center-screen {
       display:flex; flex-direction:column; align-items:center;
       justify-content:center; min-height:100vh; padding:24px; text-align:center;
@@ -37,7 +36,6 @@
     }
     .error-btn.secondary { background:#1a1a24; border:1px solid #333; color:#ccc; }
 
-    /* HEADER */
     .header {
       position:sticky; top:0; z-index:100;
       display:flex; align-items:center; justify-content:space-between;
@@ -59,10 +57,8 @@
       background-clip:text;
     }
 
-    /* CONTAINER */
     .container { padding:20px 18px 100px; max-width:560px; margin:0 auto; }
 
-    /* BALANCE CARD */
     .balance-card {
       background:linear-gradient(135deg,#ff2e63 0%,#ff8a00 100%);
       border-radius:22px;
@@ -101,7 +97,6 @@
     .btn-withdraw:active { transform:scale(0.97); }
     .btn-withdraw:disabled { opacity:0.5; cursor:not-allowed; }
 
-    /* REFER CODE CARD */
     .refer-card {
       background:#121218;
       border:1px solid #2a2a38;
@@ -149,7 +144,53 @@
       border:1px solid #333;
     }
 
-    /* STATS */
+    .apply-card {
+      background:linear-gradient(135deg,rgba(74,222,128,0.08),rgba(34,197,94,0.03));
+      border:1px solid rgba(74,222,128,0.3);
+      border-radius:20px;
+      padding:22px;
+      margin-bottom:18px;
+    }
+    .apply-title {
+      color:#4ade80; font-size:13px; font-weight:800;
+      text-transform:uppercase; letter-spacing:0.5px;
+      margin-bottom:8px;
+    }
+    .apply-desc {
+      font-size:13px; color:#aaa; margin-bottom:14px; line-height:1.5;
+    }
+    .apply-input-row { display:flex; gap:8px; }
+    .apply-input-row input {
+      flex:1; height:48px;
+      background:#0a0a12;
+      border:1px solid #2a2a38;
+      border-radius:12px;
+      padding:0 14px; color:#fff;
+      font-size:15px; font-family:inherit;
+      outline:none; text-transform:uppercase;
+      letter-spacing:2px; font-weight:700;
+    }
+    .apply-input-row input:focus { border-color:#4ade80; }
+    .apply-input-row input::placeholder {
+      color:#555; letter-spacing:normal; text-transform:none;
+      font-weight:400;
+    }
+    .apply-input-row button {
+      height:48px; padding:0 20px;
+      background:linear-gradient(135deg,#4ade80,#22c55e);
+      border-radius:12px;
+      color:#fff; font-weight:700; font-size:14px;
+      transition:opacity 0.15s;
+    }
+    .apply-input-row button:disabled {
+      opacity:0.5; cursor:not-allowed;
+    }
+    .apply-msg {
+      font-size:12px; text-align:center;
+      margin-top:10px; min-height:16px;
+      font-weight:600;
+    }
+
     .stats-row {
       display:grid;
       grid-template-columns:repeat(3, 1fr);
@@ -175,7 +216,6 @@
     .stat-item.success b { color:#4ade80; }
     .stat-item.pending b { color:#ff8a00; }
 
-    /* HOW IT WORKS */
     .how-it-works {
       background:#121218;
       border:1px solid #2a2a38;
@@ -211,7 +251,6 @@
       font-size:12px; color:#888; line-height:1.4;
     }
 
-    /* REFERRAL LIST */
     .list-title {
       font-size:14px; font-weight:800;
       color:#aaa; text-transform:uppercase;
@@ -278,7 +317,6 @@
     }
     .ref-empty-emoji { font-size:42px; margin-bottom:8px; opacity:0.5; }
 
-    /* WITHDRAW MODAL */
     .modal-overlay {
       position:fixed; inset:0;
       background:rgba(0,0,0,0.85);
@@ -364,34 +402,6 @@
     .modal-msg.error { color:#ff4d4d; }
     .modal-msg.success { color:#4ade80; }
 
-    /* APPLY CODE CARD */
-    .apply-card {
-      background:linear-gradient(135deg,rgba(74,222,128,0.08),rgba(34,197,94,0.03));
-      border:1px solid rgba(74,222,128,0.3);
-      border-radius:20px;
-      padding:22px;
-      margin-bottom:18px;
-    }
-    .apply-input-row { display:flex; gap:8px; }
-    .apply-input-row input {
-      flex:1; height:48px;
-      background:#0a0a12;
-      border:1px solid #2a2a38;
-      border-radius:12px;
-      padding:0 14px; color:#fff;
-      font-size:15px; font-family:inherit;
-      outline:none; text-transform:uppercase;
-      letter-spacing:2px; font-weight:700;
-    }
-    .apply-input-row input:focus { border-color:#4ade80; }
-    .apply-input-row button {
-      height:48px; padding:0 20px;
-      background:linear-gradient(135deg,#4ade80,#22c55e);
-      border-radius:12px;
-      color:#fff; font-weight:700; font-size:14px;
-    }
-
-    /* TOAST */
     .toast {
       position:fixed; bottom:30px; left:50%;
       transform:translateX(-50%) translateY(100px);
@@ -412,13 +422,11 @@
 </head>
 <body>
 
-  <!-- LOADING -->
   <div id="loadingScreen" class="center-screen">
     <div class="spinner"></div>
     <div style="color:#888; font-size:13px;">Loading your rewards...</div>
   </div>
 
-  <!-- NOT LOGGED IN -->
   <div id="notLoggedIn" class="center-screen" style="display:none;">
     <div class="error-icon">🔒</div>
     <div class="error-title">Login Required</div>
@@ -427,7 +435,6 @@
     <button class="error-btn secondary" onclick="location.reload()">🔄 Retry</button>
   </div>
 
-  <!-- MAIN -->
   <div id="mainContent" style="display:none;">
     <div class="header">
       <button class="header-btn" onclick="history.length>1?history.back():location.href='index.html'">
@@ -446,7 +453,6 @@
 
     <div class="container">
 
-      <!-- BALANCE -->
       <div class="balance-card">
         <div class="balance-label">💰 Your Wallet</div>
         <div class="balance-value">₹<span id="balanceAmt">0</span></div>
@@ -456,7 +462,6 @@
         </button>
       </div>
 
-      <!-- REFER CODE -->
       <div class="refer-card">
         <div class="refer-title">Your Referral Code</div>
         <div class="refer-code-box">
@@ -468,20 +473,18 @@
         </div>
       </div>
 
-      <!-- ✅ APPLY CODE CARD (For new users) -->
       <div class="apply-card" id="applyCodeCard">
-        <div class="refer-title" style="color:#4ade80; margin-bottom:8px;">🎁 Have a friend's code?</div>
-        <div style="font-size:13px; color:#aaa; margin-bottom:14px; line-height:1.5;">
+        <div class="apply-title">🎁 Have a friend's code?</div>
+        <div class="apply-desc">
           Enter code to get <b style="color:#4ade80;">₹5 welcome bonus</b> on your first upload
         </div>
         <div class="apply-input-row">
           <input type="text" id="applyCodeInput" placeholder="Enter code" maxlength="10">
           <button id="applyCodeBtn">Apply</button>
         </div>
-        <div id="applyCodeMsg" style="font-size:12px; text-align:center; margin-top:10px; min-height:16px;"></div>
+        <div id="applyCodeMsg" class="apply-msg"></div>
       </div>
 
-      <!-- STATS -->
       <div class="stats-row">
         <div class="stat-item">
           <b id="totalRefs">0</b>
@@ -497,7 +500,6 @@
         </div>
       </div>
 
-      <!-- HOW IT WORKS -->
       <div class="how-it-works">
         <div class="section-label">📖 How it works</div>
         <div class="step-item">
@@ -523,7 +525,6 @@
         </div>
       </div>
 
-      <!-- REFERRAL LIST -->
       <div class="list-title">
         <span>👥 Your Referrals</span>
         <small id="listCount">0 people</small>
@@ -538,7 +539,6 @@
     </div>
   </div>
 
-  <!-- WITHDRAW MODAL -->
   <div class="modal-overlay" id="withdrawModal">
     <div class="modal-sheet">
       <div class="modal-handle"></div>
@@ -575,12 +575,9 @@
     import {
       getFirestore, doc, getDoc, getDocFromServer, updateDoc, setDoc,
       collection, query, where, getDocs, addDoc, serverTimestamp,
-      enableNetwork, orderBy, limit, increment
+      enableNetwork, limit, increment
     } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-    /* ============================================================
-       FIREBASE CONFIG
-       ============================================================ */
     const firebaseConfig = {
       apiKey: "AIzaSyC6421R1kr0jYwUJFbjB2YzIerlJw_cdLc",
       authDomain: "reelhub-24616.firebaseapp.com",
@@ -595,29 +592,20 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    (async () => { try { await setPersistence(auth, browserLocalPersistence); } catch (e) {} })();
+    (async () => { try { await setPersistence(auth, browserLocalPersistence); } catch(e){} })();
 
-    /* ============================================================
-       CONFIG
-       ============================================================ */
     const CONFIG = {
       referrerReward: 10,
       refereeReward: 5,
       minWithdrawal: 100
     };
 
-    /* ============================================================
-       STATE
-       ============================================================ */
     let currentUser = null;
     let currentProfile = null;
     let allReferrals = [];
     let authResolved = false;
     let authTimeoutId = null;
 
-    /* ============================================================
-       DOM
-       ============================================================ */
     const loadingScreen = document.getElementById('loadingScreen');
     const notLoggedIn = document.getElementById('notLoggedIn');
     const mainContent = document.getElementById('mainContent');
@@ -636,9 +624,6 @@
     const applyCodeBtn = document.getElementById('applyCodeBtn');
     const applyCodeMsg = document.getElementById('applyCodeMsg');
 
-    /* ============================================================
-       HELPERS
-       ============================================================ */
     function showToast(msg, duration = 2500) {
       toast.textContent = msg;
       toast.classList.add('show');
@@ -668,12 +653,6 @@
       const m = Math.floor(s / 60); if (m < 60) return m + 'm ago';
       const h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
       return Math.floor(h / 24) + 'd ago';
-    }
-
-    function generateReferralCode(username) {
-      const base = (username || 'REEL').substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'REEL';
-      const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-      return base + suffix;
     }
 
     /* ============================================================
@@ -725,17 +704,15 @@
 
         currentProfile = snap.data();
 
-        // Ensure referralCode exists
+        // Auto-generate referral code if missing
         if (!currentProfile.referralCode) {
-          const newCode = generateReferralCode(currentProfile.user || currentProfile.name);
-          await updateDoc(doc(db, 'users', currentUser.uid), {
-            referralCode: newCode
-          });
+          const base = (currentProfile.user || 'REEL').substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'REEL';
+          const newCode = base + Math.random().toString(36).substring(2, 6).toUpperCase();
+          console.log("🔧 Generating referral code:", newCode);
+          await updateDoc(doc(db, 'users', currentUser.uid), { referralCode: newCode });
           currentProfile.referralCode = newCode;
-          console.log("✅ Generated new referral code:", newCode);
         }
 
-        // Ensure wallet fields exist
         if (currentProfile.walletBalance === undefined) {
           await updateDoc(doc(db, 'users', currentUser.uid), {
             walletBalance: 0,
@@ -743,11 +720,8 @@
             referralEarnings: 0
           });
           currentProfile.walletBalance = 0;
-          currentProfile.referralCount = 0;
-          currentProfile.referralEarnings = 0;
         }
 
-        // Load referrals
         await loadReferrals();
         render();
 
@@ -799,7 +773,6 @@
       balanceAmt.textContent = balance.toLocaleString('en-IN');
       balanceSub.textContent = `Earn ₹${CONFIG.referrerReward} per referral`;
 
-      // Withdraw button state
       if (balance >= CONFIG.minWithdrawal) {
         withdrawBtn.disabled = false;
         withdrawBtn.querySelector('#withdrawMin').textContent = '';
@@ -809,7 +782,6 @@
           `(min ₹${CONFIG.minWithdrawal})`;
       }
 
-      // Stats
       const total = allReferrals.length;
       const completed = allReferrals.filter(r => r.status === 'completed').length;
       const pending = allReferrals.filter(r => r.status === 'pending').length;
@@ -820,14 +792,13 @@
       document.getElementById('listCount').textContent =
         total + (total === 1 ? ' person' : ' people');
 
-      // Apply code card visibility
+      // Hide apply card if already referred
       if (currentProfile.referredBy) {
         applyCodeCard.style.display = 'none';
       } else {
         applyCodeCard.style.display = 'block';
       }
 
-      // Referral list
       const listEl = document.getElementById('referralList');
       if (allReferrals.length === 0) {
         listEl.innerHTML = `
@@ -874,7 +845,7 @@
     });
 
     /* ============================================================
-       ✅ SHARE BUTTON (FIXED)
+       SHARE BUTTON
        ============================================================ */
     document.getElementById('shareBtn').addEventListener('click', async () => {
       const code = currentProfile?.referralCode;
@@ -918,8 +889,12 @@
     });
 
     /* ============================================================
-       ✅ APPLY CODE (NEW USERS)
+       APPLY CODE
        ============================================================ */
+    applyCodeInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase();
+    });
+
     applyCodeBtn.addEventListener('click', async () => {
       const code = applyCodeInput.value.trim().toUpperCase();
       applyCodeMsg.textContent = '';
@@ -944,7 +919,8 @@
       applyCodeBtn.textContent = '...';
 
       try {
-        console.log("Searching for referrer with code:", code);
+        console.log("🔍 Searching referrer with code:", code);
+
         const rq = query(
           collection(db, 'users'),
           where('referralCode', '==', code)
@@ -969,19 +945,31 @@
           return;
         }
 
-        console.log("Found referrer:", referrerId);
+        console.log("✅ Found referrer:", referrerId, referrerData.name);
 
-        // Check if user already uploaded video
-        const postsQ = query(
+        // Check upload status
+        const postsSnap = await getDocs(query(
           collection(db, 'posts'),
           where('userId', '==', currentUser.uid),
           limit(1)
-        );
-        const postsSnap = await getDocs(postsQ);
+        ));
         const hasUploaded = !postsSnap.empty;
 
-        // Create referral record
-        const refRef = await addDoc(collection(db, 'referrals'), {
+        // Deterministic referral ID
+        const refDocId = `${referrerId}_${currentUser.uid}`;
+        const refDocRef = doc(db, 'referrals', refDocId);
+
+        const existingRef = await getDoc(refDocRef);
+        if (existingRef.exists()) {
+          applyCodeMsg.textContent = '❌ Referral already exists';
+          applyCodeBtn.disabled = false;
+          applyCodeBtn.textContent = 'Apply';
+          return;
+        }
+
+        console.log("📝 Creating referral:", refDocId);
+
+        await setDoc(refDocRef, {
           referrerId: referrerId,
           referredId: currentUser.uid,
           referredName: currentProfile.name || 'User',
@@ -992,69 +980,89 @@
           createdAt: serverTimestamp()
         });
 
-        console.log("✅ Referral record created:", refRef.id);
+        console.log("✅ Referral record created");
 
-        // Update current user
+        // Link current user to referrer
         await updateDoc(doc(db, 'users', currentUser.uid), {
           referredBy: referrerId,
           referredByCode: code
         });
 
-        // Increment referrer count
-        await updateDoc(doc(db, 'users', referrerId), {
-          referralCount: increment(1)
-        });
+        console.log("✅ User linked to referrer");
 
-        // Notify referrer
-        await addDoc(collection(db, 'notifications'), {
-          userId: referrerId,
-          type: 'referral',
-          title: '🎉 New Referral!',
-          message: `${currentProfile.name} used your code ${code}!`,
-          read: false,
-          createdAt: serverTimestamp()
-        });
+        // Increment referrer count (non-critical)
+        try {
+          await updateDoc(doc(db, 'users', referrerId), {
+            referralCount: increment(1)
+          });
+          console.log("✅ Referrer count incremented");
+        } catch (e) {
+          console.warn("⚠️ Count update failed (non-critical):", e.message);
+        }
+
+        // Notify referrer (non-critical)
+        try {
+          await addDoc(collection(db, 'notifications'), {
+            userId: referrerId,
+            type: 'referral',
+            title: '🎉 New Referral!',
+            message: `${currentProfile.name} used your code ${code}!`,
+            fromUserId: currentUser.uid,
+            read: false,
+            createdAt: serverTimestamp()
+          });
+        } catch (e) {
+          console.warn("⚠️ Notification failed:", e.message);
+        }
 
         // If already uploaded, complete immediately
         if (hasUploaded) {
-          await updateDoc(refRef, {
+          console.log("🎁 User already uploaded — completing referral immediately");
+
+          await updateDoc(refDocRef, {
             status: 'completed',
             completedAt: serverTimestamp()
           });
 
+          // Credit referrer
           await updateDoc(doc(db, 'users', referrerId), {
             walletBalance: increment(CONFIG.referrerReward),
             referralEarnings: increment(CONFIG.referrerReward)
           });
 
+          // Credit referee
           await updateDoc(doc(db, 'users', currentUser.uid), {
             walletBalance: increment(CONFIG.refereeReward),
             referralEarnings: increment(CONFIG.refereeReward),
             referralCompleted: true
           });
 
-          // Record transactions
-          await addDoc(collection(db, 'wallet_transactions'), {
-            userId: referrerId,
-            userName: referrerData.name || 'User',
-            type: 'credit',
-            category: 'referral',
-            amount: CONFIG.referrerReward,
-            status: 'completed',
-            description: 'Referral bonus',
-            createdAt: serverTimestamp()
-          });
+          // Log transactions
+          try {
+            await addDoc(collection(db, 'wallet_transactions'), {
+              userId: referrerId,
+              userName: referrerData.name || 'User',
+              type: 'credit',
+              category: 'referral',
+              amount: CONFIG.referrerReward,
+              status: 'completed',
+              description: 'Referral bonus',
+              createdAt: serverTimestamp()
+            });
 
-          await addDoc(collection(db, 'wallet_transactions'), {
-            userId: currentUser.uid,
-            userName: currentProfile.name || 'User',
-            type: 'credit',
-            category: 'referral',
-            amount: CONFIG.refereeReward,
-            status: 'completed',
-            description: 'Welcome bonus',
-            createdAt: serverTimestamp()
-          });
+            await addDoc(collection(db, 'wallet_transactions'), {
+              userId: currentUser.uid,
+              userName: currentProfile.name || 'User',
+              type: 'credit',
+              category: 'referral',
+              amount: CONFIG.refereeReward,
+              status: 'completed',
+              description: 'Welcome bonus',
+              createdAt: serverTimestamp()
+            });
+          } catch (e) {
+            console.warn("Wallet log warning:", e.message);
+          }
 
           applyCodeMsg.textContent = `✅ Code applied! ₹${CONFIG.refereeReward} added to wallet!`;
           applyCodeMsg.style.color = '#4ade80';
@@ -1068,19 +1076,14 @@
         currentProfile.referredBy = referrerId;
         currentProfile.referredByCode = code;
 
-        setTimeout(() => location.reload(), 1500);
+        setTimeout(() => location.reload(), 2000);
 
       } catch (err) {
-        console.error('Apply code error:', err);
+        console.error('❌ Apply code error:', err);
         applyCodeMsg.textContent = '❌ Failed: ' + (err.message || 'Try again');
         applyCodeBtn.disabled = false;
         applyCodeBtn.textContent = 'Apply';
       }
-    });
-
-    // Auto-uppercase input
-    applyCodeInput.addEventListener('input', (e) => {
-      e.target.value = e.target.value.toUpperCase();
     });
 
     /* ============================================================
