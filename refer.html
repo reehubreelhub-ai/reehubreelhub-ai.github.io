@@ -15,409 +15,103 @@
     button { font-family:inherit; cursor:pointer; border:none; outline:none; }
     img { max-width:100%; display:block; }
 
-    .center-screen {
-      display:flex; flex-direction:column; align-items:center;
-      justify-content:center; min-height:100vh; padding:24px; text-align:center;
-    }
-    .spinner {
-      width:48px; height:48px; border:4px solid #1e1e28;
-      border-top-color:#ff2e63; border-radius:50%;
-      animation:spin 0.8s linear infinite; margin-bottom:16px;
-    }
+    .center-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:24px; text-align:center; }
+    .spinner { width:48px; height:48px; border:4px solid #1e1e28; border-top-color:#ff2e63; border-radius:50%; animation:spin 0.8s linear infinite; margin-bottom:16px; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
     .error-icon { font-size:60px; margin-bottom:16px; }
     .error-title { font-size:20px; font-weight:700; margin-bottom:10px; }
     .error-text { font-size:14px; color:#888; line-height:1.6; margin-bottom:24px; max-width:320px; }
-    .error-btn {
-      padding:14px 28px; background:linear-gradient(135deg,#ff2e63,#ff8a00);
-      color:#fff; border-radius:12px; font-weight:700; font-size:15px;
-      margin-bottom:10px; min-width:220px;
-    }
+    .error-btn { padding:14px 28px; background:linear-gradient(135deg,#ff2e63,#ff8a00); color:#fff; border-radius:12px; font-weight:700; font-size:15px; margin-bottom:10px; min-width:220px; }
     .error-btn.secondary { background:#1a1a24; border:1px solid #333; color:#ccc; }
 
-    .header {
-      position:sticky; top:0; z-index:100;
-      display:flex; align-items:center; justify-content:space-between;
-      padding:14px 18px;
-      background:rgba(10,10,15,0.95);
-      backdrop-filter:blur(12px);
-      border-bottom:1px solid #1a1a24;
-    }
-    .header-btn {
-      width:38px; height:38px; border-radius:50%;
-      background:#1a1a24; color:#fff;
-      display:flex; align-items:center; justify-content:center;
-    }
+    .header { position:sticky; top:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:rgba(10,10,15,0.95); backdrop-filter:blur(12px); border-bottom:1px solid #1a1a24; }
+    .header-btn { width:38px; height:38px; border-radius:50%; background:#1a1a24; color:#fff; display:flex; align-items:center; justify-content:center; }
     .header-btn svg { width:20px; height:20px; }
-    .header-title {
-      font-size:17px; font-weight:800;
-      background:linear-gradient(90deg,#ff2e63,#ff8a00);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-      background-clip:text;
-    }
+    .header-title { font-size:17px; font-weight:800; background:linear-gradient(90deg,#ff2e63,#ff8a00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
 
     .container { padding:20px 18px 100px; max-width:560px; margin:0 auto; }
 
-    .balance-card {
-      background:linear-gradient(135deg,#ff2e63 0%,#ff8a00 100%);
-      border-radius:22px;
-      padding:26px 22px;
-      margin-bottom:18px;
-      position:relative; overflow:hidden;
-      box-shadow:0 10px 40px rgba(255,46,99,0.3);
-    }
-    .balance-card::before {
-      content:''; position:absolute;
-      top:-50%; right:-30%;
-      width:70%; height:200%;
-      background:radial-gradient(circle,rgba(255,255,255,0.2),transparent 70%);
-      pointer-events:none;
-    }
-    .balance-label {
-      font-size:12px; font-weight:700;
-      text-transform:uppercase; letter-spacing:1px;
-      opacity:0.9; margin-bottom:8px;
-    }
-    .balance-value {
-      font-size:42px; font-weight:900;
-      line-height:1; margin-bottom:4px;
-      letter-spacing:-1px;
-    }
+    .balance-card { background:linear-gradient(135deg,#ff2e63 0%,#ff8a00 100%); border-radius:22px; padding:26px 22px; margin-bottom:18px; position:relative; overflow:hidden; box-shadow:0 10px 40px rgba(255,46,99,0.3); }
+    .balance-card::before { content:''; position:absolute; top:-50%; right:-30%; width:70%; height:200%; background:radial-gradient(circle,rgba(255,255,255,0.2),transparent 70%); pointer-events:none; }
+    .balance-label { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; opacity:0.9; margin-bottom:8px; }
+    .balance-value { font-size:42px; font-weight:900; line-height:1; margin-bottom:4px; letter-spacing:-1px; }
     .balance-sub { font-size:12px; opacity:0.85; margin-bottom:16px; }
-    .btn-withdraw {
-      background:rgba(0,0,0,0.25);
-      color:#fff; padding:12px 24px;
-      border-radius:12px; font-weight:700; font-size:14px;
-      display:inline-flex; align-items:center; gap:8px;
-      backdrop-filter:blur(10px);
-      border:1px solid rgba(255,255,255,0.25);
-      transition:transform 0.15s;
-    }
+    .btn-withdraw { background:rgba(0,0,0,0.25); color:#fff; padding:12px 24px; border-radius:12px; font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:8px; backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.25); transition:transform 0.15s; }
     .btn-withdraw:active { transform:scale(0.97); }
     .btn-withdraw:disabled { opacity:0.5; cursor:not-allowed; }
 
-    .refer-card {
-      background:#121218;
-      border:1px solid #2a2a38;
-      border-radius:20px;
-      padding:22px;
-      margin-bottom:18px;
-      text-align:center;
-    }
-    .refer-title {
-      font-size:13px; color:#888; margin-bottom:12px;
-      text-transform:uppercase; letter-spacing:0.5px;
-    }
-    .refer-code-box {
-      background:#0a0a12;
-      border:2px dashed #ff2e63;
-      border-radius:14px;
-      padding:18px 14px;
-      margin-bottom:14px;
-      position:relative;
-    }
-    .refer-code {
-      font-size:28px; font-weight:900;
-      letter-spacing:4px;
-      background:linear-gradient(90deg,#ff2e63,#ff8a00);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-      background-clip:text;
-      font-family:'Courier New',monospace;
-    }
+    .refer-card { background:#121218; border:1px solid #2a2a38; border-radius:20px; padding:22px; margin-bottom:18px; text-align:center; }
+    .refer-title { font-size:13px; color:#888; margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px; }
+    .refer-code-box { background:#0a0a12; border:2px dashed #ff2e63; border-radius:14px; padding:18px 14px; margin-bottom:14px; }
+    .refer-code { font-size:28px; font-weight:900; letter-spacing:4px; background:linear-gradient(90deg,#ff2e63,#ff8a00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; font-family:'Courier New',monospace; }
     .refer-actions { display:flex; gap:8px; }
-    .refer-btn {
-      flex:1;
-      padding:12px 10px;
-      border-radius:12px;
-      font-size:13px; font-weight:700;
-      display:flex; align-items:center; justify-content:center; gap:6px;
-      transition:transform 0.15s;
-    }
-    .refer-btn:active { transform:scale(0.97); }
-    .refer-btn.primary {
-      background:linear-gradient(135deg,#ff2e63,#ff8a00);
-      color:#fff;
-    }
-    .refer-btn.secondary {
-      background:#1a1a24; color:#fff;
-      border:1px solid #333;
-    }
+    .refer-btn { flex:1; padding:12px 10px; border-radius:12px; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; transition:transform 0.15s; }
+    .refer-btn.primary { background:linear-gradient(135deg,#ff2e63,#ff8a00); color:#fff; }
+    .refer-btn.secondary { background:#1a1a24; color:#fff; border:1px solid #333; }
 
-    .apply-card {
-      background:linear-gradient(135deg,rgba(74,222,128,0.08),rgba(34,197,94,0.03));
-      border:1px solid rgba(74,222,128,0.3);
-      border-radius:20px;
-      padding:22px;
-      margin-bottom:18px;
-    }
-    .apply-title {
-      color:#4ade80; font-size:13px; font-weight:800;
-      text-transform:uppercase; letter-spacing:0.5px;
-      margin-bottom:8px;
-    }
-    .apply-desc {
-      font-size:13px; color:#aaa; margin-bottom:14px; line-height:1.5;
-    }
+    .apply-card { background:linear-gradient(135deg,rgba(74,222,128,0.08),rgba(34,197,94,0.03)); border:1px solid rgba(74,222,128,0.3); border-radius:20px; padding:22px; margin-bottom:18px; }
+    .apply-title { color:#4ade80; font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
+    .apply-desc { font-size:13px; color:#aaa; margin-bottom:14px; line-height:1.5; }
     .apply-input-row { display:flex; gap:8px; }
-    .apply-input-row input {
-      flex:1; height:48px;
-      background:#0a0a12;
-      border:1px solid #2a2a38;
-      border-radius:12px;
-      padding:0 14px; color:#fff;
-      font-size:15px; font-family:inherit;
-      outline:none; text-transform:uppercase;
-      letter-spacing:2px; font-weight:700;
-    }
+    .apply-input-row input { flex:1; height:48px; background:#0a0a12; border:1px solid #2a2a38; border-radius:12px; padding:0 14px; color:#fff; font-size:15px; font-family:inherit; outline:none; text-transform:uppercase; letter-spacing:2px; font-weight:700; }
     .apply-input-row input:focus { border-color:#4ade80; }
-    .apply-input-row input::placeholder {
-      color:#555; letter-spacing:normal; text-transform:none;
-      font-weight:400;
-    }
-    .apply-input-row button {
-      height:48px; padding:0 20px;
-      background:linear-gradient(135deg,#4ade80,#22c55e);
-      border-radius:12px;
-      color:#fff; font-weight:700; font-size:14px;
-      transition:opacity 0.15s;
-    }
-    .apply-input-row button:disabled {
-      opacity:0.5; cursor:not-allowed;
-    }
-    .apply-msg {
-      font-size:12px; text-align:center;
-      margin-top:10px; min-height:16px;
-      font-weight:600;
-    }
+    .apply-input-row button { height:48px; padding:0 20px; background:linear-gradient(135deg,#4ade80,#22c55e); border-radius:12px; color:#fff; font-weight:700; font-size:14px; }
+    .apply-input-row button:disabled { opacity:0.5; cursor:not-allowed; }
+    .apply-msg { font-size:12px; text-align:center; margin-top:10px; min-height:16px; font-weight:600; }
 
-    .stats-row {
-      display:grid;
-      grid-template-columns:repeat(3, 1fr);
-      gap:10px;
-      margin-bottom:22px;
-    }
-    .stat-item {
-      background:#121218;
-      border:1px solid #2a2a38;
-      border-radius:14px;
-      padding:16px 10px;
-      text-align:center;
-    }
-    .stat-item b {
-      display:block; font-size:22px;
-      font-weight:900; color:#fff;
-      margin-bottom:4px;
-    }
-    .stat-item span {
-      font-size:10px; color:#888;
-      text-transform:uppercase; letter-spacing:0.5px;
-    }
+    .stats-row { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:22px; }
+    .stat-item { background:#121218; border:1px solid #2a2a38; border-radius:14px; padding:16px 10px; text-align:center; }
+    .stat-item b { display:block; font-size:22px; font-weight:900; color:#fff; margin-bottom:4px; }
+    .stat-item span { font-size:10px; color:#888; text-transform:uppercase; letter-spacing:0.5px; }
     .stat-item.success b { color:#4ade80; }
     .stat-item.pending b { color:#ff8a00; }
 
-    .how-it-works {
-      background:#121218;
-      border:1px solid #2a2a38;
-      border-radius:18px;
-      padding:20px;
-      margin-bottom:22px;
-    }
-    .section-label {
-      font-size:12px; font-weight:800;
-      color:#aaa; text-transform:uppercase;
-      letter-spacing:1px; margin-bottom:14px;
-    }
-    .step-item {
-      display:flex; align-items:flex-start;
-      gap:12px; padding:12px 0;
-      border-bottom:1px solid #1a1a24;
-    }
+    .how-it-works { background:#121218; border:1px solid #2a2a38; border-radius:18px; padding:20px; margin-bottom:22px; }
+    .section-label { font-size:12px; font-weight:800; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin-bottom:14px; }
+    .step-item { display:flex; align-items:flex-start; gap:12px; padding:12px 0; border-bottom:1px solid #1a1a24; }
     .step-item:last-child { border-bottom:none; padding-bottom:0; }
     .step-item:first-of-type { padding-top:0; }
-    .step-num {
-      width:32px; height:32px;
-      border-radius:50%;
-      background:linear-gradient(135deg,#ff2e63,#ff8a00);
-      color:#fff; font-weight:900; font-size:14px;
-      display:flex; align-items:center; justify-content:center;
-      flex-shrink:0;
-    }
-    .step-content b {
-      display:block; font-size:14px;
-      font-weight:700; margin-bottom:3px;
-    }
-    .step-content span {
-      font-size:12px; color:#888; line-height:1.4;
-    }
+    .step-num { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#ff2e63,#ff8a00); color:#fff; font-weight:900; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .step-content b { display:block; font-size:14px; font-weight:700; margin-bottom:3px; }
+    .step-content span { font-size:12px; color:#888; line-height:1.4; }
 
-    .list-title {
-      font-size:14px; font-weight:800;
-      color:#aaa; text-transform:uppercase;
-      letter-spacing:1px; margin-bottom:12px;
-      display:flex; align-items:center; justify-content:space-between;
-    }
-    .list-title small {
-      font-size:11px; font-weight:600;
-      color:#666; text-transform:none;
-      letter-spacing:0;
-    }
-    .referral-list {
-      display:flex; flex-direction:column;
-      gap:8px; margin-bottom:22px;
-    }
-    .ref-item {
-      background:#121218;
-      border:1px solid #2a2a38;
-      border-radius:14px;
-      padding:14px;
-      display:flex; align-items:center;
-      gap:12px;
-    }
-    .ref-avatar {
-      width:42px; height:42px;
-      border-radius:50%;
-      object-fit:cover;
-      background:#1a1a24;
-      flex-shrink:0;
-    }
+    .list-title { font-size:14px; font-weight:800; color:#aaa; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
+    .list-title small { font-size:11px; font-weight:600; color:#666; text-transform:none; letter-spacing:0; }
+    .referral-list { display:flex; flex-direction:column; gap:8px; margin-bottom:22px; }
+    .ref-item { background:#121218; border:1px solid #2a2a38; border-radius:14px; padding:14px; display:flex; align-items:center; gap:12px; }
+    .ref-avatar { width:42px; height:42px; border-radius:50%; object-fit:cover; background:#1a1a24; flex-shrink:0; }
     .ref-info { flex:1; min-width:0; }
-    .ref-name {
-      font-size:14px; font-weight:700;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      margin-bottom:2px;
-    }
+    .ref-name { font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:2px; }
     .ref-meta { font-size:11px; color:#666; }
-    .ref-badge {
-      padding:4px 10px;
-      border-radius:8px;
-      font-size:10px; font-weight:800;
-      text-transform:uppercase;
-      letter-spacing:0.5px;
-      flex-shrink:0;
-    }
-    .ref-badge.completed {
-      background:rgba(74,222,128,0.15);
-      color:#4ade80;
-      border:1px solid rgba(74,222,128,0.3);
-    }
-    .ref-badge.pending {
-      background:rgba(255,138,0,0.15);
-      color:#ff8a00;
-      border:1px solid rgba(255,138,0,0.3);
-    }
-    .ref-empty {
-      background:#121218;
-      border:1px dashed #2a2a38;
-      border-radius:14px;
-      padding:32px 20px;
-      text-align:center;
-      color:#666;
-      font-size:13px;
-    }
+    .ref-badge { padding:4px 10px; border-radius:8px; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; flex-shrink:0; }
+    .ref-badge.completed { background:rgba(74,222,128,0.15); color:#4ade80; border:1px solid rgba(74,222,128,0.3); }
+    .ref-badge.pending { background:rgba(255,138,0,0.15); color:#ff8a00; border:1px solid rgba(255,138,0,0.3); }
+    .ref-empty { background:#121218; border:1px dashed #2a2a38; border-radius:14px; padding:32px 20px; text-align:center; color:#666; font-size:13px; }
     .ref-empty-emoji { font-size:42px; margin-bottom:8px; opacity:0.5; }
 
-    .modal-overlay {
-      position:fixed; inset:0;
-      background:rgba(0,0,0,0.85);
-      backdrop-filter:blur(6px);
-      display:none;
-      align-items:flex-end; justify-content:center;
-      z-index:9999; padding:0;
-    }
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(6px); display:none; align-items:flex-end; justify-content:center; z-index:9999; padding:0; }
     .modal-overlay.show { display:flex; }
-    .modal-sheet {
-      background:#121218;
-      border-radius:24px 24px 0 0;
-      width:100%; max-width:560px;
-      padding:24px 20px 32px;
-      border-top:1px solid #2a2a38;
-      animation:slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
-      max-height:90vh; overflow-y:auto;
-    }
-    @keyframes slideUp {
-      from { transform:translateY(100%); }
-      to { transform:translateY(0); }
-    }
-    .modal-handle {
-      width:44px; height:4px;
-      background:#333; border-radius:4px;
-      margin:0 auto 18px;
-    }
-    .modal-title {
-      font-size:20px; font-weight:800;
-      margin-bottom:6px; text-align:center;
-    }
-    .modal-sub {
-      font-size:13px; color:#888;
-      text-align:center; margin-bottom:20px;
-      line-height:1.5;
-    }
+    .modal-sheet { background:#121218; border-radius:24px 24px 0 0; width:100%; max-width:560px; padding:24px 20px 32px; border-top:1px solid #2a2a38; animation:slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1); max-height:90vh; overflow-y:auto; }
+    @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+    .modal-handle { width:44px; height:4px; background:#333; border-radius:4px; margin:0 auto 18px; }
+    .modal-title { font-size:20px; font-weight:800; margin-bottom:6px; text-align:center; }
+    .modal-sub { font-size:13px; color:#888; text-align:center; margin-bottom:20px; line-height:1.5; }
     .modal-field { margin-bottom:14px; }
-    .modal-field label {
-      display:block; font-size:12px;
-      color:#aaa; font-weight:600;
-      margin-bottom:6px; text-transform:uppercase;
-      letter-spacing:0.5px;
-    }
-    .modal-field input {
-      width:100%; height:50px;
-      background:#0a0a12;
-      border:1px solid #2a2a38;
-      border-radius:12px;
-      padding:0 14px; color:#fff;
-      font-size:15px; font-family:inherit;
-      outline:none;
-    }
+    .modal-field label { display:block; font-size:12px; color:#aaa; font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+    .modal-field input { width:100%; height:50px; background:#0a0a12; border:1px solid #2a2a38; border-radius:12px; padding:0 14px; color:#fff; font-size:15px; font-family:inherit; outline:none; }
     .modal-field input:focus { border-color:#ff2e63; }
-    .quick-amounts {
-      display:flex; gap:8px; margin-bottom:14px;
-      flex-wrap:wrap;
-    }
-    .quick-amt {
-      padding:8px 14px;
-      background:#1a1a24;
-      border:1px solid #333;
-      border-radius:10px;
-      color:#fff; font-size:13px;
-      font-weight:700;
-    }
-    .quick-amt.active {
-      background:rgba(255,46,99,0.2);
-      border-color:#ff2e63;
-      color:#ff2e63;
-    }
-    .btn-submit {
-      width:100%; height:52px;
-      background:linear-gradient(135deg,#ff2e63,#ff8a00);
-      color:#fff; border-radius:14px;
-      font-size:15px; font-weight:800;
-      margin-top:8px;
-    }
+    .quick-amounts { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+    .quick-amt { padding:8px 14px; background:#1a1a24; border:1px solid #333; border-radius:10px; color:#fff; font-size:13px; font-weight:700; }
+    .quick-amt.active { background:rgba(255,46,99,0.2); border-color:#ff2e63; color:#ff2e63; }
+    .btn-submit { width:100%; height:52px; background:linear-gradient(135deg,#ff2e63,#ff8a00); color:#fff; border-radius:14px; font-size:15px; font-weight:800; margin-top:8px; }
     .btn-submit:disabled { opacity:0.5; cursor:not-allowed; }
-    .modal-msg {
-      font-size:12px; text-align:center;
-      margin-top:10px; min-height:16px;
-    }
+    .modal-msg { font-size:12px; text-align:center; margin-top:10px; min-height:16px; }
     .modal-msg.error { color:#ff4d4d; }
     .modal-msg.success { color:#4ade80; }
 
-    .toast {
-      position:fixed; bottom:30px; left:50%;
-      transform:translateX(-50%) translateY(100px);
-      background:#1e1e28; color:#fff;
-      padding:14px 20px; border-radius:12px;
-      font-size:14px; font-weight:600;
-      z-index:99999;
-      box-shadow:0 8px 24px rgba(0,0,0,0.6);
-      border:1px solid #333;
-      opacity:0; transition:all 0.3s;
-      max-width:90%; text-align:center;
-    }
-    .toast.show {
-      transform:translateX(-50%) translateY(0);
-      opacity:1;
-    }
+    .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(100px); background:#1e1e28; color:#fff; padding:14px 20px; border-radius:12px; font-size:14px; font-weight:600; z-index:99999; box-shadow:0 8px 24px rgba(0,0,0,0.6); border:1px solid #333; opacity:0; transition:all 0.3s; max-width:90%; text-align:center; }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
   </style>
 </head>
 <body>
@@ -458,7 +152,7 @@
         <div class="balance-value">₹<span id="balanceAmt">0</span></div>
         <div class="balance-sub" id="balanceSub">Earn ₹10 per referral</div>
         <button class="btn-withdraw" id="withdrawBtn" disabled>
-          💸 Withdraw <span id="withdrawMin">(min ₹100)</span>
+          💸 Withdraw <span id="withdrawMin">(min ₹5)</span>
         </button>
       </div>
 
@@ -547,13 +241,17 @@
 
       <div class="modal-field">
         <label>Amount (₹)</label>
-        <input type="number" id="withdrawAmount" placeholder="Min ₹100" min="100">
+        <input type="number" id="withdrawAmount" placeholder="Min ₹5" min="5">
       </div>
 
+      <!-- ✅ Flexible Quick Amounts -->
       <div class="quick-amounts">
+        <button class="quick-amt" data-amt="5">₹5</button>
+        <button class="quick-amt" data-amt="10">₹10</button>
+        <button class="quick-amt" data-amt="20">₹20</button>
+        <button class="quick-amt" data-amt="30">₹30</button>
+        <button class="quick-amt" data-amt="50">₹50</button>
         <button class="quick-amt" data-amt="100">₹100</button>
-        <button class="quick-amt" data-amt="500">₹500</button>
-        <button class="quick-amt" data-amt="1000">₹1000</button>
         <button class="quick-amt" data-amt="max">MAX</button>
       </div>
 
@@ -594,10 +292,11 @@
 
     (async () => { try { await setPersistence(auth, browserLocalPersistence); } catch(e){} })();
 
+    // ✅ FIXED: Min withdrawal changed to ₹5
     const CONFIG = {
       referrerReward: 10,
       refereeReward: 5,
-      minWithdrawal: 100
+      minWithdrawal: 5
     };
 
     let currentUser = null;
@@ -630,23 +329,13 @@
       clearTimeout(toast._timer);
       toast._timer = setTimeout(() => toast.classList.remove('show'), duration);
     }
-
     function defaultAvatar(name) {
       const letter = (name || '?').trim().charAt(0).toUpperCase() || '?';
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e1e28"/><text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${letter}</text></svg>`;
       return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
     }
-
-    function safeNum(v) {
-      const n = Number(v);
-      return isNaN(n) || !isFinite(n) ? 0 : n;
-    }
-
-    function escapeHtml(s) {
-      if (!s) return '';
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
+    function safeNum(v) { const n = Number(v); return isNaN(n) || !isFinite(n) ? 0 : n; }
+    function escapeHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function timeAgo(date) {
       const s = Math.floor((new Date() - date) / 1000);
       if (s < 60) return 'just now';
@@ -655,113 +344,60 @@
       return Math.floor(h / 24) + 'd ago';
     }
 
-    /* ============================================================
-       AUTH
-       ============================================================ */
     authTimeoutId = setTimeout(() => {
-      if (!authResolved) {
-        loadingScreen.style.display = 'none';
-        notLoggedIn.style.display = 'flex';
-      }
+      if (!authResolved) { loadingScreen.style.display = 'none'; notLoggedIn.style.display = 'flex'; }
     }, 8000);
 
     onAuthStateChanged(auth, async (user) => {
       authResolved = true;
       clearTimeout(authTimeoutId);
-
-      if (!user) {
-        loadingScreen.style.display = 'none';
-        notLoggedIn.style.display = 'flex';
-        return;
-      }
-
+      if (!user) { loadingScreen.style.display = 'none'; notLoggedIn.style.display = 'flex'; return; }
       currentUser = user;
       console.log("✅ Logged in as:", user.email);
       await init();
     });
 
-    /* ============================================================
-       INIT
-       ============================================================ */
     async function init() {
-      try {
-        await enableNetwork(db);
-      } catch (e) {}
-
+      try { await enableNetwork(db); } catch (e) {}
       try {
         let snap;
-        try {
-          snap = await getDocFromServer(doc(db, 'users', currentUser.uid));
-        } catch (e) {
-          snap = await getDoc(doc(db, 'users', currentUser.uid));
-        }
+        try { snap = await getDocFromServer(doc(db, 'users', currentUser.uid)); }
+        catch (e) { snap = await getDoc(doc(db, 'users', currentUser.uid)); }
 
-        if (!snap.exists()) {
-          loadingScreen.style.display = 'none';
-          notLoggedIn.style.display = 'flex';
-          return;
-        }
-
+        if (!snap.exists()) { loadingScreen.style.display = 'none'; notLoggedIn.style.display = 'flex'; return; }
         currentProfile = snap.data();
 
-        // Auto-generate referral code if missing
         if (!currentProfile.referralCode) {
           const base = (currentProfile.user || 'REEL').substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'REEL';
           const newCode = base + Math.random().toString(36).substring(2, 6).toUpperCase();
-          console.log("🔧 Generating referral code:", newCode);
           await updateDoc(doc(db, 'users', currentUser.uid), { referralCode: newCode });
           currentProfile.referralCode = newCode;
         }
 
         if (currentProfile.walletBalance === undefined) {
           await updateDoc(doc(db, 'users', currentUser.uid), {
-            walletBalance: 0,
-            referralCount: 0,
-            referralEarnings: 0
+            walletBalance: 0, referralCount: 0, referralEarnings: 0
           });
           currentProfile.walletBalance = 0;
         }
 
         await loadReferrals();
         render();
-
       } catch (err) {
         console.error('Init error:', err);
-        loadingScreen.innerHTML = `
-          <div class="error-icon">⚠️</div>
-          <div class="error-title">Could not load</div>
-          <div class="error-text">${escapeHtml(err.message || 'Unknown error')}</div>
-          <button class="error-btn" onclick="location.reload()">Retry</button>
-        `;
+        loadingScreen.innerHTML = `<div class="error-icon">⚠️</div><div class="error-title">Could not load</div><div class="error-text">${escapeHtml(err.message || 'Unknown error')}</div><button class="error-btn" onclick="location.reload()">Retry</button>`;
       }
     }
 
-    /* ============================================================
-       LOAD REFERRALS
-       ============================================================ */
     async function loadReferrals() {
       try {
-        const q = query(
-          collection(db, 'referrals'),
-          where('referrerId', '==', currentUser.uid)
-        );
+        const q = query(collection(db, 'referrals'), where('referrerId', '==', currentUser.uid));
         const snap = await getDocs(q);
         allReferrals = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        allReferrals.sort((a, b) => {
-          const ta = a.createdAt?.toDate?.()?.getTime() || 0;
-          const tb = b.createdAt?.toDate?.()?.getTime() || 0;
-          return tb - ta;
-        });
-        console.log("✅ Loaded referrals:", allReferrals.length);
-      } catch (e) {
-        console.warn('Load referrals error:', e);
-        allReferrals = [];
-      }
+        allReferrals.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
+      } catch (e) { console.warn('Load referrals error:', e); allReferrals = []; }
     }
 
-    /* ============================================================
-       RENDER
-       ============================================================ */
     function render() {
       loadingScreen.style.display = 'none';
       mainContent.style.display = 'block';
@@ -778,8 +414,7 @@
         withdrawBtn.querySelector('#withdrawMin').textContent = '';
       } else {
         withdrawBtn.disabled = true;
-        withdrawBtn.querySelector('#withdrawMin').textContent =
-          `(min ₹${CONFIG.minWithdrawal})`;
+        withdrawBtn.querySelector('#withdrawMin').textContent = `(min ₹${CONFIG.minWithdrawal})`;
       }
 
       const total = allReferrals.length;
@@ -789,10 +424,8 @@
       document.getElementById('totalRefs').textContent = total;
       document.getElementById('completedRefs').textContent = completed;
       document.getElementById('pendingRefs').textContent = pending;
-      document.getElementById('listCount').textContent =
-        total + (total === 1 ? ' person' : ' people');
+      document.getElementById('listCount').textContent = total + (total === 1 ? ' person' : ' people');
 
-      // Hide apply card if already referred
       if (currentProfile.referredBy) {
         applyCodeCard.style.display = 'none';
       } else {
@@ -801,11 +434,7 @@
 
       const listEl = document.getElementById('referralList');
       if (allReferrals.length === 0) {
-        listEl.innerHTML = `
-          <div class="ref-empty">
-            <div class="ref-empty-emoji">📭</div>
-            <div>No referrals yet. Share your code to start earning!</div>
-          </div>`;
+        listEl.innerHTML = `<div class="ref-empty"><div class="ref-empty-emoji">📭</div><div>No referrals yet. Share your code to start earning!</div></div>`;
       } else {
         listEl.innerHTML = '';
         allReferrals.forEach(r => {
@@ -813,9 +442,7 @@
           item.className = 'ref-item';
           const date = r.createdAt?.toDate?.();
           const timeStr = date ? timeAgo(date) : 'now';
-          const badge = r.status === 'completed'
-            ? `<div class="ref-badge completed">✓ ₹${CONFIG.referrerReward}</div>`
-            : `<div class="ref-badge pending">⏳ Pending</div>`;
+          const badge = r.status === 'completed' ? `<div class="ref-badge completed">✓ ₹${CONFIG.referrerReward}</div>` : `<div class="ref-badge pending">⏳ Pending</div>`;
           item.innerHTML = `
             <img src="${r.referredPhoto || defaultAvatar(r.referredName)}" class="ref-avatar" alt="">
             <div class="ref-info">
@@ -829,9 +456,6 @@
       }
     }
 
-    /* ============================================================
-       COPY CODE
-       ============================================================ */
     document.getElementById('copyBtn').addEventListener('click', async () => {
       const code = currentProfile?.referralCode;
       if (!code) return;
@@ -839,101 +463,51 @@
         await navigator.clipboard.writeText(code);
         showToast('✅ Code copied!');
         if (navigator.vibrate) navigator.vibrate(30);
-      } catch (e) {
-        showToast('❌ Copy failed');
-      }
+      } catch (e) { showToast('❌ Copy failed'); }
     });
 
-    /* ============================================================
-       SHARE BUTTON
-       ============================================================ */
     document.getElementById('shareBtn').addEventListener('click', async () => {
       const code = currentProfile?.referralCode;
-      if (!code) {
-        showToast('❌ Code not loaded. Refresh page.');
-        return;
-      }
-
+      if (!code) { showToast('❌ Code not loaded. Refresh page.'); return; }
       const APK_URL = 'https://apkpure.com/p/com.webapp.reelhub';
       const webLink = `https://reehubreelhub-ai.github.io/?ref=${code}`;
-
       const text = `🎬 Join me on ReelHub — India's new short video app!\n\n` +
                    `📥 Download app: ${APK_URL}\n` +
                    `🌐 Or open web: ${webLink}\n\n` +
                    `🎁 Use my referral code: *${code}*\n` +
                    `(Get ₹5 bonus on first upload!)\n\n` +
                    `Open app → Settings → Refer & Earn → Enter code → Done!`;
-
-      console.log("Sharing text:", text);
-
       if (navigator.share) {
-        try {
-          await navigator.share({
-            title: 'Join ReelHub with my code',
-            text: text,
-            url: APK_URL
-          });
-          return;
-        } catch (err) {
-          console.warn('Native share failed:', err);
-          if (err.name === 'AbortError') return;
-        }
+        try { await navigator.share({ title: 'Join ReelHub with my code', text: text, url: APK_URL }); return; }
+        catch (err) { if (err.name === 'AbortError') return; }
       }
-
-      try {
-        await navigator.clipboard.writeText(text);
-        showToast('✅ Copied! Share with friends');
-      } catch (e) {
-        showToast('❌ Copy failed');
-      }
+      try { await navigator.clipboard.writeText(text); showToast('✅ Copied! Share with friends'); }
+      catch (e) { showToast('❌ Copy failed'); }
     });
 
-    /* ============================================================
-       APPLY CODE
-       ============================================================ */
-    applyCodeInput.addEventListener('input', (e) => {
-      e.target.value = e.target.value.toUpperCase();
-    });
+    applyCodeInput.addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase(); });
 
     applyCodeBtn.addEventListener('click', async () => {
       const code = applyCodeInput.value.trim().toUpperCase();
       applyCodeMsg.textContent = '';
       applyCodeMsg.style.color = '#ff4d4d';
 
-      if (!code || code.length < 4) {
-        applyCodeMsg.textContent = '❌ Enter valid code (min 4 chars)';
-        return;
-      }
-
-      if (code === currentProfile.referralCode) {
-        applyCodeMsg.textContent = '❌ Cannot use your own code';
-        return;
-      }
-
-      if (currentProfile.referredBy) {
-        applyCodeMsg.textContent = '❌ You already have a referrer';
-        return;
-      }
+      if (!code || code.length < 4) { applyCodeMsg.textContent = '❌ Enter valid code (min 4 chars)'; return; }
+      if (code === currentProfile.referralCode) { applyCodeMsg.textContent = '❌ Cannot use your own code'; return; }
+      if (currentProfile.referredBy) { applyCodeMsg.textContent = '❌ You already have a referrer'; return; }
 
       applyCodeBtn.disabled = true;
       applyCodeBtn.textContent = '...';
 
       try {
-        console.log("🔍 Searching referrer with code:", code);
-
-        const rq = query(
-          collection(db, 'users'),
-          where('referralCode', '==', code)
-        );
+        const rq = query(collection(db, 'users'), where('referralCode', '==', code));
         const snap = await getDocs(rq);
-
         if (snap.empty) {
           applyCodeMsg.textContent = '❌ Invalid code — no user found';
           applyCodeBtn.disabled = false;
           applyCodeBtn.textContent = 'Apply';
           return;
         }
-
         const referrerDoc = snap.docs[0];
         const referrerId = referrerDoc.id;
         const referrerData = referrerDoc.data();
@@ -945,17 +519,9 @@
           return;
         }
 
-        console.log("✅ Found referrer:", referrerId, referrerData.name);
-
-        // Check upload status
-        const postsSnap = await getDocs(query(
-          collection(db, 'posts'),
-          where('userId', '==', currentUser.uid),
-          limit(1)
-        ));
+        const postsSnap = await getDocs(query(collection(db, 'posts'), where('userId', '==', currentUser.uid), limit(1)));
         const hasUploaded = !postsSnap.empty;
 
-        // Deterministic referral ID
         const refDocId = `${referrerId}_${currentUser.uid}`;
         const refDocRef = doc(db, 'referrals', refDocId);
 
@@ -967,117 +533,54 @@
           return;
         }
 
-        console.log("📝 Creating referral:", refDocId);
-
         await setDoc(refDocRef, {
-          referrerId: referrerId,
-          referredId: currentUser.uid,
+          referrerId, referredId: currentUser.uid,
           referredName: currentProfile.name || 'User',
           referredHandle: currentProfile.user || '',
           referredPhoto: currentProfile.photo || '',
-          code: code,
-          status: hasUploaded ? 'completed' : 'pending',
+          code, status: hasUploaded ? 'completed' : 'pending',
           createdAt: serverTimestamp()
         });
 
-        console.log("✅ Referral record created");
+        await updateDoc(doc(db, 'users', currentUser.uid), { referredBy: referrerId, referredByCode: code });
 
-        // Link current user to referrer
-        await updateDoc(doc(db, 'users', currentUser.uid), {
-          referredBy: referrerId,
-          referredByCode: code
-        });
+        try { await updateDoc(doc(db, 'users', referrerId), { referralCount: increment(1) }); } catch (e) { console.warn("Count update:", e.message); }
 
-        console.log("✅ User linked to referrer");
-
-        // Increment referrer count (non-critical)
-        try {
-          await updateDoc(doc(db, 'users', referrerId), {
-            referralCount: increment(1)
-          });
-          console.log("✅ Referrer count incremented");
-        } catch (e) {
-          console.warn("⚠️ Count update failed (non-critical):", e.message);
-        }
-
-        // Notify referrer (non-critical)
         try {
           await addDoc(collection(db, 'notifications'), {
-            userId: referrerId,
-            type: 'referral',
-            title: '🎉 New Referral!',
+            userId: referrerId, type: 'referral', title: '🎉 New Referral!',
             message: `${currentProfile.name} used your code ${code}!`,
-            fromUserId: currentUser.uid,
-            read: false,
-            createdAt: serverTimestamp()
+            fromUserId: currentUser.uid, read: false, createdAt: serverTimestamp()
           });
-        } catch (e) {
-          console.warn("⚠️ Notification failed:", e.message);
-        }
+        } catch (e) {}
 
-        // If already uploaded, complete immediately
         if (hasUploaded) {
-          console.log("🎁 User already uploaded — completing referral immediately");
+          await updateDoc(refDocRef, { status: 'completed', completedAt: serverTimestamp() });
+          await updateDoc(doc(db, 'users', referrerId), { walletBalance: increment(CONFIG.referrerReward), referralEarnings: increment(CONFIG.referrerReward) });
+          await updateDoc(doc(db, 'users', currentUser.uid), { walletBalance: increment(CONFIG.refereeReward), referralEarnings: increment(CONFIG.refereeReward), referralCompleted: true });
 
-          await updateDoc(refDocRef, {
-            status: 'completed',
-            completedAt: serverTimestamp()
-          });
-
-          // Credit referrer
-          await updateDoc(doc(db, 'users', referrerId), {
-            walletBalance: increment(CONFIG.referrerReward),
-            referralEarnings: increment(CONFIG.referrerReward)
-          });
-
-          // Credit referee
-          await updateDoc(doc(db, 'users', currentUser.uid), {
-            walletBalance: increment(CONFIG.refereeReward),
-            referralEarnings: increment(CONFIG.refereeReward),
-            referralCompleted: true
-          });
-
-          // Log transactions
           try {
             await addDoc(collection(db, 'wallet_transactions'), {
-              userId: referrerId,
-              userName: referrerData.name || 'User',
-              type: 'credit',
-              category: 'referral',
-              amount: CONFIG.referrerReward,
-              status: 'completed',
-              description: 'Referral bonus',
-              createdAt: serverTimestamp()
+              userId: referrerId, userName: referrerData.name || 'User', type: 'credit',
+              category: 'referral', amount: CONFIG.referrerReward, status: 'completed',
+              description: 'Referral bonus', createdAt: serverTimestamp()
             });
-
             await addDoc(collection(db, 'wallet_transactions'), {
-              userId: currentUser.uid,
-              userName: currentProfile.name || 'User',
-              type: 'credit',
-              category: 'referral',
-              amount: CONFIG.refereeReward,
-              status: 'completed',
-              description: 'Welcome bonus',
-              createdAt: serverTimestamp()
+              userId: currentUser.uid, userName: currentProfile.name || 'User', type: 'credit',
+              category: 'referral', amount: CONFIG.refereeReward, status: 'completed',
+              description: 'Welcome bonus', createdAt: serverTimestamp()
             });
-          } catch (e) {
-            console.warn("Wallet log warning:", e.message);
-          }
+          } catch (e) {}
 
           applyCodeMsg.textContent = `✅ Code applied! ₹${CONFIG.refereeReward} added to wallet!`;
-          applyCodeMsg.style.color = '#4ade80';
           showToast(`🎁 ₹${CONFIG.refereeReward} welcome bonus received!`);
         } else {
           applyCodeMsg.textContent = `✅ Code applied! Upload your first video to unlock ₹${CONFIG.refereeReward}`;
-          applyCodeMsg.style.color = '#4ade80';
           showToast('✅ Code applied!');
         }
-
+        applyCodeMsg.style.color = '#4ade80';
         currentProfile.referredBy = referrerId;
-        currentProfile.referredByCode = code;
-
         setTimeout(() => location.reload(), 2000);
-
       } catch (err) {
         console.error('❌ Apply code error:', err);
         applyCodeMsg.textContent = '❌ Failed: ' + (err.message || 'Try again');
@@ -1086,9 +589,6 @@
       }
     });
 
-    /* ============================================================
-       WITHDRAW MODAL
-       ============================================================ */
     withdrawBtn.addEventListener('click', () => {
       withdrawAmount.value = '';
       withdrawUpi.value = currentProfile.upiId || '';
@@ -1122,11 +622,7 @@
       const upi = withdrawUpi.value.trim();
       const balance = safeNum(currentProfile.walletBalance);
 
-      const valid = amt >= CONFIG.minWithdrawal
-        && amt <= balance
-        && upi.includes('@')
-        && upi.length > 5;
-
+      const valid = amt >= CONFIG.minWithdrawal && amt <= balance && upi.includes('@') && upi.length > 5;
       submitWithdraw.disabled = !valid;
 
       if (amt > 0 && amt < CONFIG.minWithdrawal) {
@@ -1147,7 +643,6 @@
     submitWithdraw.addEventListener('click', async () => {
       const amt = parseInt(withdrawAmount.value, 10);
       const upi = withdrawUpi.value.trim();
-
       if (!amt || amt < CONFIG.minWithdrawal || !upi.includes('@')) return;
 
       submitWithdraw.disabled = true;
@@ -1159,17 +654,13 @@
           userName: currentProfile.name || 'User',
           userHandle: currentProfile.user || '',
           userEmail: currentUser.email || '',
-          type: 'debit',
-          category: 'withdrawal',
-          amount: amt,
-          status: 'pending',
-          upiId: upi,
-          createdAt: serverTimestamp()
+          type: 'debit', category: 'withdrawal',
+          amount: amt, status: 'pending',
+          upiId: upi, createdAt: serverTimestamp()
         });
 
         await updateDoc(doc(db, 'users', currentUser.uid), {
-          walletBalance: increment(-amt),
-          upiId: upi
+          walletBalance: increment(-amt), upiId: upi
         });
 
         currentProfile.walletBalance = safeNum(currentProfile.walletBalance) - amt;
