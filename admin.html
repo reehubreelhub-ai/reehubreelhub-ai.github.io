@@ -7,135 +7,165 @@
   <title>ReelHub Admin</title>
   <style>
     /* ============================================================
-       APP-LIKE RESPONSIVE CSS (SMOOTH)
+       RESET & BASE
        ============================================================ */
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
     body { background: #0a0a0a; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
     button { font-family: inherit; cursor: pointer; border: none; outline: none; }
     img { max-width: 100%; display: block; }
 
-    /* Loader & Login */
+    /* Loader */
     .loader-screen { position: fixed; inset: 0; background: #0a0a0a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
     .spinner { width: 40px; height: 40px; border: 4px solid #222; border-top-color: #ff2e63; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Login */
     #adminLogin { display: none; align-items: center; justify-content: center; height: 100vh; padding: 20px; }
     .login-box { background: #121218; padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; border: 1px solid #222; }
     .login-logo { font-size: 28px; font-weight: 900; color: #ff2e63; text-align: center; margin-bottom: 5px; }
     .login-sub { text-align: center; color: #888; font-size: 14px; margin-bottom: 25px; }
+    .login-title { font-size: 18px; font-weight: 700; margin-bottom: 15px; text-align: center; }
     .input-group { margin-bottom: 15px; }
     .input-group label { display: block; font-size: 12px; color: #888; margin-bottom: 6px; }
     .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 12px; background: #0a0a12; border: 1px solid #333; color: #fff; border-radius: 8px; outline: none; font-size: 14px; }
     .input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: #ff2e63; }
-    .btn-primary { width: 100%; padding: 14px; background: linear-gradient(90deg, #ff2e63, #ff8a00); color: #fff; border-radius: 8px; font-size: 15px; font-weight: 700; margin-top: 10px; transition: 0.2s; }
+    .btn-primary { width: 100%; padding: 14px; background: linear-gradient(90deg, #ff2e63, #ff8a00); color: #fff; border-radius: 8px; font-size: 15px; font-weight: 700; margin-top: 10px; transition: transform 0.15s; }
     .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .error-msg { color: #ff4d4d; font-size: 12px; text-align: center; margin-top: 10px; min-height: 18px; }
+    .success-msg { color: #4ade80; font-size: 12px; text-align: center; margin-top: 10px; }
 
-    /* App Layout */
+    /* Admin App Layout */
     #adminApp { display: none; flex-direction: column; height: 100vh; }
     .admin-header { height: 60px; background: #121218; border-bottom: 1px solid #222; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; }
     .admin-header .logo { font-size: 18px; font-weight: 800; }
     .admin-header .badge { background: #ff2e63; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; vertical-align: middle; }
-    .admin-header .user-info { font-size: 14px; font-weight: 600; }
+    .admin-header .user-info { font-size: 14px; font-weight: 600; display: flex; gap: 12px; align-items: center; }
+    .admin-header .user-info button { background: #ff4d4d; color: #fff; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; }
 
     .admin-body { display: flex; flex: 1; overflow: hidden; position: relative; }
 
-    /* Sidebar (App Bottom Nav on Mobile) */
-    .admin-sidebar { width: 220px; background: #121218; border-right: 1px solid #222; padding: 15px; display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex-shrink: 0; }
+    /* Sidebar */
+    .admin-sidebar { width: 220px; background: #121218; border-right: 1px solid #222; padding: 15px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex-shrink: 0; }
     .side-item { display: flex; align-items: center; gap: 12px; background: none; color: #888; padding: 12px 15px; border-radius: 10px; font-size: 14px; font-weight: 600; text-align: left; transition: 0.2s; }
     .side-item svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
     .side-item:hover, .side-item.active { background: #1a1a24; color: #fff; }
 
     /* Main Content */
-    .admin-main { flex: 1; padding: 15px; overflow-y: auto; background: #0a0a0a; padding-bottom: 80px; }
+    .admin-main { flex: 1; padding: 20px; overflow-y: auto; background: #0a0a0a; }
 
-    /* Page Titles */
-    .page-title-admin { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
-    .title-text { font-size: 20px; font-weight: 800; }
-    .refresh-btn { background: #1a1a24; border: 1px solid #333; color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; }
+    /* Page Title */
+    .page-title-admin { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .title-text { font-size: 22px; font-weight: 800; }
+    .refresh-btn { background: #1a1a24; border: 1px solid #333; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; }
+    .refresh-btn:hover { background: #22222e; }
 
-    /* Dashboard Stats (Upper part) */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
-    .stat-card { background: #121218; border: 1px solid #222; border-radius: 12px; padding: 15px; text-align: center; }
-    .stat-card .label { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 5px; font-weight: 700; }
-    .stat-card .value { font-size: 22px; font-weight: 900; color: #fff; }
+    /* Stats Grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 15px; }
+    .stat-card { background: #121218; border: 1px solid #222; border-radius: 12px; padding: 16px; text-align: center; }
+    .stat-card .label { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 6px; font-weight: 700; letter-spacing: 0.5px; }
+    .stat-card .value { font-size: 24px; font-weight: 900; color: #fff; }
+    .stat-card.clickable { cursor: pointer; transition: 0.2s; }
+    .stat-card.clickable:hover { border-color: #ff2e63; transform: translateY(-2px); }
 
-    /* Tables & Lists */
+    /* Tables */
     .table-wrap { background: #121218; border: 1px solid #222; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
-    .table-search { padding: 10px 15px; border-bottom: 1px solid #222; }
+    .table-search { padding: 12px 15px; border-bottom: 1px solid #222; }
     .table-search input { width: 100%; padding: 10px; background: #0a0a12; border: 1px solid #333; color: #fff; border-radius: 8px; outline: none; }
-    
-    /* Smooth Table Scroll */
+    .filter-tabs { display: flex; gap: 8px; padding: 12px 15px; border-bottom: 1px solid #222; overflow-x: auto; }
+    .filter-tab { padding: 6px 12px; background: #1a1a24; border: 1px solid #333; border-radius: 20px; color: #888; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .filter-tab.active { background: rgba(255,46,99,0.15); border-color: #ff2e63; color: #ff2e63; }
+
+    /* Table Responsive */
     .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; min-width: 600px; }
-    .admin-table th { padding: 12px; background: #0a0a12; color: #888; font-size: 11px; text-transform: uppercase; font-weight: 700; border-bottom: 1px solid #222; white-space: nowrap; }
-    .admin-table td { padding: 12px; border-bottom: 1px solid #222; color: #ccc; vertical-align: middle; }
+    .admin-table th { padding: 12px 15px; background: #0a0a12; color: #888; font-size: 11px; text-transform: uppercase; font-weight: 700; border-bottom: 1px solid #222; white-space: nowrap; letter-spacing: 0.5px; }
+    .admin-table td { padding: 12px 15px; border-bottom: 1px solid #222; color: #ccc; vertical-align: middle; }
     .admin-table tr:last-child td { border-bottom: none; }
+    .admin-table tr:hover td { background: #1a1a24; }
 
-    /* Buttons */
+    /* Buttons & Badges */
     .btn-sm { padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; color: #fff; margin: 2px; transition: 0.15s; }
     .btn-sm:active { transform: scale(0.95); }
+    .btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-sm.primary { background: #4ea8ff; }
     .btn-sm.green { background: #22c55e; }
     .btn-sm.danger { background: #ff4d4d; }
     .btn-sm.warn { background: #ff8a00; }
     .btn-sm.dark { background: #333; border: 1px solid #555; }
 
-    /* Badges */
-    .badge-pill { display: inline-block; padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+    .btn-outline { padding: 8px 16px; background: transparent; border: 1px solid #333; color: #fff; border-radius: 8px; font-size: 13px; font-weight: 700; }
+    .btn-outline:hover { background: #1a1a24; }
+
+    .badge-pill { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
     .badge-pill.admin { background: rgba(255,46,99,0.2); color: #ff2e63; }
     .badge-pill.verified { background: rgba(78,168,255,0.2); color: #4ea8ff; }
     .badge-pill.banned { background: rgba(255,77,77,0.2); color: #ff4d4d; }
+    .badge-pill.pending { background: rgba(255,138,0,0.15); color: #ff8a00; }
+    .badge-pill.accepted { background: rgba(74,222,128,0.15); color: #4ade80; }
+    .badge-pill.ignored { background: rgba(255,77,77,0.15); color: #ff4d4d; }
+
+    /* User Cell */
+    .user-cell { display: flex; align-items: center; gap: 10px; }
+    .user-cell img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: #1a1a24; }
+    .user-cell .info { display: flex; flex-direction: column; gap: 2px; }
+    .user-cell .info b { font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 4px; }
+    .user-cell .info span { font-size: 11px; color: #888; }
+
+    .actions-cell { display: flex; gap: 4px; align-items: center; }
+
+    /* Section Head */
+    .section-head { display: flex; align-items: center; justify-content: space-between; margin: 20px 0 12px; }
+    .section-head h3 { font-size: 15px; font-weight: 800; color: #fff; }
+
+    /* Empty State */
+    .empty-box, .empty-state { text-align: center; padding: 40px 20px; color: #666; font-size: 14px; }
+    .empty-state h4 { font-size: 14px; color: #888; font-weight: 600; margin: 0; }
+
+    /* Card Box */
+    .card-box { background: #121218; padding: 20px; border-radius: 12px; border: 1px solid #222; max-width: 600px; }
+    .card-box h3 { font-size: 15px; font-weight: 800; margin-bottom: 12px; }
+
+    /* Invite Card */
+    .invite-card { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #121218; border: 1px solid #2a2a38; border-radius: 12px; margin-bottom: 8px; }
+    .invite-card .info { flex: 1; font-size: 13px; color: #fff; }
 
     /* Modals */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
-    .modal { background: #121218; width: 100%; max-width: 450px; border-radius: 16px; border: 1px solid #333; max-height: 90vh; overflow-y: auto; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: #121218; width: 100%; max-width: 450px; border-radius: 16px; border: 1px solid #333; max-height: 90vh; overflow-y: auto; animation: scaleIn 0.25s ease; }
+    @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     .modal-header { display: flex; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #222; position: sticky; top: 0; background: #121218; z-index: 10; }
-    .modal-close { background: none; color: #888; font-size: 24px; }
+    .modal-header h3 { font-size: 16px; font-weight: 800; }
+    .modal-close { background: none; color: #888; font-size: 24px; line-height: 1; padding: 0 4px; }
+    .modal-close:hover { color: #fff; }
+    .modal-body { padding: 20px; }
 
-    /* Notify Form / Plans */
-    .card-box { background: #121218; padding: 20px; border-radius: 12px; border: 1px solid #222; max-width: 600px; }
-    .empty-box { padding: 40px; text-align: center; color: #666; font-size: 14px; }
-
-    /* ============================================================
-       📱 MOBILE APP-LIKE BOTTOM NAV
-       ============================================================ */
+    /* Mobile Bottom Nav */
     @media (max-width: 768px) {
       .admin-sidebar {
-        width: 100%;
-        flex-direction: row;
-        overflow-x: auto;
-        overflow-y: hidden;
-        border-right: none;
-        border-top: 1px solid #222;
-        padding: 8px;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 1000;
-        height: 65px;
-        background: #121218;
-        justify-content: flex-start;
-        gap: 5px;
-        scrollbar-width: none;
+        width: 100%; flex-direction: row; overflow-x: auto; overflow-y: hidden;
+        border-right: none; border-top: 1px solid #222; padding: 8px;
+        position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
+        height: 68px; background: #121218; justify-content: flex-start; gap: 4px; scrollbar-width: none;
       }
       .admin-sidebar::-webkit-scrollbar { display: none; }
-      
       .side-item { flex-direction: column; gap: 3px; padding: 6px 10px; font-size: 9px; min-width: 65px; text-align: center; justify-content: center; border-radius: 8px; }
       .side-item svg { width: 20px; height: 20px; }
       .side-item.active { background: #1a1a24; color: #ff2e63; }
       .side-item.active svg { stroke: #ff2e63; }
-
       .admin-main { padding: 15px 10px; padding-bottom: 85px; }
-      .modal { border-radius: 20px 20px 0 0; position: absolute; bottom: 0; left: 0; right: 0; max-width: 100%; }
-      .modal-overlay { align-items: flex-end; padding: 0; }
+      .modal { border-radius: 20px; max-width: 100%; }
+      .admin-table { min-width: 700px; }
     }
   </style>
 </head>
 <body>
 
+  <!-- TOAST CONTAINER -->
   <div id="toastContainer" style="position:fixed; top:20px; right:20px; z-index:99999; display:flex; flex-direction:column; gap:10px;"></div>
 
+  <!-- LOADER -->
   <div class="loader-screen" id="loader">
     <div class="spinner"></div>
     <div style="color:#888;font-size:13px; margin-top:10px;">Checking access...</div>
@@ -146,15 +176,16 @@
     <div class="login-box">
       <div class="login-logo">ReelHub</div>
       <div class="login-sub">Admin Panel</div>
+      <div class="login-title">Sign in</div>
       <div class="input-group">
         <label>Email</label>
-        <input type="email" id="adminEmail" placeholder="admin@reelhub.com">
+        <input type="email" id="adminEmail" placeholder="admin@reelhub.com" autocomplete="username">
       </div>
       <div class="input-group">
         <label>Password</label>
-        <input type="password" id="adminPass" placeholder="••••••">
+        <input type="password" id="adminPass" placeholder="••••••" autocomplete="current-password">
       </div>
-      <button class="btn-primary" id="adminLoginBtn">Log In</button>
+      <button type="button" class="btn-primary" id="adminLoginBtn">Log In</button>
       <div class="error-msg" id="adminLoginMsg"></div>
     </div>
   </div>
@@ -165,87 +196,152 @@
       <div class="logo">ReelHub <span class="badge">ADMIN</span></div>
       <div class="user-info">
         <span id="adminName">Admin</span>
+        <button type="button" id="adminLogout">Logout</button>
       </div>
     </header>
 
     <div class="admin-body">
-      <!-- Sidebar / Bottom Nav -->
+      <!-- SIDEBAR -->
       <aside class="admin-sidebar">
-        <button class="side-item active" data-page="dashboard">
+
+        <button type="button" class="side-item active" data-page="dashboard">
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
           <span>Dashboard</span>
         </button>
-        <button class="side-item" data-page="users">
+
+        <button type="button" class="side-item" data-page="users">
           <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span>Users</span>
         </button>
-        <button class="side-item" data-page="videos">
+
+        <button type="button" class="side-item" data-page="videos">
           <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>
           <span>Videos</span>
         </button>
-        <button class="side-item" data-page="payments">
+
+        <button type="button" class="side-item" data-page="payments">
           <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
           <span>Payments</span>
         </button>
-        <button class="side-item" data-page="wallet">
+
+        <button type="button" class="side-item" data-page="wallet">
           <svg viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
           <span>Wallet</span>
         </button>
-        <button class="side-item" data-page="notifications">
+
+        <!-- ✅ NEW: SCRATCH BUTTON -->
+        <button type="button" class="side-item" data-page="scratch">
+          <svg viewBox="0 0 24 24">
+            <path d="M20 12v8H4v-8"/>
+            <path d="M2 7h20v5H2z"/>
+            <line x1="12" y1="7" x2="12" y2="22"/>
+            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+          </svg>
+          <span>Scratch</span>
+        </button>
+
+        <button type="button" class="side-item" data-page="notifications">
           <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span>Notify</span>
         </button>
-        <button class="side-item" data-page="reports">
+
+        <button type="button" class="side-item" data-page="reports">
           <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <span>Reports</span>
         </button>
+
       </aside>
 
-      <!-- Content Area -->
+      <!-- MAIN CONTENT -->
       <main class="admin-main" id="adminContent">
-        <div class="loader-screen" style="min-height:200px;"><div class="spinner"></div></div>
+        <div class="loader-screen" style="min-height:200px; background:transparent;">
+          <div class="spinner"></div>
+        </div>
       </main>
     </div>
   </div>
 
-  <!-- MODALS -->
+  <!-- ============================================================
+       GENERIC MODAL
+       ============================================================ -->
   <div class="modal-overlay" id="adminModal">
     <div class="modal">
       <div class="modal-header">
         <h3 id="modalTitle">Modal</h3>
-        <button class="modal-close" id="modalClose">&times;</button>
+        <button type="button" class="modal-close" id="modalClose">&times;</button>
       </div>
-      <div id="modalBody" style="padding: 20px;"></div>
+      <div class="modal-body" id="modalBody"></div>
     </div>
   </div>
 
+  <!-- ============================================================
+       UPI SETTINGS MODAL
+       ============================================================ -->
   <div class="modal-overlay" id="paymentSettingsModal">
     <div class="modal">
-      <div class="modal-header"><h3>⚙️ UPI Settings</h3><button class="modal-close" onclick="document.getElementById('paymentSettingsModal').style.display='none'">&times;</button></div>
-      <div style="padding: 20px;">
-        <div class="input-group"><label>UPI ID</label><input type="text" id="adminUpiId" placeholder="yourname@ybl"></div>
-        <div class="input-group"><label>QR Code URL</label><input type="text" id="adminQrUrl" placeholder="https://..."></div>
-        <button class="btn-primary" id="savePaymentSettingsBtn">Save Settings</button>
+      <div class="modal-header">
+        <h3>⚙️ UPI Payment Settings</h3>
+        <button type="button" class="modal-close" onclick="document.getElementById('paymentSettingsModal').classList.remove('show')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label for="adminUpiId">UPI ID (e.g. yourname@ybl)</label>
+          <input type="text" id="adminUpiId" placeholder="yourname@ybl" autocomplete="off">
+        </div>
+        <div class="input-group">
+          <label for="adminQrUrl">QR Code Image URL (optional)</label>
+          <input type="text" id="adminQrUrl" placeholder="https://res.cloudinary.com/.../qr.png" autocomplete="off">
+        </div>
+        <button type="button" class="btn-primary" id="savePaymentSettingsBtn">Save Settings</button>
       </div>
     </div>
   </div>
 
+  <!-- ============================================================
+       ADD PLAN MODAL
+       ============================================================ -->
   <div class="modal-overlay" id="addPlanModal">
     <div class="modal">
-      <div class="modal-header"><h3>➕ Add Plan</h3><button class="modal-close" onclick="document.getElementById('addPlanModal').style.display='none'">&times;</button></div>
-      <div style="padding: 20px;">
-        <div class="input-group"><label>Amount (₹)</label><input type="number" id="planAmount" placeholder="e.g. 29"></div>
-        <div class="input-group"><label>Validity (Days)</label><input type="number" id="planDays" placeholder="e.g. 30"></div>
-        <button class="btn-primary" id="savePlanBtn">Save Plan</button>
+      <div class="modal-header">
+        <h3>➕ Add New Payment Plan</h3>
+        <button type="button" class="modal-close" onclick="document.getElementById('addPlanModal').classList.remove('show')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label for="planAmount">Amount (₹)</label>
+          <input type="number" id="planAmount" placeholder="e.g. 29" min="1" step="1">
+        </div>
+        <div class="input-group">
+          <label for="planDays">Validity (Days)</label>
+          <input type="number" id="planDays" placeholder="e.g. 30" min="1" step="1">
+        </div>
+        <button type="button" class="btn-primary" id="savePlanBtn">Save Plan</button>
       </div>
     </div>
   </div>
 
+  <!-- ============================================================
+       ERROR CATCHER & FALLBACK
+       ============================================================ -->
   <script>
+    window.addEventListener('error', function(e) {
+      console.error('[ReelHub Admin] Error:', e.message, '|', e.filename + ':' + e.lineno);
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('[ReelHub Admin] Promise Error:', e.reason);
+    });
+
+    // Fallback: If module fails to load, show login after 5 sec
     setTimeout(function() {
       var loader = document.getElementById('loader');
       var login = document.getElementById('adminLogin');
-      if (loader && loader.style.display !== 'none') { loader.style.display = 'none'; if (login) login.style.display = 'flex'; }
+      if (loader && getComputedStyle(loader).display !== 'none') {
+        loader.style.display = 'none';
+        if (login) login.style.display = 'flex';
+        var m = document.getElementById('adminLoginMsg');
+        if (m) m.textContent = 'Connection slow. Check admin.js path & Firebase config.';
+      }
     }, 5000);
   </script>
 
