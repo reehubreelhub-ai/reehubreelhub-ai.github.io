@@ -44,6 +44,61 @@
     .action-btn.add .label { color:#4ade80; }
     .action-btn.withdraw .label { color:#ff8a00; }
 
+    /* ✅ SCRATCH CARD SECTION */
+    .scratch-section {
+      background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,138,0,0.08));
+      border:2px solid rgba(255,215,0,0.4);
+      border-radius:20px;
+      padding:22px;
+      margin-bottom:18px;
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+      animation:glowPulse 2s ease-in-out infinite;
+    }
+    @keyframes glowPulse {
+      0%,100% { box-shadow:0 0 20px rgba(255,215,0,0.2); }
+      50% { box-shadow:0 0 40px rgba(255,215,0,0.4); }
+    }
+    .scratch-icon {
+      font-size:48px;
+      margin-bottom:10px;
+      animation:bounce 1.5s ease-in-out infinite;
+    }
+    @keyframes bounce {
+      0%,100% { transform:translateY(0); }
+      50% { transform:translateY(-8px); }
+    }
+    .scratch-title {
+      font-size:18px;
+      font-weight:900;
+      color:#ffd700;
+      margin-bottom:6px;
+    }
+    .scratch-desc {
+      font-size:13px;
+      color:#aaa;
+      margin-bottom:16px;
+      line-height:1.5;
+    }
+    .scratch-desc b { color:#ffd700; }
+    .btn-scratch {
+      width:100%;
+      height:50px;
+      background:linear-gradient(135deg,#ffd700,#ff8a00);
+      color:#fff;
+      border-radius:14px;
+      font-size:15px;
+      font-weight:800;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      box-shadow:0 6px 20px rgba(255,215,0,0.4);
+      transition:transform 0.15s;
+    }
+    .btn-scratch:active { transform:scale(0.97); }
+
     /* Stats */
     .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:22px; }
     .stat-item { background:#121218; border:1px solid #2a2a38; border-radius:12px; padding:14px 8px; text-align:center; }
@@ -137,7 +192,7 @@
 
   <div id="mainContent" style="display:none;">
     <div class="header">
-      <!-- ✅ BACK BUTTON → HOMEPAGE -->
+      <!-- Back button → Homepage -->
       <button class="header-btn" onclick="window.location.href='index.html'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
@@ -162,6 +217,19 @@
         <button class="action-btn withdraw" id="withdrawBtn">
           <div class="icon">💸</div>
           <div class="label">Withdraw</div>
+        </button>
+      </div>
+
+      <!-- ✅ SCRATCH CARD SECTION -->
+      <div id="scratchCardSection" class="scratch-section" style="display:none;">
+        <div class="scratch-icon">🎁</div>
+        <div class="scratch-title">You Have Scratch Cards!</div>
+        <div class="scratch-desc">
+          Aapke paas <b><span id="scratchCardCount">0</span> scratch card(s)</b> hain.<br>
+          Scratch karo aur paisa pao! 🎉
+        </div>
+        <button class="btn-scratch" onclick="window.location.href='scratch.html'">
+          🎁 Scratch & Claim Now
         </button>
       </div>
 
@@ -258,7 +326,7 @@
   <div class="toast" id="toast"></div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
     import {
       getFirestore, doc, getDoc, getDocFromServer, updateDoc,
@@ -272,11 +340,10 @@
       projectId: "reelhub-24616",
       storageBucket: "reelhub-24616.appspot.com",
       messagingSenderId: "397521504045",
-      appId: "1:397521504045:web:bf6d3652a7375fd632b5a4",
-      measurementId: "G-81RN37XN6H"
+      appId: "1:397521504045:web:bf6d3652a7375fd632b5a4"
     };
 
-    const app = initializeApp(firebaseConfig);
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
@@ -347,6 +414,7 @@
         } catch(e){}
 
         await loadTransactions();
+        await loadScratchCards();
         render();
       } catch (err) {
         console.error(err);
@@ -366,6 +434,31 @@
         allTx = snap.docs.map(d => ({ id:d.id, ...d.data() }));
         allTx.sort((a,b) => (b.createdAt?.toDate?.()?.getTime()||0) - (a.createdAt?.toDate?.()?.getTime()||0));
       } catch(e) { console.warn(e); allTx = []; }
+    }
+
+    /* ✅ Load pending scratch cards */
+    async function loadScratchCards() {
+      try {
+        const q = query(
+          collection(db, 'scratch_cards'),
+          where('userId', '==', currentUser.uid),
+          where('status', '==', 'pending')
+        );
+        const snap = await getDocs(q);
+        const count = snap.size;
+        
+        const section = document.getElementById('scratchCardSection');
+        const countEl = document.getElementById('scratchCardCount');
+        
+        if (count > 0) {
+          if (section) section.style.display = 'block';
+          if (countEl) countEl.textContent = count;
+        } else {
+          if (section) section.style.display = 'none';
+        }
+      } catch (e) {
+        console.warn('Scratch cards load error:', e);
+      }
     }
 
     function render() {
@@ -415,15 +508,19 @@
         const sign = isCredit ? '+' : '−';
 
         let catLabel = t.category || 'Transaction';
-        if (t.category === 'topup') catLabel = '💰 Wallet Top-up';
-        else if (t.category === 'withdrawal') catLabel = '💸 Withdrawal';
-        else if (t.category === 'referral') catLabel = '🎁 Referral Bonus';
-        else if (t.category === 'verification') catLabel = '⭐ Verification';
+        let icon = isCredit ? '💰' : '💸';
+        
+        if (t.category === 'topup') { catLabel = '💰 Wallet Top-up'; icon = '💰'; }
+        else if (t.category === 'withdrawal') { catLabel = '💸 Withdrawal'; icon = '💸'; }
+        else if (t.category === 'referral') { catLabel = '🎁 Referral Bonus'; icon = '🎁'; }
+        else if (t.category === 'verification') { catLabel = '⭐ Verification'; icon = '⭐'; }
+        else if (t.category === 'scratch_card') { catLabel = '🎉 Scratch Card Prize'; icon = '🎉'; }
+        else if (t.category === 'refund') { catLabel = '↩️ Refund'; icon = '↩️'; }
 
         const desc = t.description ? ` · ${escapeHtml(t.description)}` : '';
 
         item.innerHTML = `
-          <div class="tx-icon ${t.type}">${isCredit ? '💰' : '💸'}</div>
+          <div class="tx-icon ${t.type}">${icon}</div>
           <div class="tx-info">
             <div class="tx-title">${catLabel}</div>
             <div class="tx-meta">${timeStr}${desc}</div>
