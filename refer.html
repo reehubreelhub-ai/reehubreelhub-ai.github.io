@@ -10,18 +10,23 @@
     html, body { background:#0a0a0f; color:#fff; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; min-height:100vh; overflow-x:hidden; }
     button { font-family:inherit; cursor:pointer; border:none; outline:none; }
     img { max-width:100%; display:block; }
+
     .center-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:24px; text-align:center; }
     .spinner { width:48px; height:48px; border:4px solid #1e1e28; border-top-color:#ff2e63; border-radius:50%; animation:spin 0.8s linear infinite; margin-bottom:16px; }
     @keyframes spin { to { transform:rotate(360deg); } }
+
     .error-icon { font-size:60px; margin-bottom:16px; }
     .error-title { font-size:20px; font-weight:700; margin-bottom:10px; }
     .error-text { font-size:14px; color:#888; line-height:1.6; margin-bottom:24px; max-width:320px; }
     .error-btn { padding:14px 28px; background:linear-gradient(135deg,#ff2e63,#ff8a00); color:#fff; border-radius:12px; font-weight:700; font-size:15px; margin-bottom:10px; min-width:220px; }
+
     .header { position:sticky; top:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:rgba(10,10,15,0.95); backdrop-filter:blur(12px); border-bottom:1px solid #1a1a24; }
     .header-btn { width:38px; height:38px; border-radius:50%; background:#1a1a24; color:#fff; display:flex; align-items:center; justify-content:center; }
     .header-btn svg { width:20px; height:20px; }
     .header-title { font-size:17px; font-weight:800; background:linear-gradient(90deg,#ff2e63,#ff8a00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
     .container { padding:20px 18px 100px; max-width:560px; margin:0 auto; }
+
     .balance-card { background:linear-gradient(135deg,#ff2e63 0%,#ff8a00 100%); border-radius:22px; padding:26px 22px; margin-bottom:18px; position:relative; overflow:hidden; box-shadow:0 10px 40px rgba(255,46,99,0.3); }
     .balance-card::before { content:''; position:absolute; top:-50%; right:-30%; width:70%; height:200%; background:radial-gradient(circle,rgba(255,255,255,0.2),transparent 70%); pointer-events:none; }
     .balance-label { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; opacity:0.9; margin-bottom:8px; }
@@ -30,6 +35,62 @@
     .btn-withdraw { background:rgba(0,0,0,0.25); color:#fff; padding:12px 24px; border-radius:12px; font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:8px; backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.25); transition:transform 0.15s; }
     .btn-withdraw:active { transform:scale(0.97); }
     .btn-withdraw:disabled { opacity:0.5; cursor:not-allowed; }
+
+    /* ✅ SCRATCH CARD SECTION */
+    .scratch-section {
+      background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,138,0,0.08));
+      border:2px solid rgba(255,215,0,0.4);
+      border-radius:20px;
+      padding:22px;
+      margin-bottom:18px;
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+      animation:glowPulse 2s ease-in-out infinite;
+    }
+    @keyframes glowPulse {
+      0%,100% { box-shadow:0 0 20px rgba(255,215,0,0.2); }
+      50% { box-shadow:0 0 40px rgba(255,215,0,0.4); }
+    }
+    .scratch-icon {
+      font-size:48px;
+      margin-bottom:10px;
+      animation:bounce 1.5s ease-in-out infinite;
+    }
+    @keyframes bounce {
+      0%,100% { transform:translateY(0); }
+      50% { transform:translateY(-8px); }
+    }
+    .scratch-title {
+      font-size:18px;
+      font-weight:900;
+      color:#ffd700;
+      margin-bottom:6px;
+    }
+    .scratch-desc {
+      font-size:13px;
+      color:#aaa;
+      margin-bottom:16px;
+      line-height:1.5;
+    }
+    .scratch-desc b { color:#ffd700; }
+    .btn-scratch {
+      width:100%;
+      height:50px;
+      background:linear-gradient(135deg,#ffd700,#ff8a00);
+      color:#fff;
+      border-radius:14px;
+      font-size:15px;
+      font-weight:800;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      box-shadow:0 6px 20px rgba(255,215,0,0.4);
+      transition:transform 0.15s;
+    }
+    .btn-scratch:active { transform:scale(0.97); }
+
     .refer-card { background:#121218; border:1px solid #2a2a38; border-radius:20px; padding:22px; margin-bottom:18px; text-align:center; }
     .refer-title { font-size:13px; color:#888; margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px; }
     .refer-code-box { background:#0a0a12; border:2px dashed #ff2e63; border-radius:14px; padding:18px 14px; margin-bottom:14px; }
@@ -38,17 +99,22 @@
     .refer-btn { flex:1; padding:12px 10px; border-radius:12px; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; transition:transform 0.15s; }
     .refer-btn.primary { background:linear-gradient(135deg,#ff2e63,#ff8a00); color:#fff; }
     .refer-btn.secondary { background:#1a1a24; color:#fff; border:1px solid #333; }
+
     .apply-card { background:linear-gradient(135deg,rgba(74,222,128,0.08),rgba(34,197,94,0.03)); border:1px solid rgba(74,222,128,0.3); border-radius:20px; padding:22px; margin-bottom:18px; }
     .apply-input-row { display:flex; gap:8px; }
     .apply-input-row input { flex:1; height:48px; background:#0a0a12; border:1px solid #2a2a38; border-radius:12px; padding:0 14px; color:#fff; font-size:15px; outline:none; text-transform:uppercase; letter-spacing:2px; font-weight:700; }
     .apply-input-row button { height:48px; padding:0 20px; background:linear-gradient(135deg,#4ade80,#22c55e); border-radius:12px; color:#fff; font-weight:700; font-size:14px; }
+
     .stats-row { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:22px; }
     .stat-item { background:#121218; border:1px solid #2a2a38; border-radius:14px; padding:16px 10px; text-align:center; }
     .stat-item b { display:block; font-size:22px; font-weight:900; color:#fff; margin-bottom:4px; }
     .stat-item span { font-size:10px; color:#888; text-transform:uppercase; }
     .stat-item.success b { color:#4ade80; }
     .stat-item.pending b { color:#ff8a00; }
+
     .list-title { font-size:14px; font-weight:800; color:#aaa; text-transform:uppercase; margin: 20px 0 12px; display:flex; justify-content:space-between; }
+    .list-title small { font-size:11px; color:#666; text-transform:none; font-weight:600; }
+
     .referral-list { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
     .ref-item { background:#121218; border:1px solid #2a2a38; border-radius:14px; padding:14px; display:flex; align-items:center; gap:12px; }
     .ref-avatar { width:42px; height:42px; border-radius:50%; object-fit:cover; background:#1a1a24; flex-shrink:0; }
@@ -59,8 +125,8 @@
     .ref-badge.completed { background:rgba(74,222,128,0.15); color:#4ade80; border:1px solid rgba(74,222,128,0.3); }
     .ref-badge.pending { background:rgba(255,138,0,0.15); color:#ff8a00; border:1px solid rgba(255,138,0,0.3); }
     .ref-empty { background:#121218; border:1px dashed #2a2a38; border-radius:14px; padding:32px 20px; text-align:center; color:#666; font-size:13px; }
-    
-    /* ✅ NEW: Transaction History Styles */
+
+    /* Transaction History */
     .tx-list { display:flex; flex-direction:column; gap:8px; margin-bottom:22px; }
     .tx-item { background:#121218; border:1px solid #2a2a38; border-radius:14px; padding:14px; display:flex; align-items:center; gap:12px; }
     .tx-icon { width:42px; height:42px; border-radius:50%; background:#1a1a24; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
@@ -87,6 +153,7 @@
     .modal-msg { font-size:12px; text-align:center; margin-top:10px; min-height:16px; }
     .modal-msg.error { color:#ff4d4d; }
     .modal-msg.success { color:#4ade80; }
+
     .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(100px); background:#1e1e28; color:#fff; padding:14px 20px; border-radius:12px; font-size:14px; font-weight:600; z-index:99999; opacity:0; transition:all 0.3s; }
     .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
   </style>
@@ -107,6 +174,7 @@
 
   <div id="mainContent" style="display:none;">
     <div class="header">
+      <!-- Back button → Homepage -->
       <button class="header-btn" onclick="window.location.href='index.html'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
@@ -123,6 +191,19 @@
         <div class="balance-sub" id="balanceSub">Earn ₹10 per referral</div>
         <button class="btn-withdraw" id="withdrawBtn" disabled>
           💸 Withdraw <span id="withdrawMin">(min ₹5)</span>
+        </button>
+      </div>
+
+      <!-- ✅ SCRATCH CARD SECTION -->
+      <div id="scratchCardSection" class="scratch-section" style="display:none;">
+        <div class="scratch-icon">🎁</div>
+        <div class="scratch-title">You Have Scratch Cards!</div>
+        <div class="scratch-desc">
+          Aapke paas <b><span id="scratchCardCount">0</span> scratch card(s)</b> hain.<br>
+          Scratch karo aur paisa pao! 🎉
+        </div>
+        <button class="btn-scratch" onclick="window.location.href='scratch.html'">
+          🎁 Scratch & Claim Now
         </button>
       </div>
 
@@ -156,7 +237,7 @@
         <div class="ref-empty">📭 No referrals yet</div>
       </div>
 
-      <!-- ✅ NEW: Transaction History -->
+      <!-- Transaction History -->
       <div class="list-title"><span>📋 Transaction History</span></div>
       <div class="tx-list" id="txList">
         <div class="ref-empty">Loading transactions...</div>
@@ -164,6 +245,7 @@
     </div>
   </div>
 
+  <!-- WITHDRAW MODAL -->
   <div class="modal-overlay" id="withdrawModal">
     <div class="modal-sheet">
       <div class="modal-handle"></div>
@@ -197,9 +279,13 @@
   <div class="toast" id="toast"></div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, getDocFromServer, updateDoc, collection, query, where, getDocs, addDoc, serverTimestamp, enableNetwork, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import {
+      getFirestore, doc, getDoc, getDocFromServer, updateDoc, setDoc,
+      collection, query, where, getDocs, addDoc, serverTimestamp,
+      enableNetwork, increment
+    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC6421R1kr0jYwUJFbjB2YzIerlJw_cdLc",
@@ -210,26 +296,51 @@
       appId: "1:397521504045:web:bf6d3652a7375fd632b5a4"
     };
 
-    const app = initializeApp(firebaseConfig);
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
     (async () => { try { await setPersistence(auth, browserLocalPersistence); } catch(e){} })();
 
     const CONFIG = { referrerReward: 10, refereeReward: 5, minWithdrawal: 5 };
+
     let currentUser = null;
     let currentProfile = null;
     let allReferrals = [];
     let allTx = [];
 
-    function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2500); }
-    function safeNum(v) { const n = Number(v); return isNaN(n)||!isFinite(n) ? 0 : n; }
-    function escapeHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-    function defaultAvatar(n) { const l = (n||'?').trim().charAt(0).toUpperCase() || '?'; return 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e1e28"/><text x="50" y="50" font-size="44" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${l}</text></svg>`); }
-    function timeAgo(d) { const s = Math.floor((new Date()-d)/1000); if (s<60) return 'now'; const m=Math.floor(s/60); if (m<60) return m+'m ago'; const h=Math.floor(m/60); if (h<24) return h+'h ago'; return Math.floor(h/24)+'d ago'; }
+    const loadingScreen = document.getElementById('loadingScreen');
+    const notLoggedIn = document.getElementById('notLoggedIn');
+    const mainContent = document.getElementById('mainContent');
+    const toast = document.getElementById('toast');
 
+    function showToast(msg) { 
+      toast.textContent = msg; 
+      toast.classList.add('show'); 
+      clearTimeout(toast._t);
+      toast._t = setTimeout(()=>toast.classList.remove('show'), 2500); 
+    }
+    function safeNum(v) { const n = Number(v); return isNaN(n)||!isFinite(n) ? 0 : n; }
+    function escapeHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function defaultAvatar(n) { 
+      const l = (n||'?').trim().charAt(0).toUpperCase() || '?'; 
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e1e28"/><text x="50" y="50" font-size="44" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${l}</text></svg>`); 
+    }
+    function timeAgo(d) { 
+      const s = Math.floor((new Date()-d)/1000); 
+      if (s<60) return 'now'; 
+      const m=Math.floor(s/60); if (m<60) return m+'m ago'; 
+      const h=Math.floor(m/60); if (h<24) return h+'h ago'; 
+      return Math.floor(h/24)+'d ago'; 
+    }
+
+    /* ============ AUTH ============ */
     onAuthStateChanged(auth, async (user) => {
-      if (!user) { document.getElementById('loadingScreen').style.display = 'none'; document.getElementById('notLoggedIn').style.display = 'flex'; return; }
+      if (!user) { 
+        loadingScreen.style.display = 'none'; 
+        notLoggedIn.style.display = 'flex'; 
+        return; 
+      }
       currentUser = user;
       await init();
     });
@@ -238,7 +349,11 @@
       try { await enableNetwork(db); } catch(e){}
       try {
         const snap = await getDoc(doc(db,'users',currentUser.uid));
-        if (!snap.exists()) { document.getElementById('loadingScreen').style.display = 'none'; document.getElementById('notLoggedIn').style.display = 'flex'; return; }
+        if (!snap.exists()) { 
+          loadingScreen.style.display = 'none'; 
+          notLoggedIn.style.display = 'flex'; 
+          return; 
+        }
         currentProfile = snap.data();
 
         if (!currentProfile.referralCode) {
@@ -250,6 +365,7 @@
 
         await loadReferrals();
         await loadTransactions();
+        await loadScratchCards();
         render();
         renderTxHistory();
       } catch(e) {
@@ -274,17 +390,47 @@
       } catch(e) { allTx = []; }
     }
 
+    /* ✅ Load pending scratch cards */
+    async function loadScratchCards() {
+      try {
+        const q = query(
+          collection(db, 'scratch_cards'),
+          where('userId', '==', currentUser.uid),
+          where('status', '==', 'pending')
+        );
+        const snap = await getDocs(q);
+        const count = snap.size;
+        
+        const section = document.getElementById('scratchCardSection');
+        const countEl = document.getElementById('scratchCardCount');
+        
+        if (count > 0) {
+          if (section) section.style.display = 'block';
+          if (countEl) countEl.textContent = count;
+        } else {
+          if (section) section.style.display = 'none';
+        }
+      } catch (e) {
+        console.warn('Scratch cards load error:', e);
+      }
+    }
+
     function render() {
-      document.getElementById('loadingScreen').style.display = 'none';
-      document.getElementById('mainContent').style.display = 'block';
+      loadingScreen.style.display = 'none';
+      mainContent.style.display = 'block';
 
       const balance = Math.max(0, safeNum(currentProfile.walletBalance));
       document.getElementById('referCode').textContent = currentProfile.referralCode || '——';
       document.getElementById('balanceAmt').textContent = balance.toLocaleString('en-IN');
       
       const wBtn = document.getElementById('withdrawBtn');
-      if(balance >= CONFIG.minWithdrawal) { wBtn.disabled = false; wBtn.innerHTML = '💸 Withdraw'; } 
-      else { wBtn.disabled = true; wBtn.innerHTML = `💸 Withdraw (min ₹${CONFIG.minWithdrawal})`; }
+      if(balance >= CONFIG.minWithdrawal) { 
+        wBtn.disabled = false; 
+        wBtn.innerHTML = '💸 Withdraw'; 
+      } else { 
+        wBtn.disabled = true; 
+        wBtn.innerHTML = `💸 Withdraw (min ₹${CONFIG.minWithdrawal})`; 
+      }
 
       const total = allReferrals.length;
       const comp = allReferrals.filter(r => r.status==='completed').length;
@@ -297,11 +443,13 @@
       document.getElementById('applyCodeCard').style.display = currentProfile.referredBy ? 'none' : 'block';
 
       const listEl = document.getElementById('referralList');
-      if (total === 0) { listEl.innerHTML = `<div class="ref-empty">📭 No referrals yet</div>`; }
-      else {
+      if (total === 0) { 
+        listEl.innerHTML = `<div class="ref-empty">📭 No referrals yet</div>`; 
+      } else {
         listEl.innerHTML = '';
         allReferrals.forEach(r => {
-          const item = document.createElement('div'); item.className = 'ref-item';
+          const item = document.createElement('div'); 
+          item.className = 'ref-item';
           item.innerHTML = `
             <img src="${r.referredPhoto || defaultAvatar(r.referredName)}" class="ref-avatar">
             <div class="ref-info">
@@ -315,7 +463,7 @@
       }
     }
 
-    // ✅ NEW: Transaction History Renderer
+    /* Transaction History */
     function renderTxHistory() {
       const listEl = document.getElementById('txList');
       if (!listEl) return;
@@ -341,11 +489,17 @@
           amtColor = '#4ade80';
           metaText = `${timeStr} · ✓ Credited`;
         } 
+        else if (t.category === 'scratch_card') {
+          icon = '🎉';
+          title = 'Scratch Card Prize';
+          amtDisplay = `+₹${safeNum(t.amount)}`;
+          amtColor = '#ffd700';
+          metaText = `${timeStr} · ✓ Claimed`;
+        }
         else if (t.category === 'withdrawal') {
           icon = '💸';
           title = 'Withdrawal';
           if (t.status === 'completed') {
-            // ✅ Jab admin approve kar de → Green "Sent" dikhao, koi minus nahi
             amtDisplay = `✓ ₹${safeNum(t.amount)} Sent`;
             amtColor = '#4ade80';
             metaText = `${timeStr} · Paid to ${escapeHtml(t.upiId || 'UPI')}`;
@@ -395,54 +549,86 @@
       });
     }
 
+    /* Copy Code */
     document.getElementById('copyBtn').addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(currentProfile.referralCode); showToast('✅ Code copied!'); } catch(e) { showToast('❌ Failed'); }
+      try { 
+        await navigator.clipboard.writeText(currentProfile.referralCode); 
+        showToast('✅ Code copied!'); 
+      } catch(e) { showToast('❌ Failed'); }
     });
 
+    /* Share Link */
     document.getElementById('shareBtn').addEventListener('click', async () => {
-      const text = `🎬 Join ReelHub!\nUse code: *${currentProfile.referralCode}* to get ₹5 bonus!`;
-      if (navigator.share) { try { await navigator.share({ title: 'Join ReelHub', text }); return; } catch(e){} }
+      const code = currentProfile.referralCode;
+      const text = `🎬 Join ReelHub!\nUse code: *${code}* to get ₹5 bonus!\n\nhttps://reehubreelhub-ai.github.io/?ref=${code}`;
+      if (navigator.share) { 
+        try { await navigator.share({ title: 'Join ReelHub', text }); return; } catch(e){} 
+      }
       try { await navigator.clipboard.writeText(text); showToast('✅ Copied!'); } catch(e) {}
     });
 
-    // Apply Code
+    /* Apply Code */
     document.getElementById('applyCodeBtn').addEventListener('click', async () => {
       const input = document.getElementById('applyCodeInput');
       const msgEl = document.getElementById('applyCodeMsg');
       const code = input.value.trim().toUpperCase();
       msgEl.textContent = '';
       
-      if (!code || code.length < 4) { msgEl.textContent = '❌ Enter valid code'; msgEl.style.color = '#ff4d4d'; return; }
-      if (code === currentProfile.referralCode) { msgEl.textContent = '❌ Cannot use your own code'; msgEl.style.color = '#ff4d4d'; return; }
-      if (currentProfile.referredBy) { msgEl.textContent = '❌ Already have a referrer'; msgEl.style.color = '#ff4d4d'; return; }
+      if (!code || code.length < 4) { 
+        msgEl.textContent = '❌ Enter valid code'; 
+        msgEl.style.color = '#ff4d4d'; 
+        return; 
+      }
+      if (code === currentProfile.referralCode) { 
+        msgEl.textContent = '❌ Cannot use your own code'; 
+        msgEl.style.color = '#ff4d4d'; 
+        return; 
+      }
+      if (currentProfile.referredBy) { 
+        msgEl.textContent = '❌ Already have a referrer'; 
+        msgEl.style.color = '#ff4d4d'; 
+        return; 
+      }
 
       const btn = document.getElementById('applyCodeBtn');
-      btn.disabled = true; btn.textContent = '...';
+      btn.disabled = true; 
+      btn.textContent = '...';
 
       try {
         const rq = query(collection(db, 'users'), where('referralCode', '==', code));
         const snap = await getDocs(rq);
-        if (snap.empty) { msgEl.textContent = '❌ Invalid code'; msgEl.style.color = '#ff4d4d'; btn.disabled = false; btn.textContent = 'Apply'; return; }
+        if (snap.empty) { 
+          msgEl.textContent = '❌ Invalid code'; 
+          msgEl.style.color = '#ff4d4d'; 
+          btn.disabled = false; 
+          btn.textContent = 'Apply'; 
+          return; 
+        }
 
         const referrerDoc = snap.docs[0];
         const referrerId = referrerDoc.id;
-        if (referrerId === currentUser.uid) { msgEl.textContent = '❌ Cannot use own code'; msgEl.style.color = '#ff4d4d'; btn.disabled = false; btn.textContent = 'Apply'; return; }
+        if (referrerId === currentUser.uid) { 
+          msgEl.textContent = '❌ Cannot use own code'; 
+          msgEl.style.color = '#ff4d4d'; 
+          btn.disabled = false; 
+          btn.textContent = 'Apply'; 
+          return; 
+        }
 
         const postsSnap = await getDocs(query(collection(db, 'posts'), where('userId', '==', currentUser.uid)));
         const hasUploaded = !postsSnap.empty;
         const refDocId = `${referrerId}_${currentUser.uid}`;
 
-        await (async () => {
-          const { setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js");
-          await setDoc(doc(db, 'referrals', refDocId), {
-            referrerId, referredId: currentUser.uid,
-            referredName: currentProfile.name || 'User',
-            referredHandle: currentProfile.user || '',
-            referredPhoto: currentProfile.photo || '',
-            code, status: hasUploaded ? 'completed' : 'pending',
-            createdAt: serverTimestamp()
-          });
-        })();
+        await setDoc(doc(db, 'referrals', refDocId), {
+          referrerId, 
+          referredId: currentUser.uid,
+          referredName: currentProfile.name || 'User',
+          referredHandle: currentProfile.user || '',
+          referredPhoto: currentProfile.photo || '',
+          code, 
+          status: hasUploaded ? 'completed' : 'pending',
+          createdAt: serverTimestamp()
+        });
 
         await updateDoc(doc(db, 'users', currentUser.uid), { referredBy: referrerId, referredByCode: code });
         await updateDoc(doc(db, 'users', referrerId), { referralCount: increment(1) });
@@ -452,20 +638,25 @@
         currentProfile.referredBy = referrerId;
         setTimeout(() => location.reload(), 1500);
       } catch(e) {
-        msgEl.textContent = '❌ ' + e.message; msgEl.style.color = '#ff4d4d';
-        btn.disabled = false; btn.textContent = 'Apply';
+        msgEl.textContent = '❌ ' + e.message; 
+        msgEl.style.color = '#ff4d4d';
+        btn.disabled = false; 
+        btn.textContent = 'Apply';
       }
     });
     document.getElementById('applyCodeInput').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase(); });
 
-    // Withdraw
+    /* Withdraw */
     const withdrawModal = document.getElementById('withdrawModal');
     const withdrawAmount = document.getElementById('withdrawAmount');
     const withdrawUpi = document.getElementById('withdrawUpi');
     const submitWithdraw = document.getElementById('submitWithdraw');
 
     document.getElementById('withdrawBtn').addEventListener('click', () => {
-      withdrawModal.classList.add('show'); withdrawAmount.value = ''; withdrawUpi.value = currentProfile.upiId || ''; submitWithdraw.disabled = true;
+      withdrawModal.classList.add('show'); 
+      withdrawAmount.value = ''; 
+      withdrawUpi.value = currentProfile.upiId || ''; 
+      submitWithdraw.disabled = true;
     });
     withdrawModal.addEventListener('click', (e) => { if(e.target === withdrawModal) withdrawModal.classList.remove('show'); });
     
@@ -473,27 +664,37 @@
       btn.addEventListener('click', () => {
         document.querySelectorAll('.quick-amt').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        withdrawAmount.value = btn.dataset.amt === 'max' ? Math.floor(safeNum(currentProfile.walletBalance)) : btn.dataset.amt;
+        withdrawAmount.value = btn.dataset.amt === 'max' ? Math.floor(Math.max(0, safeNum(currentProfile.walletBalance))) : btn.dataset.amt;
         validateWithdraw();
       });
     });
 
     function validateWithdraw() {
-      const amt = parseInt(withdrawAmount.value,10)||0; const upi = withdrawUpi.value.trim(); const bal = safeNum(currentProfile.walletBalance);
+      const amt = parseInt(withdrawAmount.value,10)||0; 
+      const upi = withdrawUpi.value.trim(); 
+      const bal = Math.max(0, safeNum(currentProfile.walletBalance));
       submitWithdraw.disabled = !(amt >= CONFIG.minWithdrawal && amt <= bal && upi.includes('@'));
     }
     withdrawAmount.addEventListener('input', validateWithdraw);
     withdrawUpi.addEventListener('input', validateWithdraw);
 
     submitWithdraw.addEventListener('click', async () => {
-      const amt = parseInt(withdrawAmount.value,10); const upi = withdrawUpi.value.trim();
+      const amt = parseInt(withdrawAmount.value,10); 
+      const upi = withdrawUpi.value.trim();
       if(!amt || amt < CONFIG.minWithdrawal) return;
-      submitWithdraw.disabled = true; submitWithdraw.textContent = '...';
+      submitWithdraw.disabled = true; 
+      submitWithdraw.textContent = '...';
       try {
         await addDoc(collection(db,'wallet_transactions'), {
-          userId: currentUser.uid, userName: currentProfile.name || 'User',
-          userHandle: currentProfile.user || '', type: 'debit', category: 'withdrawal',
-          amount: amt, status: 'pending', upiId: upi, createdAt: serverTimestamp()
+          userId: currentUser.uid, 
+          userName: currentProfile.name || 'User',
+          userHandle: currentProfile.user || '', 
+          type: 'debit', 
+          category: 'withdrawal',
+          amount: amt, 
+          status: 'pending', 
+          upiId: upi, 
+          createdAt: serverTimestamp()
         });
         await updateDoc(doc(db,'users',currentUser.uid), { walletBalance: increment(-amt), upiId: upi });
         currentProfile.walletBalance = safeNum(currentProfile.walletBalance) - amt;
@@ -501,13 +702,22 @@
         document.getElementById('withdrawMsg').className = 'modal-msg success';
         showToast('✅ Request submitted');
         await loadTransactions();
-        render(); renderTxHistory();
+        render(); 
+        renderTxHistory();
         setTimeout(() => withdrawModal.classList.remove('show'), 1800);
-      } catch(e) { document.getElementById('withdrawMsg').textContent = '❌ ' + e.message; document.getElementById('withdrawMsg').className = 'modal-msg error'; }
-      finally { submitWithdraw.disabled = false; submitWithdraw.textContent = 'Submit Withdrawal Request'; }
+      } catch(e) { 
+        document.getElementById('withdrawMsg').textContent = '❌ ' + e.message; 
+        document.getElementById('withdrawMsg').className = 'modal-msg error'; 
+      }
+      finally { 
+        submitWithdraw.disabled = false; 
+        submitWithdraw.textContent = 'Submit Withdrawal Request'; 
+      }
     });
 
-    /* ✅ PHONE BACK BUTTON → Homepage */
+    /* ============================================================
+       ✅ PHONE BACK BUTTON → Homepage
+       ============================================================ */
     history.pushState(null, null, location.href);
     window.addEventListener('popstate', function() {
       window.location.href = 'index.html';
