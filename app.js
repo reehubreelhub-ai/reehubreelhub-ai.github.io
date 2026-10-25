@@ -1,11 +1,10 @@
 /* ============================================================
-   ReelHub — app.js (PART 1/5) — FULL FIXED v2
+   ReelHub — app.js (PART 1/5) — FULL V3
    Imports, Config, DOM, State, Auth, Signup, Login
-   ✅ Login/Signup fixes + 1-second transition + Robust error handling
-   ✅ All bugs fixed (null guards, race conditions, defensive checks)
+   ✅ All bugs fixed + Referral + Wallet fields on signup
    ============================================================ */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -36,7 +35,8 @@ import {
   arrayRemove,
   limit,
   writeBatch,
-  onSnapshot
+  onSnapshot,
+  increment
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 /* ============================================================
@@ -52,11 +52,12 @@ const firebaseConfig = {
   measurementId: "G-81RN37XN6H"
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
+/* ✅ FIX: Reuse existing app if already initialized (avoid duplicate error) */
+const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 
-/* ✅ NEW: Auth persistence — session app aur monetization/wallet/refer pages ke beech share hoga */
+/* ✅ Auth persistence — session shared between app + sub-pages */
 (async () => {
   try {
     await setPersistence(auth, browserLocalPersistence);
@@ -92,7 +93,6 @@ const CLOUDINARY_ACCOUNTS = {
     if (ref && ref.length >= 4) {
       localStorage.setItem('reelhub_ref_code', ref.toUpperCase().trim());
       console.log('✅ Ref code captured:', ref);
-      // Clean URL — bina reload
       const clean = window.location.pathname + window.location.hash;
       window.history.replaceState({}, '', clean);
     }
@@ -283,7 +283,7 @@ let isCurrentlyTyping = false;
 const _readProcessed = new Set();
 const _deliveredProcessed = new Set();
 
-/* ✅ Split seen sets (DM vs Group) + size cap */
+/* ✅ Seen sets */
 const _seenDmMsgIds = new Set();
 const _seenGroupMsgIds = new Set();
 const SET_CAP = 1000;
@@ -305,7 +305,7 @@ let notifUnsub = null;
 const _lastChatMsgTime = new Map();
 const _lastGroupMsgTime = new Map();
 
-/* ✅ Auth flag to prevent duplicate listeners */
+/* ✅ Auth flag */
 let authActionInProgress = false;
 
 /* ✅ Loading timeout */
@@ -316,7 +316,7 @@ let loadingTimeoutId = null;
 const TRANSITION_DELAY_MS = 1000;
 
 /* ============================================================
-   HELPERS
+   HELPER FUNCTIONS
    ============================================================ */
 function safeNum(v) {
   const n = Number(v);
@@ -380,7 +380,7 @@ function startLoadingTimeout() {
 if (loadingScreen) startLoadingTimeout();
 
 /* ============================================================
-   SCREEN SWITCHING — 1 SECOND TRANSITION
+   SCREEN SWITCHING
    ============================================================ */
 function showAuth() {
   clearTimeout(loadingTimeoutId);
@@ -510,7 +510,7 @@ $id('goLogin')?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   SIGNUP — FIXED + 1 SECOND TRANSITION
+   SIGNUP — With Referral Processing
    ============================================================ */
 signupForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -563,18 +563,16 @@ signupForm?.addEventListener('submit', async (e) => {
     const userSnap = await getDocs(uq);
 
     if (!userSnap.empty) {
-      try {
-        await createdAuthUser.delete();
-      } catch (delErr) {
+      try { await createdAuthUser.delete(); } catch (delErr) {
         try { await signOut(auth); } catch (e2) {}
       }
       signupMsg.textContent = 'Username already taken. Try another.';
       return;
     }
 
-    // ✅ Generate referral code for new user
     const newReferralCode = generateReferralCode(user);
 
+    /* ✅ Create user with wallet + referral fields */
     await setDoc(doc(db, 'users', uid), {
       uid: uid,
       name: name,
@@ -590,7 +588,6 @@ signupForm?.addEventListener('submit', async (e) => {
       isPrivate: false,
       verified: false,
       banned: false,
-      // ✅ NEW: Referral + Wallet fields
       referralCode: newReferralCode,
       walletBalance: 0,
       referralCount: 0,
@@ -600,16 +597,12 @@ signupForm?.addEventListener('submit', async (e) => {
       createdAt: serverTimestamp()
     });
 
-    try {
-      await sendEmailVerification(cred.user);
-    } catch (e) {
-      console.warn('Verification email failed:', e);
-    }
+    try { await sendEmailVerification(cred.user); } catch (e) { console.warn(e); }
 
     currentUser = cred.user;
     await loadProfile(uid);
 
-    // ✅ REFERRAL: Process if pending code exists
+    /* ✅ REFERRAL: Process pending referral code */
     try {
       const pendingRef = localStorage.getItem('reelhub_ref_code');
       if (pendingRef && pendingRef.length >= 4) {
@@ -621,7 +614,6 @@ signupForm?.addEventListener('submit', async (e) => {
           const referrerId = referrerDoc.id;
 
           if (referrerId !== uid) {
-            // Create referral record (pending — completes after first video)
             await addDoc(collection(db, 'referrals'), {
               referrerId: referrerId,
               referredId: uid,
@@ -633,23 +625,21 @@ signupForm?.addEventListener('submit', async (e) => {
               createdAt: serverTimestamp()
             });
 
-            // Link new user to referrer
             await updateDoc(doc(db, 'users', uid), {
               referredBy: referrerId,
               referredByCode: pendingRef
             });
 
-            // Increment referrer's count
             await updateDoc(doc(db, 'users', referrerId), {
               referralCount: (referrerDoc.data().referralCount || 0) + 1
             });
 
-            // Notify referrer
             await addDoc(collection(db, 'notifications'), {
               userId: referrerId,
               type: 'referral',
               title: '🎉 New Referral!',
               message: `${name} joined using your code! Complete when they upload a video.`,
+              fromUserId: uid,
               read: false,
               createdAt: serverTimestamp()
             });
@@ -667,17 +657,15 @@ signupForm?.addEventListener('submit', async (e) => {
     signupMsg.className = 'success-msg';
     signupMsg.textContent = 'Account created! Welcome 🎉';
 
-    // ✅ Show referral applied message if applicable
     const savedRef = localStorage.getItem('reelhub_ref_code');
     if (savedRef) {
-      signupMsg.textContent = `Account created! 🎉 Welcome bonus: ₹5 will be added after first upload. (Code: ${savedRef})`;
+      signupMsg.textContent = `Account created! 🎉 Welcome bonus: ₹5 after first upload. (Code: ${savedRef})`;
     }
 
     signupForm.reset();
-
     authActionInProgress = false;
 
-    /* ✅ 1 SECOND TRANSITION */
+    /* 1 SECOND TRANSITION */
     setTimeout(() => {
       showApp();
       startNotifWatcher();
@@ -688,29 +676,20 @@ signupForm?.addEventListener('submit', async (e) => {
     console.error('Signup error:', err);
 
     if (createdAuthUser && !currentProfile) {
-      try {
-        await createdAuthUser.delete();
-      } catch (delErr) {
+      try { await createdAuthUser.delete(); } catch (delErr) {
         try { await signOut(auth); } catch (e2) {}
       }
     }
 
     signupMsg.className = 'error-msg';
 
-    if (err.code === 'auth/email-already-in-use') {
-      signupMsg.textContent = 'Email already registered.';
-    } else if (err.code === 'auth/invalid-email') {
-      signupMsg.textContent = 'Invalid email.';
-    } else if (err.code === 'auth/weak-password') {
-      signupMsg.textContent = 'Password too weak.';
-    } else if (err.code === 'auth/network-request-failed') {
-      signupMsg.textContent = 'Network error. Check your connection.';
-    } else if (err.code === 'permission-denied' ||
-               (err.message && err.message.toLowerCase().includes('permission'))) {
-      signupMsg.textContent = '⚠️ Firestore rules update karo.';
-    } else {
-      signupMsg.textContent = err.message || 'Signup failed.';
-    }
+    if (err.code === 'auth/email-already-in-use') signupMsg.textContent = 'Email already registered.';
+    else if (err.code === 'auth/invalid-email') signupMsg.textContent = 'Invalid email.';
+    else if (err.code === 'auth/weak-password') signupMsg.textContent = 'Password too weak.';
+    else if (err.code === 'auth/network-request-failed') signupMsg.textContent = 'Network error.';
+    else if (err.code === 'permission-denied' || (err.message && err.message.toLowerCase().includes('permission'))) signupMsg.textContent = '⚠️ Firestore rules update karo.';
+    else signupMsg.textContent = err.message || 'Signup failed.';
+
   } finally {
     isSigningUp = false;
     authActionInProgress = false;
@@ -720,7 +699,7 @@ signupForm?.addEventListener('submit', async (e) => {
 });
 
 /* ============================================================
-   LOGIN — FIXED + 1 SECOND TRANSITION
+   LOGIN
    ============================================================ */
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -763,7 +742,7 @@ loginForm?.addEventListener('submit', async (e) => {
     loginMsg.textContent = 'Welcome back! 🎉';
     authActionInProgress = false;
 
-    /* ✅ 1 SECOND TRANSITION */
+    /* 1 SECOND TRANSITION */
     setTimeout(() => {
       loginMsg.textContent = '';
       showApp();
@@ -779,10 +758,8 @@ loginForm?.addEventListener('submit', async (e) => {
 
     const code = err.code || '';
 
-    if (code === 'auth/user-not-found' ||
-        code === 'auth/wrong-password' ||
-        code === 'auth/invalid-credential' ||
-        code === 'auth/invalid-login-credentials') {
+    if (code === 'auth/user-not-found' || code === 'auth/wrong-password' ||
+        code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials') {
       loginMsg.textContent = 'Invalid email or password.';
     } else if (code === 'auth/too-many-requests') {
       loginMsg.textContent = 'Too many attempts. Try again later.';
@@ -850,17 +827,11 @@ sendResetBtn?.addEventListener('click', async () => {
   } catch (err) {
     forgotMsg.className = 'error-msg';
 
-    if (err.code === 'auth/user-not-found') {
-      forgotMsg.textContent = 'No account with this email.';
-    } else if (err.code === 'auth/invalid-email') {
-      forgotMsg.textContent = 'Invalid email.';
-    } else if (err.code === 'auth/too-many-requests') {
-      forgotMsg.textContent = 'Too many attempts. Try later.';
-    } else if (err.code === 'auth/network-request-failed') {
-      forgotMsg.textContent = 'Network error.';
-    } else {
-      forgotMsg.textContent = err.message || 'Failed to send reset link.';
-    }
+    if (err.code === 'auth/user-not-found') forgotMsg.textContent = 'No account with this email.';
+    else if (err.code === 'auth/invalid-email') forgotMsg.textContent = 'Invalid email.';
+    else if (err.code === 'auth/too-many-requests') forgotMsg.textContent = 'Too many attempts. Try later.';
+    else if (err.code === 'auth/network-request-failed') forgotMsg.textContent = 'Network error.';
+    else forgotMsg.textContent = err.message || 'Failed to send reset link.';
   } finally {
     sendResetBtn.disabled = false;
     sendResetBtn.textContent = 'Send Reset Link';
@@ -902,11 +873,7 @@ $id('logoutBtn')?.addEventListener('click', async () => {
   _lastChatMsgTime.clear();
   _lastGroupMsgTime.clear();
 
-  try {
-    await signOut(auth);
-  } catch (e) {
-    console.warn('Signout error:', e);
-  }
+  try { await signOut(auth); } catch (e) { console.warn(e); }
 
   currentUser = null;
   currentProfile = null;
@@ -1001,7 +968,6 @@ async function loadProfile(uid) {
     if (snap.exists()) {
       const data = snap.data();
 
-      // ✅ Defensive normalization
       if (!Array.isArray(data.followers)) data.followers = [];
       if (!Array.isArray(data.following)) data.following = [];
       if (!Array.isArray(data.savedPosts)) data.savedPosts = [];
@@ -1065,12 +1031,11 @@ function renderPage(page) {
   }
 }
 
-console.log('✅ Part 1 loaded (Auth + State + 1s Transition + Referral)');
+console.log('✅ Part 1 loaded — Auth + State + 1s Transition + Referral + Wallet');
 /* ============================================================
-   ReelHub — app.js (PART 2/5) — FULL FIXED v2
-   Home Feed + Shorts + Stories + Upload + Games Shelf
-   ✅ Games Shelf + 1s transition + Blob URL fix + null guards
-   ✅ All bugs fixed
+   ReelHub — app.js (PART 2/5) — FULL V3
+   Home Feed + Shorts Shelf + Stories + Upload
+   ✅ All bug fixes + null guards
    ============================================================ */
 
 let feedAutoplayObserver = null;
@@ -1092,18 +1057,6 @@ function buildSaveButtonHTML(postId) {
         <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
       </svg>
     </button>
-  `;
-}
-
-function buildViewsHTML(viewsCount) {
-  return `
-    <div class="feed-views" title="Views">
-      <svg viewBox="0 0 24 24">
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-        <circle cx="12" cy="12" r="3"/>
-      </svg>
-      <span>${safeNum(viewsCount)}</span>
-    </div>
   `;
 }
 
@@ -1680,7 +1633,7 @@ function loadFeedCache() {
 }
 
 /* ============================================================
-   THUMBNAIL BUILDER (Cloudinary)
+   THUMBNAIL BUILDER
    ============================================================ */
 function buildThumbnailUrl(videoUrl, type) {
   if (!videoUrl) return '';
@@ -1890,10 +1843,8 @@ function renderFeedWithShortsShelf(posts, container) {
 
   container.innerHTML = '';
 
-  // Games shelf
   container.appendChild(buildGamesShelf());
 
-  // Shorts shelf
   if (shorts.length > 0) {
     const shelf = document.createElement('div');
     shelf.className = 'shorts-shelf';
@@ -1925,7 +1876,6 @@ function renderFeedWithShortsShelf(posts, container) {
     });
   }
 
-  // Regular feed
   if (regular.length > 0) {
     regular.forEach(post => container.appendChild(makeFeedPost(post)));
     setupFeedAutoplay();
@@ -2053,43 +2003,6 @@ function makeFeedPost(post) {
 }
 
 /* ============================================================
-   POST PLAYER
-   ============================================================ */
-function openPostPlayer(post) {
-  if (!post) return;
-  if (!playerTitle || !playerContent) return;
-
-  playerTitle.textContent = post.caption || (post.type === 'photo' ? 'Photo' : 'Video');
-
-  if (post.type === 'photo') {
-    playerContent.innerHTML = `<img src="${post.url}" alt="">`;
-  } else if (post.type === 'short') {
-    playerContent.innerHTML = `
-      <div class="player-short-wrap" style="position:relative;">
-        <video src="${post.url}" controls autoplay playsinline style="width:100%;max-height:75vh;background:#000;border-radius:8px;"></video>
-      </div>
-    `;
-  } else {
-    playerContent.innerHTML = `
-      <div class="player-youtube-wrap" style="position:relative;">
-        <video src="${post.url}" controls autoplay playsinline ${post.thumbnail ? `poster="${post.thumbnail}"` : ''} style="width:100%;max-height:75vh;background:#000;"></video>
-        <div class="player-youtube-info">
-          <div class="player-youtube-title">${escapeHtml(post.caption || 'Video')}</div>
-          <div class="player-youtube-channel">${escapeHtml(post.userName || 'User')}${verifiedBadgeHTML(post.userVerified)}</div>
-        </div>
-      </div>
-    `;
-  }
-
-  playerModal?.classList.add('show');
-
-  const playerInner = playerContent.firstElementChild;
-  if (playerInner && post.type !== 'photo') {
-    attachDoubleTapLike(playerInner, post, null);
-  }
-}
-
-/* ============================================================
    POST MENU
    ============================================================ */
 async function showPostMenu(anchorEl, post) {
@@ -2148,10 +2061,10 @@ async function showPostMenu(anchorEl, post) {
       const action = btn.dataset.action;
       menu.remove();
 
-      if (action === 'report')        await reportPost(post);
-      else if (action === 'block')    await blockUser(post.userId, post.userHandle);
-      else if (action === 'unblock')  await unblockUser(post.userId, post.userHandle);
-      else if (action === 'delete')   await deletePost(post.id);
+      if (action === 'report') await reportPost(post);
+      else if (action === 'block') await blockUser(post.userId, post.userHandle);
+      else if (action === 'unblock') await unblockUser(post.userId, post.userHandle);
+      else if (action === 'delete') await deletePost(post.id);
     });
   });
 
@@ -2538,7 +2451,7 @@ storySubmitBtn?.addEventListener('click', async () => {
 });
 
 /* ============================================================
-   CLOUDINARY UPLOAD — STORY
+   CLOUDINARY UPLOADS
    ============================================================ */
 function uploadToCloudinaryStory(file, onProgress) {
   return new Promise((resolve, reject) => {
@@ -2591,9 +2504,6 @@ function uploadToCloudinaryStory(file, onProgress) {
   });
 }
 
-/* ============================================================
-   CLOUDINARY UPLOAD — GROUP FILES
-   ============================================================ */
 function uploadToCloudinaryGroupFile(file, onProgress) {
   return new Promise((resolve, reject) => {
     let resourceType = 'raw';
@@ -2646,9 +2556,6 @@ function uploadToCloudinaryGroupFile(file, onProgress) {
   });
 }
 
-/* ============================================================
-   CLOUDINARY UPLOAD — VOICE
-   ============================================================ */
 function uploadToCloudinaryVoice(file, onProgress) {
   return new Promise((resolve, reject) => {
     const acc = CLOUDINARY_ACCOUNTS.stories;
@@ -2697,12 +2604,11 @@ function uploadToCloudinaryVoice(file, onProgress) {
   });
 }
 
-console.log('✅ Part 2 loaded (Feed + Shorts + Stories + Upload + Games Shelf)');
+console.log('✅ Part 2 loaded — Feed + Shorts + Stories + Upload + Games Shelf');
 /* ============================================================
-   ReelHub — app.js (PART 3/5) — FULL FIXED v2
+   ReelHub — app.js (PART 3/5) — FULL V3
    Story Viewer + Shorts Feed + Comments + Share Counter
-   ✅ Share counter UI update + Story timer cleanup + Comment null guards
-   ✅ _isHighlightViewing flag reset + Atomic comment counts
+   ✅ Share counter UI update + Story timer cleanup + Null guards
    ============================================================ */
 
 /* ============================================================
@@ -2736,7 +2642,7 @@ async function incrementPostShare(postId) {
 }
 
 /* ============================================================
-   ✅ SHARE POST — WITH COUNTER + UI UPDATE
+   ✅ SHARE POST
    ============================================================ */
 async function sharePost(post) {
   if (!post) return;
@@ -2769,23 +2675,15 @@ async function sharePost(post) {
     }
   }
 
-  // ✅ FIX: Increment counter + update UI
   if (shared) {
     await incrementPostShare(post.id);
-
-    // Local state update
     if (!post.shares) post.shares = 0;
     post.shares++;
-
-    // UI update — sab jagah jaha share-count span hai
     document.querySelectorAll(`[data-post="${post.id}"] .share-count`)
       .forEach(el => { el.textContent = post.shares; });
   }
 }
 
-/* ============================================================
-   ✅ SHARE USER
-   ============================================================ */
 async function shareUser(user) {
   if (!user) return;
 
@@ -2820,7 +2718,6 @@ function openStoryViewer(userId) {
   const userIndex = storiesByUser.findIndex(u => u.userId === userId);
   if (userIndex === -1) return;
 
-  // ✅ FIX #7: Reset highlight mode flag
   window._isHighlightViewing = false;
   document.getElementById('storyViewer')?.classList.remove('highlight-mode');
 
@@ -3486,7 +3383,6 @@ async function openComments(postId, title) {
 
   if (commentsTitle) commentsTitle.textContent = title || 'Comments';
 
-  // ✅ FIX #3: Null guard for myAvatarForComment
   if (myAvatarForComment) {
     myAvatarForComment.src = currentProfile?.photo || defaultAvatar(currentProfile?.name || '?');
   }
@@ -3900,7 +3796,7 @@ async function deleteComment(commentId) {
 }
 
 /* ============================================================
-   TIME AGO HELPER (needed for comments + stories)
+   TIME AGO HELPER
    ============================================================ */
 function timeAgo(date) {
   if (!date) return 'just now';
@@ -3914,7 +3810,7 @@ function timeAgo(date) {
   return days + ' day' + (days > 1 ? 's' : '') + ' ago';
 }
 
-console.log('✅ Part 3 loaded (Story Viewer + Shorts + Comments + Share)');
+console.log('✅ Part 3 loaded — Story Viewer + Shorts + Comments + Share');
 /* ============================================================
    ReelHub — app.js (PART 4/5) — FULL FIXED v2
    Sound System + Chat + Groups + Voice + Reply + Reactions
@@ -6156,14 +6052,13 @@ function formatDate(date) {
 
 console.log('✅ Part 4 loaded (Sound + Chat + Groups + Voice + Reactions)');
 /* ============================================================
-   ReelHub — app.js (PART 5/5) — FINAL v4
+   ReelHub — app.js (PART 5/5) — FULL UPDATED (SCRATCH CARD)
    Profile + Highlights + Notifications + Search + Settings + Delete
-   ✅ UPDATED: 3 buttons moved to Settings
-   ✅ UPDATED: Referral completion on first upload
+   ✅ Referral earning → Scratch Card (direct wallet nahi)
    ============================================================ */
 
 /* ============================================================
-   ✅ WALLET HELPER — Reusable for recording all transactions
+   ✅ WALLET HELPER
    ============================================================ */
 async function recordWalletTransaction(data) {
   if (!currentUser) return;
@@ -6188,7 +6083,7 @@ async function recordWalletTransaction(data) {
 }
 
 /* ============================================================
-   ✅ VERIFIED CHECK (handles verifiedUntil expiry)
+   ✅ VERIFIED CHECK
    ============================================================ */
 function isCurrentlyVerified(user) {
   if (!user || !user.verified) return false;
@@ -6769,7 +6664,7 @@ uploadSubmitBtn?.addEventListener('click', async () => {
     currentProfile.videoCount = (safeNum(currentProfile.videoCount) || 0) + 1;
 
     /* ============================================================
-       ✅ REFERRAL: Complete referral on first upload
+       ✅ REFERRAL: Create SCRATCH CARD for referrer on first upload
        ============================================================ */
     try {
       if (currentProfile?.referredBy && !currentProfile?.referralCompleted) {
@@ -6794,18 +6689,33 @@ uploadSubmitBtn?.addEventListener('click', async () => {
           });
           console.log("✅ Referral marked complete");
           
-          // 2. Credit referrer
+          // 2. ✅ CREATE SCRATCH CARD for referrer (instead of direct wallet credit)
           try {
-            await updateDoc(doc(db, 'users', referrerId), {
-              walletBalance: increment(REFERRER_REWARD),
-              referralEarnings: increment(REFERRER_REWARD)
+            await addDoc(collection(db, 'scratch_cards'), {
+              userId: referrerId,
+              amount: REFERRER_REWARD,
+              source: 'referral',
+              description: `Referral bonus from ${currentProfile.name || 'a friend'}`,
+              status: 'pending',
+              createdAt: serverTimestamp()
             });
-            console.log("✅ Referrer credited ₹" + REFERRER_REWARD);
+            console.log("🎁 Scratch card created for referrer: ₹" + REFERRER_REWARD);
           } catch (e) {
-            console.warn("⚠️ Referrer credit failed:", e.message);
+            console.warn("⚠️ Scratch card creation failed:", e.message);
           }
           
-          // 3. Credit referee (current user)
+          // 3. Update referrer stats (NO wallet credit)
+          try {
+            await updateDoc(doc(db, 'users', referrerId), {
+              referralCount: increment(1),
+              referralEarnings: increment(REFERRER_REWARD)
+            });
+            console.log("✅ Referrer stats updated");
+          } catch (e) {
+            console.warn("⚠️ Referrer stats update failed:", e.message);
+          }
+          
+          // 4. Credit referee (new user) directly to wallet
           try {
             await updateDoc(doc(db, 'users', currentUser.uid), {
               walletBalance: increment(REFEREE_REWARD),
@@ -6817,22 +6727,12 @@ uploadSubmitBtn?.addEventListener('click', async () => {
             console.warn("⚠️ Referee credit failed:", e.message);
           }
           
-          // 4. Log wallet transactions
+          // 5. Wallet transaction for referee
           try {
-            await addDoc(collection(db, 'wallet_transactions'), {
-              userId: referrerId,
-              userName: refData.referrerName || 'User',
-              type: 'credit',
-              category: 'referral',
-              amount: REFERRER_REWARD,
-              status: 'completed',
-              description: 'Referral bonus',
-              createdAt: serverTimestamp()
-            });
-            
             await addDoc(collection(db, 'wallet_transactions'), {
               userId: currentUser.uid,
               userName: currentProfile.name || 'User',
+              userHandle: currentProfile.user || '',
               type: 'credit',
               category: 'referral',
               amount: REFEREE_REWARD,
@@ -6840,23 +6740,24 @@ uploadSubmitBtn?.addEventListener('click', async () => {
               description: 'Welcome bonus',
               createdAt: serverTimestamp()
             });
-            console.log("✅ Wallet transactions logged");
           } catch (e) {
-            console.warn("⚠️ Wallet log failed:", e.message);
+            console.warn("⚠️ Referee transaction log failed:", e.message);
           }
           
-          // 5. Notifications
+          // 6. Notifications
           try {
+            // Referrer — "You got a Scratch Card!"
             await addDoc(collection(db, 'notifications'), {
               userId: referrerId,
-              type: 'referral',
-              title: '💰 Referral Bonus!',
-              message: `You earned ₹${REFERRER_REWARD}! ${currentProfile.name} completed their first upload.`,
+              type: 'scratch_card',
+              title: '🎁 You got a Scratch Card!',
+              message: `You earned a scratch card of ₹${REFERRER_REWARD} from ${currentProfile.name}'s referral! Go to Refer & Earn → Scratch to claim.`,
               fromUserId: currentUser.uid,
               read: false,
               createdAt: serverTimestamp()
             });
             
+            // Referee — "Welcome bonus"
             await addDoc(collection(db, 'notifications'), {
               userId: currentUser.uid,
               type: 'referral',
@@ -6871,10 +6772,10 @@ uploadSubmitBtn?.addEventListener('click', async () => {
             console.warn("⚠️ Notification failed:", e.message);
           }
           
-          // 6. Update local profile
+          // 7. Update local profile
           currentProfile.referralCompleted = true;
           
-          // 7. Success toast
+          // 8. Success toast
           showToast(`🎁 You earned ₹${REFEREE_REWARD} welcome bonus!`);
           console.log("🎉 Referral completed successfully!");
           
@@ -8421,7 +8322,7 @@ function initSettingsListeners() {
     openBlockedUsersModal();
   });
 
-  // ✅ Earn Money buttons in Settings
+  // Earn Money buttons in Settings
   document.getElementById('settingMonetizeBtn')?.addEventListener('click', () => {
     document.getElementById('settingsModal')?.classList.remove('show');
     window.location.href = 'monetization.html';
@@ -8455,7 +8356,5 @@ window.handleDeleteClick = function(event) {
   if (typeof openDeleteAccountModal === 'function') openDeleteAccountModal();
 };
 
-console.log('✅ Part 5 loaded (Profile + Highlights + Notifs + Search + Settings + Delete)');
-console.log('✅ 3 buttons in Settings (Monetize/Wallet/Refer)');
-console.log('✅ Referral completion integrated in upload');
+console.log('✅ Part 5 loaded — Referral → Scratch Card system integrated');
 console.log('🎉 ReelHub app.js fully loaded!');
