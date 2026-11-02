@@ -1,9 +1,9 @@
 /* ============================================================
-   ReelHub — app.js (PART 1/5) — FULL UPDATED v3
+   ReelHub — app.js (PART 1/5) — FULL FIXED v4
    Imports, Config, DOM, State, Auth, Signup, Login
-   ✅ increment import added (for referral/scratch card system)
-   ✅ Login/Signup fixes + 1-second transition + Robust error handling
-   ✅ All bugs fixed (null guards, race conditions, defensive checks)
+   ✅ FIXED: 'Loading...' infinite loop on new login
+   ✅ FIXED: increment imported for Part 5
+   ✅ FIXED: Referral local sync in signup
    ============================================================ */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -38,7 +38,7 @@ import {
   limit,
   writeBatch,
   onSnapshot,
-  increment                    // ✅ ADDED for referral/scratch card system
+  increment                    // ✅ Added for Part 5 (Referral/Scratch Card)
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 /* ============================================================
@@ -58,7 +58,7 @@ const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 
-/* ✅ Auth persistence — session app aur monetization/wallet/refer pages ke beech share hoga */
+/* ✅ Auth persistence */
 (async () => {
   try {
     await setPersistence(auth, browserLocalPersistence);
@@ -94,7 +94,6 @@ const CLOUDINARY_ACCOUNTS = {
     if (ref && ref.length >= 4) {
       localStorage.setItem('reelhub_ref_code', ref.toUpperCase().trim());
       console.log('✅ Ref code captured:', ref);
-      // Clean URL — bina reload
       const clean = window.location.pathname + window.location.hash;
       window.history.replaceState({}, '', clean);
     }
@@ -271,7 +270,6 @@ let currentStoryMediaEl = null;
 let viewedPostsSession = new Set();
 let shortsSoundEnabled = localStorage.getItem('shortsSound') === 'true';
 
-/* ✅ CHAT STATE */
 let chatReplyTo = null;
 let activeReactionMsg = null;
 let longPressTimer = null;
@@ -281,11 +279,8 @@ let typingListenerUnsub = null;
 let typingTimeout = null;
 let isCurrentlyTyping = false;
 
-/* ✅ Firestore write dedup */
 const _readProcessed = new Set();
 const _deliveredProcessed = new Set();
-
-/* ✅ Split seen sets (DM vs Group) + size cap */
 const _seenDmMsgIds = new Set();
 const _seenGroupMsgIds = new Set();
 const SET_CAP = 1000;
@@ -300,21 +295,15 @@ function _trimSet(set) {
   }
 }
 
-/* ✅ Real-time watchers */
 let chatListUnsub = null;
 let groupListUnsub = null;
 let notifUnsub = null;
 const _lastChatMsgTime = new Map();
 const _lastGroupMsgTime = new Map();
 
-/* ✅ Auth flag to prevent duplicate listeners */
 let authActionInProgress = false;
-
-/* ✅ Loading timeout */
 const LOADING_TIMEOUT_MS = 8000;
 let loadingTimeoutId = null;
-
-/* ✅ 1-SECOND TRANSITION */
 const TRANSITION_DELAY_MS = 1000;
 
 /* ============================================================
@@ -378,59 +367,34 @@ function startLoadingTimeout() {
     }
   }, LOADING_TIMEOUT_MS);
 }
-
 if (loadingScreen) startLoadingTimeout();
 
 /* ============================================================
-   SCREEN SWITCHING — 1 SECOND TRANSITION
+   SCREEN SWITCHING
    ============================================================ */
 function showAuth() {
   clearTimeout(loadingTimeoutId);
-
   if (loadingScreen) loadingScreen.style.display = 'none';
-  if (authScreen) {
-    authScreen.classList.add('show');
-    authScreen.style.display = 'block';
-  }
-  if (appScreen) {
-    appScreen.classList.remove('show');
-    appScreen.style.display = 'none';
-  }
+  if (authScreen) { authScreen.classList.add('show'); authScreen.style.display = 'block'; }
+  if (appScreen) { appScreen.classList.remove('show'); appScreen.style.display = 'none'; }
 
   stopNotifWatcher();
   stopShortsObserver();
   stopChatListWatcher();
 
-  if (chatMessagesUnsub) {
-    try { chatMessagesUnsub(); } catch (e) {}
-    chatMessagesUnsub = null;
-  }
+  if (chatMessagesUnsub) { try { chatMessagesUnsub(); } catch (e) {} chatMessagesUnsub = null; }
+  if (typingListenerUnsub) { try { typingListenerUnsub(); } catch (e) {} typingListenerUnsub = null; }
 
-  if (typingListenerUnsub) {
-    try { typingListenerUnsub(); } catch (e) {}
-    typingListenerUnsub = null;
-  }
-
-  _readProcessed.clear();
-  _deliveredProcessed.clear();
-  _seenDmMsgIds.clear();
-  _seenGroupMsgIds.clear();
-  _lastChatMsgTime.clear();
-  _lastGroupMsgTime.clear();
+  _readProcessed.clear(); _deliveredProcessed.clear();
+  _seenDmMsgIds.clear(); _seenGroupMsgIds.clear();
+  _lastChatMsgTime.clear(); _lastGroupMsgTime.clear();
 }
 
 function showApp() {
   clearTimeout(loadingTimeoutId);
-
   if (loadingScreen) loadingScreen.style.display = 'none';
-  if (authScreen) {
-    authScreen.classList.remove('show');
-    authScreen.style.display = 'none';
-  }
-  if (appScreen) {
-    appScreen.classList.add('show');
-    appScreen.style.display = 'flex';
-  }
+  if (authScreen) { authScreen.classList.remove('show'); authScreen.style.display = 'none'; }
+  if (appScreen) { appScreen.classList.add('show'); appScreen.style.display = 'flex'; }
 
   setActiveNav('home');
   renderPage('home');
@@ -443,19 +407,11 @@ function setActiveNav(page) {
   });
 }
 
-/* ============================================================
-   NOTIFICATION PERMISSION
-   ============================================================ */
 function requestNotificationPermission() {
   if (!('Notification' in window)) return;
-  if (Notification.permission === 'default') {
-    Notification.requestPermission().catch(() => {});
-  }
+  if (Notification.permission === 'default') Notification.requestPermission().catch(() => {});
 }
 
-/* ============================================================
-   VISIBILITY
-   ============================================================ */
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && currentUser) {
     checkUnreadNotifications();
@@ -463,20 +419,9 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-/* ============================================================
-   GLOBAL ERROR
-   ============================================================ */
-window.addEventListener('error', (e) => {
-  console.error('❌ Global error:', e.error || e.message);
-});
+window.addEventListener('error', (e) => console.error('❌ Global error:', e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => console.error('❌ Unhandled rejection:', e.reason));
 
-window.addEventListener('unhandledrejection', (e) => {
-  console.error('❌ Unhandled rejection:', e.reason);
-});
-
-/* ============================================================
-   PASSWORD EYE TOGGLE
-   ============================================================ */
 document.querySelectorAll('.eye').forEach(eye => {
   eye.addEventListener('click', () => {
     const inp = $id(eye.dataset.target);
@@ -492,11 +437,8 @@ $id('goSignup')?.addEventListener('click', () => {
   if (signupForm) signupForm.style.display = 'block';
   if (loginMsg) loginMsg.textContent = '';
   if (signupMsg) signupMsg.textContent = '';
-
-  const sw = $id('goSignupSwitch');
-  const wr = $id('goSignupWrap');
-  if (sw) sw.style.display = 'block';
-  if (wr) wr.style.display = 'none';
+  const sw = $id('goSignupSwitch'); const wr = $id('goSignupWrap');
+  if (sw) sw.style.display = 'block'; if (wr) wr.style.display = 'none';
 });
 
 $id('goLogin')?.addEventListener('click', () => {
@@ -504,20 +446,16 @@ $id('goLogin')?.addEventListener('click', () => {
   if (loginForm) loginForm.style.display = 'block';
   if (loginMsg) loginMsg.textContent = '';
   if (signupMsg) signupMsg.textContent = '';
-
-  const sw = $id('goSignupSwitch');
-  const wr = $id('goSignupWrap');
-  if (sw) sw.style.display = 'none';
-  if (wr) wr.style.display = 'block';
+  const sw = $id('goSignupSwitch'); const wr = $id('goSignupWrap');
+  if (sw) sw.style.display = 'none'; if (wr) wr.style.display = 'block';
 });
 
 /* ============================================================
-   SIGNUP — FIXED + 1 SECOND TRANSITION
+   SIGNUP
    ============================================================ */
 signupForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   e.stopPropagation();
-
   if (isSigningUp) return;
 
   const name = $id('signupName').value.trim();
@@ -528,22 +466,10 @@ signupForm?.addEventListener('submit', async (e) => {
   signupMsg.className = 'error-msg';
   signupMsg.textContent = '';
 
-  if (!name || !user || !email || !pass) {
-    signupMsg.textContent = 'Please fill all fields.';
-    return;
-  }
-  if (!/^[a-z0-9._]{3,20}$/.test(user)) {
-    signupMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _';
-    return;
-  }
-  if (!/^\S+@\S+\.\S+$/.test(email)) {
-    signupMsg.textContent = 'Please enter a valid email.';
-    return;
-  }
-  if (pass.length < 6) {
-    signupMsg.textContent = 'Password min 6 characters.';
-    return;
-  }
+  if (!name || !user || !email || !pass) { signupMsg.textContent = 'Please fill all fields.'; return; }
+  if (!/^[a-z0-9._]{3,20}$/.test(user)) { signupMsg.textContent = 'Username: 3-20 chars, a-z, 0-9, . or _'; return; }
+  if (!/^\S+@\S+\.\S+$/.test(email)) { signupMsg.textContent = 'Please enter a valid email.'; return; }
+  if (pass.length < 6) { signupMsg.textContent = 'Password min 6 characters.'; return; }
 
   isSigningUp = true;
   authActionInProgress = true;
@@ -565,16 +491,11 @@ signupForm?.addEventListener('submit', async (e) => {
     const userSnap = await getDocs(uq);
 
     if (!userSnap.empty) {
-      try {
-        await createdAuthUser.delete();
-      } catch (delErr) {
-        try { await signOut(auth); } catch (e2) {}
-      }
+      try { await createdAuthUser.delete(); } catch (delErr) { try { await signOut(auth); } catch (e2) {} }
       signupMsg.textContent = 'Username already taken. Try another.';
       return;
     }
 
-    // ✅ Generate referral code for new user
     const newReferralCode = generateReferralCode(user);
 
     await setDoc(doc(db, 'users', uid), {
@@ -592,7 +513,6 @@ signupForm?.addEventListener('submit', async (e) => {
       isPrivate: false,
       verified: false,
       banned: false,
-      // ✅ NEW: Referral + Wallet fields
       referralCode: newReferralCode,
       walletBalance: 0,
       referralCount: 0,
@@ -602,11 +522,7 @@ signupForm?.addEventListener('submit', async (e) => {
       createdAt: serverTimestamp()
     });
 
-    try {
-      await sendEmailVerification(cred.user);
-    } catch (e) {
-      console.warn('Verification email failed:', e);
-    }
+    try { await sendEmailVerification(cred.user); } catch (e) {}
 
     currentUser = cred.user;
     await loadProfile(uid);
@@ -623,7 +539,6 @@ signupForm?.addEventListener('submit', async (e) => {
           const referrerId = referrerDoc.id;
 
           if (referrerId !== uid) {
-            // Create referral record (pending — completes after first video)
             await addDoc(collection(db, 'referrals'), {
               referrerId: referrerId,
               referredId: uid,
@@ -635,18 +550,21 @@ signupForm?.addEventListener('submit', async (e) => {
               createdAt: serverTimestamp()
             });
 
-            // Link new user to referrer
             await updateDoc(doc(db, 'users', uid), {
               referredBy: referrerId,
               referredByCode: pendingRef
             });
 
-            // Increment referrer's count
+            // ✅ FIX: Sync local profile immediately so upload works in this session
+            if (currentProfile) {
+              currentProfile.referredBy = referrerId;
+              currentProfile.referredByCode = pendingRef;
+            }
+
             await updateDoc(doc(db, 'users', referrerId), {
               referralCount: (referrerDoc.data().referralCount || 0) + 1
             });
 
-            // Notify referrer
             await addDoc(collection(db, 'notifications'), {
               userId: referrerId,
               type: 'referral',
@@ -655,11 +573,9 @@ signupForm?.addEventListener('submit', async (e) => {
               read: false,
               createdAt: serverTimestamp()
             });
-
             console.log('✅ Referral linked to', referrerId);
           }
         }
-
         localStorage.removeItem('reelhub_ref_code');
       }
     } catch (refErr) {
@@ -668,18 +584,9 @@ signupForm?.addEventListener('submit', async (e) => {
 
     signupMsg.className = 'success-msg';
     signupMsg.textContent = 'Account created! Welcome 🎉';
-
-    // ✅ Show referral applied message if applicable
-    const savedRef = localStorage.getItem('reelhub_ref_code');
-    if (savedRef) {
-      signupMsg.textContent = `Account created! 🎉 Welcome bonus: ₹5 will be added after first upload. (Code: ${savedRef})`;
-    }
-
     signupForm.reset();
-
     authActionInProgress = false;
 
-    /* ✅ 1 SECOND TRANSITION */
     setTimeout(() => {
       showApp();
       startNotifWatcher();
@@ -688,31 +595,18 @@ signupForm?.addEventListener('submit', async (e) => {
 
   } catch (err) {
     console.error('Signup error:', err);
-
     if (createdAuthUser && !currentProfile) {
-      try {
-        await createdAuthUser.delete();
-      } catch (delErr) {
-        try { await signOut(auth); } catch (e2) {}
-      }
+      try { await createdAuthUser.delete(); } catch (delErr) { try { await signOut(auth); } catch (e2) {} }
     }
-
     signupMsg.className = 'error-msg';
 
-    if (err.code === 'auth/email-already-in-use') {
-      signupMsg.textContent = 'Email already registered.';
-    } else if (err.code === 'auth/invalid-email') {
-      signupMsg.textContent = 'Invalid email.';
-    } else if (err.code === 'auth/weak-password') {
-      signupMsg.textContent = 'Password too weak.';
-    } else if (err.code === 'auth/network-request-failed') {
-      signupMsg.textContent = 'Network error. Check your connection.';
-    } else if (err.code === 'permission-denied' ||
-               (err.message && err.message.toLowerCase().includes('permission'))) {
+    if (err.code === 'auth/email-already-in-use') signupMsg.textContent = 'Email already registered.';
+    else if (err.code === 'auth/invalid-email') signupMsg.textContent = 'Invalid email.';
+    else if (err.code === 'auth/weak-password') signupMsg.textContent = 'Password too weak.';
+    else if (err.code === 'auth/network-request-failed') signupMsg.textContent = 'Network error. Check your connection.';
+    else if (err.code === 'permission-denied' || (err.message && err.message.toLowerCase().includes('permission'))) {
       signupMsg.textContent = '⚠️ Firestore rules update karo.';
-    } else {
-      signupMsg.textContent = err.message || 'Signup failed.';
-    }
+    } else signupMsg.textContent = err.message || 'Signup failed.';
   } finally {
     isSigningUp = false;
     authActionInProgress = false;
@@ -722,12 +616,11 @@ signupForm?.addEventListener('submit', async (e) => {
 });
 
 /* ============================================================
-   LOGIN — FIXED + 1 SECOND TRANSITION
+   LOGIN
    ============================================================ */
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   e.stopPropagation();
-
   if (isLoggingIn) return;
 
   const email = $id('loginEmail').value.trim().toLowerCase();
@@ -736,10 +629,7 @@ loginForm?.addEventListener('submit', async (e) => {
   loginMsg.className = 'error-msg';
   loginMsg.textContent = '';
 
-  if (!email || !pass) {
-    loginMsg.textContent = 'Please enter email and password.';
-    return;
-  }
+  if (!email || !pass) { loginMsg.textContent = 'Please enter email and password.'; return; }
 
   isLoggingIn = true;
   authActionInProgress = true;
@@ -753,6 +643,15 @@ loginForm?.addEventListener('submit', async (e) => {
     currentUser = result.user;
     await loadProfile(result.user.uid);
 
+    // ✅ FIX: Prevent infinite loading if profile doesn't exist
+    if (!currentProfile) {
+      try { await signOut(auth); } catch (e) {}
+      currentUser = null;
+      loginMsg.className = 'error-msg';
+      loginMsg.textContent = 'Account profile missing. Please sign up again or contact support.';
+      return;
+    }
+
     if (currentProfile?.banned) {
       try { await signOut(auth); } catch (e) {}
       currentUser = null;
@@ -765,7 +664,6 @@ loginForm?.addEventListener('submit', async (e) => {
     loginMsg.textContent = 'Welcome back! 🎉';
     authActionInProgress = false;
 
-    /* ✅ 1 SECOND TRANSITION */
     setTimeout(() => {
       loginMsg.textContent = '';
       showApp();
@@ -780,11 +678,7 @@ loginForm?.addEventListener('submit', async (e) => {
     loginMsg.className = 'error-msg';
 
     const code = err.code || '';
-
-    if (code === 'auth/user-not-found' ||
-        code === 'auth/wrong-password' ||
-        code === 'auth/invalid-credential' ||
-        code === 'auth/invalid-login-credentials') {
+    if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials') {
       loginMsg.textContent = 'Invalid email or password.';
     } else if (code === 'auth/too-many-requests') {
       loginMsg.textContent = 'Too many attempts. Try again later.';
@@ -796,9 +690,8 @@ loginForm?.addEventListener('submit', async (e) => {
       loginMsg.textContent = err.message || 'Login failed.';
     }
 
-    if (auth.currentUser) {
-      try { await signOut(auth); } catch (e) {}
-    }
+    if (auth.currentUser) { try { await signOut(auth); } catch (e) {} }
+
   } finally {
     isLoggingIn = false;
     authActionInProgress = false;
@@ -813,20 +706,12 @@ loginForm?.addEventListener('submit', async (e) => {
 $id('forgotLink')?.addEventListener('click', () => {
   const loginEmailVal = $id('loginEmail').value.trim();
   if (forgotEmail) forgotEmail.value = loginEmailVal;
-  if (forgotMsg) {
-    forgotMsg.textContent = '';
-    forgotMsg.className = 'error-msg';
-  }
+  if (forgotMsg) { forgotMsg.textContent = ''; forgotMsg.className = 'error-msg'; }
   forgotModal?.classList.add('show');
 });
 
-$id('closeForgot')?.addEventListener('click', () => {
-  forgotModal?.classList.remove('show');
-});
-
-forgotModal?.addEventListener('click', (e) => {
-  if (e.target === forgotModal) forgotModal.classList.remove('show');
-});
+$id('closeForgot')?.addEventListener('click', () => forgotModal?.classList.remove('show'));
+forgotModal?.addEventListener('click', (e) => { if (e.target === forgotModal) forgotModal.classList.remove('show'); });
 
 sendResetBtn?.addEventListener('click', async () => {
   const email = forgotEmail.value.trim().toLowerCase();
@@ -843,7 +728,6 @@ sendResetBtn?.addEventListener('click', async () => {
     await sendPasswordResetEmail(auth, email);
     forgotMsg.className = 'success-msg';
     forgotMsg.textContent = 'Reset link sent! Check your inbox.';
-
     setTimeout(() => {
       forgotModal?.classList.remove('show');
       if (forgotEmail) forgotEmail.value = '';
@@ -851,18 +735,11 @@ sendResetBtn?.addEventListener('click', async () => {
     }, 3500);
   } catch (err) {
     forgotMsg.className = 'error-msg';
-
-    if (err.code === 'auth/user-not-found') {
-      forgotMsg.textContent = 'No account with this email.';
-    } else if (err.code === 'auth/invalid-email') {
-      forgotMsg.textContent = 'Invalid email.';
-    } else if (err.code === 'auth/too-many-requests') {
-      forgotMsg.textContent = 'Too many attempts. Try later.';
-    } else if (err.code === 'auth/network-request-failed') {
-      forgotMsg.textContent = 'Network error.';
-    } else {
-      forgotMsg.textContent = err.message || 'Failed to send reset link.';
-    }
+    if (err.code === 'auth/user-not-found') forgotMsg.textContent = 'No account with this email.';
+    else if (err.code === 'auth/invalid-email') forgotMsg.textContent = 'Invalid email.';
+    else if (err.code === 'auth/too-many-requests') forgotMsg.textContent = 'Too many attempts. Try later.';
+    else if (err.code === 'auth/network-request-failed') forgotMsg.textContent = 'Network error.';
+    else forgotMsg.textContent = err.message || 'Failed to send reset link.';
   } finally {
     sendResetBtn.disabled = false;
     sendResetBtn.textContent = 'Send Reset Link';
@@ -875,64 +752,34 @@ sendResetBtn?.addEventListener('click', async () => {
 $id('logoutBtn')?.addEventListener('click', async () => {
   if (!confirm('Log out of ReelHub?')) return;
 
-  stopNotifWatcher();
-  stopShortsObserver();
-  stopChatListWatcher();
-
-  if (chatMessagesUnsub) {
-    try { chatMessagesUnsub(); } catch (e) {}
-    chatMessagesUnsub = null;
-  }
-
-  if (typingListenerUnsub) {
-    try { typingListenerUnsub(); } catch (e) {}
-    typingListenerUnsub = null;
-  }
+  stopNotifWatcher(); stopShortsObserver(); stopChatListWatcher();
+  if (chatMessagesUnsub) { try { chatMessagesUnsub(); } catch (e) {} chatMessagesUnsub = null; }
+  if (typingListenerUnsub) { try { typingListenerUnsub(); } catch (e) {} typingListenerUnsub = null; }
 
   try { closeChatWindow?.(); } catch (e) {}
   if (storyViewer) storyViewer.style.display = 'none';
   document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
 
-  viewedPostsSession.clear();
-  viewingUserId = null;
-  pinnedMessage = null;
+  viewedPostsSession.clear(); viewingUserId = null; pinnedMessage = null;
+  _readProcessed.clear(); _deliveredProcessed.clear();
+  _seenDmMsgIds.clear(); _seenGroupMsgIds.clear();
+  _lastChatMsgTime.clear(); _lastGroupMsgTime.clear();
 
-  _readProcessed.clear();
-  _deliveredProcessed.clear();
-  _seenDmMsgIds.clear();
-  _seenGroupMsgIds.clear();
-  _lastChatMsgTime.clear();
-  _lastGroupMsgTime.clear();
+  try { await signOut(auth); } catch (e) { console.warn('Signout error:', e); }
 
-  try {
-    await signOut(auth);
-  } catch (e) {
-    console.warn('Signout error:', e);
-  }
-
-  currentUser = null;
-  currentProfile = null;
-
-  loginForm?.reset();
-  signupForm?.reset();
+  currentUser = null; currentProfile = null;
+  loginForm?.reset(); signupForm?.reset();
   $id('goLogin')?.click();
 });
 
 /* ============================================================
    HEADER BUTTONS
    ============================================================ */
-notifBtn?.addEventListener('click', () => {
-  setActiveNav(null);
-  renderPage('notifications');
-});
-
-searchBtn?.addEventListener('click', () => {
-  setActiveNav(null);
-  renderPage('search');
-});
+notifBtn?.addEventListener('click', () => { setActiveNav(null); renderPage('notifications'); });
+searchBtn?.addEventListener('click', () => { setActiveNav(null); renderPage('search'); });
 
 /* ============================================================
-   AUTH STATE LISTENER
+   AUTH STATE LISTENER (MAIN BOOT)
    ============================================================ */
 onAuthStateChanged(auth, async (user) => {
   console.log('🔥 Auth state:', user ? 'logged in' : 'logged out');
@@ -946,6 +793,17 @@ onAuthStateChanged(auth, async (user) => {
       await loadProfile(user.uid);
     } catch (e) {
       console.error('Profile load failed:', e);
+    }
+
+    // ✅ FIX: Prevent infinite loading if profile is missing
+    if (!currentProfile) {
+      console.error('❌ User profile not found in Firestore!');
+      showToast('❌ Account profile missing. Please login again.');
+      try { await signOut(auth); } catch (e) {}
+      currentUser = null;
+      currentProfile = null;
+      showAuth();
+      return;
     }
 
     if (currentProfile?.banned) {
@@ -965,29 +823,16 @@ onAuthStateChanged(auth, async (user) => {
   } else {
     currentUser = null;
     currentProfile = null;
-    stopNotifWatcher();
-    stopShortsObserver();
-    stopChatListWatcher();
+    stopNotifWatcher(); stopShortsObserver(); stopChatListWatcher();
 
-    if (chatMessagesUnsub) {
-      try { chatMessagesUnsub(); } catch (e) {}
-      chatMessagesUnsub = null;
-    }
+    if (chatMessagesUnsub) { try { chatMessagesUnsub(); } catch (e) {} chatMessagesUnsub = null; }
+    if (typingListenerUnsub) { try { typingListenerUnsub(); } catch (e) {} typingListenerUnsub = null; }
 
-    if (typingListenerUnsub) {
-      try { typingListenerUnsub(); } catch (e) {}
-      typingListenerUnsub = null;
-    }
+    _readProcessed.clear(); _deliveredProcessed.clear();
+    _seenDmMsgIds.clear(); _seenGroupMsgIds.clear();
+    _lastChatMsgTime.clear(); _lastGroupMsgTime.clear();
 
-    _readProcessed.clear();
-    _deliveredProcessed.clear();
-    _seenDmMsgIds.clear();
-    _seenGroupMsgIds.clear();
-    _lastChatMsgTime.clear();
-    _lastGroupMsgTime.clear();
-
-    loginForm?.reset();
-    signupForm?.reset();
+    loginForm?.reset(); signupForm?.reset();
     $id('goLogin')?.click();
     showAuth();
   }
@@ -999,16 +844,13 @@ onAuthStateChanged(auth, async (user) => {
 async function loadProfile(uid) {
   try {
     const snap = await getDoc(doc(db, 'users', uid));
-
     if (snap.exists()) {
       const data = snap.data();
 
-      // ✅ Defensive normalization
       if (!Array.isArray(data.followers)) data.followers = [];
       if (!Array.isArray(data.following)) data.following = [];
       if (!Array.isArray(data.savedPosts)) data.savedPosts = [];
       if (!Array.isArray(data.blockedUsers)) data.blockedUsers = [];
-
       if (typeof data.videoCount !== 'number') data.videoCount = 0;
       if (typeof data.isPrivate !== 'boolean') data.isPrivate = false;
       if (typeof data.verified !== 'boolean') data.verified = false;
@@ -1030,13 +872,7 @@ async function loadProfile(uid) {
 /* ============================================================
    PAGE ROUTER
    ============================================================ */
-const pages = {
-  home: 'Home Feed',
-  shorts: 'Shorts',
-  upload: 'Upload',
-  messages: 'Chats',
-  profile: 'Profile'
-};
+const pages = { home: 'Home Feed', shorts: 'Shorts', upload: 'Upload', messages: 'Chats', profile: 'Profile' };
 
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => {
@@ -1061,16 +897,15 @@ function renderPage(page) {
   else if (page === 'notifications') renderNotifications();
   else if (page === 'search') renderSearch();
   else if (page === 'upload') {
-    if (content) {
-      content.innerHTML = `<div class="page-placeholder"><div class="page-title">${pages[page]}</div></div>`;
-    }
+    if (content) content.innerHTML = `<div class="page-placeholder"><div class="page-title">${pages[page]}</div></div>`;
   }
 }
 
-console.log('✅ Part 1 loaded (Auth + State + 1s Transition + Referral + increment import)');/* ============================================================
-   ReelHub — app.js (PART 2/5) — FULL V3
-   Home Feed + Shorts Shelf + Stories + Upload
-   ✅ All bug fixes + null guards
+console.log('✅ Part 1 loaded (Auth + State + 1s Transition + Referral + increment import)');
+/* ============================================================
+   ReelHub — app.js (PART 2/5) — FULL FIXED v2
+   Home Feed + Shorts + Stories + Upload + Games Shelf
+   ✅ Games Shelf + 1s transition + Blob URL fix + null guards
    ============================================================ */
 
 let feedAutoplayObserver = null;
@@ -1092,6 +927,18 @@ function buildSaveButtonHTML(postId) {
         <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
       </svg>
     </button>
+  `;
+}
+
+function buildViewsHTML(viewsCount) {
+  return `
+    <div class="feed-views" title="Views">
+      <svg viewBox="0 0 24 24">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span>${safeNum(viewsCount)}</span>
+    </div>
   `;
 }
 
@@ -1520,9 +1367,7 @@ function showCongratsAnimation(userName, userEmail) {
     }, 600);
   });
 
-  if (navigator.vibrate) {
-    navigator.vibrate([100, 50, 100, 50, 200]);
-  }
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
 }
 
 function showAdminPanelRedirect() {
@@ -1531,75 +1376,21 @@ function showAdminPanelRedirect() {
   const modal = document.createElement('div');
   modal.className = 'admin-redirect-modal';
   modal.style.cssText = `
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.9);
-    z-index: 99998;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9);
+    z-index: 99998; display: flex; align-items: center; justify-content: center; padding: 20px;
   `;
 
   modal.innerHTML = `
-    <div style="
-      background: #121212;
-      border: 1px solid #1e1e28;
-      border-radius: 20px;
-      padding: 30px 24px;
-      max-width: 400px;
-      width: 100%;
-      text-align: center;
-    ">
+    <div style="background: #121212; border: 1px solid #1e1e28; border-radius: 20px; padding: 30px 24px; max-width: 400px; width: 100%; text-align: center;">
       <div style="font-size: 60px; margin-bottom: 16px;">🎯</div>
-      <div style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 10px;">
-        Open Admin Panel
-      </div>
-      <div style="font-size: 14px; color: #888; line-height: 1.5; margin-bottom: 24px;">
-        Open the admin panel and login with your email to start managing ReelHub.
-      </div>
-      <div style="
-        background: #1a1a24;
-        border: 1px solid #333;
-        border-radius: 12px;
-        padding: 12px 14px;
-        margin-bottom: 20px;
-        font-size: 13px;
-        color: #ccc;
-        word-break: break-all;
-      ">
+      <div style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 10px;">Open Admin Panel</div>
+      <div style="font-size: 14px; color: #888; line-height: 1.5; margin-bottom: 24px;">Open the admin panel and login with your email to start managing ReelHub.</div>
+      <div style="background: #1a1a24; border: 1px solid #333; border-radius: 12px; padding: 12px 14px; margin-bottom: 20px; font-size: 13px; color: #ccc; word-break: break-all;">
         <div style="font-size: 11px; color: #666; margin-bottom: 4px;">Your admin email</div>
         <b>${escapeHtml(currentUser?.email || '')}</b>
       </div>
-      <button id="openAdminPanelBtn" style="
-        width: 100%;
-        height: 50px;
-        background: linear-gradient(90deg, #ff2e63, #ff8a00);
-        border: none;
-        border-radius: 12px;
-        color: #fff;
-        font-size: 15px;
-        font-weight: 700;
-        font-family: inherit;
-        cursor: pointer;
-        margin-bottom: 10px;
-      ">
-        Open Admin Panel →
-      </button>
-      <button id="closeAdminRedirectBtn" style="
-        width: 100%;
-        height: 44px;
-        background: transparent;
-        border: 1px solid #333;
-        border-radius: 12px;
-        color: #888;
-        font-size: 14px;
-        font-weight: 600;
-        font-family: inherit;
-        cursor: pointer;
-      ">
-        Maybe Later
-      </button>
+      <button id="openAdminPanelBtn" style="width: 100%; height: 50px; background: linear-gradient(90deg, #ff2e63, #ff8a00); border: none; border-radius: 12px; color: #fff; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; margin-bottom: 10px;">Open Admin Panel →</button>
+      <button id="closeAdminRedirectBtn" style="width: 100%; height: 44px; background: transparent; border: 1px solid #333; border-radius: 12px; color: #888; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer;">Maybe Later</button>
     </div>
   `;
 
@@ -1621,79 +1412,46 @@ function showAdminPanelRedirect() {
 function saveFeedCache(posts) {
   try {
     const minimal = posts.slice(0, 15).map(p => ({
-      id: p.id,
-      userId: p.userId,
-      userName: p.userName,
-      userHandle: p.userHandle,
-      userPhoto: p.userPhoto,
-      userVerified: p.userVerified,
-      type: p.type,
-      url: p.url,
-      thumbnail: p.thumbnail,
-      caption: p.caption,
-      duration: p.duration,
-      likes: p.likes || [],
-      commentsCount: p.commentsCount || 0,
-      views: p.views || 0,
-      shares: p.shares || 0,
+      id: p.id, userId: p.userId, userName: p.userName, userHandle: p.userHandle, userPhoto: p.userPhoto, userVerified: p.userVerified,
+      type: p.type, url: p.url, thumbnail: p.thumbnail, caption: p.caption, duration: p.duration, likes: p.likes || [],
+      commentsCount: p.commentsCount || 0, views: p.views || 0, shares: p.shares || 0,
       createdAt: p.createdAt?.toDate?.()?.getTime?.() || Date.now()
     }));
     localStorage.setItem('reelhub_feed_cache', JSON.stringify(minimal));
     localStorage.setItem('reelhub_feed_cache_time', Date.now().toString());
-  } catch (e) {
-    console.warn('Cache save failed:', e);
-  }
+  } catch (e) {}
 }
 
 function loadFeedCache() {
   try {
     const cached = localStorage.getItem('reelhub_feed_cache');
     const time = parseInt(localStorage.getItem('reelhub_feed_cache_time') || '0');
-
-    if (Date.now() - time > 30 * 60 * 1000) {
-      localStorage.removeItem('reelhub_feed_cache');
-      return null;
-    }
-
+    if (Date.now() - time > 30 * 60 * 1000) { localStorage.removeItem('reelhub_feed_cache'); return null; }
     if (!cached) return null;
     const parsed = JSON.parse(cached);
-
-    return parsed.map(p => ({
-      ...p,
-      createdAt: { toDate: () => new Date(p.createdAt) }
-    }));
-  } catch (e) {
-    return null;
-  }
+    return parsed.map(p => ({ ...p, createdAt: { toDate: () => new Date(p.createdAt) } }));
+  } catch (e) { return null; }
 }
 
 /* ============================================================
-   THUMBNAIL BUILDER
+   THUMBNAIL BUILDER (Cloudinary)
    ============================================================ */
 function buildThumbnailUrl(videoUrl, type) {
   if (!videoUrl) return '';
-
   try {
     if (type === 'photo') {
-      if (videoUrl.includes('/image/upload/')) {
-        return videoUrl.replace('/image/upload/', '/image/upload/w_400,q_auto,f_auto/');
-      }
+      if (videoUrl.includes('/image/upload/')) return videoUrl.replace('/image/upload/', '/image/upload/w_400,q_auto,f_auto/');
       return videoUrl;
     }
-
     if (videoUrl.includes('/video/upload/')) {
       const parts = videoUrl.split('/video/upload/');
       if (parts.length === 2) {
-        const afterUpload = parts[1];
-        let publicId = afterUpload.replace(/^v\d+\//, '');
+        let publicId = parts[1].replace(/^v\d+\//, '');
         publicId = publicId.replace(/\.[^.]+$/, '');
         return `https://res.cloudinary.com/${CLOUDINARY_ACCOUNTS.videos.cloudName}/video/upload/so_auto,w_400,h_711,c_fill,q_auto/${publicId}.jpg`;
       }
     }
-  } catch (e) {
-    console.warn('buildThumbnailUrl error:', e);
-  }
-
+  } catch (e) {}
   return '';
 }
 
@@ -1720,43 +1478,26 @@ function buildGamesShelf() {
   shelf.innerHTML = `
     <div class="games-shelf-header">
       <div class="games-shelf-title">
-        <svg viewBox="0 0 24 24" class="games-icon">
-          <rect x="2" y="6" width="20" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
-          <circle cx="8" cy="12" r="1.5" fill="currentColor"/>
-          <circle cx="16" cy="12" r="1.5" fill="currentColor"/>
-        </svg>
+        <svg viewBox="0 0 24 24" class="games-icon"><rect x="2" y="6" width="20" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="12" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/></svg>
         Games
       </div>
-      <button class="games-shelf-more" id="gamesShelfMore">
-        View all
-        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
+      <button class="games-shelf-more" id="gamesShelfMore">View all <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
     </div>
     <div class="games-shelf-scroll" id="gamesShelfScroll"></div>
   `;
 
   const scrollWrap = shelf.querySelector('#gamesShelfScroll');
-
   games.forEach(game => {
     const item = document.createElement('div');
     item.className = 'game-shelf-item';
     item.style.setProperty('--c1', game.c1);
     item.style.setProperty('--c2', game.c2);
-    item.innerHTML = `
-      <div class="game-shelf-icon">${game.icon}</div>
-      <div class="game-shelf-name">${game.name}</div>
-    `;
-    item.addEventListener('click', () => {
-      if (navigator.vibrate) navigator.vibrate(10);
-      window.location.href = game.file;
-    });
+    item.innerHTML = `<div class="game-shelf-icon">${game.icon}</div><div class="game-shelf-name">${game.name}</div>`;
+    item.addEventListener('click', () => { if (navigator.vibrate) navigator.vibrate(10); window.location.href = game.file; });
     scrollWrap.appendChild(item);
   });
 
-  shelf.querySelector('#gamesShelfMore').addEventListener('click', () => {
-    window.location.href = 'games.html';
-  });
-
+  shelf.querySelector('#gamesShelfMore').addEventListener('click', () => window.location.href = 'games.html');
   return shelf;
 }
 
@@ -1770,12 +1511,7 @@ async function renderHomeFeed() {
       <div class="stories-bar" id="storiesBar">
         <div class="story-item" id="addStoryBtn">
           <div class="story-ring add">
-            <div class="plus-icon">
-              <svg viewBox="0 0 24 24">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-            </div>
+            <div class="plus-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
           </div>
           <div class="story-name you">Your story</div>
         </div>
@@ -1785,7 +1521,6 @@ async function renderHomeFeed() {
   `;
 
   document.getElementById('addStoryBtn')?.addEventListener('click', openStoryUploadModal);
-
   await loadStoriesBar();
   await loadHomeFeedPosts();
 }
@@ -1793,39 +1528,14 @@ async function renderHomeFeed() {
 async function loadHomeFeedPosts() {
   const container = document.getElementById('feedContainer');
   if (!container) return;
-
-  if (!currentUser) {
-    container.innerHTML = '';
-    return;
-  }
+  if (!currentUser) { container.innerHTML = ''; return; }
 
   const cached = loadFeedCache();
   if (cached && cached.length > 0) {
     container.innerHTML = '';
     renderFeedWithShortsShelf(cached, container);
   } else {
-    container.innerHTML = `
-      <div class="yt-skeleton">
-        <div class="yt-skeleton-thumb"></div>
-        <div class="yt-skeleton-info">
-          <div class="yt-skeleton-avatar"></div>
-          <div class="yt-skeleton-lines">
-            <div class="yt-skeleton-line"></div>
-            <div class="yt-skeleton-line short"></div>
-          </div>
-        </div>
-      </div>
-      <div class="yt-skeleton">
-        <div class="yt-skeleton-thumb"></div>
-        <div class="yt-skeleton-info">
-          <div class="yt-skeleton-avatar"></div>
-          <div class="yt-skeleton-lines">
-            <div class="yt-skeleton-line"></div>
-            <div class="yt-skeleton-line short"></div>
-          </div>
-        </div>
-      </div>
-    `;
+    container.innerHTML = `<div class="yt-skeleton"><div class="yt-skeleton-thumb"></div><div class="yt-skeleton-info"><div class="yt-skeleton-avatar"></div><div class="yt-skeleton-lines"><div class="yt-skeleton-line"></div><div class="yt-skeleton-line short"></div></div></div></div>`.repeat(2);
   }
 
   try {
@@ -1833,32 +1543,20 @@ async function loadHomeFeedPosts() {
     const q = query(postsRef, limit(15));
     const snap = await getDocs(q);
 
-    if (snap.empty) {
-      if (!cached || cached.length === 0) container.innerHTML = '';
-      return;
-    }
+    if (snap.empty) { if (!cached || cached.length === 0) container.innerHTML = ''; return; }
 
     let posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
     const blocked = currentProfile?.blockedUsers || [];
     posts = posts.filter(p => !blocked.includes(p.userId));
 
     const settings = typeof getSettings === 'function' ? getSettings() : { feedOrder: 'newest' };
-
     if (settings.feedOrder === 'trending') {
-      posts.sort((a, b) =>
-        (safeArray(b.likes).length + safeNum(b.views)) -
-        (safeArray(a.likes).length + safeNum(a.views))
-      );
+      posts.sort((a, b) => (safeArray(b.likes).length + safeNum(b.views)) - (safeArray(a.likes).length + safeNum(a.views)));
     } else {
-      posts.sort((a, b) =>
-        (b.createdAt?.toDate?.()?.getTime() || 0) -
-        (a.createdAt?.toDate?.()?.getTime() || 0)
-      );
+      posts.sort((a, b) => (b.createdAt?.toDate?.()?.getTime() || 0) - (a.createdAt?.toDate?.()?.getTime() || 0));
     }
 
     saveFeedCache(posts);
-
     const cacheIds = (cached || []).map(p => p.id).join(',');
     const newIds = posts.map(p => p.id).join(',');
 
@@ -1877,38 +1575,24 @@ function renderFeedWithShortsShelf(posts, container) {
   const regular = posts.filter(p => p.type !== 'short');
 
   container.innerHTML = '';
-
   container.appendChild(buildGamesShelf());
 
   if (shorts.length > 0) {
     const shelf = document.createElement('div');
     shelf.className = 'shorts-shelf';
-
     shelf.innerHTML = `
       <div class="shorts-shelf-header">
-        <div class="shorts-shelf-title">
-          <svg viewBox="0 0 24 24" class="shorts-icon">
-            <path d="M10 14.65v-5.3L15 12l-5 2.65zm7.77-4.33c-.77-.32-1.2-.5-1.2-.5L18 9.06c1.84-.96 2.53-3.23 1.56-5.06s-3.24-2.53-5.07-1.56L6 6.94c-1.29.68-2.07 2.04-2 3.49.07 1.42.93 2.67 2.22 3.25.03.01 1.2.5 1.2.5L6 14.93c-1.83.97-2.53 3.24-1.56 5.07.97 1.83 3.24 2.53 5.07 1.56l8.5-4.5c1.29-.68 2.06-2.04 1.99-3.49-.07-1.42-.94-2.68-2.23-3.25z"/>
-          </svg>
-          Shorts
-        </div>
-        <button class="shorts-shelf-more" id="shortsShelfMore">
-          View all
-          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
+        <div class="shorts-shelf-title"><svg viewBox="0 0 24 24" class="shorts-icon"><path d="M10 14.65v-5.3L15 12l-5 2.65zm7.77-4.33c-.77-.32-1.2-.5-1.2-.5L18 9.06c1.84-.96 2.53-3.23 1.56-5.06s-3.24-2.53-5.07-1.56L6 6.94c-1.29.68-2.07 2.04-2 3.49.07 1.42.93 2.67 2.22 3.25.03.01 1.2.5 1.2.5L6 14.93c-1.83.97-2.53 3.24-1.56 5.07.97 1.83 3.24 2.53 5.07 1.56l8.5-4.5c1.29-.68 2.06-2.04 1.99-3.49-.07-1.42-.94-2.68-2.23-3.25z"/></svg>Shorts</div>
+        <button class="shorts-shelf-more" id="shortsShelfMore">View all <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
       </div>
       <div class="shorts-shelf-scroll" id="shortsShelfScroll"></div>
     `;
-
     container.appendChild(shelf);
 
     const scrollWrap = shelf.querySelector('#shortsShelfScroll');
     shorts.forEach(short => scrollWrap.appendChild(makeShortShelfItem(short)));
 
-    shelf.querySelector('#shortsShelfMore')?.addEventListener('click', () => {
-      setActiveNav('shorts');
-      renderPage('shorts');
-    });
+    shelf.querySelector('#shortsShelfMore')?.addEventListener('click', () => { setActiveNav('shorts'); renderPage('shorts'); });
   }
 
   if (regular.length > 0) {
@@ -1917,16 +1601,7 @@ function renderFeedWithShortsShelf(posts, container) {
   }
 
   if (posts.length === 0) {
-    container.innerHTML = `
-      <div class="feed-empty">
-        <svg viewBox="0 0 24 24" style="width:64px;height:64px;stroke:#333;fill:none;stroke-width:1.5;margin-bottom:16px;">
-          <rect x="3" y="3" width="18" height="18" rx="4"/>
-          <circle cx="9" cy="9" r="2"/>
-          <path d="M21 15l-5-5L5 21"/>
-        </svg>
-        <h3>No posts yet</h3>
-        <p>Be the first to upload!</p>
-      </div>`;
+    container.innerHTML += `<div class="feed-empty"><svg viewBox="0 0 24 24" style="width:64px;height:64px;stroke:#333;fill:none;stroke-width:1.5;margin-bottom:16px;"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><h3>No posts yet</h3><p>Be the first to upload!</p></div>`;
   }
 }
 
@@ -1942,9 +1617,7 @@ function makeShortShelfItem(short) {
   item.innerHTML = `
     <div class="shorts-shelf-thumb">
       <img src="${thumbUrl}" alt="" loading="lazy">
-      <div class="shorts-shelf-play">
-        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="#fff"/></svg>
-      </div>
+      <div class="shorts-shelf-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="#fff"/></svg></div>
     </div>
     <div class="shorts-shelf-title-text">${escapeHtml(short.caption || 'Short video')}</div>
     <div class="shorts-shelf-views">${viewsText} views</div>
@@ -1957,28 +1630,16 @@ function makeShortShelfItem(short) {
       const thumbWrap = item.querySelector('.shorts-shelf-thumb');
       if (thumbWrap && !thumbWrap.querySelector('video')) {
         const vid = document.createElement('video');
-        vid.src = short.url;
-        vid.muted = true;
-        vid.playsInline = true;
-        vid.preload = 'metadata';
+        vid.src = short.url; vid.muted = true; vid.playsInline = true; vid.preload = 'metadata';
         vid.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;position:absolute;top:0;left:0;';
         thumbWrap.insertBefore(vid, thumbWrap.firstChild);
-        vid.addEventListener('loadedmetadata', () => {
-          try { vid.currentTime = 1; } catch (e) {}
-        });
-        vid.addEventListener('error', () => {
-          vid.remove();
-          thumbWrap.classList.add('no-thumb');
-        }, { once: true });
+        vid.addEventListener('loadedmetadata', () => { try { vid.currentTime = 1; } catch (e) {} });
+        vid.addEventListener('error', () => { vid.remove(); thumbWrap.classList.add('no-thumb'); }, { once: true });
       }
     }, { once: true });
   }
 
-  item.addEventListener('click', () => {
-    setActiveNav('shorts');
-    renderShortsFeed();
-  });
-
+  item.addEventListener('click', () => { setActiveNav('shorts'); renderShortsFeed(); });
   return item;
 }
 
@@ -1998,9 +1659,7 @@ function makeFeedPost(post) {
     <div class="yt-thumb" data-action="play">
       <img src="${thumbUrl}" alt="" loading="lazy">
       ${duration ? `<div class="yt-duration">${duration}</div>` : ''}
-      <div class="yt-play-overlay">
-        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="#fff"/></svg>
-      </div>
+      <div class="yt-play-overlay"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="#fff"/></svg></div>
     </div>
     <div class="yt-info">
       <img class="yt-avatar" src="${avatar}" alt="" data-action="profile">
@@ -2009,28 +1668,13 @@ function makeFeedPost(post) {
         <div class="yt-channel">${escapeHtml(post.userName || 'User')}${verifiedBadgeHTML(post.userVerified)}</div>
         <div class="yt-stats">${viewsText} views · ${timeAgoStr}</div>
       </div>
-      <button class="yt-menu-btn" data-action="menu">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/>
-          <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
-          <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/>
-        </svg>
-      </button>
+      <button class="yt-menu-btn" data-action="menu"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg></button>
     </div>
   `;
 
   card.querySelector('[data-action="play"]')?.addEventListener('click', () => openPlayer(post));
-
-  card.querySelector('[data-action="profile"]')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    openUserProfile(post.userId);
-  });
-
-  card.querySelector('.yt-menu-btn')?.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    await showPostMenu(e.currentTarget, post);
-  });
-
+  card.querySelector('[data-action="profile"]')?.addEventListener('click', (e) => { e.stopPropagation(); openUserProfile(post.userId); });
+  card.querySelector('.yt-menu-btn')?.addEventListener('click', async (e) => { e.stopPropagation(); await showPostMenu(e.currentTarget, post); });
   attachDoubleTapLike(card.querySelector('.yt-thumb'), post, null);
 
   trackPostView(post.id);
@@ -2038,37 +1682,50 @@ function makeFeedPost(post) {
 }
 
 /* ============================================================
+   POST PLAYER
+   ============================================================ */
+function openPostPlayer(post) {
+  if (!post || !playerTitle || !playerContent) return;
+  playerTitle.textContent = post.caption || (post.type === 'photo' ? 'Photo' : 'Video');
+
+  if (post.type === 'photo') {
+    playerContent.innerHTML = `<img src="${post.url}" alt="">`;
+  } else if (post.type === 'short') {
+    playerContent.innerHTML = `<div class="player-short-wrap" style="position:relative;"><video src="${post.url}" controls autoplay playsinline style="width:100%;max-height:75vh;background:#000;border-radius:8px;"></video></div>`;
+  } else {
+    playerContent.innerHTML = `
+      <div class="player-youtube-wrap" style="position:relative;">
+        <video src="${post.url}" controls autoplay playsinline ${post.thumbnail ? `poster="${post.thumbnail}"` : ''} style="width:100%;max-height:75vh;background:#000;"></video>
+        <div class="player-youtube-info">
+          <div class="player-youtube-title">${escapeHtml(post.caption || 'Video')}</div>
+          <div class="player-youtube-channel">${escapeHtml(post.userName || 'User')}${verifiedBadgeHTML(post.userVerified)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  playerModal?.classList.add('show');
+  const playerInner = playerContent.firstElementChild;
+  if (playerInner && post.type !== 'photo') attachDoubleTapLike(playerInner, post, null);
+}
+
+/* ============================================================
    POST MENU
    ============================================================ */
 async function showPostMenu(anchorEl, post) {
   document.querySelectorAll('.post-menu-dropdown').forEach(el => el.remove());
-
   const menu = document.createElement('div');
   menu.className = 'post-menu-dropdown';
 
   const isOwner = post.userId === currentUser.uid;
   const isBlocked = (currentProfile?.blockedUsers || []).includes(post.userId);
-
   let menuHTML = '';
 
   if (isOwner) {
-    menuHTML += `
-      <button data-action="delete" class="danger">
-        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-        Delete Post
-      </button>
-    `;
+    menuHTML += `<button data-action="delete" class="danger"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete Post</button>`;
   } else {
-    menuHTML += `
-      <button data-action="report">
-        <svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-        Report Post
-      </button>
-      <button data-action="${isBlocked ? 'unblock' : 'block'}" class="${isBlocked ? '' : 'danger'}">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-        ${isBlocked ? 'Unblock @' : 'Block @'}${escapeHtml(post.userHandle || 'user')}
-      </button>
-    `;
+    menuHTML += `<button data-action="report"><svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Report Post</button>`;
+    menuHTML += `<button data-action="${isBlocked ? 'unblock' : 'block'}" class="${isBlocked ? '' : 'danger'}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>${isBlocked ? 'Unblock @' : 'Block @'}${escapeHtml(post.userHandle || 'user')}</button>`;
   }
 
   menu.innerHTML = menuHTML;
@@ -2076,17 +1733,11 @@ async function showPostMenu(anchorEl, post) {
 
   const rect = anchorEl.getBoundingClientRect();
   const menuRect = menu.getBoundingClientRect();
-
   let top = rect.bottom + 5;
   let left = rect.right - menuRect.width;
   if (left < 10) left = 10;
-  if (left + menuRect.width > window.innerWidth - 10) {
-    left = window.innerWidth - menuRect.width - 10;
-  }
-  if (top + menuRect.height > window.innerHeight - 10) {
-    top = rect.top - menuRect.height - 5;
-  }
-
+  if (left + menuRect.width > window.innerWidth - 10) left = window.innerWidth - menuRect.width - 10;
+  if (top + menuRect.height > window.innerHeight - 10) top = rect.top - menuRect.height - 5;
   menu.style.top = top + 'px';
   menu.style.left = left + 'px';
 
@@ -2095,7 +1746,6 @@ async function showPostMenu(anchorEl, post) {
       e.stopPropagation();
       const action = btn.dataset.action;
       menu.remove();
-
       if (action === 'report') await reportPost(post);
       else if (action === 'block') await blockUser(post.userId, post.userHandle);
       else if (action === 'unblock') await unblockUser(post.userId, post.userHandle);
@@ -2106,13 +1756,10 @@ async function showPostMenu(anchorEl, post) {
   setTimeout(() => {
     const closeMenu = (ev) => {
       if (!menu.contains(ev.target) && ev.target !== anchorEl) {
-        menu.remove();
-        document.removeEventListener('click', closeMenu);
-        document.removeEventListener('touchstart', closeMenu);
+        menu.remove(); document.removeEventListener('click', closeMenu); document.removeEventListener('touchstart', closeMenu);
       }
     };
-    document.addEventListener('click', closeMenu);
-    document.addEventListener('touchstart', closeMenu);
+    document.addEventListener('click', closeMenu); document.addEventListener('touchstart', closeMenu);
   }, 100);
 }
 
@@ -2121,19 +1768,12 @@ async function deletePost(postId) {
   if (settings.confirmDelete && !confirm('Delete this post permanently?')) return;
   try {
     await deleteDoc(doc(db, 'posts', postId));
-    await updateDoc(doc(db, 'users', currentUser.uid), {
-      videoCount: Math.max(0, safeNum(currentProfile.videoCount) - 1)
-    });
+    await updateDoc(doc(db, 'users', currentUser.uid), { videoCount: Math.max(0, safeNum(currentProfile.videoCount) - 1) });
     currentProfile.videoCount = Math.max(0, safeNum(currentProfile.videoCount) - 1);
-
-    localStorage.removeItem('reelhub_feed_cache');
-    localStorage.removeItem('reelhub_feed_cache_time');
-
+    localStorage.removeItem('reelhub_feed_cache'); localStorage.removeItem('reelhub_feed_cache_time');
     showToast('🗑️ Post deleted');
     renderHomeFeed();
-  } catch (e) {
-    showToast('❌ Could not delete');
-  }
+  } catch (e) { showToast('❌ Could not delete'); }
 }
 
 /* ============================================================
@@ -2141,9 +1781,7 @@ async function deletePost(postId) {
    ============================================================ */
 function setupFeedAutoplay() {
   const settings = typeof getSettings === 'function' ? getSettings() : { autoPlay: true };
-
   stopFeedAutoplay();
-
   if (!settings.autoPlay || settings.dataSaver) return;
 
   const videos = document.querySelectorAll('.yt-card video, .feed-post-media video');
@@ -2153,12 +1791,9 @@ function setupFeedAutoplay() {
     entries.forEach(entry => {
       const video = entry.target;
       if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
-        video.muted = !settings.autoplaySound;
-        video.loop = settings.videoLoop !== false;
+        video.muted = !settings.autoplaySound; video.loop = settings.videoLoop !== false;
         video.play().catch(() => {});
-      } else {
-        video.pause();
-      }
+      } else { video.pause(); }
     });
   }, { threshold: [0, 0.6, 1] });
 
@@ -2166,13 +1801,8 @@ function setupFeedAutoplay() {
 }
 
 function stopFeedAutoplay() {
-  if (feedAutoplayObserver) {
-    feedAutoplayObserver.disconnect();
-    feedAutoplayObserver = null;
-  }
-  document.querySelectorAll('.yt-card video, .feed-post-media video').forEach(v => {
-    try { v.pause(); } catch (e) {}
-  });
+  if (feedAutoplayObserver) { feedAutoplayObserver.disconnect(); feedAutoplayObserver = null; }
+  document.querySelectorAll('.yt-card video, .feed-post-media video').forEach(v => { try { v.pause(); } catch (e) {} });
 }
 
 /* ============================================================
@@ -2181,7 +1811,6 @@ function stopFeedAutoplay() {
 async function loadStoriesBar() {
   const bar = document.getElementById('storiesBar');
   if (!bar) return;
-
   bar.querySelectorAll('.story-item:not(#addStoryBtn)').forEach(el => el.remove());
 
   try {
@@ -2203,23 +1832,13 @@ async function loadStoriesBar() {
     const grouped = {};
     validStories.forEach(s => {
       if (!grouped[s.userId]) {
-        grouped[s.userId] = {
-          userId: s.userId,
-          userName: s.userName,
-          userHandle: s.userHandle,
-          userPhoto: s.userPhoto,
-          userVerified: s.userVerified,
-          stories: []
-        };
+        grouped[s.userId] = { userId: s.userId, userName: s.userName, userHandle: s.userHandle, userPhoto: s.userPhoto, userVerified: s.userVerified, stories: [] };
       }
       grouped[s.userId].stories.push(s);
     });
 
     Object.values(grouped).forEach(u => {
-      u.stories.sort((a, b) =>
-        (a.createdAt?.toDate?.()?.getTime() || 0) -
-        (b.createdAt?.toDate?.()?.getTime() || 0)
-      );
+      u.stories.sort((a, b) => (a.createdAt?.toDate?.()?.getTime() || 0) - (b.createdAt?.toDate?.()?.getTime() || 0));
     });
 
     const userArray = Object.values(grouped);
@@ -2236,43 +1855,27 @@ async function loadStoriesBar() {
     userArray.forEach(userGroup => {
       const item = document.createElement('div');
       item.className = 'story-item';
-
-      const allViewed = userGroup.stories.every(s =>
-        (s.viewers || []).includes(currentUser.uid)
-      );
+      const allViewed = userGroup.stories.every(s => (s.viewers || []).includes(currentUser.uid));
       const avatar = userGroup.userPhoto || defaultAvatar(userGroup.userName);
 
       item.innerHTML = `
-        <div class="story-ring ${allViewed ? 'viewed' : ''}">
-          <img src="${avatar}" alt="">
-        </div>
-        <div class="story-name ${userGroup.userId === currentUser.uid ? 'you' : ''}">
-          ${userGroup.userId === currentUser.uid ? 'Your story' : escapeHtml(userGroup.userName)}
-        </div>
+        <div class="story-ring ${allViewed ? 'viewed' : ''}"><img src="${avatar}" alt=""></div>
+        <div class="story-name ${userGroup.userId === currentUser.uid ? 'you' : ''}">${userGroup.userId === currentUser.uid ? 'Your story' : escapeHtml(userGroup.userName)}</div>
       `;
 
       item.addEventListener('click', () => openStoryViewer(userGroup.userId));
       bar.appendChild(item);
     });
-  } catch (e) {
-    console.warn('Stories bar error:', e);
-  }
+  } catch (e) { console.warn('Stories bar error:', e); }
 }
 
 /* ============================================================
    STORY UPLOAD MODAL
    ============================================================ */
 function openStoryUploadModal() {
-  currentStoryType = 'photo';
-  currentStoryFile = null;
-  currentStoryVideoDuration = 0;
+  currentStoryType = 'photo'; currentStoryFile = null; currentStoryVideoDuration = 0;
   if (storyFileInput) storyFileInput.value = '';
-
-  if (storyPreviewBlobUrl) {
-    try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {}
-    storyPreviewBlobUrl = null;
-  }
-
+  if (storyPreviewBlobUrl) { try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {} storyPreviewBlobUrl = null; }
   if (storyPreviewImg) storyPreviewImg.src = '';
   if (storyPreviewVideo) storyPreviewVideo.src = '';
   if (storyPreviewWrap) storyPreviewWrap.style.display = 'none';
@@ -2307,19 +1910,13 @@ function updateStoryPickerText() {
 
 document.getElementById('closeStoryUpload')?.addEventListener('click', () => {
   storyUploadModal?.classList.remove('show');
-  if (storyPreviewBlobUrl) {
-    try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {}
-    storyPreviewBlobUrl = null;
-  }
+  if (storyPreviewBlobUrl) { try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {} storyPreviewBlobUrl = null; }
 });
 
 storyUploadModal?.addEventListener('click', (e) => {
   if (e.target === storyUploadModal) {
     storyUploadModal.classList.remove('show');
-    if (storyPreviewBlobUrl) {
-      try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {}
-      storyPreviewBlobUrl = null;
-    }
+    if (storyPreviewBlobUrl) { try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {} storyPreviewBlobUrl = null; }
   }
 });
 
@@ -2327,9 +1924,7 @@ document.querySelectorAll('.story-upload-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.story-upload-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    currentStoryType = tab.dataset.type;
-    currentStoryFile = null;
-    currentStoryVideoDuration = 0;
+    currentStoryType = tab.dataset.type; currentStoryFile = null; currentStoryVideoDuration = 0;
     if (storyFileInput) storyFileInput.value = '';
     if (storyPreviewImg) storyPreviewImg.src = '';
     if (storyPreviewVideo) storyPreviewVideo.src = '';
@@ -2338,12 +1933,7 @@ document.querySelectorAll('.story-upload-tab').forEach(tab => {
     if (storyPickerWrap) storyPickerWrap.style.display = 'flex';
     if (storySubmitBtn) storySubmitBtn.disabled = true;
     if (storyUploadMsg) storyUploadMsg.textContent = '';
-
-    if (storyPreviewBlobUrl) {
-      try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {}
-      storyPreviewBlobUrl = null;
-    }
-
+    if (storyPreviewBlobUrl) { try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {} storyPreviewBlobUrl = null; }
     updateStoryPickerText();
   });
 });
@@ -2351,24 +1941,13 @@ document.querySelectorAll('.story-upload-tab').forEach(tab => {
 storyFileInput?.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-
-  if (storyUploadMsg) {
-    storyUploadMsg.className = 'error-msg';
-    storyUploadMsg.textContent = '';
-  }
+  if (storyUploadMsg) { storyUploadMsg.className = 'error-msg'; storyUploadMsg.textContent = ''; }
 
   if (currentStoryType === 'photo') {
-    if (!file.type.startsWith('image/')) {
-      if (storyUploadMsg) storyUploadMsg.textContent = 'Choose image file.';
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      if (storyUploadMsg) storyUploadMsg.textContent = 'Max 5 MB.';
-      return;
-    }
+    if (!file.type.startsWith('image/')) { if (storyUploadMsg) storyUploadMsg.textContent = 'Choose image file.'; return; }
+    if (file.size > 5 * 1024 * 1024) { if (storyUploadMsg) storyUploadMsg.textContent = 'Max 5 MB.'; return; }
     currentStoryFile = file;
-    const url = URL.createObjectURL(file);
-    storyPreviewBlobUrl = url;
+    const url = URL.createObjectURL(file); storyPreviewBlobUrl = url;
     if (storyPreviewImg) storyPreviewImg.src = url;
     if (storyPreviewWrap) storyPreviewWrap.style.display = 'block';
     if (storyPickerWrap) storyPickerWrap.style.display = 'none';
@@ -2376,63 +1955,33 @@ storyFileInput?.addEventListener('change', async (e) => {
     return;
   }
 
-  if (!file.type.startsWith('video/')) {
-    if (storyUploadMsg) storyUploadMsg.textContent = 'Choose video file.';
-    return;
-  }
-  if (file.size > 20 * 1024 * 1024) {
-    if (storyUploadMsg) storyUploadMsg.textContent = 'Max 20 MB.';
-    return;
-  }
+  if (!file.type.startsWith('video/')) { if (storyUploadMsg) storyUploadMsg.textContent = 'Choose video file.'; return; }
+  if (file.size > 20 * 1024 * 1024) { if (storyUploadMsg) storyUploadMsg.textContent = 'Max 20 MB.'; return; }
 
   const url = URL.createObjectURL(file);
   const tempVideo = document.createElement('video');
-  tempVideo.preload = 'metadata';
-  tempVideo.src = url;
+  tempVideo.preload = 'metadata'; tempVideo.src = url;
 
   tempVideo.onloadedmetadata = () => {
     const duration = tempVideo.duration;
-    if (!isFinite(duration) || duration <= 0) {
-      if (storyUploadMsg) storyUploadMsg.textContent = 'Could not read duration.';
-      URL.revokeObjectURL(url);
-      return;
-    }
-    if (duration > 15.5) {
-      if (storyUploadMsg) storyUploadMsg.textContent = `Max 15 sec. Yours ${Math.round(duration)}s.`;
-      URL.revokeObjectURL(url);
-      return;
-    }
-    currentStoryFile = file;
-    currentStoryVideoDuration = duration;
-    storyPreviewBlobUrl = url;
+    if (!isFinite(duration) || duration <= 0) { if (storyUploadMsg) storyUploadMsg.textContent = 'Could not read duration.'; URL.revokeObjectURL(url); return; }
+    if (duration > 15.5) { if (storyUploadMsg) storyUploadMsg.textContent = `Max 15 sec. Yours ${Math.round(duration)}s.`; URL.revokeObjectURL(url); return; }
+    currentStoryFile = file; currentStoryVideoDuration = duration; storyPreviewBlobUrl = url;
     if (storyPreviewVideo) storyPreviewVideo.src = url;
     if (storyVideoPreviewWrap) storyVideoPreviewWrap.style.display = 'block';
-    if (storyPreviewInfo) {
-      storyPreviewInfo.textContent =
-        `${Math.round(duration)}s · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
-    }
+    if (storyPreviewInfo) storyPreviewInfo.textContent = `${Math.round(duration)}s · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
     if (storyPickerWrap) storyPickerWrap.style.display = 'none';
     if (storySubmitBtn) storySubmitBtn.disabled = false;
   };
 
-  tempVideo.onerror = () => {
-    if (storyUploadMsg) storyUploadMsg.textContent = 'Could not load video.';
-    URL.revokeObjectURL(url);
-  };
+  tempVideo.onerror = () => { if (storyUploadMsg) storyUploadMsg.textContent = 'Could not load video.'; URL.revokeObjectURL(url); };
 });
 
 storySubmitBtn?.addEventListener('click', async () => {
-  if (!currentUser || !currentProfile) {
-    if (storyUploadMsg) storyUploadMsg.textContent = 'Login required.';
-    return;
-  }
-  if (!currentStoryFile) {
-    if (storyUploadMsg) storyUploadMsg.textContent = 'Select a file.';
-    return;
-  }
+  if (!currentUser || !currentProfile) { if (storyUploadMsg) storyUploadMsg.textContent = 'Login required.'; return; }
+  if (!currentStoryFile) { if (storyUploadMsg) storyUploadMsg.textContent = 'Select a file.'; return; }
 
-  storySubmitBtn.disabled = true;
-  storySubmitBtn.textContent = 'Uploading...';
+  storySubmitBtn.disabled = true; storySubmitBtn.textContent = 'Uploading...';
   if (storyUploadMsg) storyUploadMsg.textContent = '';
   if (storyProgressWrap) storyProgressWrap.style.display = 'block';
 
@@ -2443,50 +1992,28 @@ storySubmitBtn?.addEventListener('click', async () => {
     });
 
     const storyData = {
-      userId: currentUser.uid,
-      userName: currentProfile.name,
-      userHandle: currentProfile.user,
-      userPhoto: currentProfile.photo || '',
-      userVerified: currentProfile.verified || false,
-      type: currentStoryType,
-      url: result.secure_url,
-      thumbnail: currentStoryType === 'video'
-        ? buildThumbnailUrl(result.secure_url, 'video')
-        : result.secure_url,
-      duration: currentStoryType === 'photo' ? 5 : currentStoryVideoDuration,
-      viewers: [],
-      createdAt: serverTimestamp()
+      userId: currentUser.uid, userName: currentProfile.name, userHandle: currentProfile.user, userPhoto: currentProfile.photo || '', userVerified: currentProfile.verified || false,
+      type: currentStoryType, url: result.secure_url,
+      thumbnail: currentStoryType === 'video' ? buildThumbnailUrl(result.secure_url, 'video') : result.secure_url,
+      duration: currentStoryType === 'photo' ? 5 : currentStoryVideoDuration, viewers: [], createdAt: serverTimestamp()
     };
 
     await addDoc(collection(db, 'stories'), storyData);
-
-    if (storyUploadMsg) {
-      storyUploadMsg.className = 'success-msg';
-      storyUploadMsg.textContent = '✅ Story posted!';
-    }
+    if (storyUploadMsg) { storyUploadMsg.className = 'success-msg'; storyUploadMsg.textContent = '✅ Story posted!'; }
 
     setTimeout(() => {
       storyUploadModal?.classList.remove('show');
-      if (storyPreviewBlobUrl) {
-        try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {}
-        storyPreviewBlobUrl = null;
-      }
-      if (document.querySelector('.nav-item[data-page="home"]')?.classList.contains('active')) {
-        renderHomeFeed();
-      }
+      if (storyPreviewBlobUrl) { try { URL.revokeObjectURL(storyPreviewBlobUrl); } catch (e) {} storyPreviewBlobUrl = null; }
+      if (document.querySelector('.nav-item[data-page="home"]')?.classList.contains('active')) renderHomeFeed();
     }, 1200);
   } catch (err) {
-    if (storyUploadMsg) {
-      storyUploadMsg.className = 'error-msg';
-      storyUploadMsg.textContent = err.message || 'Upload failed.';
-    }
-    storySubmitBtn.disabled = false;
-    storySubmitBtn.textContent = 'Share to Story';
+    if (storyUploadMsg) { storyUploadMsg.className = 'error-msg'; storyUploadMsg.textContent = err.message || 'Upload failed.'; }
+    storySubmitBtn.disabled = false; storySubmitBtn.textContent = 'Share to Story';
   }
 });
 
 /* ============================================================
-   CLOUDINARY UPLOADS
+   CLOUDINARY UPLOAD — STORY
    ============================================================ */
 function uploadToCloudinaryStory(file, onProgress) {
   return new Promise((resolve, reject) => {
@@ -2503,32 +2030,15 @@ function uploadToCloudinaryStory(file, onProgress) {
     xhr.open('POST', url, true);
     xhr.timeout = 120000;
 
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) {
-        onProgress(Math.round((e.loaded / e.total) * 100));
-      }
-    };
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); };
 
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const res = JSON.parse(xhr.responseText);
-          if (!res.secure_url) {
-            reject(new Error('No URL returned'));
-            return;
-          }
-          resolve(res);
-        } catch (e) {
-          reject(new Error('Invalid response'));
-        }
+        try { const res = JSON.parse(xhr.responseText); if (!res.secure_url) { reject(new Error('No URL returned')); return; } resolve(res); }
+        catch (e) { reject(new Error('Invalid response')); }
       } else {
         let errMsg = 'Upload failed';
-        try {
-          const errData = JSON.parse(xhr.responseText);
-          if (errData.error?.message) errMsg = errData.error.message;
-        } catch (e) {
-          errMsg = 'HTTP ' + xhr.status;
-        }
+        try { const errData = JSON.parse(xhr.responseText); if (errData.error?.message) errMsg = errData.error.message; } catch (e) { errMsg = 'HTTP ' + xhr.status; }
         reject(new Error(errMsg));
       }
     };
@@ -2539,6 +2049,9 @@ function uploadToCloudinaryStory(file, onProgress) {
   });
 }
 
+/* ============================================================
+   CLOUDINARY UPLOAD — GROUP FILES
+   ============================================================ */
 function uploadToCloudinaryGroupFile(file, onProgress) {
   return new Promise((resolve, reject) => {
     let resourceType = 'raw';
@@ -2557,30 +2070,15 @@ function uploadToCloudinaryGroupFile(file, onProgress) {
     xhr.open('POST', url, true);
     xhr.timeout = 180000;
 
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) {
-        onProgress(Math.round((e.loaded / e.total) * 100));
-      }
-    };
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); };
 
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const res = JSON.parse(xhr.responseText);
-          if (!res.secure_url) {
-            reject(new Error('No URL'));
-            return;
-          }
-          resolve(res);
-        } catch (e) {
-          reject(new Error('Invalid'));
-        }
+        try { const res = JSON.parse(xhr.responseText); if (!res.secure_url) { reject(new Error('No URL')); return; } resolve(res); }
+        catch (e) { reject(new Error('Invalid')); }
       } else {
         let errMsg = 'Upload failed';
-        try {
-          const d = JSON.parse(xhr.responseText);
-          if (d.error?.message) errMsg = d.error.message;
-        } catch (e) {}
+        try { const d = JSON.parse(xhr.responseText); if (d.error?.message) errMsg = d.error.message; } catch (e) {}
         reject(new Error(errMsg));
       }
     };
@@ -2591,6 +2089,9 @@ function uploadToCloudinaryGroupFile(file, onProgress) {
   });
 }
 
+/* ============================================================
+   CLOUDINARY UPLOAD — VOICE
+   ============================================================ */
 function uploadToCloudinaryVoice(file, onProgress) {
   return new Promise((resolve, reject) => {
     const acc = CLOUDINARY_ACCOUNTS.stories;
@@ -2605,30 +2106,15 @@ function uploadToCloudinaryVoice(file, onProgress) {
     xhr.open('POST', url, true);
     xhr.timeout = 180000;
 
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) {
-        onProgress(Math.round((e.loaded / e.total) * 100));
-      }
-    };
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); };
 
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const res = JSON.parse(xhr.responseText);
-          if (!res.secure_url) {
-            reject(new Error('No URL'));
-            return;
-          }
-          resolve(res);
-        } catch (e) {
-          reject(new Error('Invalid'));
-        }
+        try { const res = JSON.parse(xhr.responseText); if (!res.secure_url) { reject(new Error('No URL')); return; } resolve(res); }
+        catch (e) { reject(new Error('Invalid')); }
       } else {
         let errMsg = 'Upload failed';
-        try {
-          const d = JSON.parse(xhr.responseText);
-          if (d.error?.message) errMsg = d.error.message;
-        } catch (e) {}
+        try { const d = JSON.parse(xhr.responseText); if (d.error?.message) errMsg = d.error.message; } catch (e) {}
         reject(new Error(errMsg));
       }
     };
@@ -2639,11 +2125,12 @@ function uploadToCloudinaryVoice(file, onProgress) {
   });
 }
 
-console.log('✅ Part 2 loaded — Feed + Shorts + Stories + Upload + Games Shelf');
+console.log('✅ Part 2 loaded (Feed + Shorts + Stories + Upload + Games Shelf)');
 /* ============================================================
-   ReelHub — app.js (PART 3/5) — FULL V3
+   ReelHub — app.js (PART 3/5) — FULL FIXED v2
    Story Viewer + Shorts Feed + Comments + Share Counter
-   ✅ Share counter UI update + Story timer cleanup + Null guards
+   ✅ Share counter UI update + Story timer cleanup + Comment null guards
+   ✅ _isHighlightViewing flag reset + Atomic comment counts
    ============================================================ */
 
 /* ============================================================
@@ -2677,7 +2164,7 @@ async function incrementPostShare(postId) {
 }
 
 /* ============================================================
-   ✅ SHARE POST
+   ✅ SHARE POST — WITH COUNTER + UI UPDATE
    ============================================================ */
 async function sharePost(post) {
   if (!post) return;
@@ -2710,15 +2197,23 @@ async function sharePost(post) {
     }
   }
 
+  // ✅ FIX: Increment counter + update UI
   if (shared) {
     await incrementPostShare(post.id);
+
+    // Local state update
     if (!post.shares) post.shares = 0;
     post.shares++;
+
+    // UI update — sab jagah jaha share-count span hai
     document.querySelectorAll(`[data-post="${post.id}"] .share-count`)
       .forEach(el => { el.textContent = post.shares; });
   }
 }
 
+/* ============================================================
+   ✅ SHARE USER
+   ============================================================ */
 async function shareUser(user) {
   if (!user) return;
 
@@ -2753,6 +2248,7 @@ function openStoryViewer(userId) {
   const userIndex = storiesByUser.findIndex(u => u.userId === userId);
   if (userIndex === -1) return;
 
+  // ✅ FIX #7: Reset highlight mode flag
   window._isHighlightViewing = false;
   document.getElementById('storyViewer')?.classList.remove('highlight-mode');
 
@@ -3418,6 +2914,7 @@ async function openComments(postId, title) {
 
   if (commentsTitle) commentsTitle.textContent = title || 'Comments';
 
+  // ✅ FIX #3: Null guard for myAvatarForComment
   if (myAvatarForComment) {
     myAvatarForComment.src = currentProfile?.photo || defaultAvatar(currentProfile?.name || '?');
   }
@@ -3831,7 +3328,7 @@ async function deleteComment(commentId) {
 }
 
 /* ============================================================
-   TIME AGO HELPER
+   TIME AGO HELPER (needed for comments + stories)
    ============================================================ */
 function timeAgo(date) {
   if (!date) return 'just now';
@@ -3845,7 +3342,7 @@ function timeAgo(date) {
   return days + ' day' + (days > 1 ? 's' : '') + ' ago';
 }
 
-console.log('✅ Part 3 loaded — Story Viewer + Shorts + Comments + Share');
+console.log('✅ Part 3 loaded (Story Viewer + Shorts + Comments + Share)');
 /* ============================================================
    ReelHub — app.js (PART 4/5) — FULL FIXED v2
    Sound System + Chat + Groups + Voice + Reply + Reactions
@@ -6087,13 +5584,12 @@ function formatDate(date) {
 
 console.log('✅ Part 4 loaded (Sound + Chat + Groups + Voice + Reactions)');
 /* ============================================================
-   ReelHub — app.js (PART 5/5) — FULL UPDATED v2 (SCRATCH CARD)
+   ReelHub — app.js (PART 5/5) — FULL UPDATED (SCRATCH CARD)
    Profile + Highlights + Notifications + Search + Settings + Delete
    ✅ Referral earning → Scratch Card (direct wallet nahi)
    ✅ FIXED: Query-based referral lookup (works with Part 1 addDoc)
    ✅ FIXED: Removed double referralCount increment
    ✅ FIXED: Local currentProfile sync after referral completion
-   ✅ FIXED: Uses recordWalletTransaction helper consistently
    ============================================================ */
 
 /* ============================================================
@@ -6704,9 +6200,6 @@ uploadSubmitBtn?.addEventListener('click', async () => {
 
     /* ============================================================
        ✅ REFERRAL: Complete referral + create SCRATCH CARD for referrer
-       ✅ FIXED: Query-based lookup (works with Part 1 addDoc)
-       ✅ FIXED: No double referralCount increment
-       ✅ FIXED: Local currentProfile sync
        ============================================================ */
     try {
       if (currentProfile?.referredBy && !currentProfile?.referralCompleted) {
@@ -6756,7 +6249,7 @@ uploadSubmitBtn?.addEventListener('click', async () => {
           // 3. Update referrer earnings (referralCount ALREADY incremented at signup in Part 1)
           try {
             await updateDoc(doc(db, 'users', referrerId), {
-              // ✅ referralCount: increment(1) — REMOVED (double-count fix)
+              // ✅ referralCount: increment(1) — REMOVED (would double-count)
               referralEarnings: increment(REFERRER_REWARD)
             });
             console.log("✅ Referrer earnings updated");
