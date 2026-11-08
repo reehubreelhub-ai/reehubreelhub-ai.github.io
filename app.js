@@ -1,9 +1,7 @@
 /* ============================================================
-   ReelHub — app.js (PART 1/5) — FIXED v5
-   (Auth logic moved to auth.js)
+   ReelHub — app.js (PART 1/5) — FIXED v6
    ============================================================ */
 
-// ✅ 1. Imports sirf firebase-config.js se aayenge (jo humne alag banayi hai)
 import {
   auth, db,
   doc, setDoc, getDoc, updateDoc, deleteDoc,
@@ -13,17 +11,11 @@ import {
   signOut, EmailAuthProvider, reauthenticateWithCredential
 } from './firebase-config.js';
 
-/* ============================================================
-   CLOUDINARY ACCOUNTS
-   ============================================================ */
 const CLOUDINARY_ACCOUNTS = {
   videos: { cloudName: "s3eresx6", apiKey: "349223397331644", preset: "reelhub_video" },
   stories: { cloudName: "fepzqr9t", apiKey: "287332161532267", preset: "reelhub_story" }
 };
 
-/* ============================================================
-   DOM SHORTCUTS
-   ============================================================ */
 function $id(id) { return document.getElementById(id); }
 
 const authScreen = $id('auth');
@@ -37,135 +29,40 @@ const loginBtn = $id('loginBtn');
 const signupBtn = $id('signupBtn');
 const content = $id('content');
 
-const editModal = $id('editModal');
-const editPreviewImg = $id('editPreviewImg');
-const editPhotoInput = $id('editPhoto');
-const editNameInput = $id('editName');
-const editUserInput = $id('editUser');
-const editBioInput = $id('editBio');
-const saveProfileBtn = $id('saveProfileBtn');
-const editMsg = $id('editMsg');
+// ... (Baaki DOM variables same rahenge, maine yahan short kiya hai)
+const editModal = $id('editModal'), editPreviewImg = $id('editPreviewImg'), editPhotoInput = $id('editPhoto'), editNameInput = $id('editName'), editUserInput = $id('editUser'), editBioInput = $id('editBio'), saveProfileBtn = $id('saveProfileBtn'), editMsg = $id('editMsg');
+const listModal = $id('listModal'), listTitle = $id('listTitle'), userList = $id('userList');
+const forgotModal = $id('forgotModal'), forgotEmail = $id('forgotEmail'), forgotMsg = $id('forgotMsg'), sendResetBtn = $id('sendResetBtn');
+const notifBtn = $id('notifBtn'), notifDot = $id('notifDot'), searchBtn = $id('searchBtn'), chatsDot = $id('chatsDot'), settingsBtn = $id('settingsBtn');
+const uploadModal = $id('uploadModal'), uploadFileInput = $id('uploadFileInput'), uploadCaption = $id('uploadCaption'), uploadSubmitBtn = $id('uploadSubmitBtn'), uploadMsg = $id('uploadMsg'), uploadPreview = $id('uploadPreview'), uploadPreviewWrap = $id('uploadPreviewWrap'), uploadPreviewInfo = $id('uploadPreviewInfo'), uploadPhotoPreview = $id('uploadPhotoPreview'), uploadPhotoPreviewWrap = $id('uploadPhotoPreviewWrap'), uploadPickerWrap = $id('uploadPickerWrap'), pickerTitle = $id('pickerTitle'), pickerSubtitle = $id('pickerSubtitle'), pickerLabel = $id('pickerLabel'), uploadProgressWrap = $id('uploadProgressWrap'), uploadProgressBar = $id('uploadProgressBar'), uploadProgressText = $id('uploadProgressText');
+const playerModal = $id('playerModal'), playerTitle = $id('playerTitle'), playerContent = $id('playerContent');
+const commentsModal = $id('commentsModal'), commentsTitle = $id('commentsTitle'), commentsList = $id('commentsList'), commentInput = $id('commentInput'), postCommentBtn = $id('postCommentBtn'), myAvatarForComment = $id('myAvatarForComment'), replyIndicator = $id('replyIndicator'), replyIndicatorText = $id('replyIndicatorText'), cancelReplyBtn = $id('cancelReplyBtn');
+const newChatModal = $id('newChatModal'), newChatSearch = $id('newChatSearch'), newChatResults = $id('newChatResults');
+const chatWindowModal = $id('chatWindowModal'), chatHeaderAvatar = $id('chatHeaderAvatar'), chatHeaderName = $id('chatHeaderName'), chatHeaderHandle = $id('chatHeaderHandle'), chatHeaderInfo = $id('chatHeaderInfo'), chatMessages = $id('chatMessages'), chatMessageInput = $id('chatMessageInput'), sendTextBtn = $id('sendTextBtn'), micBtn = $id('micBtn'), recordingIndicator = $id('recordingIndicator'), recordingTimer = $id('recordingTimer'), cancelRecordingBtn = $id('cancelRecordingBtn');
+const storyUploadModal = $id('storyUploadModal'), storyFileInput = $id('storyFileInput'), storyPickerWrap = $id('storyPickerWrap'), storyPickerTitle = $id('storyPickerTitle'), storyPickerSubtitle = $id('storyPickerSubtitle'), storyPickerLabel = $id('storyPickerLabel'), storyPreviewWrap = $id('storyPreviewWrap'), storyPreviewImg = $id('storyPreviewImg'), storyVideoPreviewWrap = $id('storyVideoPreviewWrap'), storyPreviewVideo = $id('storyPreviewVideo'), storyPreviewInfo = $id('storyPreviewInfo'), storySubmitBtn = $id('storySubmitBtn'), storyUploadMsg = $id('storyUploadMsg'), storyProgressWrap = $id('storyProgressWrap'), storyProgressBar = $id('storyProgressBar'), storyProgressText = $id('storyProgressText');
+const storyViewer = $id('storyViewer'), storyProgressBars = $id('storyProgressBars'), storyUserAvatar = $id('storyUserAvatar'), storyUserName = $id('storyUserName'), storyTime = $id('storyTime'), storyDeleteBtn = $id('storyDeleteBtn'), storyCloseBtn = $id('storyCloseBtn'), storyMedia = $id('storyMedia'), storyTapLeft = $id('storyTapLeft'), storyTapRight = $id('storyTapRight');
 
-const listModal = $id('listModal');
-const listTitle = $id('listTitle');
-const userList = $id('userList');
-
-const forgotModal = $id('forgotModal');
-const forgotEmail = $id('forgotEmail');
-const forgotMsg = $id('forgotMsg');
-const sendResetBtn = $id('sendResetBtn');
-
-const notifBtn = $id('notifBtn');
-const notifDot = $id('notifDot');
-const searchBtn = $id('searchBtn');
-const chatsDot = $id('chatsDot');
-const settingsBtn = $id('settingsBtn');
-
-const uploadModal = $id('uploadModal');
-const uploadFileInput = $id('uploadFileInput');
-const uploadCaption = $id('uploadCaption');
-const uploadSubmitBtn = $id('uploadSubmitBtn');
-const uploadMsg = $id('uploadMsg');
-const uploadPreview = $id('uploadPreview');
-const uploadPreviewWrap = $id('uploadPreviewWrap');
-const uploadPreviewInfo = $id('uploadPreviewInfo');
-const uploadPhotoPreview = $id('uploadPhotoPreview');
-const uploadPhotoPreviewWrap = $id('uploadPhotoPreviewWrap');
-const uploadPickerWrap = $id('uploadPickerWrap');
-const pickerTitle = $id('pickerTitle');
-const pickerSubtitle = $id('pickerSubtitle');
-const pickerLabel = $id('pickerLabel');
-const uploadProgressWrap = $id('uploadProgressWrap');
-const uploadProgressBar = $id('uploadProgressBar');
-const uploadProgressText = $id('uploadProgressText');
-
-const playerModal = $id('playerModal');
-const playerTitle = $id('playerTitle');
-const playerContent = $id('playerContent');
-
-const commentsModal = $id('commentsModal');
-const commentsTitle = $id('commentsTitle');
-const commentsList = $id('commentsList');
-const commentInput = $id('commentInput');
-const postCommentBtn = $id('postCommentBtn');
-const myAvatarForComment = $id('myAvatarForComment');
-const replyIndicator = $id('replyIndicator');
-const replyIndicatorText = $id('replyIndicatorText');
-const cancelReplyBtn = $id('cancelReplyBtn');
-
-const newChatModal = $id('newChatModal');
-const newChatSearch = $id('newChatSearch');
-const newChatResults = $id('newChatResults');
-const chatWindowModal = $id('chatWindowModal');
-const chatHeaderAvatar = $id('chatHeaderAvatar');
-const chatHeaderName = $id('chatHeaderName');
-const chatHeaderHandle = $id('chatHeaderHandle');
-const chatHeaderInfo = $id('chatHeaderInfo');
-const chatMessages = $id('chatMessages');
-const chatMessageInput = $id('chatMessageInput');
-const sendTextBtn = $id('sendTextBtn');
-const micBtn = $id('micBtn');
-const recordingIndicator = $id('recordingIndicator');
-const recordingTimer = $id('recordingTimer');
-const cancelRecordingBtn = $id('cancelRecordingBtn');
-
-const storyUploadModal = $id('storyUploadModal');
-const storyFileInput = $id('storyFileInput');
-const storyPickerWrap = $id('storyPickerWrap');
-const storyPickerTitle = $id('storyPickerTitle');
-const storyPickerSubtitle = $id('storyPickerSubtitle');
-const storyPickerLabel = $id('storyPickerLabel');
-const storyPreviewWrap = $id('storyPreviewWrap');
-const storyPreviewImg = $id('storyPreviewImg');
-const storyVideoPreviewWrap = $id('storyVideoPreviewWrap');
-const storyPreviewVideo = $id('storyPreviewVideo');
-const storyPreviewInfo = $id('storyPreviewInfo');
-const storySubmitBtn = $id('storySubmitBtn');
-const storyUploadMsg = $id('storyUploadMsg');
-const storyProgressWrap = $id('storyProgressWrap');
-const storyProgressBar = $id('storyProgressBar');
-const storyProgressText = $id('storyProgressText');
-
-const storyViewer = $id('storyViewer');
-const storyProgressBars = $id('storyProgressBars');
-const storyUserAvatar = $id('storyUserAvatar');
-const storyUserName = $id('storyUserName');
-const storyTime = $id('storyTime');
-const storyDeleteBtn = $id('storyDeleteBtn');
-const storyCloseBtn = $id('storyCloseBtn');
-const storyMedia = $id('storyMedia');
-const storyTapLeft = $id('storyTapLeft');
-const storyTapRight = $id('storyTapRight');
-
-/* ============================================================
-   STATE
-   ============================================================ */
 let currentUser = null;
 let currentProfile = null;
 let selectedPhotoBase64 = null;
 let notifIntervalId = null;
 let viewingUserId = null;
-
 let currentUploadType = 'short';
 let selectedFile = null;
 let selectedFileDuration = 0;
 let shortsObserver = null;
-
 let activeCommentPostId = null;
 let activeReplyTo = null;
 let allCommentsForPost = [];
-
 let activeChatId = null;
 let activeChatUser = null;
 let chatMessagesUnsub = null;
 let chatListInterval = null;
 let pinnedMessage = null;
-
 let activeGroupId = null;
 let activeGroupData = null;
 let selectedGroupMembers = [];
 let currentGroupFile = null;
-
 let mediaRecorder = null;
 let audioChunks = [];
 let voiceTimerInterval = null;
@@ -173,7 +70,6 @@ let voiceSeconds = 0;
 let isRecording = false;
 let currentPlayingAudio = null;
 let currentPlayingBtn = null;
-
 let currentStoryType = 'photo';
 let currentStoryFile = null;
 let currentStoryVideoDuration = 0;
@@ -183,10 +79,8 @@ let currentStoryIndex = 0;
 let storyProgressInterval = null;
 let storyAutoAdvanceTimeout = null;
 let currentStoryMediaEl = null;
-
 let viewedPostsSession = new Set();
 let shortsSoundEnabled = localStorage.getItem('shortsSound') === 'true';
-
 let chatReplyTo = null;
 let activeReactionMsg = null;
 let longPressTimer = null;
@@ -196,81 +90,28 @@ let typingListenerUnsub = null;
 let typingTimeout = null;
 let isCurrentlyTyping = false;
 
-const _readProcessed = new Set();
-const _deliveredProcessed = new Set();
-const _seenDmMsgIds = new Set();
-const _seenGroupMsgIds = new Set();
+const _readProcessed = new Set(), _deliveredProcessed = new Set(), _seenDmMsgIds = new Set(), _seenGroupMsgIds = new Set();
 const SET_CAP = 1000;
+function _trimSet(set) { if (set.size <= SET_CAP) return; const toDelete = set.size - SET_CAP; const iter = set.values(); for (let i = 0; i < toDelete; i++) { const v = iter.next().value; if (v !== undefined) set.delete(v); } }
 
-function _trimSet(set) {
-  if (set.size <= SET_CAP) return;
-  const toDelete = set.size - SET_CAP;
-  const iter = set.values();
-  for (let i = 0; i < toDelete; i++) {
-    const v = iter.next().value;
-    if (v !== undefined) set.delete(v);
-  }
-}
-
-let chatListUnsub = null;
-let groupListUnsub = null;
-let notifUnsub = null;
-const _lastChatMsgTime = new Map();
-const _lastGroupMsgTime = new Map();
-
+let chatListUnsub = null, groupListUnsub = null, notifUnsub = null;
+const _lastChatMsgTime = new Map(), _lastGroupMsgTime = new Map();
 const LOADING_TIMEOUT_MS = 8000;
 let loadingTimeoutId = null;
-const TRANSITION_DELAY_MS = 1000;
 
-/* ============================================================
-   HELPERS
-   ============================================================ */
-function safeNum(v) {
-  const n = Number(v);
-  return isNaN(n) || !isFinite(n) ? 0 : n;
-}
+function safeNum(v) { const n = Number(v); return isNaN(n) || !isFinite(n) ? 0 : n; }
+function safeArray(v) { return Array.isArray(v) ? v : []; }
+function escapeHtml(str) { if (str === null || str === undefined) return ''; return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+function defaultAvatar(name) { const letter = (name || '?').trim().charAt(0).toUpperCase().replace(/[<>&"']/g, '') || '?'; const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e1e28"/><text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${letter}</text></svg>`; return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg); }
+function showToast(message, duration = 2500) { const existing = document.getElementById('toast'); if (existing) existing.remove(); const toast = document.createElement('div'); toast.id = 'toast'; toast.textContent = message; toast.classList.add('show'); document.body.appendChild(toast); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, duration); }
 
-function safeArray(v) {
-  return Array.isArray(v) ? v : [];
-}
-
-function escapeHtml(str) {
-  if (str === null || str === undefined) return '';
-  return String(str)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-function defaultAvatar(name) {
-  const letter = (name || '?').trim().charAt(0).toUpperCase().replace(/[<>&"']/g, '') || '?';
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e1e28"/><text x="50" y="50" font-size="44" font-family="sans-serif" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="central">${letter}</text></svg>`;
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-}
-
-function showToast(message, duration = 2500) {
-  const existing = document.getElementById('toast');
-  if (existing) existing.remove();
-  const toast = document.createElement('div');
-  toast.id = 'toast';
-  toast.textContent = message;
-  toast.classList.add('show');
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 300);
-  }, duration);
-}
-
-/* ============================================================
-   LOADING SCREEN SAFETY
-   ============================================================ */
 function startLoadingTimeout() {
   clearTimeout(loadingTimeoutId);
   loadingTimeoutId = setTimeout(() => {
     const ls = $id('loadingScreen');
     const authEl = $id('auth');
-    if (ls && ls.style.display !== 'none' && authEl && !authEl.classList.contains('show')) {
-      console.warn('⚠️ Loading timeout — showing auth');
+    if (ls && ls.style.display !== 'none' && authEl) {
+      console.warn('⚠️ Loading timeout — Force showing auth');
       ls.style.display = 'none';
       authEl.classList.add('show');
       authEl.style.display = 'block';
@@ -279,9 +120,6 @@ function startLoadingTimeout() {
 }
 if (loadingScreen) startLoadingTimeout();
 
-/* ============================================================
-   SCREEN SWITCHING (Only visual, no auth logic here)
-   ============================================================ */
 function showAuth() {
   clearTimeout(loadingTimeoutId);
   if (loadingScreen) loadingScreen.style.display = 'none';
@@ -296,71 +134,32 @@ function showApp() {
   if (appScreen) { appScreen.classList.add('show'); appScreen.style.display = 'flex'; }
 }
 
-function setActiveNav(page) {
-  document.querySelectorAll('.nav-item').forEach(i => {
-    i.classList.toggle('active', i.dataset.page === page);
-  });
-}
+function setActiveNav(page) { document.querySelectorAll('.nav-item').forEach(i => { i.classList.toggle('active', i.dataset.page === page); }); }
+function requestNotificationPermission() { if (!('Notification' in window)) return; if (Notification.permission === 'default') Notification.requestPermission().catch(() => {}); }
 
-function requestNotificationPermission() {
-  if (!('Notification' in window)) return;
-  if (Notification.permission === 'default') Notification.requestPermission().catch(() => {});
-}
-
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && currentUser) {
-    checkUnreadNotifications();
-    checkChatsUnread();
-  }
-});
-
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && currentUser) { checkUnreadNotifications(); checkChatsUnread(); } });
 window.addEventListener('error', (e) => console.error('❌ Global error:', e.error || e.message));
 window.addEventListener('unhandledrejection', (e) => console.error('❌ Unhandled rejection:', e.reason));
 
-/* ============================================================
-   UI TOGGLES (Password eye, Login/Signup toggle)
-   ============================================================ */
 document.querySelectorAll('.eye').forEach(eye => {
-  eye.addEventListener('click', () => {
-    const inp = $id(eye.dataset.target);
-    if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
-  });
+  eye.addEventListener('click', () => { const inp = $id(eye.dataset.target); if (inp) inp.type = inp.type === 'password' ? 'text' : 'password'; });
 });
 
-$id('goSignup')?.addEventListener('click', () => {
-  if (loginForm) loginForm.style.display = 'none';
-  if (signupForm) signupForm.style.display = 'block';
-  if (loginMsg) loginMsg.textContent = '';
-  if (signupMsg) signupMsg.textContent = '';
-  const sw = $id('goSignupSwitch'); const wr = $id('goSignupWrap');
-  if (sw) sw.style.display = 'block'; if (wr) wr.style.display = 'none';
-});
-
-$id('goLogin')?.addEventListener('click', () => {
-  if (signupForm) signupForm.style.display = 'none';
-  if (loginForm) loginForm.style.display = 'block';
-  if (loginMsg) loginMsg.textContent = '';
-  if (signupMsg) signupMsg.textContent = '';
-  const sw = $id('goSignupSwitch'); const wr = $id('goSignupWrap');
-  if (sw) sw.style.display = 'none'; if (wr) wr.style.display = 'block';
-});
-
-// ⚠️ NOTE: Signup, Login, Forgot Password ka code ab 'auth.js' me hai.
-// Yahan se wo poora code hata diya gaya hai.
+$id('goSignup')?.addEventListener('click', () => { if (loginForm) loginForm.style.display = 'none'; if (signupForm) signupForm.style.display = 'block'; if (loginMsg) loginMsg.textContent = ''; if (signupMsg) signupMsg.textContent = ''; const sw = $id('goSignupSwitch'); const wr = $id('goSignupWrap'); if (sw) sw.style.display = 'block'; if (wr) wr.style.display = 'none'; });
+$id('goLogin')?.addEventListener('click', () => { if (signupForm) signupForm.style.display = 'none'; if (loginForm) loginForm.style.display = 'block'; if (loginMsg) loginMsg.textContent = ''; if (signupMsg) signupMsg.textContent = ''; const sw = $id('goSignupSwitch'); const wr = $id('goSignupWrap'); if (sw) sw.style.display = 'none'; if (wr) wr.style.display = 'block'; });
 
 /* ============================================================
-   🚀 AUTH EVENT LISTENERS (Bridge between auth.js and app.js)
+   🚀 AUTH BRIDGE (Fixing the Loading Issue)
    ============================================================ */
 let appInitialized = false;
 
 function startApp(user, profile) {
-  if (appInitialized) return; // Prevent double initialization
+  if (appInitialized) return;
   appInitialized = true;
 
   currentUser = user;
   currentProfile = profile;
   
-  // Update global state (safety)
   if (window.appState) {
     window.appState.currentUser = user;
     window.appState.currentProfile = profile;
@@ -374,66 +173,48 @@ function startApp(user, profile) {
   requestNotificationPermission();
 }
 
-// 1. Listen for Login Event from auth.js
 window.addEventListener('auth:login', (e) => {
+  console.log("✅ auth:login received in app.js");
   startApp(e.detail.user, e.detail.profile);
 });
 
-// 2. Listen for Logout Event from auth.js
 window.addEventListener('auth:logout', () => {
+  console.log("✅ auth:logout received in app.js");
   appInitialized = false;
   currentUser = null;
   currentProfile = null;
-
   showAuth();
   
-  // Clean up listeners
   if (typeof stopNotifWatcher === 'function') stopNotifWatcher();
   if (typeof stopShortsObserver === 'function') stopShortsObserver();
   if (typeof stopChatListWatcher === 'function') stopChatListWatcher();
-
-  if (chatMessagesUnsub) { try { chatMessagesUnsub(); } catch (e) {} chatMessagesUnsub = null; }
-  if (typingListenerUnsub) { try { typingListenerUnsub(); } catch (e) {} typingListenerUnsub = null; }
-
-  _readProcessed.clear();
-  _deliveredProcessed.clear();
-  _seenDmMsgIds.clear();
-  _seenGroupMsgIds.clear();
-  _lastChatMsgTime.clear();
-  _lastGroupMsgTime.clear();
-
-  loginForm?.reset();
-  signupForm?.reset();
-  $id('goLogin')?.click();
 });
 
-// 3. Listen for Auth Errors from auth.js
 window.addEventListener('auth:error', (e) => {
   showToast('❌ ' + (e.detail.message || 'Auth Error'));
   showAuth();
 });
 
-// 4. ✅ Catch-up logic: If auth.js loaded and resolved BEFORE app.js could add listeners
+// 🔥 FIX: The Ultimate Backup
+// Agar 2 second tak kuch na ho, toh zabardasti Login screen dikhao
 setTimeout(() => {
+  console.log("Checking auth state... ready =", window.appState?.ready);
   if (window.appState && window.appState.ready) {
     if (window.appState.currentUser) {
       startApp(window.appState.currentUser, window.appState.currentProfile);
     } else {
       showAuth();
     }
+  } else {
+    // Agar auth.js bilkul hi hang hai, toh loading hatao
+    showAuth();
   }
-}, 100);
+}, 2000);
 
 /* ============================================================
    PAGE ROUTER
    ============================================================ */
-const pages = {
-  home: 'Home Feed',
-  shorts: 'Shorts',
-  upload: 'Upload',
-  messages: 'Chats',
-  profile: 'Profile'
-};
+const pages = { home: 'Home Feed', shorts: 'Shorts', upload: 'Upload', messages: 'Chats', profile: 'Profile' };
 
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => {
@@ -445,38 +226,23 @@ document.querySelectorAll('.nav-item').forEach(item => {
   });
 });
 
-document.querySelector('.upload-btn')?.addEventListener('click', () => {
-  setActiveNav(null);
-  openUploadModal();
-});
+document.querySelector('.upload-btn')?.addEventListener('click', () => { setActiveNav(null); openUploadModal(); });
 
 function renderPage(page) {
-  if (!currentUser) return; // ✅ Guard: don't render if not logged in
-
+  if (!currentUser) return;
   if (page === 'profile') renderProfile();
   else if (page === 'home') renderHomeFeed();
   else if (page === 'shorts') renderShortsFeed();
   else if (page === 'messages') renderChatsPage();
   else if (page === 'notifications') renderNotifications();
   else if (page === 'search') renderSearch();
-  else if (page === 'upload') {
-    if (content) {
-      content.innerHTML = `<div class="page-placeholder"><div class="page-title">${pages[page]}</div></div>`;
-    }
-  }
+  else if (page === 'upload') { if (content) content.innerHTML = `<div class="page-placeholder"><div class="page-title">${pages[page]}</div></div>`; }
 }
 
-notifBtn?.addEventListener('click', () => {
-  setActiveNav(null);
-  renderPage('notifications');
-});
+notifBtn?.addEventListener('click', () => { setActiveNav(null); renderPage('notifications'); });
+searchBtn?.addEventListener('click', () => { setActiveNav(null); renderPage('search'); });
 
-searchBtn?.addEventListener('click', () => {
-  setActiveNav(null);
-  renderPage('search');
-});
-
-console.log('✅ Part 1 loaded (App Router + State + Auth Bridge)');
+console.log('✅ Part 1 loaded (App Router + State + Auth Bridge FIXED)');
 /* ============================================================
    ReelHub — app.js (PART 2/5) — FULL FIXED v2
    Home Feed + Shorts + Stories + Upload + Games Shelf
