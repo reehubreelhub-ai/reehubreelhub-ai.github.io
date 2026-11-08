@@ -3,639 +3,566 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0a0a0a">
-  <meta name="description" content="ReelHub — Short videos. Big vibes.">
-  <title>ReelHub — Short videos. Big vibes.</title>
-
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff2e63'/><text x='50' y='55' font-size='60' font-family='sans-serif' font-weight='800' fill='white' text-anchor='middle' dominant-baseline='middle'>R</text></svg>">
-
-  <link rel="preconnect" href="https://www.gstatic.com">
-  <link rel="preconnect" href="https://firestore.googleapis.com">
-  <link rel="preconnect" href="https://identitytoolkit.googleapis.com">
-
+  <title>ReelHub</title>
+  
+  <!-- Apni CSS file ka link yahan daalo -->
   <link rel="stylesheet" href="style.css">
-
-  <!-- ✅ QR Code Library -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Basic Reset & Dark Theme fallback */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { background-color: #0a0a0f; color: #ffffff; overflow: hidden; }
+    input, textarea, button { font-family: inherit; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    
+    /* Modal animations */
+    .modal-overlay { transition: opacity 0.3s ease; }
+    .show { display: flex !important; }
+  </style>
 </head>
-
 <body>
 
-  <!-- ================= LOADING SCREEN ================= -->
-  <div id="loadingScreen">
-    <div class="top-btn-wrap">
-      <button class="contact-us" onclick="window.open('contact.html','_blank')">CONTACT US</button>
-    </div>
-    <div class="loader-wrap">
-      <div class="logo-anim"><div class="logo-letter">R</div></div>
-      <div class="welcome-line">Welcome To</div>
-      <div class="brand-line">ReelHub</div>
-      <div class="loading-box">
-        <span class="loading-text">Loading</span>
-        <span class="loading-dots"><span>.</span><span>.</span><span>.</span><span>.</span></span>
-      </div>
-      <div class="progress-track"><div class="progress-fill"></div></div>
-    </div>
-    <div class="footer-line">From<br>Reelhub</div>
+  <!-- ==========================================
+       1. LOADING SCREEN
+       ========================================== -->
+  <div id="loadingScreen" class="loading-screen" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#0a0a0f; color:#fff;">
+    <div class="logo" style="font-size:32px; font-weight:900; color:#ff2e63; margin-bottom:20px;">ReelHub</div>
+    <div class="spinner" style="width:40px; height:40px; border:4px solid #333; border-top-color:#ff2e63; border-radius:50%; animation:spin 1s linear infinite;"></div>
+    <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
   </div>
 
-  <!-- ================= AUTH SCREEN ================= -->
-  <div id="auth">
-    <div class="auth-wrap">
-      <div class="auth-logo">ReelHub</div>
-      <div class="auth-tagline">Short videos. Big vibes. 🎬</div>
+  <!-- ==========================================
+       2. AUTH SCREEN (Login / Signup)
+       ========================================== -->
+  <div id="auth" class="auth-screen" style="display:none; padding:20px; background:#0a0a0f; min-height:100vh; color:#fff; overflow-y:auto;">
+    <div style="max-width:400px; margin:0 auto; padding-top:40px; padding-bottom:40px;">
+      
+      <h1 style="text-align:center; font-size:28px; font-weight:800; margin-bottom:30px;">Welcome to ReelHub</h1>
 
-      <form id="loginForm">
-        <div class="auth-title">Welcome back</div>
-        <div class="input-group">
-          <input type="email" id="loginEmail" placeholder="Email" autocomplete="email" required>
+      <!-- LOGIN FORM -->
+      <form id="loginForm" style="display:block;">
+        <h2 style="font-size:20px; margin-bottom:15px;">Log In</h2>
+        <input type="email" id="loginEmail" placeholder="Email" required style="width:100%; padding:12px; margin-bottom:10px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+        <div style="position:relative; margin-bottom:15px;">
+          <input type="password" id="loginPass" placeholder="Password" required style="width:100%; padding:12px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+          <span class="eye" data-target="loginPass" style="position:absolute; right:12px; top:12px; cursor:pointer;">👁️</span>
         </div>
-        <div class="input-group">
-          <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" required>
-          <div class="eye" data-target="loginPass">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </div>
+        <div id="loginMsg" class="error-msg" style="margin-bottom:10px; color:#ff4d4d; font-size:13px;"></div>
+        <button type="submit" id="loginBtn" style="width:100%; padding:14px; background:linear-gradient(90deg, #ff2e63, #ff8a00); border:none; border-radius:8px; color:#fff; font-weight:bold; font-size:16px; cursor:pointer; margin-bottom:10px;">Log In</button>
+        
+        <div style="display:flex; justify-content:space-between; font-size:13px; color:#888;">
+          <span id="forgotLink" style="cursor:pointer; text-decoration:underline;">Forgot Password?</span>
+          <span id="goSignup" style="cursor:pointer; color:#4ea8ff;">Don't have an account? Sign Up</span>
         </div>
-        <span class="forgot" id="forgotLink">Forgot password?</span>
-        <button type="submit" class="btn-primary" id="loginBtn">Log In</button>
-        <div class="error-msg" id="loginMsg"></div>
       </form>
 
+      <!-- SIGNUP FORM -->
       <form id="signupForm" style="display:none;">
-        <div class="auth-title">Create account</div>
-        <div class="input-group"><input type="text" id="signupName" placeholder="Full name" autocomplete="name" required></div>
-        <div class="input-group"><input type="text" id="signupUser" placeholder="Username (a-z, 0-9, . _)" autocomplete="username" required></div>
-        <div class="input-group"><input type="email" id="signupEmail" placeholder="Email" autocomplete="email" required></div>
-        <div class="input-group">
-          <input type="password" id="signupPass" placeholder="Password (min 6 chars)" autocomplete="new-password" required>
-          <div class="eye" data-target="signupPass">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </div>
+        <h2 style="font-size:20px; margin-bottom:15px;">Create Account</h2>
+        <input type="text" id="signupName" placeholder="Full Name" required style="width:100%; padding:12px; margin-bottom:10px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+        <input type="text" id="signupUser" placeholder="Username (e.g. john_doe)" required style="width:100%; padding:12px; margin-bottom:10px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+        <input type="email" id="signupEmail" placeholder="Email" required style="width:100%; padding:12px; margin-bottom:10px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+        <div style="position:relative; margin-bottom:15px;">
+          <input type="password" id="signupPass" placeholder="Password (min 6 chars)" required style="width:100%; padding:12px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+          <span class="eye" data-target="signupPass" style="position:absolute; right:12px; top:12px; cursor:pointer;">👁️</span>
         </div>
-        <button type="submit" class="btn-primary" id="signupBtn">Sign Up</button>
-        <div class="error-msg" id="signupMsg"></div>
+        <div id="signupMsg" class="error-msg" style="margin-bottom:10px; color:#ff4d4d; font-size:13px;"></div>
+        <button type="submit" id="signupBtn" style="width:100%; padding:14px; background:linear-gradient(90deg, #ff2e63, #ff8a00); border:none; border-radius:8px; color:#fff; font-weight:bold; font-size:16px; cursor:pointer; margin-bottom:10px;">Sign Up</button>
+        
+        <div id="goSignupWrap" style="text-align:center; font-size:13px; color:#888; display:none;">
+          Already have an account? <span id="goLogin" style="cursor:pointer; color:#4ea8ff;">Log In</span>
+        </div>
       </form>
 
-      <div class="divider">OR</div>
-      <div class="link-row">
-        <span id="goSignupSwitch" style="display:none;">Already have an account? <a id="goLogin">Log in</a></span>
-        <span id="goSignupWrap">Don't have an account? <a id="goSignup">Sign up</a></span>
+      <!-- DIVIDER -->
+      <div style="display:flex; align-items:center; margin:20px 0;">
+        <div style="flex:1; height:1px; background:#333;"></div>
+        <div style="padding:0 10px; color:#888; font-size:12px;">OR</div>
+        <div style="flex:1; height:1px; background:#333;"></div>
       </div>
-      <div class="auth-footer">
-        By continuing, you agree to our
-        <a href="terms.html" target="_blank" style="color:#ff2e63;text-decoration:none;font-weight:600;">Terms</a> &
-        <a href="privacy.html" target="_blank" style="color:#ff2e63;text-decoration:none;font-weight:600;">Privacy Policy</a>.
+
+      <!-- GOOGLE LOGIN -->
+      <button id="googleLoginBtn" style="width:100%; padding:12px; background:#fff; color:#000; border:none; border-radius:8px; font-weight:bold; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-bottom:15px;">
+        <img src="https://img.icons8.com/color/18/000000/google-logo.png" style="margin-right:8px;">
+        Continue with Google
+      </button>
+
+      <!-- PHONE OTP -->
+      <div id="phoneLoginStep1">
+        <input type="tel" id="phoneNumberInput" placeholder="Phone (+919876543210)" style="width:100%; padding:12px; margin-bottom:10px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+        <button id="sendOtpBtn" type="button" style="width:100%; padding:12px; background:#4ea8ff; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Send OTP</button>
       </div>
+      <div id="phoneLoginStep2" style="display:none;">
+        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6" style="width:100%; padding:12px; margin-bottom:10px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff; text-align:center; letter-spacing:5px;">
+        <button id="verifyOtpBtn" type="button" style="width:100%; padding:12px; background:#4ade80; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Verify OTP</button>
+      </div>
+      <div id="phoneMsg" class="error-msg" style="margin-top:10px; text-align:center; color:#ff4d4d; font-size:13px;"></div>
+      
+      <!-- Recaptcha Container (Mandatory for Phone Login) -->
+      <div id="recaptcha-container"></div>
     </div>
   </div>
 
-  <!-- ================= APP SCREEN ================= -->
-  <div id="app">
-
-    <header class="header">
-      <div class="logo">ReelHub</div>
-      <div class="header-actions">
-
-        <button class="icon-btn" id="searchBtn" title="Search">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  <!-- ==========================================
+       3. MAIN APP SCREEN
+       ========================================== -->
+  <div id="app" class="app-screen" style="display:none; flex-direction:column; height:100vh; background:#0a0a0f; color:#fff;">
+    
+    <!-- TOP HEADER -->
+    <header style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:#121212; border-bottom:1px solid #222; z-index:10;">
+      <div style="font-size:22px; font-weight:900; color:#ff2e63;">ReelHub</div>
+      <div style="display:flex; gap:15px;">
+        <button id="searchBtn" style="background:none; border:none; color:#fff; cursor:pointer;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+        <button id="notifBtn" style="background:none; border:none; color:#fff; cursor:pointer; position:relative;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span id="notifDot" style="display:none; position:absolute; top:0; right:0; min-width:16px; height:16px; background:red; border-radius:50%; font-size:10px; align-items:center; justify-content:center;"></span>
         </button>
-
-        <button class="icon-btn" id="notifBtn" title="Notifications">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <span class="notif-dot" id="notifDot" style="display:none;"></span>
-        </button>
-
-        <button class="icon-btn" id="studioBtn" title="ReelHub Studio" onclick="window.location.href='studio.html'">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 3v18h18"/>
-            <rect x="7" y="12" width="3" height="6" fill="currentColor" stroke="none"/>
-            <rect x="12" y="8" width="3" height="10" fill="currentColor" stroke="none"/>
-            <rect x="17" y="5" width="3" height="13" fill="currentColor" stroke="none"/>
-          </svg>
-        </button>
-
-        <button class="icon-btn" id="settingsBtn" title="Settings">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </button>
-
+        <button id="settingsBtn" style="background:none; border:none; color:#fff; cursor:pointer;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
       </div>
     </header>
 
-    <main class="content" id="content"></main>
+    <!-- MAIN CONTENT AREA -->
+    <main id="content" style="flex:1; overflow-y:auto; padding-bottom:70px;"></main>
 
-    <div class="bottom-nav-wrap">
-      <div class="bottom-nav">
-        <button class="nav-item active" data-page="home">
-          <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <span>Home</span>
-        </button>
-        <button class="nav-item" data-page="shorts">
-          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>
-          <span>Shorts</span>
-        </button>
-        <div class="nav-upload">
-          <button class="upload-btn" title="Upload">
-            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
-        </div>
-        <button class="nav-item" data-page="messages">
-          <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-          <span>Chats</span>
-          <span class="notif-dot" id="chatsDot" style="display:none;"></span>
-        </button>
-        <button class="nav-item" data-page="profile">
-          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <span>Profile</span>
-        </button>
+    <!-- BOTTOM NAVIGATION -->
+    <nav style="display:flex; justify-content:space-around; align-items:center; padding:10px 0; background:#121212; border-top:1px solid #222; position:fixed; bottom:0; width:100%; z-index:10;">
+      <div class="nav-item active" data-page="home" style="text-align:center; cursor:pointer; color:#fff;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <div style="font-size:10px;">Home</div>
       </div>
-    </div>
-
+      <div class="nav-item" data-page="shorts" style="text-align:center; cursor:pointer; color:#888;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
+        <div style="font-size:10px;">Shorts</div>
+      </div>
+      <div class="upload-btn" style="background:#4ea8ff; width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; margin-top:-20px; box-shadow:0 4px 10px rgba(78,168,255,0.4);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <div class="nav-item" data-page="messages" style="text-align:center; cursor:pointer; color:#888; position:relative;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <div style="font-size:10px;">Chats</div>
+        <span id="chatsDot" style="display:none; position:absolute; top:0; right:15px; min-width:12px; height:12px; background:red; border-radius:50%;"></span>
+      </div>
+      <div class="nav-item" data-page="profile" style="text-align:center; cursor:pointer; color:#888;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <div style="font-size:10px;">Profile</div>
+      </div>
+    </nav>
   </div>
 
-  <!-- ================= EDIT PROFILE MODAL ================= -->
-  <div class="modal-overlay" id="editModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Edit Profile</h3>
-        <button class="modal-close" id="closeEdit">&times;</button>
+  <!-- ==========================================
+       4. MODALS (Invisible by default)
+       ========================================== -->
+  
+  <!-- Edit Profile Modal -->
+  <div id="editModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div class="modal-content" style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%;">
+      <h3 style="margin-bottom:15px;">Edit Profile</h3>
+      <div style="text-align:center; margin-bottom:15px;">
+        <img id="editPreviewImg" style="width:80px; height:80px; border-radius:50%; object-fit:cover; margin-bottom:10px;">
+        <input type="file" id="editPhoto" accept="image/*" style="display:none;">
+        <label for="editPhoto" style="background:#333; padding:5px 10px; border-radius:5px; cursor:pointer; font-size:12px;">Change Photo</label>
       </div>
-      <div class="photo-preview">
-        <img id="editPreviewImg" src="" alt="">
-        <div class="info">
-          <label for="editPhoto" style="display:inline-block;padding:6px 14px;background:#1e1e1e;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Change Photo</label>
-          <input type="file" id="editPhoto" accept="image/*" style="display:none;">
-        </div>
-      </div>
-      <div class="input-group"><label>Full Name</label><input type="text" id="editName" placeholder="Your name"></div>
-      <div class="input-group"><label>Username</label><input type="text" id="editUser" placeholder="username"></div>
-      <div class="input-group"><label>Bio (max 150 chars)</label><textarea id="editBio" placeholder="Tell people about yourself..." maxlength="150"></textarea></div>
-      <button class="btn-primary" id="saveProfileBtn">Save Changes</button>
-      <div class="error-msg" id="editMsg"></div>
+      <input type="text" id="editName" placeholder="Name" style="width:100%; margin-bottom:10px; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px;">
+      <input type="text" id="editUser" placeholder="Username" style="width:100%; margin-bottom:10px; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px;">
+      <textarea id="editBio" placeholder="Bio" style="width:100%; margin-bottom:10px; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px;"></textarea>
+      <div id="editMsg" style="color:#ff4d4d; font-size:12px; margin-bottom:10px;"></div>
+      <button id="saveProfileBtn" style="width:100%; padding:10px; background:#4ea8ff; border:none; color:#fff; border-radius:8px; margin-bottom:5px;">Save</button>
+      <button id="closeEdit" style="width:100%; padding:10px; background:transparent; border:none; color:#888;">Cancel</button>
     </div>
   </div>
 
-  <!-- ================= FORGOT PASSWORD MODAL ================= -->
-  <div class="modal-overlay" id="forgotModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Reset Password</h3>
-        <button class="modal-close" id="closeForgot">&times;</button>
+  <!-- Upload Modal -->
+  <div id="uploadModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div class="modal-content" style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%;">
+      <h3 style="margin-bottom:15px;">Upload Content</h3>
+      <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <button class="upload-tab active" data-type="short" style="flex:1; padding:8px; background:#333; border:none; color:#fff; border-radius:5px;">Short</button>
+        <button class="upload-tab" data-type="long" style="flex:1; padding:8px; background:#333; border:none; color:#fff; border-radius:5px;">Long</button>
+        <button class="upload-tab" data-type="photo" style="flex:1; padding:8px; background:#333; border:none; color:#fff; border-radius:5px;">Photo</button>
       </div>
-      <p style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.5;">Enter your email and we'll send you a reset link.</p>
-      <div class="input-group"><label>Email</label><input type="email" id="forgotEmail" placeholder="your@email.com"></div>
-      <button class="btn-primary" id="sendResetBtn">Send Reset Link</button>
-      <div class="error-msg" id="forgotMsg"></div>
+      <div id="uploadPickerWrap">
+        <h4 id="pickerTitle" style="margin-bottom:5px;">Choose Video</h4>
+        <p id="pickerSubtitle" style="font-size:12px; color:#888; margin-bottom:10px;"></p>
+        <input type="file" id="uploadFileInput" style="margin-bottom:10px; color:#fff;">
+        <button id="pickerLabel" style="display:none;"></button>
+      </div>
+      <div id="uploadPreviewWrap" style="display:none; margin-bottom:10px;">
+        <video id="uploadPreview" style="width:100%; border-radius:8px; max-height:200px;" controls></video>
+        <p id="uploadPreviewInfo" style="font-size:12px; color:#888;"></p>
+      </div>
+      <div id="uploadPhotoPreviewWrap" style="display:none; margin-bottom:10px;">
+        <img id="uploadPhotoPreview" style="width:100%; border-radius:8px; max-height:200px; object-fit:contain;">
+      </div>
+      
+      <input type="text" id="uploadCaption" placeholder="Write a caption..." style="width:100%; margin:10px 0; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px;">
+      <div id="uploadMsg" style="color:#ff4d4d; font-size:12px; margin-bottom:10px;"></div>
+      
+      <div id="uploadProgressWrap" style="display:none; margin-bottom:10px;">
+        <div style="background:#333; height:8px; border-radius:4px; overflow:hidden;"><div id="uploadProgressBar" style="background:#4ea8ff; height:100%; width:0%; transition:width 0.2s;"></div></div>
+        <div id="uploadProgressText" style="font-size:12px; text-align:right; margin-top:5px;">0%</div>
+      </div>
+
+      <button id="uploadSubmitBtn" disabled style="width:100%; padding:10px; background:#4ea8ff; border:none; color:#fff; border-radius:8px; opacity:0.5; margin-bottom:5px;">Upload</button>
+      <button id="closeUpload" style="width:100%; padding:10px; background:transparent; border:none; color:#888;">Cancel</button>
     </div>
   </div>
 
-  <!-- ================= UPLOAD MODAL ================= -->
-  <div class="modal-overlay" id="uploadModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Upload</h3>
-        <button class="modal-close" id="closeUpload">&times;</button>
-      </div>
-
-      <div class="upload-tabs">
-        <button class="upload-tab active" data-type="short"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/></svg>Short</button>
-        <button class="upload-tab" data-type="long"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>Long</button>
-        <button class="upload-tab" data-type="photo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Photo</button>
-      </div>
-
-      <div id="uploadPickerWrap" style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 20px;background:#0a0a0a;border:1px dashed #333;border-radius:12px;margin-bottom:14px;">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <div id="pickerTitle" style="font-size:14px;font-weight:600;color:#fff;">Choose a short video</div>
-        <div id="pickerSubtitle" style="font-size:12px;color:#888;text-align:center;">Max 30 sec • 9:16 vertical</div>
-        <label for="uploadFileInput" id="pickerLabel" style="padding:10px 20px;background:linear-gradient(90deg,#ff2e63,#ff8a00);color:#fff;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">Select video</label>
-        <input type="file" id="uploadFileInput" accept="video/*" style="display:none;">
-      </div>
-
-      <div id="uploadPreviewWrap" style="display:none;margin-bottom:14px;">
-        <video id="uploadPreview" controls playsinline style="width:100%;max-height:300px;background:#000;border-radius:12px;"></video>
-        <div id="uploadPreviewInfo" style="font-size:12px;color:#888;margin-top:8px;text-align:center;"></div>
-      </div>
-
-      <div id="uploadPhotoPreviewWrap" style="display:none;margin-bottom:14px;">
-        <img id="uploadPhotoPreview" style="width:100%;max-height:300px;object-fit:contain;background:#000;border-radius:12px;">
-      </div>
-
-      <div class="input-group"><label>Caption</label><input type="text" id="uploadCaption" placeholder="Write a caption..." maxlength="200"></div>
-
-      <div id="uploadProgressWrap" style="display:none;margin-bottom:12px;">
-        <div style="height:6px;background:#1e1e28;border-radius:3px;overflow:hidden;margin-bottom:6px;"><div id="uploadProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#ff2e63,#ff8a00);transition:width 0.2s;"></div></div>
-        <div id="uploadProgressText" style="font-size:12px;color:#888;text-align:center;">0%</div>
-      </div>
-
-      <button class="btn-primary" id="uploadSubmitBtn" disabled>Upload</button>
-      <div class="error-msg" id="uploadMsg"></div>
+  <!-- Player Modal -->
+  <div id="playerModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:#000; z-index:1000; flex-direction:column;">
+    <div style="display:flex; justify-content:space-between; padding:15px; align-items:center; background:#121212;">
+      <h3 id="playerTitle" style="color:#fff;">Video</h3>
+      <button id="closePlayer" style="background:none; border:none; color:#fff; font-size:24px;">✕</button>
     </div>
+    <div id="playerContent" style="display:flex; justify-content:center; align-items:center; flex:1; overflow:hidden;"></div>
   </div>
 
-  <!-- ================= PLAYER MODAL ================= -->
-  <div class="modal-overlay" id="playerModal">
-    <div class="modal" style="padding:0;max-width:100%;background:#000;">
-      <div class="modal-header" style="padding:12px 16px;margin:0;border-bottom:1px solid #1a1a1a;">
-        <h3 id="playerTitle" style="font-size:15px;">Video</h3>
-        <button class="modal-close" id="closePlayer">&times;</button>
+  <!-- Comments Modal -->
+  <div id="commentsModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000;">
+    <div style="background:#1a1a24; position:absolute; bottom:0; width:100%; height:75vh; border-radius:15px 15px 0 0; display:flex; flex-direction:column;">
+      <div style="padding:15px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
+        <h3 id="commentsTitle" style="color:#fff;">Comments</h3>
+        <button id="closeComments" style="background:none; border:none; color:#fff; font-size:20px;">✕</button>
       </div>
-      <div id="playerContent" style="background:#000;min-height:200px;display:flex;align-items:center;justify-content:center;"></div>
-    </div>
-  </div>
-
-  <!-- ================= COMMENTS MODAL ================= -->
-  <div class="modal-overlay" id="commentsModal">
-    <div class="modal" style="padding:0;height:85vh;display:flex;flex-direction:column;">
-      <div class="modal-header" style="padding:14px 16px;margin:0;border-bottom:1px solid #1a1a1a;">
-        <h3 id="commentsTitle">Comments</h3>
-        <button class="modal-close" id="closeComments">&times;</button>
+      <div id="commentsList" style="flex:1; overflow-y:auto; padding:15px;"></div>
+      <div id="replyIndicator" style="display:none; padding:5px 15px; background:#333; color:#aaa; font-size:12px; justify-content:space-between; align-items:center;">
+        <span id="replyIndicatorText">Replying...</span>
+        <button id="cancelReplyBtn" style="background:none; border:none; color:#ff4d4d; font-weight:bold;">✕</button>
       </div>
-      <div id="commentsList" style="flex:1;overflow-y:auto;padding:14px 16px;"></div>
-      <div id="replyIndicator" style="display:none;padding:8px 16px;background:#1a1520;border-top:1px solid #ff2e63;font-size:12px;color:#ff2e63;align-items:center;justify-content:space-between;">
-        <span id="replyIndicatorText">Replying to @user</span>
-        <button id="cancelReplyBtn" style="background:none;border:none;color:#888;font-size:18px;cursor:pointer;">✕</button>
-      </div>
-      <div style="display:flex;gap:10px;align-items:center;padding:12px 16px;border-top:1px solid #1a1a1a;background:#0f0f16;">
-        <img id="myAvatarForComment" src="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
-        <input type="text" id="commentInput" placeholder="Add a comment..." style="flex:1;height:40px;padding:0 14px;background:#0a0a0a;border:1px solid #262626;border-radius:20px;color:#fff;font-size:14px;font-family:inherit;outline:none;">
-        <button id="postCommentBtn" disabled style="height:40px;padding:0 18px;background:linear-gradient(90deg,#ff2e63,#ff8a00);border:none;border-radius:20px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Post</button>
+      <div style="padding:10px; border-top:1px solid #333; display:flex; gap:10px; align-items:center; background:#1a1a24;">
+        <img id="myAvatarForComment" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+        <input type="text" id="commentInput" placeholder="Add a comment..." style="flex:1; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:20px;">
+        <button id="postCommentBtn" disabled style="background:#4ea8ff; border:none; color:#fff; padding:8px 15px; border-radius:20px; opacity:0.5;">Post</button>
       </div>
     </div>
   </div>
 
-  <!-- ================= NEW CHAT MODAL ================= -->
-  <div class="modal-overlay" id="newChatModal">
-    <div class="modal" style="max-height:80vh;">
-      <div class="modal-header">
-        <h3>New Message</h3>
-        <button class="modal-close" id="closeNewChat">&times;</button>
+  <!-- Chat Window Modal -->
+  <div id="chatWindowModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:#0a0a0f; z-index:1000;">
+    <div id="chatWindow" style="display:flex; flex-direction:column; height:100vh; width:100%;">
+      <div class="chat-header" style="padding:15px; background:#121212; display:flex; align-items:center; gap:10px; border-bottom:1px solid #222;">
+        <button id="closeChatWindow" style="background:none; border:none; color:#fff; font-size:24px; padding-right:5px;">←</button>
+        <img id="chatHeaderAvatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+        <div id="chatHeaderInfo" style="cursor:pointer; flex:1;">
+          <div id="chatHeaderName" style="font-weight:bold; color:#fff;"></div>
+          <div id="chatHeaderHandle" style="font-size:12px; color:#888;"></div>
+        </div>
+        <div id="typingIndicator" style="display:none; font-size:12px; color:#4ea8ff; margin-left:auto;"><span class="typing-text">typing...</span></div>
       </div>
-      <div class="search-bar-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="search-bar" id="newChatSearch" placeholder="Search users...">
+      
+      <div id="chatMessages" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; background:#0a0a0f;"></div>
+      
+      <div id="chatReplyPreview" style="display:none; padding:8px 15px; background:#222; border-left:3px solid #4ea8ff; position:relative;">
+        <div id="chatReplyName" style="font-size:12px; color:#4ea8ff; font-weight:bold;"></div>
+        <div id="chatReplyText" style="font-size:12px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:20px;"></div>
+        <button id="chatReplyClose" style="background:none; border:none; color:#fff; position:absolute; right:15px; top:10px;">✕</button>
       </div>
-      <div class="search-results" id="newChatResults"><div class="search-empty">Start typing...</div></div>
-    </div>
-  </div>
 
-  <!-- ================= CHAT WINDOW MODAL ================= -->
-  <div class="modal-overlay" id="chatWindowModal">
-    <div class="modal chat-window" id="chatWindow" style="padding:0;height:100vh;max-height:100vh;max-width:100%;border-radius:0;display:flex;flex-direction:column;">
-      <div class="chat-header">
-        <button id="closeChatWindow" class="chat-back-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <img id="chatHeaderAvatar" class="chat-header-avatar">
-        <div id="chatHeaderInfo" class="chat-header-info">
-          <div id="chatHeaderName" class="chat-header-name"></div>
-          <div id="chatHeaderHandle" class="chat-header-handle"></div>
-          <div id="typingIndicator" class="typing-indicator" style="display:none;">
-            <span class="typing-dots"><span></span><span></span><span></span></span>
-            <span class="typing-text">typing...</span>
-          </div>
-        </div>
+      <div style="padding:10px; background:#121212; display:flex; gap:10px; align-items:center; border-top:1px solid #222;">
+        <button id="chatAttachBtn" style="background:none; border:none; color:#888; font-size:20px;">📎</button>
+        <input type="text" id="chatMessageInput" placeholder="Message..." style="flex:1; padding:10px; background:#1a1a24; border:1px solid #333; color:#fff; border-radius:20px; outline:none;">
+        <button id="sendTextBtn" style="display:none; background:#4ea8ff; border:none; color:#fff; padding:10px 15px; border-radius:50%;">➤</button>
+        <button id="micBtn" style="background:#ff2e63; border:none; color:#fff; padding:10px 15px; border-radius:50%;">🎤</button>
       </div>
-      <div id="chatMessages" class="chat-messages"></div>
-      <div id="recordingIndicator" class="recording-indicator" style="display:none;">
-        <span class="recording-dot"></span>
-        <span class="recording-text">Recording... <span id="recordingTimer">0:00</span></span>
-        <button id="cancelRecordingBtn">Cancel</button>
-      </div>
-      <div class="chat-input-wrap">
-        <div id="chatReplyPreview" class="chat-reply-preview">
-          <div class="reply-preview-bar"></div>
-          <div class="reply-preview-content">
-            <div class="reply-preview-name" id="chatReplyName">User</div>
-            <div class="reply-preview-text" id="chatReplyText">Message...</div>
-          </div>
-          <button class="reply-preview-close" id="chatReplyClose">✕</button>
-        </div>
-        <div class="chat-input-bar">
-          <button class="chat-attach-btn" id="chatAttachBtn" title="Attach">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
-          <textarea id="chatMessageInput" placeholder="Message..." rows="1"></textarea>
-          <button id="sendTextBtn" class="chat-send-btn" style="display:none;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
-          <button id="micBtn" class="chat-mic-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-          </button>
-        </div>
-      </div>
-      <div id="reactionPicker" class="reaction-picker" style="display:none;">
-        <button data-emoji="❤️">❤️</button><button data-emoji="😂">😂</button><button data-emoji="😮">😮</button><button data-emoji="😢">😢</button><button data-emoji="👍">👍</button><button data-emoji="🔥">🔥</button>
+      
+      <div id="recordingIndicator" style="display:none; position:absolute; bottom:70px; width:100%; text-align:center; color:#ff2e63; background:rgba(0,0,0,0.8); padding:10px;">
+        Recording... <span id="recordingTimer">0:00</span>
+        <button id="cancelRecordingBtn" style="background:#333; border:none; color:#fff; border-radius:5px; padding:2px 5px; margin-left:10px;">Cancel</button>
       </div>
     </div>
   </div>
 
-  <!-- ================= STORY UPLOAD MODAL ================= -->
-  <div class="modal-overlay" id="storyUploadModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Add to Story</h3>
-        <button class="modal-close" id="closeStoryUpload">&times;</button>
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:#0a0a0f; z-index:1000; overflow-y:auto;">
+    <div style="padding:20px; max-width:500px; margin:0 auto; color:#fff; padding-bottom:50px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center;">
+        <h2>Settings</h2>
+        <button id="closeSettings" style="background:none; border:none; color:#fff; font-size:24px;">✕</button>
       </div>
-      <div class="story-upload-tabs">
-        <button class="story-upload-tab active" data-type="photo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Photo</button>
-        <button class="story-upload-tab" data-type="video"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>Video</button>
+      
+      <h4 style="color:#888; margin-bottom:10px;">Preferences</h4>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Dark Mode</span><input type="checkbox" id="settingDarkMode">
       </div>
-      <div id="storyPickerWrap" style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 20px;background:#0a0a0a;border:1px dashed #333;border-radius:12px;margin-bottom:14px;">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        <div id="storyPickerTitle" style="font-size:14px;font-weight:600;color:#fff;">Choose a photo</div>
-        <div id="storyPickerSubtitle" style="font-size:12px;color:#888;">JPG / PNG · Max 5 MB</div>
-        <label for="storyFileInput" id="storyPickerLabel" style="padding:10px 20px;background:linear-gradient(90deg,#ff2e63,#ff8a00);color:#fff;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">Select photo</label>
-        <input type="file" id="storyFileInput" accept="image/*" style="display:none;">
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Auto Play Videos</span><input type="checkbox" id="settingAutoPlay">
       </div>
-      <div id="storyPreviewWrap" style="display:none;margin-bottom:14px;"><img id="storyPreviewImg" style="width:100%;max-height:300px;object-fit:contain;background:#000;border-radius:12px;"></div>
-      <div id="storyVideoPreviewWrap" style="display:none;margin-bottom:14px;"><video id="storyPreviewVideo" controls playsinline style="width:100%;max-height:300px;background:#000;border-radius:12px;"></video><div id="storyPreviewInfo" style="font-size:12px;color:#888;margin-top:8px;text-align:center;"></div></div>
-      <div id="storyProgressWrap" style="display:none;margin-bottom:12px;"><div style="height:6px;background:#1e1e28;border-radius:3px;overflow:hidden;margin-bottom:6px;"><div id="storyProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#ff2e63,#ff8a00);transition:width 0.2s;"></div></div><div id="storyProgressText" style="font-size:12px;color:#888;text-align:center;">0%</div></div>
-      <button class="btn-primary" id="storySubmitBtn" disabled>Share to Story</button>
-      <div class="error-msg" id="storyUploadMsg"></div>
-    </div>
-  </div>
-
-  <!-- ================= STORY VIEWER ================= -->
-  <div id="storyViewer" style="display:none;position:fixed;inset:0;background:#000;z-index:9000;">
-    <div style="position:relative;width:100%;height:100%;max-width:500px;margin:0 auto;">
-      <div style="position:absolute;top:0;left:0;right:0;padding:12px 12px 8px;z-index:10;">
-        <div id="storyProgressBars" style="display:flex;gap:3px;margin-bottom:10px;"></div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <img id="storyUserAvatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #fff;">
-          <div style="flex:1;">
-            <div id="storyUserName" style="font-size:14px;font-weight:700;color:#fff;"></div>
-            <div id="storyTime" style="font-size:11px;color:#ddd;"></div>
-          </div>
-          <button id="storyViewersBtn" class="story-viewers-btn" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span id="storyViewersCount">0</span></button>
-          <button id="storyDeleteBtn" style="display:none;background:rgba(0,0,0,0.5);border:none;color:#fff;font-size:16px;padding:6px 10px;border-radius:50%;cursor:pointer;">🗑️</button>
-          <button id="storyCloseBtn" style="background:rgba(0,0,0,0.5);border:none;color:#fff;font-size:20px;padding:4px 10px;border-radius:50%;cursor:pointer;">✕</button>
-        </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Data Saver</span><input type="checkbox" id="settingDataSaver">
       </div>
-      <div id="storyMedia" style="width:100%;height:100%;"></div>
-      <div id="storyTapLeft" style="position:absolute;top:80px;left:0;bottom:0;width:30%;cursor:pointer;"></div>
-      <div id="storyTapRight" style="position:absolute;top:80px;right:0;bottom:0;width:30%;cursor:pointer;"></div>
-    </div>
-  </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Compact Mode</span><input type="checkbox" id="settingCompactMode">
+      </div>
 
-  <!-- ================= NEW GROUP MODAL ================= -->
-  <div class="modal-overlay" id="newGroupModal">
-    <div class="modal" style="max-height:85vh;">
-      <div class="modal-header"><h3>New Group</h3><button class="modal-close" id="closeNewGroup">&times;</button></div>
-      <div class="input-group"><label>Group Name</label><input type="text" id="groupNameInput" placeholder="Enter group name" maxlength="50"></div>
-      <div class="input-group"><label>Group Photo (optional)</label><div style="display:flex;align-items:center;gap:12px;"><img id="groupPhotoPreview" style="width:50px;height:50px;border-radius:50%;object-fit:cover;background:#1a1a1a;"><label for="groupPhotoInput" style="padding:8px 14px;background:#1e1e1e;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Choose Photo</label><input type="file" id="groupPhotoInput" accept="image/*" style="display:none;"></div></div>
-      <div class="input-group"><label>Add Members</label><input type="text" id="groupSearchInput" placeholder="Search users..."></div>
-      <div id="selectedMembersList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
-      <div class="search-results" id="groupSearchResults" style="max-height:200px;overflow-y:auto;"></div>
-      <button class="btn-primary" id="createGroupBtn" disabled>Create Group</button>
-    </div>
-  </div>
+      <h4 style="color:#888; margin:20px 0 10px;">Notifications</h4>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Push Notifications</span><input type="checkbox" id="settingPushNotif">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Likes</span><input type="checkbox" id="settingNotifLikes">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Comments</span><input type="checkbox" id="settingNotifComments">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Follows</span><input type="checkbox" id="settingNotifFollows">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Messages</span><input type="checkbox" id="settingNotifMessages">
+      </div>
 
-  <!-- ================= BLOCKED USERS MODAL ================= -->
-  <div class="modal-overlay" id="blockedUsersModal">
-    <div class="modal" style="max-height:70vh;">
-      <div class="modal-header"><h3>Blocked Users</h3><button class="modal-close" id="closeBlockedUsers">&times;</button></div>
-      <div class="user-list" id="blockedUsersList"><div class="empty-msg">Loading...</div></div>
-    </div>
-  </div>
-
-  <!-- ================= USER LIST MODAL ================= -->
-  <div class="modal-overlay" id="listModal">
-    <div class="modal" style="max-height:70vh;">
-      <div class="modal-header"><h3 id="listTitle">Followers</h3><button class="modal-close" id="closeList">&times;</button></div>
-      <div class="user-list" id="userList"><div class="empty-msg">Loading...</div></div>
-    </div>
-  </div>
-
-  <!-- ================= HIGHLIGHT MODAL ================= -->
-  <div class="modal-overlay" id="highlightModal">
-    <div class="modal">
-      <div class="modal-header"><h3 id="highlightModalTitle">New Highlight</h3><button class="modal-close" id="closeHighlightModal">&times;</button></div>
-      <div class="input-group"><label>Highlight Name</label><input type="text" id="highlightNameInput" placeholder="Enter name..." maxlength="20"></div>
-      <div class="input-group"><label>Select Stories <span style="color:#666;font-weight:500;text-transform:none;font-size:11px;">(tap to select)</span></label><div class="highlight-stories-picker" id="highlightStoriesPicker"></div></div>
-      <div class="input-group"><label>Choose Cover</label><div class="highlight-cover-picker" id="highlightCoverPicker"></div></div>
-      <button class="btn-primary" id="saveHighlightBtn">Create Highlight</button>
-      <div class="error-msg" id="highlightMsg"></div>
-    </div>
-  </div>
-
-  <!-- ================= SETTINGS MODAL ================= -->
-  <div class="modal-overlay" id="settingsModal">
-    <div class="modal settings-modal">
-      <div class="modal-header"><h3>Settings</h3><button class="modal-close" id="closeSettings">&times;</button></div>
-      <div class="settings-content">
-
-        <div class="settings-section">
-          <div class="settings-section-title">Creator Tools</div>
-          <div class="settings-item" style="cursor:pointer;" onclick="window.location.href='studio.html'">
-            <div class="settings-item-info"><div class="settings-item-label">📊 ReelHub Studio</div><div class="settings-item-desc">View your stats, upload videos, manage content</div></div>
-            <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-          <div class="settings-item" style="cursor:pointer;" onclick="window.location.href='games.html'">
-            <div class="settings-item-info"><div class="settings-item-label">🎮 Play Games</div><div class="settings-item-desc">Play Breaker, Memory, 3D Car, Shooter & more</div></div>
-            <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
+      <h4 style="color:#888; margin:20px 0 10px;">Privacy</h4>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333; align-items:center;">
+        <div>
+          <span>Private Account</span>
+          <div id="privateAccountDesc" style="font-size:11px; color:#666;">Public — Sab dekh sakte hain</div>
         </div>
+        <input type="checkbox" id="settingPrivateAccount">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Read Receipts</span><input type="checkbox" id="settingReadReceipts">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Show Activity Status</span><input type="checkbox" id="settingShowActivity">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Show Online Status</span><input type="checkbox" id="settingShowOnline">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Allow Tagging</span><input type="checkbox" id="settingAllowTagging">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Allow Story Sharing</span><input type="checkbox" id="settingAllowStorySharing">
+      </div>
 
-        <!-- ================= EARN MONEY ================= -->
-        <div class="settings-section">
-          <div class="settings-section-title" style="color:#4ade80; border-bottom-color:rgba(74,222,128,0.2);">💰 Earn Money</div>
-          <div class="settings-item" id="settingMonetizeBtn" style="cursor:pointer; background: linear-gradient(90deg, rgba(255,46,99,0.1), transparent); border-radius: 12px;">
-            <div class="settings-item-info">
-              <div class="settings-item-label">💰 Monetization</div>
-              <div class="settings-item-desc">Complete requirements to earn from your content</div>
-            </div>
-            <svg style="width:16px;height:16px;stroke:#ff2e63;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-          <div class="settings-item" id="settingWalletBtn" style="cursor:pointer; background: linear-gradient(90deg, rgba(74,222,128,0.1), transparent); border-radius: 12px;">
-            <div class="settings-item-info">
-              <div class="settings-item-label">💳 My Wallet</div>
-              <div class="settings-item-desc">Check balance, add money, withdraw via UPI</div>
-            </div>
-            <svg style="width:16px;height:16px;stroke:#4ade80;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-          <div class="settings-item" id="settingReferBtn" style="cursor:pointer; background: linear-gradient(90deg, rgba(167,139,250,0.1), transparent); border-radius: 12px;">
-            <div class="settings-item-info">
-              <div class="settings-item-label">🎁 Refer & Earn</div>
-              <div class="settings-item-desc">Invite friends and earn ₹10 per successful referral</div>
-            </div>
-            <svg style="width:16px;height:16px;stroke:#a78bfa;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-        </div>
+      <h4 style="color:#888; margin:20px 0 10px;">Media & Sounds</h4>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Sound Effects</span><input type="checkbox" id="settingSoundEffects">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Vibration</span><input type="checkbox" id="settingVibration">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Video Loop</span><input type="checkbox" id="settingVideoLoop">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Auto Download</span><input type="checkbox" id="settingAutoDownload">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Show Captions</span><input type="checkbox" id="settingShowCaptions">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Show Views</span><input type="checkbox" id="settingShowViews">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Infinite Scroll</span><input type="checkbox" id="settingInfiniteScroll">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Double Tap to Like</span><input type="checkbox" id="settingDoubleTapLike">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Confirm Delete</span><input type="checkbox" id="settingConfirmDelete">
+      </div>
 
-        <!-- ================= PREMIUM (BLUE TICK) ================= -->
-        <div class="settings-section" style="margin-top:20px;">
-          <div class="settings-section-title" style="color:#ff8a00; border-bottom-color:rgba(255,138,0,0.2);">Premium Services</div>
-          <div class="settings-item" style="cursor:pointer; background: linear-gradient(90deg, rgba(255,46,99,0.1), transparent); border-radius: 12px;" onclick="openPremiumModal()">
-            <div class="settings-item-info"><div class="settings-item-label">💎 Buy Blue Tick</div><div class="settings-item-desc">Get verified badge on your profile</div></div>
-            <svg style="width:16px;height:16px;stroke:#ff8a00;fill:none;stroke-width:2;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-        </div>
+      <!-- Dropdowns -->
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Video Quality</span>
+        <select id="settingVideoQuality" style="background:#222; color:#fff; border:none; padding:5px;">
+          <option value="auto">Auto</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Language</span>
+        <select id="settingLanguage" style="background:#222; color:#fff; border:none; padding:5px;">
+          <option value="en">English</option>
+          <option value="hi">Hindi</option>
+        </select>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Font Size</span>
+        <select id="settingFontSize" style="background:#222; color:#fff; border:none; padding:5px;">
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large">Large</option>
+        </select>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Video Preload</span>
+        <select id="settingVideoPreload" style="background:#222; color:#fff; border:none; padding:5px;">
+          <option value="metadata">Metadata</option>
+          <option value="auto">Auto</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Feed Order</span>
+        <select id="settingFeedOrder" style="background:#222; color:#fff; border:none; padding:5px;">
+          <option value="newest">Newest</option>
+          <option value="trending">Trending</option>
+        </select>
+      </div>
 
-        <div class="settings-section">
-          <div class="settings-section-title">Appearance</div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🌙 Dark Mode</div><div class="settings-item-desc">Switch between dark and light theme</div></div><label class="toggle-switch"><input type="checkbox" id="settingDarkMode"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🔤 Font Size</div></div><select class="settings-select" id="settingFontSize"><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📐 Compact Mode</div><div class="settings-item-desc">Smaller cards and padding</div></div><label class="toggle-switch"><input type="checkbox" id="settingCompactMode"><span class="toggle-slider"></span></label></div>
-        </div>
-
-        <div class="settings-section">
-          <div class="settings-section-title">Playback</div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">▶️ Auto Play</div><div class="settings-item-desc">Play videos automatically</div></div><label class="toggle-switch"><input type="checkbox" id="settingAutoPlay"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🔊 Autoplay Sound</div><div class="settings-item-desc">Play sound on autoplay</div></div><label class="toggle-switch"><input type="checkbox" id="settingAutoplaySound"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🔁 Video Loop</div><div class="settings-item-desc">Loop videos continuously</div></div><label class="toggle-switch"><input type="checkbox" id="settingVideoLoop"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🎬 Video Quality</div></div><select class="settings-select" id="settingVideoQuality"><option value="auto">Auto</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📉 Data Saver</div><div class="settings-item-desc">Reduce data usage</div></div><label class="toggle-switch"><input type="checkbox" id="settingDataSaver"><span class="toggle-slider"></span></label></div>
-        </div>
-
-        <div class="settings-section">
-          <div class="settings-section-title">Notifications</div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🔔 Push Notifications</div><div class="settings-item-desc">Receive all notifications</div></div><label class="toggle-switch"><input type="checkbox" id="settingPushNotif"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item sub-setting"><div class="settings-item-info"><div class="settings-item-label">❤️ Likes</div></div><label class="toggle-switch"><input type="checkbox" id="settingNotifLikes"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item sub-setting"><div class="settings-item-info"><div class="settings-item-label">💬 Comments</div></div><label class="toggle-switch"><input type="checkbox" id="settingNotifComments"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item sub-setting"><div class="settings-item-info"><div class="settings-item-label">👤 New Followers</div></div><label class="toggle-switch"><input type="checkbox" id="settingNotifFollows"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item sub-setting"><div class="settings-item-info"><div class="settings-item-label">💌 Messages</div></div><label class="toggle-switch"><input type="checkbox" id="settingNotifMessages"><span class="toggle-slider"></span></label></div>
-        </div>
-
-        <div class="settings-section">
-          <div class="settings-section-title">Privacy & Safety</div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🔐 Private Account</div><div class="settings-item-desc" id="privateAccountDesc">Public — Everyone can see</div></div><label class="toggle-switch"><input type="checkbox" id="settingPrivateAccount"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">✓✓ Read Receipts</div><div class="settings-item-desc">Show when you've read messages</div></div><label class="toggle-switch"><input type="checkbox" id="settingReadReceipts"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🟢 Show Activity Status</div></div><label class="toggle-switch"><input type="checkbox" id="settingShowActivity"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📶 Show Online</div></div><label class="toggle-switch"><input type="checkbox" id="settingShowOnline"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🏷️ Allow Tagging</div></div><label class="toggle-switch"><input type="checkbox" id="settingAllowTagging"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📤 Allow Story Sharing</div></div><label class="toggle-switch"><input type="checkbox" id="settingAllowStorySharing"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🚫 Blocked Users</div><div class="settings-item-desc" id="blockedUsersCount">No users blocked</div></div><button id="settingBlockedUsersBtn" style="background:none;border:1px solid #333;color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;">Manage</button></div>
-        </div>
-
-        <div class="settings-section">
-          <div class="settings-section-title">Content</div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📊 Show View Counts</div></div><label class="toggle-switch"><input type="checkbox" id="settingShowViews"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">♾️ Infinite Scroll</div></div><label class="toggle-switch"><input type="checkbox" id="settingInfiniteScroll"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📋 Feed Order</div></div><select class="settings-select" id="settingFeedOrder"><option value="newest">Newest First</option><option value="trending">Trending</option><option value="following">Following</option></select></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">👆 Double Tap Like</div><div class="settings-item-desc">Double tap to like posts</div></div><label class="toggle-switch"><input type="checkbox" id="settingDoubleTapLike"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🗑️ Confirm Delete</div><div class="settings-item-desc">Ask before deleting</div></div><label class="toggle-switch"><input type="checkbox" id="settingConfirmDelete"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📳 Vibration</div></div><label class="toggle-switch"><input type="checkbox" id="settingVibration"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🔊 Sound Effects</div></div><label class="toggle-switch"><input type="checkbox" id="settingSoundEffects"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">🌐 Language</div></div><select class="settings-select" id="settingLanguage"><option value="en">English</option><option value="hi">हिंदी</option></select></div>
-        </div>
-
-        <div class="settings-section">
-          <div class="settings-section-title">Data & Storage</div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📥 Auto Download</div><div class="settings-item-desc">Auto-save viewed videos</div></div><label class="toggle-switch"><input type="checkbox" id="settingAutoDownload"><span class="toggle-slider"></span></label></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">⚡ Video Preload</div></div><select class="settings-select" id="settingVideoPreload"><option value="none">None</option><option value="metadata">Metadata</option><option value="auto">Auto</option></select></div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label">📝 Show Captions</div></div><label class="toggle-switch"><input type="checkbox" id="settingShowCaptions"><span class="toggle-slider"></span></label></div>
-        </div>
-
-        <div class="settings-section">
-          <div class="settings-section-title">About & Legal</div>
-          <div class="settings-item" style="cursor:pointer;" onclick="window.open('privacy.html','_blank')">
-            <div class="settings-item-info"><div class="settings-item-label">🔒 Privacy Policy</div><div class="settings-item-desc">How we handle your data</div></div>
-            <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-          <div class="settings-item" style="cursor:pointer;" onclick="window.open('terms.html','_blank')">
-            <div class="settings-item-info"><div class="settings-item-label">📜 Terms of Service</div><div class="settings-item-desc">Rules for using ReelHub</div></div>
-            <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-          <div class="settings-item" style="cursor:pointer;" onclick="alert('📱 ReelHub v1.0.0')">
-            <div class="settings-item-info"><div class="settings-item-label">ℹ️ About ReelHub</div><div class="settings-item-desc">Version 1.0.0</div></div>
-            <svg style="width:16px;height:16px;stroke:#666;fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-        </div>
-
-        <div class="settings-section">
-          <div class="settings-section-title" style="color:#ff4d4d;border-bottom-color:rgba(255,77,77,0.2);">⚠️ Danger Zone</div>
-          <div class="settings-item"><div class="settings-item-info"><div class="settings-item-label" style="color:#ff4d4d;">🗑️ Delete Account</div><div class="settings-item-desc">Permanently delete your account and all data</div></div></div>
-          <button class="delete-account-btn" id="deleteAccountBtn" onclick="window.handleDeleteClick ? window.handleDeleteClick(event) : alert('Please refresh the page')" style="margin-top:8px;">Delete My Account</button>
-        </div>
-
-        <div class="settings-section" style="margin-top:24px;">
-          <button id="logoutBtn" style="width:100%;height:48px;background:#1e1e28;border:1px solid #333;border-radius:12px;color:#ff4d4d;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">Log Out</button>
-        </div>
-
+      <!-- Action Buttons -->
+      <h4 style="color:#888; margin:20px 0 10px;">More</h4>
+      <button id="settingReferBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#4ea8ff; border-bottom:1px solid #333;">Refer & Earn</button>
+      <button id="settingWalletBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#4ea8ff; border-bottom:1px solid #333;">My Wallet</button>
+      <button id="settingMonetizeBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#4ea8ff; border-bottom:1px solid #333;">Monetization</button>
+      <button id="settingBlockedUsersBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#4ea8ff; border-bottom:1px solid #333;">Blocked Users <span id="blockedUsersCount"></span></button>
+      <button id="settingPrivacyBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#888; border-bottom:1px solid #333;">Privacy Policy</button>
+      <button id="settingTermsBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#888; border-bottom:1px solid #333;">Terms of Service</button>
+      <button id="settingAboutBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#888; border-bottom:1px solid #333;">About ReelHub</button>
+      
+      <div style="margin-top:30px;">
+        <button id="deleteAccountBtn" style="width:100%; padding:15px; background:#ff4d4d; border:none; color:#fff; border-radius:8px; font-weight:bold; margin-bottom:10px;">Delete Account</button>
+        <button id="logoutBtn" style="width:100%; padding:15px; background:transparent; border:1px solid #ff4d4d; color:#ff4d4d; border-radius:8px; font-weight:bold;">Log Out</button>
       </div>
     </div>
   </div>
 
-  <!-- ================= ✅ PREMIUM MODAL (STEP-BY-STEP UPI PAYMENT) ================= -->
-  <div class="modal-overlay" id="premiumModal">
-    <div class="modal" style="text-align:center; padding: 0; overflow: hidden;">
-      <div class="modal-header" style="padding: 15px 20px;">
-        <h3 id="premiumModalTitle">💎 Buy Blue Tick</h3>
-        <button class="modal-close" onclick="document.getElementById('premiumModal').classList.remove('show')">&times;</button>
-      </div>
-
-      <!-- ============ VIEW 1: PLANS / AMOUNT ============ -->
-      <div id="view1-plans" style="padding: 20px;">
-        <p style="font-size:13px; color:#888; margin-bottom:15px;">Select amount to continue</p>
-        <div id="dynamicPlansContainer" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:10px;">
-          <div style="color:#888; grid-column: 1/-1; text-align:center; padding: 20px;">Loading plans...</div>
-        </div>
-
-        <div style="margin-top:20px;">
-          <input type="number" id="customPayAmount" placeholder="Or enter custom ₹ amount" min="1" style="width:100%; height:50px; background:#0a0a12; border:1px solid #333; color:#fff; border-radius:12px; padding:0 16px; font-size:15px; text-align:center; outline:none;">
-        </div>
-      </div>
-
-      <!-- ============ VIEW 2: CHOOSE UPI APP ============ -->
-      <div id="view2-apps" style="display:none; padding: 20px;">
-        <div style="background:#0a0a12; border-radius:12px; padding:12px; margin-bottom:20px;">
-          <div style="font-size:11px; color:#666;">Amount to pay</div>
-          <div style="font-size:26px; font-weight:900; color:#ff2e63;">₹<span id="view2Amount">0</span></div>
-        </div>
-
-        <p style="font-size:13px; color:#888; margin-bottom:15px;">Choose your UPI app</p>
-
-        <div id="upiAppsGrid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;"></div>
-
-        <button onclick="window.paymentGoBack()" style="margin-top:20px; padding:10px 20px; background:#1a1a24; color:#aaa; border:1px solid #333; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;">← Back</button>
-      </div>
-
-      <!-- ============ VIEW 3: PAYMENT / QR / UPLOAD ============ -->
-      <div id="view3-payment" style="display:none; padding: 20px;">
-        <div id="view3AppHeader" style="margin-bottom:15px;">
-          <div style="font-size:11px; color:#666;">Paying with</div>
-          <div style="font-size:18px; font-weight:800;" id="view3AppName">—</div>
-        </div>
-
-        <div style="background:#0a0a12; border-radius:12px; padding:14px; margin-bottom:15px;">
-          <div style="font-size:11px; color:#666;">Amount</div>
-          <div style="font-size:26px; font-weight:900; color:#ff2e63;">₹<span id="view3Amount">0</span></div>
-          <div style="font-size:11px; color:#666; margin-top:8px;">To: <span id="view3PayeeName" style="color:#fff;">ReelHub</span></div>
-          <div style="font-size:11px; color:#666;">UPI: <span id="view3Upi" style="color:#4ea8ff; font-family:monospace; word-break:break-all;">loading...</span></div>
-        </div>
-
-        <button id="view3PayBtn" style="width:100%; height:52px; background:linear-gradient(90deg, #ff2e63, #ff8a00); color:#fff; border:none; border-radius:12px; font-size:16px; font-weight:800; margin-bottom:12px; cursor:pointer;">
-          💳 Open Payment App
-        </button>
-
-        <div style="margin-bottom:15px;">
-          <button onclick="window.toggleQRView()" style="background:transparent; border:none; color:#4ea8ff; font-size:13px; font-weight:600; padding:8px; cursor:pointer;">📱 Or scan QR code</button>
-        </div>
-
-        <div id="view3QRWrap" style="display:none; background:#fff; padding:10px; border-radius:12px; width:220px; margin:0 auto 15px auto;">
-          <div id="view3QRContainer" style="display:flex; justify-content:center; align-items:center; min-height:200px;"></div>
-        </div>
-
-        <div id="view3TimerWrap" style="background:rgba(255,46,99,0.1); border:1px solid rgba(255,46,99,0.3); border-radius:10px; padding:12px; margin-bottom:15px;">
-          <span style="font-size:13px; color:#ff2e63; font-weight:700;">⏳ After payment, upload screenshot below</span>
-        </div>
-
-        <div id="view3UploadWrap">
-          <label for="paymentScreenshot" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:14px; border-radius:12px; cursor:pointer; background:linear-gradient(90deg,#4ea8ff,#2a6fb8); color:#fff; font-weight:700; font-size:14px; width:100%; box-sizing:border-box;">
-            <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Upload Payment Screenshot
-          </label>
-          <input type="file" id="paymentScreenshot" accept="image/*" style="display:none;">
-          <div id="paymentStatusMsg" style="font-size:13px; color:#4ade80; margin-top:12px; font-weight:600; min-height:20px;"></div>
-        </div>
-
-        <button onclick="window.paymentGoBackToApps()" style="margin-top:15px; padding:10px 20px; background:#1a1a24; color:#aaa; border:1px solid #333; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;">← Choose different app</button>
-      </div>
-
+  <!-- Forgot Password Modal -->
+  <div id="forgotModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff;">
+      <h3 style="margin-bottom:15px;">Reset Password</h3>
+      <input type="email" id="forgotEmail" placeholder="Your Email" style="width:100%; margin:10px 0; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px;">
+      <div id="forgotMsg" style="color:#ff4d4d; font-size:12px; margin-bottom:10px;"></div>
+      <button id="sendResetBtn" style="width:100%; padding:10px; background:#4ea8ff; border:none; color:#fff; border-radius:8px; margin-bottom:5px;">Send Reset Link</button>
+      <button id="closeForgot" style="width:100%; padding:10px; background:transparent; border:none; color:#888;">Cancel</button>
     </div>
   </div>
 
+  <!-- Generic List Modal (Followers/Following) -->
+  <div id="listModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff; max-height:80vh; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+        <h3 id="listTitle">List</h3>
+        <button id="closeList" style="background:none; border:none; color:#fff; font-size:20px;">✕</button>
+      </div>
+      <div id="userList" style="overflow-y:auto; flex:1;"></div>
+    </div>
+  </div>
+
+  <!-- Blocked Users Modal -->
+  <div id="blockedUsersModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff; max-height:80vh; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+        <h3>Blocked Users</h3>
+        <button id="closeBlockedUsers" style="background:none; border:none; color:#fff; font-size:20px;">✕</button>
+      </div>
+      <div id="blockedUsersList" style="overflow-y:auto; flex:1;"></div>
+    </div>
+  </div>
+
+  <!-- New Chat Modal -->
+  <div id="newChatModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff; max-height:80vh; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+        <h3>New Chat</h3>
+        <button id="closeNewChat" style="background:none; border:none; color:#fff; font-size:20px;">✕</button>
+      </div>
+      <input id="newChatSearch" placeholder="Search users..." style="width:100%; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px; margin-bottom:10px;">
+      <div id="newChatResults" style="overflow-y:auto; flex:1;"></div>
+    </div>
+  </div>
+
+  <!-- New Group Modal -->
+  <div id="newGroupModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff; max-height:80vh; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+        <h3>Create Group</h3>
+        <button id="closeNewGroup" style="background:none; border:none; color:#fff; font-size:20px;">✕</button>
+      </div>
+      <input id="groupNameInput" placeholder="Group Name" style="width:100%; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px; margin-bottom:10px;">
+      <div id="selectedMembersList" style="margin-bottom:10px; display:flex; flex-wrap:wrap; gap:5px;"></div>
+      <input id="groupSearchInput" placeholder="Search members..." style="width:100%; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px; margin-bottom:10px;">
+      <div id="groupSearchResults" style="overflow-y:auto; flex:1; max-height:30vh; margin-bottom:10px;"></div>
+      <button id="createGroupBtn" disabled style="width:100%; padding:12px; background:#4ea8ff; border:none; color:#fff; border-radius:8px; opacity:0.5;">Create Group</button>
+    </div>
+  </div>
+  
+  <!-- Story Upload Modal -->
+  <div id="storyUploadModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff;">
+      <h3 style="margin-bottom:15px;">Add Story</h3>
+      <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <button class="story-upload-tab active" data-type="photo" style="flex:1; padding:8px; background:#333; border:none; color:#fff; border-radius:5px;">Photo</button>
+        <button class="story-upload-tab" data-type="video" style="flex:1; padding:8px; background:#333; border:none; color:#fff; border-radius:5px;">Video</button>
+      </div>
+      <div id="storyPickerWrap">
+        <p id="storyPickerTitle" style="font-weight:bold; margin-bottom:5px;"></p>
+        <p id="storyPickerSubtitle" style="font-size:12px; color:#888; margin-bottom:10px;"></p>
+        <input type="file" id="storyFileInput" style="color:#fff; margin-bottom:10px;">
+        <button id="storyPickerLabel" style="display:none;"></button>
+      </div>
+      <div id="storyPreviewWrap" style="display:none; margin-bottom:10px;"><img id="storyPreviewImg" style="width:100%; border-radius:8px; max-height:200px; object-fit:contain;"></div>
+      <div id="storyVideoPreviewWrap" style="display:none; margin-bottom:10px;">
+        <video id="storyPreviewVideo" style="width:100%; border-radius:8px; max-height:200px;" controls></video>
+        <p id="storyPreviewInfo" style="font-size:12px; color:#888;"></p>
+      </div>
+      <div id="storyUploadMsg" style="color:#ff4d4d; font-size:12px; margin-bottom:10px;"></div>
+      <div id="storyProgressWrap" style="display:none; margin-bottom:10px;">
+        <div style="background:#333; height:8px; border-radius:4px;"><div id="storyProgressBar" style="background:#4ea8ff; height:100%; width:0%; transition:width 0.2s;"></div></div>
+        <div id="storyProgressText" style="font-size:12px; text-align:right;">0%</div>
+      </div>
+      <button id="storySubmitBtn" disabled style="width:100%; padding:10px; background:#4ea8ff; border:none; color:#fff; border-radius:8px; opacity:0.5; margin-bottom:5px;">Upload Story</button>
+      <button id="closeStoryUpload" style="width:100%; padding:10px; background:transparent; border:none; color:#888;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Story Viewer (Full Screen) -->
+  <div id="storyViewer" style="display:none; position:fixed; inset:0; background:#000; z-index:2000;">
+    <div id="storyProgressBars" style="display:flex; gap:2px; padding:10px;"></div>
+    <div style="display:flex; justify-content:space-between; padding:0 15px; align-items:center; margin-bottom:10px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <img id="storyUserAvatar" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+        <span id="storyUserName" style="color:#fff; font-weight:bold;"></span>
+        <span id="storyTime" style="color:#aaa; font-size:12px;"></span>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button id="storyViewersBtn" style="display:none; background:none; border:none; color:#fff; font-size:16px;">👁️ <span id="storyViewersCount">0</span></button>
+        <button id="storyDeleteBtn" style="display:none; background:none; border:none; color:#ff4d4d; font-size:16px;">🗑️</button>
+        <button id="storyCloseBtn" style="background:none; border:none; color:#fff; font-size:24px;">✕</button>
+      </div>
+    </div>
+    <div id="storyMedia" style="height:80vh; display:flex; align-items:center; justify-content:center;"></div>
+    <div id="storyTapLeft" style="position:absolute; left:0; top:80px; bottom:80px; width:50%; z-index:10;"></div>
+    <div id="storyTapRight" style="position:absolute; right:0; top:80px; bottom:80px; width:50%; z-index:10;"></div>
+  </div>
+
+  <!-- Highlights Modal -->
+  <div id="highlightModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:1000; color:#fff; padding:20px; overflow-y:auto;">
+    <div style="max-width:400px; margin:50px auto; background:#1a1a24; padding:20px; border-radius:12px;">
+      <h3 id="highlightModalTitle" style="margin-bottom:15px;">New Highlight</h3>
+      <input id="highlightNameInput" placeholder="Highlight Name" style="width:100%; margin-bottom:15px; padding:12px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px;">
+      <div id="highlightStoriesPicker" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:5px; margin-bottom:15px; max-height:200px; overflow-y:auto;"></div>
+      <div id="highlightCoverPicker" style="display:flex; gap:5px; margin-bottom:15px; overflow-x:auto; padding-bottom:5px;"></div>
+      <div id="highlightMsg" style="color:#ff4d4d; font-size:12px; margin-bottom:10px;"></div>
+      <button id="saveHighlightBtn" style="width:100%; padding:12px; background:#4ea8ff; color:#fff; border:none; border-radius:8px; margin-bottom:5px;">Create Highlight</button>
+      <button id="closeHighlightModal" style="width:100%; padding:12px; background:transparent; border:none; color:#888;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Reaction Picker -->
+  <div id="reactionPicker" style="display:none; position:fixed; background:#1a1a24; padding:8px 12px; border-radius:30px; box-shadow:0 4px 15px rgba(0,0,0,0.5); z-index:3000; gap:8px;">
+    <button data-emoji="❤️" style="background:none; border:none; font-size:24px; cursor:pointer;">❤️</button>
+    <button data-emoji="😂" style="background:none; border:none; font-size:24px; cursor:pointer;">😂</button>
+    <button data-emoji="😮" style="background:none; border:none; font-size:24px; cursor:pointer;">😮</button>
+    <button data-emoji="😢" style="background:none; border:none; font-size:24px; cursor:pointer;">😢</button>
+    <button data-emoji="👍" style="background:none; border:none; font-size:24px; cursor:pointer;">👍</button>
+    <button data-emoji="🔥" style="background:none; border:none; font-size:24px; cursor:pointer;">🔥</button>
+  </div>
+
+  <!-- ==========================================
+       5. SCRIPTS (Order is Important)
+       ========================================== -->
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="auth.js"></script>
   <script type="module" src="app.js"></script>
-  <script type="module" src="payment.js"></script>
 
 </body>
 </html>
