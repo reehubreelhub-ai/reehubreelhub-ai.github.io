@@ -44,10 +44,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Set Auth Persistence (Page refresh par login yaad rakhne ke liye)
 setPersistence(auth, browserLocalPersistence).catch((e) => console.warn('Persistence:', e));
 
-// ✅ EXPORT EVERYTHING (Yahan saari cheezein export honi chahiye)
+// ✅ EXPORT EVERYTHING
 export {
   auth, db,
   createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut,
