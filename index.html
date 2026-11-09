@@ -1,24 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ReelHub</title>
+  
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; }
+    body { background-color: #0a0a0f; color: #ffffff; overflow: hidden; }
+    input, textarea, button { font-family: inherit; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    .modal-overlay { transition: opacity 0.3s ease; }
+    .show { display: flex !important; }
+  </style>
+</head>
+<body>
+
   <!-- ==========================================
-       1. LOADING SCREEN (Big & Premium)
+       1. LOADING SCREEN
        ========================================== -->
   <div id="loadingScreen" style="position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; background: radial-gradient(circle at center, #1f0b12 0%, #050508 80%) !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; z-index: 99999 !important; font-family: 'Inter', sans-serif !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important;">
     
-    <!-- Top Right Contact Us -->
     <div style="position: absolute !important; top: 30px !important; right: 25px !important;">
       <button style="background: linear-gradient(90deg, #6b46c1, #805ad5) !important; color: white !important; padding: 10px 22px !important; border-radius: 25px !important; font-size: 13px !important; font-weight: 800 !important; border: none !important; cursor: pointer !important; box-shadow: 0 4px 15px rgba(107, 70, 193, 0.5) !important; letter-spacing: 1px !important;">
         CONTACT US
       </button>
     </div>
 
-    <!-- Center Content Wrapper -->
     <div style="display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; margin-top: -60px !important;">
         
-        <!-- Logo (Bada aur Glowing) -->
         <div style="width: 130px !important; height: 130px !important; border-radius: 50% !important; background: #0a0a0f !important; display: flex !important; align-items: center !important; justify-content: center !important; border: 6px solid transparent !important; background-image: linear-gradient(#0a0a0f, #0a0a0f), linear-gradient(135deg, #ff8a00, #ff2e63) !important; background-origin: border-box !important; background-clip: content-box, border-box !important; margin-bottom: 35px !important; box-shadow: 0 0 40px rgba(255, 46, 99, 0.6) !important;">
             <span style="font-size: 65px !important; font-weight: 900 !important; color: white !important; font-family: 'Inter', sans-serif !important; margin: 0 !important; padding: 0 !important; line-height: 1 !important;">R</span>
         </div>
 
-        <!-- Welcome Text (Bada aur Bold) -->
         <div style="font-size: 38px !important; font-weight: 900 !important; color: #ff2e63 !important; margin: 0 0 5px 0 !important; padding: 0 !important; line-height: 1.2 !important; font-family: 'Inter', sans-serif !important; letter-spacing: -1px !important;">
             Welcome To
         </div>
@@ -26,19 +45,16 @@
             ReelHub
         </div>
 
-        <!-- Loading Box (Bada) -->
         <div style="background: #1c1c22 !important; padding: 16px 45px !important; border-radius: 10px !important; margin-bottom: 25px !important; border: 1px solid #2a2a35 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;">
             <span style="color: #ff2e63 !important; font-weight: 700 !important; font-size: 20px !important;">Loading ....</span>
         </div>
 
-        <!-- Thin Line Animation (Lambi) -->
         <div style="width: 220px !important; height: 3px !important; background: #2a2a35 !important; border-radius: 3px !important; position: relative !important; overflow: hidden !important;">
             <div style="width: 60px !important; height: 100% !important; background: #ff2e63 !important; position: absolute !important; border-radius: 3px !important; animation: slideLine 1.5s infinite ease-in-out !important;"></div>
         </div>
 
     </div>
 
-    <!-- Bottom Text (Bada) -->
     <div style="position: absolute !important; bottom: 50px !important; text-align: center !important;">
         <div style="color: #ff2e63 !important; font-weight: 900 !important; font-size: 22px !important; line-height: 1.4 !important; margin: 0 !important; padding: 0 !important; font-family: 'Inter', sans-serif !important; letter-spacing: 1px !important;">
             From<br>Reelhub
@@ -51,4 +67,352 @@
             100% { left: 220px; }
         }
     </style>
-</div>
+  </div>
+
+  <!-- ✅ BACKUP SCRIPT: Force hides Loading Screen if JS is stuck -->
+  <script>
+    setTimeout(function() {
+      var loader = document.getElementById('loadingScreen');
+      if (loader && loader.style.display !== 'none') {
+        console.warn("⚠️ Force hiding loader due to timeout.");
+        loader.style.setProperty('display', 'none', 'important');
+        var auth = document.getElementById('auth');
+        if (auth) auth.style.setProperty('display', 'block', 'important');
+      }
+    }, 2500); // 2.5 seconds
+  </script>
+
+  <!-- ==========================================
+       2. AUTH SCREEN (Login / Signup)
+       ========================================== -->
+  <div id="auth" class="auth-screen" style="display:none; padding:20px; background:#0a0a0f; min-height:100vh; color:#fff; overflow-y:auto;">
+    <div style="max-width:400px; margin:0 auto; padding-top:40px; padding-bottom:40px;">
+      
+      <h1 style="text-align:center; font-size:28px; font-weight:800; margin-bottom:30px;">Welcome to ReelHub</h1>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm" style="display:block;">
+        <h2 style="font-size:20px; margin-bottom:15px;">Log In</h2>
+        <input type="email" id="loginEmail" placeholder="Email" required style="width:100%; padding:12px; margin-bottom:10px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+        <div style="position:relative; margin-bottom:15px;">
+          <input type="password" id="loginPass" placeholder="Password" required style="width:100%; padding:12px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+          <span class="eye" data-target="loginPass" style="position:absolute; right:12px; top:12px; cursor:pointer;">👁️</span>
+        </div>
+        <div id="loginMsg" class="error-msg" style="margin-bottom:10px; color:#ff4d4d; font-size:13px;"></div>
+        <button type="submit" id="loginBtn" style="width:100%; padding:14px; background:linear-gradient(90deg, #ff2e63, #ff8a00); border:none; border-radius:8px; color:#fff; font-weight:bold; font-size:16px; cursor:pointer; margin-bottom:10px;">Log In</button>
+        
+        <div style="display:flex; justify-content:space-between; font-size:13px; color:#888;">
+          <span id="forgotLink" style="cursor:pointer; text-decoration:underline;">Forgot Password?</span>
+          <span id="goSignup" style="cursor:pointer; color:#4ea8ff;">Don't have an account? Sign Up</span>
+        </div>
+      </form>
+
+      <!-- SIGNUP FORM -->
+      <form id="signupForm" style="display:none;">
+        <h2 style="font-size:20px; margin-bottom:15px;">Create Account</h2>
+        <input type="text" id="signupName" placeholder="Full Name" required style="width:100%; padding:12px; margin-bottom:10px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+        <input type="text" id="signupUser" placeholder="Username (e.g. john_doe)" required style="width:100%; padding:12px; margin-bottom:10px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+        <input type="email" id="signupEmail" placeholder="Email" required style="width:100%; padding:12px; margin-bottom:10px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+        <div style="position:relative; margin-bottom:15px;">
+          <input type="password" id="signupPass" placeholder="Password (min 6 chars)" required style="width:100%; padding:12px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+          <span class="eye" data-target="signupPass" style="position:absolute; right:12px; top:12px; cursor:pointer;">👁️</span>
+        </div>
+        <div id="signupMsg" class="error-msg" style="margin-bottom:10px; color:#ff4d4d; font-size:13px;"></div>
+        <button type="submit" id="signupBtn" style="width:100%; padding:14px; background:linear-gradient(90deg, #ff2e63, #ff8a00); border:none; border-radius:8px; color:#fff; font-weight:bold; font-size:16px; cursor:pointer; margin-bottom:10px;">Sign Up</button>
+        
+        <div id="goSignupWrap" style="text-align:center; font-size:13px; color:#888; display:none;">
+          Already have an account? <span id="goLogin" style="cursor:pointer; color:#4ea8ff;">Log In</span>
+        </div>
+      </form>
+
+      <!-- DIVIDER -->
+      <div style="display:flex; align-items:center; margin:20px 0;">
+        <div style="flex:1; height:1px; background:#333;"></div>
+        <div style="padding:0 10px; color:#888; font-size:12px;">OR</div>
+        <div style="flex:1; height:1px; background:#333;"></div>
+      </div>
+
+      <!-- GOOGLE LOGIN -->
+      <button id="googleLoginBtn" style="width:100%; padding:12px; background:#fff; color:#000; border:none; border-radius:8px; font-weight:bold; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-bottom:15px;">
+        <img src="https://img.icons8.com/color/18/000000/google-logo.png" style="margin-right:8px;">
+        Continue with Google
+      </button>
+
+      <!-- PHONE OTP -->
+      <div id="phoneLoginStep1">
+        <input type="tel" id="phoneNumberInput" placeholder="Phone (+919876543210)" style="width:100%; padding:12px; margin-bottom:10px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff;">
+        <button id="sendOtpBtn" type="button" style="width:100%; padding:12px; background:#4ea8ff; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Send OTP</button>
+      </div>
+      <div id="phoneLoginStep2" style="display:none;">
+        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6" style="width:100%; padding:12px; margin-bottom:10px; background:#1a1a24; border:1px solid #333; border-radius:8px; color:#fff; text-align:center; letter-spacing:5px;">
+        <button id="verifyOtpBtn" type="button" style="width:100%; padding:12px; background:#4ade80; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Verify OTP</button>
+      </div>
+      <div id="phoneMsg" class="error-msg" style="margin-top:10px; text-align:center; color:#ff4d4d; font-size:13px;"></div>
+      
+      <!-- Recaptcha Container (Mandatory for Phone Login) -->
+      <div id="recaptcha-container"></div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       3. MAIN APP SCREEN
+       ========================================== -->
+  <div id="app" class="app-screen" style="display:none; flex-direction:column; height:100vh; background:#0a0a0f; color:#fff;">
+    
+    <!-- TOP HEADER -->
+    <header style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:#121212; border-bottom:1px solid #222; z-index:10;">
+      <div style="font-size:22px; font-weight:900; color:#ff2e63;">ReelHub</div>
+      <div style="display:flex; gap:15px;">
+        <button id="searchBtn" style="background:none; border:none; color:#fff; cursor:pointer;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+        <button id="notifBtn" style="background:none; border:none; color:#fff; cursor:pointer; position:relative;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span id="notifDot" style="display:none; position:absolute; top:0; right:0; min-width:16px; height:16px; background:red; border-radius:50%; font-size:10px; align-items:center; justify-content:center;"></span>
+        </button>
+        <button id="settingsBtn" style="background:none; border:none; color:#fff; cursor:pointer;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main id="content" style="flex:1; overflow-y:auto; padding-bottom:70px;"></main>
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav style="display:flex; justify-content:space-around; align-items:center; padding:10px 0; background:#121212; border-top:1px solid #222; position:fixed; bottom:0; width:100%; z-index:10;">
+      <div class="nav-item active" data-page="home" style="text-align:center; cursor:pointer; color:#fff;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <div style="font-size:10px;">Home</div>
+      </div>
+      <div class="nav-item" data-page="shorts" style="text-align:center; cursor:pointer; color:#888;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
+        <div style="font-size:10px;">Shorts</div>
+      </div>
+      <div class="upload-btn" style="background:#4ea8ff; width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; margin-top:-20px; box-shadow:0 4px 10px rgba(78,168,255,0.4);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <div class="nav-item" data-page="messages" style="text-align:center; cursor:pointer; color:#888; position:relative;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <div style="font-size:10px;">Chats</div>
+        <span id="chatsDot" style="display:none; position:absolute; top:0; right:15px; min-width:12px; height:12px; background:red; border-radius:50%;"></span>
+      </div>
+      <div class="nav-item" data-page="profile" style="text-align:center; cursor:pointer; color:#888;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <div style="font-size:10px;">Profile</div>
+      </div>
+    </nav>
+  </div>
+
+  <!-- ==========================================
+       4. MODALS (Invisible by default)
+       ========================================== -->
+  
+  <!-- Edit Profile Modal -->
+  <div id="editModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div class="modal-content" style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%;">
+      <h3 style="margin-bottom:15px;">Edit Profile</h3>
+      <div style="text-align:center; margin-bottom:15px;">
+        <img id="editPreviewImg" style="width:80px; height:80px; border-radius:50%; object-fit:cover; margin-bottom:10px;">
+        <input type="file" id="editPhoto" accept="image/*" style="display:none;">
+        <label for="editPhoto" style="background:#333; padding:5px 10px; border-radius:5px; cursor:pointer; font-size:12px;">Change Photo</label>
+      </div>
+      <input type="text" id="editName" placeholder="Name" style="width:100%; margin-bottom:10px; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px;">
+      <input type="text" id="editUser" placeholder="Username" style="width:100%; margin-bottom:10px; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px;">
+      <textarea id="editBio" placeholder="Bio" style="width:100%; margin-bottom:10px; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px;"></textarea>
+      <div id="editMsg" style="color:#ff4d4d; font-size:12px; margin-bottom:10px;"></div>
+      <button id="saveProfileBtn" style="width:100%; padding:10px; background:#4ea8ff; border:none; color:#fff; border-radius:8px; margin-bottom:5px;">Save</button>
+      <button id="closeEdit" style="width:100%; padding:10px; background:transparent; border:none; color:#888;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Upload Modal -->
+  <div id="uploadModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div class="modal-content" style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%;">
+      <h3 style="margin-bottom:15px;">Upload Content</h3>
+      <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <button class="upload-tab active" data-type="short" style="flex:1; padding:8px; background:#333; border:none; color:#fff; border-radius:5px;">Short</button>
+        <button class="upload-tab" data-type="long" style="flex:1; padding:8px; background:#333; border:none; color:#fff; border-radius:5px;">Long</button>
+        <button class="upload-tab" data-type="photo" style="flex:1; padding:8px; background:#333; border:none; color:#fff; border-radius:5px;">Photo</button>
+      </div>
+      <div id="uploadPickerWrap">
+        <h4 id="pickerTitle" style="margin-bottom:5px;">Choose Video</h4>
+        <p id="pickerSubtitle" style="font-size:12px; color:#888; margin-bottom:10px;"></p>
+        <input type="file" id="uploadFileInput" style="margin-bottom:10px; color:#fff;">
+        <button id="pickerLabel" style="display:none;"></button>
+      </div>
+      <div id="uploadPreviewWrap" style="display:none; margin-bottom:10px;">
+        <video id="uploadPreview" style="width:100%; border-radius:8px; max-height:200px;" controls></video>
+        <p id="uploadPreviewInfo" style="font-size:12px; color:#888;"></p>
+      </div>
+      <div id="uploadPhotoPreviewWrap" style="display:none; margin-bottom:10px;">
+        <img id="uploadPhotoPreview" style="width:100%; border-radius:8px; max-height:200px; object-fit:contain;">
+      </div>
+      
+      <input type="text" id="uploadCaption" placeholder="Write a caption..." style="width:100%; margin:10px 0; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px;">
+      <div id="uploadMsg" style="color:#ff4d4d; font-size:12px; margin-bottom:10px;"></div>
+      
+      <div id="uploadProgressWrap" style="display:none; margin-bottom:10px;">
+        <div style="background:#333; height:8px; border-radius:4px; overflow:hidden;"><div id="uploadProgressBar" style="background:#4ea8ff; height:100%; width:0%; transition:width 0.2s;"></div></div>
+        <div id="uploadProgressText" style="font-size:12px; text-align:right; margin-top:5px;">0%</div>
+      </div>
+
+      <button id="uploadSubmitBtn" disabled style="width:100%; padding:10px; background:#4ea8ff; border:none; color:#fff; border-radius:8px; opacity:0.5; margin-bottom:5px;">Upload</button>
+      <button id="closeUpload" style="width:100%; padding:10px; background:transparent; border:none; color:#888;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Player Modal -->
+  <div id="playerModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:#000; z-index:1000; flex-direction:column;">
+    <div style="display:flex; justify-content:space-between; padding:15px; align-items:center; background:#121212;">
+      <h3 id="playerTitle" style="color:#fff;">Video</h3>
+      <button id="closePlayer" style="background:none; border:none; color:#fff; font-size:24px;">✕</button>
+    </div>
+    <div id="playerContent" style="display:flex; justify-content:center; align-items:center; flex:1; overflow:hidden;"></div>
+  </div>
+
+  <!-- Comments Modal -->
+  <div id="commentsModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000;">
+    <div style="background:#1a1a24; position:absolute; bottom:0; width:100%; height:75vh; border-radius:15px 15px 0 0; display:flex; flex-direction:column;">
+      <div style="padding:15px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
+        <h3 id="commentsTitle" style="color:#fff;">Comments</h3>
+        <button id="closeComments" style="background:none; border:none; color:#fff; font-size:20px;">✕</button>
+      </div>
+      <div id="commentsList" style="flex:1; overflow-y:auto; padding:15px;"></div>
+      <div id="replyIndicator" style="display:none; padding:5px 15px; background:#333; color:#aaa; font-size:12px; justify-content:space-between; align-items:center;">
+        <span id="replyIndicatorText">Replying...</span>
+        <button id="cancelReplyBtn" style="background:none; border:none; color:#ff4d4d; font-weight:bold;">✕</button>
+      </div>
+      <div style="padding:10px; border-top:1px solid #333; display:flex; gap:10px; align-items:center; background:#1a1a24;">
+        <img id="myAvatarForComment" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+        <input type="text" id="commentInput" placeholder="Add a comment..." style="flex:1; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:20px;">
+        <button id="postCommentBtn" disabled style="background:#4ea8ff; border:none; color:#fff; padding:8px 15px; border-radius:20px; opacity:0.5;">Post</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Window Modal -->
+  <div id="chatWindowModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:#0a0a0f; z-index:1000;">
+    <div id="chatWindow" style="display:flex; flex-direction:column; height:100vh; width:100%;">
+      <div class="chat-header" style="padding:15px; background:#121212; display:flex; align-items:center; gap:10px; border-bottom:1px solid #222;">
+        <button id="closeChatWindow" style="background:none; border:none; color:#fff; font-size:24px; padding-right:5px;">←</button>
+        <img id="chatHeaderAvatar" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+        <div id="chatHeaderInfo" style="cursor:pointer; flex:1;">
+          <div id="chatHeaderName" style="font-weight:bold; color:#fff;"></div>
+          <div id="chatHeaderHandle" style="font-size:12px; color:#888;"></div>
+        </div>
+        <div id="typingIndicator" style="display:none; font-size:12px; color:#4ea8ff; margin-left:auto;"><span class="typing-text">typing...</span></div>
+      </div>
+      
+      <div id="chatMessages" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; background:#0a0a0f;"></div>
+      
+      <div id="chatReplyPreview" style="display:none; padding:8px 15px; background:#222; border-left:3px solid #4ea8ff; position:relative;">
+        <div id="chatReplyName" style="font-size:12px; color:#4ea8ff; font-weight:bold;"></div>
+        <div id="chatReplyText" style="font-size:12px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:20px;"></div>
+        <button id="chatReplyClose" style="background:none; border:none; color:#fff; position:absolute; right:15px; top:10px;">✕</button>
+      </div>
+
+      <div style="padding:10px; background:#121212; display:flex; gap:10px; align-items:center; border-top:1px solid #222;">
+        <button id="chatAttachBtn" style="background:none; border:none; color:#888; font-size:20px;">📎</button>
+        <input type="text" id="chatMessageInput" placeholder="Message..." style="flex:1; padding:10px; background:#1a1a24; border:1px solid #333; color:#fff; border-radius:20px; outline:none;">
+        <button id="sendTextBtn" style="display:none; background:#4ea8ff; border:none; color:#fff; padding:10px 15px; border-radius:50%;">➤</button>
+        <button id="micBtn" style="background:#ff2e63; border:none; color:#fff; padding:10px 15px; border-radius:50%;">🎤</button>
+      </div>
+      
+      <div id="recordingIndicator" style="display:none; position:absolute; bottom:70px; width:100%; text-align:center; color:#ff2e63; background:rgba(0,0,0,0.8); padding:10px;">
+        Recording... <span id="recordingTimer">0:00</span>
+        <button id="cancelRecordingBtn" style="background:#333; border:none; color:#fff; border-radius:5px; padding:2px 5px; margin-left:10px;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:#0a0a0f; z-index:1000; overflow-y:auto;">
+    <div style="padding:20px; max-width:500px; margin:0 auto; color:#fff; padding-bottom:50px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center;">
+        <h2>Settings</h2>
+        <button id="closeSettings" style="background:none; border:none; color:#fff; font-size:24px;">✕</button>
+      </div>
+      
+      <h4 style="color:#888; margin-bottom:10px;">Preferences</h4>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Dark Mode</span><input type="checkbox" id="settingDarkMode"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Auto Play Videos</span><input type="checkbox" id="settingAutoPlay"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Data Saver</span><input type="checkbox" id="settingDataSaver"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Compact Mode</span><input type="checkbox" id="settingCompactMode"></div>
+
+      <h4 style="color:#888; margin:20px 0 10px;">Notifications</h4>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Push Notifications</span><input type="checkbox" id="settingPushNotif"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Likes</span><input type="checkbox" id="settingNotifLikes"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Comments</span><input type="checkbox" id="settingNotifComments"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Follows</span><input type="checkbox" id="settingNotifFollows"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Messages</span><input type="checkbox" id="settingNotifMessages"></div>
+
+      <h4 style="color:#888; margin:20px 0 10px;">Privacy</h4>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333; align-items:center;">
+        <div><span>Private Account</span><div id="privateAccountDesc" style="font-size:11px; color:#666;">Public — Sab dekh sakte hain</div></div>
+        <input type="checkbox" id="settingPrivateAccount">
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Read Receipts</span><input type="checkbox" id="settingReadReceipts"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Show Activity Status</span><input type="checkbox" id="settingShowActivity"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Show Online Status</span><input type="checkbox" id="settingShowOnline"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Allow Tagging</span><input type="checkbox" id="settingAllowTagging"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Allow Story Sharing</span><input type="checkbox" id="settingAllowStorySharing"></div>
+
+      <h4 style="color:#888; margin:20px 0 10px;">Media & Sounds</h4>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Sound Effects</span><input type="checkbox" id="settingSoundEffects"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Vibration</span><input type="checkbox" id="settingVibration"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Video Loop</span><input type="checkbox" id="settingVideoLoop"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Auto Download</span><input type="checkbox" id="settingAutoDownload"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Show Captions</span><input type="checkbox" id="settingShowCaptions"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Show Views</span><input type="checkbox" id="settingShowViews"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Infinite Scroll</span><input type="checkbox" id="settingInfiniteScroll"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Double Tap to Like</span><input type="checkbox" id="settingDoubleTapLike"></div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;"><span>Confirm Delete</span><input type="checkbox" id="settingConfirmDelete"></div>
+
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Video Quality</span>
+        <select id="settingVideoQuality" style="background:#222; color:#fff; border:none; padding:5px;"><option value="auto">Auto</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Language</span>
+        <select id="settingLanguage" style="background:#222; color:#fff; border:none; padding:5px;"><option value="en">English</option><option value="hi">Hindi</option></select>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Font Size</span>
+        <select id="settingFontSize" style="background:#222; color:#fff; border:none; padding:5px;"><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Video Preload</span>
+        <select id="settingVideoPreload" style="background:#222; color:#fff; border:none; padding:5px;"><option value="metadata">Metadata</option><option value="auto">Auto</option><option value="none">None</option></select>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:15px 0; border-bottom:1px solid #333;">
+        <span>Feed Order</span>
+        <select id="settingFeedOrder" style="background:#222; color:#fff; border:none; padding:5px;"><option value="newest">Newest</option><option value="trending">Trending</option></select>
+      </div>
+
+      <h4 style="color:#888; margin:20px 0 10px;">More</h4>
+      <button id="settingReferBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#4ea8ff; border-bottom:1px solid #333;">Refer & Earn</button>
+      <button id="settingWalletBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#4ea8ff; border-bottom:1px solid #333;">My Wallet</button>
+      <button id="settingMonetizeBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#4ea8ff; border-bottom:1px solid #333;">Monetization</button>
+      <button id="settingBlockedUsersBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#4ea8ff; border-bottom:1px solid #333;">Blocked Users <span id="blockedUsersCount"></span></button>
+      <button id="settingPrivacyBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#888; border-bottom:1px solid #333;">Privacy Policy</button>
+      <button id="settingTermsBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#888; border-bottom:1px solid #333;">Terms of Service</button>
+      <button id="settingAboutBtn" style="width:100%; text-align:left; padding:15px 0; background:none; border:none; color:#888; border-bottom:1px solid #333;">About ReelHub</button>
+      
+      <div style="margin-top:30px;">
+        <button id="deleteAccountBtn" style="width:100%; padding:15px; background:#ff4d4d; border:none; color:#fff; border-radius:8px; font-weight:bold; margin-bottom:10px;">Delete Account</button>
+        <button id="logoutBtn" style="width:100%; padding:15px; background:transparent; border:1px solid #ff4d4d; color:#ff4d4d; border-radius:8px; font-weight:bold;">Log Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div id="forgotModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff;">
+      <h3 style="margin-bottom:15px;">Reset Password</h3>
+      <input type="email" id="forgotEmail" placeholder="Your Email" style="width:100%; margin:10px 0; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px;">
+      <div id="forgotMsg" style="color:#ff4d4d; font-size:12px; margin-bottom:10px;"></div>
+      <button id="sendResetBtn" style="width:100%; padding:10px; background:#4ea8ff; border:none; color:#fff; border-radius:8px; margin-bottom:5px;">Send Reset Link</button>
+      <button id="closeForgot" style="width:100%; padding:10px; background:transparent; border:none; color:#888;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Generic List Modal (Followers/Following) -->
+  <div id="listModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff; max-height:80vh;
