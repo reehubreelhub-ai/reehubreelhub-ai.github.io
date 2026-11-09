@@ -8,6 +8,23 @@
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
+  <!-- ✅ ERROR CATCHER: Ye JS ki galtiyan screen par dikhayega -->
+  <script>
+    window.addEventListener('error', function(e) {
+      var msg = e.message || 'Unknown Error';
+      var src = e.filename ? e.filename.split('/').pop() : 'Unknown File';
+      var line = e.lineno || 0;
+      var errorBox = document.getElementById('debug-error-box');
+      if (!errorBox) {
+        errorBox = document.createElement('div');
+        errorBox.id = 'debug-error-box';
+        errorBox.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; background: #ff4d4d; color: white; padding: 15px; font-size: 13px; z-index: 999999; font-family: monospace; word-break: break-all; box-shadow: 0 4px 10px rgba(0,0,0,0.5);';
+        document.body.appendChild(errorBox);
+      }
+      errorBox.innerHTML = '<div style="margin-bottom:5px;"><b>⚠️ Error:</b> ' + msg + ' <br>📁 <b>File:</b> ' + src + ' <br>📍 <b>Line:</b> ' + line + '</div><button onclick="this.parentNode.remove()" style="background:#fff; color:#ff4d4d; border:none; padding:5px 10px; border-radius:5px; font-weight:bold;">Close</button>';
+    });
+  </script>
+
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; }
     body { background-color: #0a0a0f; color: #ffffff; overflow: hidden; }
@@ -415,4 +432,119 @@
 
   <!-- Generic List Modal (Followers/Following) -->
   <div id="listModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
-    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff; max-height:80vh;
+    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff; max-height:80vh; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3 id="listTitle">List</h3><button id="closeList" style="background:none; border:none; color:#fff; font-size:20px;">✕</button></div>
+      <div id="userList" style="overflow-y:auto; flex:1;"></div>
+    </div>
+  </div>
+
+  <!-- Blocked Users Modal -->
+  <div id="blockedUsersModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff; max-height:80vh; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Blocked Users</h3><button id="closeBlockedUsers" style="background:none; border:none; color:#fff; font-size:20px;">✕</button></div>
+      <div id="blockedUsersList" style="overflow-y:auto; flex:1;"></div>
+    </div>
+  </div>
+
+  <!-- New Chat Modal -->
+  <div id="newChatModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff; max-height:80vh; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>New Chat</h3><button id="closeNewChat" style="background:none; border:none; color:#fff; font-size:20px;">✕</button></div>
+      <input id="newChatSearch" placeholder="Search users..." style="width:100%; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px; margin-bottom:10px;">
+      <div id="newChatResults" style="overflow-y:auto; flex:1;"></div>
+    </div>
+  </div>
+
+  <!-- New Group Modal -->
+  <div id="newGroupModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff; max-height:80vh; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h3>Create Group</h3><button id="closeNewGroup" style="background:none; border:none; color:#fff; font-size:20px;">✕</button></div>
+      <input id="groupNameInput" placeholder="Group Name" style="width:100%; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px; margin-bottom:10px;">
+      <div id="selectedMembersList" style="margin-bottom:10px; display:flex; flex-wrap:wrap; gap:5px;"></div>
+      <input id="groupSearchInput" placeholder="Search members..." style="width:100%; padding:10px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px; margin-bottom:10px;">
+      <div id="groupSearchResults" style="overflow-y:auto; flex:1; max-height:30vh; margin-bottom:10px;"></div>
+      <button id="createGroupBtn" disabled style="width:100%; padding:12px; background:#4ea8ff; border:none; color:#fff; border-radius:8px; opacity:0.5;">Create Group</button>
+    </div>
+  </div>
+  
+  <!-- Story Upload Modal -->
+  <div id="storyUploadModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:#1a1a24; padding:20px; border-radius:12px; max-width:400px; width:90%; color:#fff;">
+      <h3 style="margin-bottom:15px;">Add Story</h3>
+      <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <button class="story-upload-tab active" data-type="photo" style="flex:1; padding:8px; background:#333; border:none; color:#fff; border-radius:5px;">Photo</button>
+        <button class="story-upload-tab" data-type="video" style="flex:1; padding:8px; background:#333; border:none; color:#fff; border-radius:5px;">Video</button>
+      </div>
+      <div id="storyPickerWrap">
+        <p id="storyPickerTitle" style="font-weight:bold; margin-bottom:5px;"></p>
+        <p id="storyPickerSubtitle" style="font-size:12px; color:#888; margin-bottom:10px;"></p>
+        <input type="file" id="storyFileInput" style="color:#fff; margin-bottom:10px;">
+        <button id="storyPickerLabel" style="display:none;"></button>
+      </div>
+      <div id="storyPreviewWrap" style="display:none; margin-bottom:10px;"><img id="storyPreviewImg" style="width:100%; border-radius:8px; max-height:200px; object-fit:contain;"></div>
+      <div id="storyVideoPreviewWrap" style="display:none; margin-bottom:10px;">
+        <video id="storyPreviewVideo" style="width:100%; border-radius:8px; max-height:200px;" controls></video>
+        <p id="storyPreviewInfo" style="font-size:12px; color:#888;"></p>
+      </div>
+      <div id="storyUploadMsg" style="color:#ff4d4d; font-size:12px; margin-bottom:10px;"></div>
+      <div id="storyProgressWrap" style="display:none; margin-bottom:10px;">
+        <div style="background:#333; height:8px; border-radius:4px;"><div id="storyProgressBar" style="background:#4ea8ff; height:100%; width:0%; transition:width 0.2s;"></div></div>
+        <div id="storyProgressText" style="font-size:12px; text-align:right;">0%</div>
+      </div>
+      <button id="storySubmitBtn" disabled style="width:100%; padding:10px; background:#4ea8ff; border:none; color:#fff; border-radius:8px; opacity:0.5; margin-bottom:5px;">Upload Story</button>
+      <button id="closeStoryUpload" style="width:100%; padding:10px; background:transparent; border:none; color:#888;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Story Viewer (Full Screen) -->
+  <div id="storyViewer" style="display:none; position:fixed; inset:0; background:#000; z-index:2000;">
+    <div id="storyProgressBars" style="display:flex; gap:2px; padding:10px;"></div>
+    <div style="display:flex; justify-content:space-between; padding:0 15px; align-items:center; margin-bottom:10px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <img id="storyUserAvatar" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+        <span id="storyUserName" style="color:#fff; font-weight:bold;"></span>
+        <span id="storyTime" style="color:#aaa; font-size:12px;"></span>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button id="storyViewersBtn" style="display:none; background:none; border:none; color:#fff; font-size:16px;">👁️ <span id="storyViewersCount">0</span></button>
+        <button id="storyDeleteBtn" style="display:none; background:none; border:none; color:#ff4d4d; font-size:16px;">🗑️</button>
+        <button id="storyCloseBtn" style="background:none; border:none; color:#fff; font-size:24px;">✕</button>
+      </div>
+    </div>
+    <div id="storyMedia" style="height:80vh; display:flex; align-items:center; justify-content:center;"></div>
+    <div id="storyTapLeft" style="position:absolute; left:0; top:80px; bottom:80px; width:50%; z-index:10;"></div>
+    <div id="storyTapRight" style="position:absolute; right:0; top:80px; bottom:80px; width:50%; z-index:10;"></div>
+  </div>
+
+  <!-- Highlights Modal -->
+  <div id="highlightModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:1000; color:#fff; padding:20px; overflow-y:auto;">
+    <div style="max-width:400px; margin:50px auto; background:#1a1a24; padding:20px; border-radius:12px;">
+      <h3 id="highlightModalTitle" style="margin-bottom:15px;">New Highlight</h3>
+      <input id="highlightNameInput" placeholder="Highlight Name" style="width:100%; margin-bottom:15px; padding:12px; background:#121212; border:1px solid #333; color:#fff; border-radius:5px;">
+      <div id="highlightStoriesPicker" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:5px; margin-bottom:15px; max-height:200px; overflow-y:auto;"></div>
+      <div id="highlightCoverPicker" style="display:flex; gap:5px; margin-bottom:15px; overflow-x:auto; padding-bottom:5px;"></div>
+      <div id="highlightMsg" style="color:#ff4d4d; font-size:12px; margin-bottom:10px;"></div>
+      <button id="saveHighlightBtn" style="width:100%; padding:12px; background:#4ea8ff; color:#fff; border:none; border-radius:8px; margin-bottom:5px;">Create Highlight</button>
+      <button id="closeHighlightModal" style="width:100%; padding:12px; background:transparent; border:none; color:#888;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Reaction Picker -->
+  <div id="reactionPicker" style="display:none; position:fixed; background:#1a1a24; padding:8px 12px; border-radius:30px; box-shadow:0 4px 15px rgba(0,0,0,0.5); z-index:3000; gap:8px;">
+    <button data-emoji="❤️" style="background:none; border:none; font-size:24px; cursor:pointer;">❤️</button>
+    <button data-emoji="😂" style="background:none; border:none; font-size:24px; cursor:pointer;">😂</button>
+    <button data-emoji="😮" style="background:none; border:none; font-size:24px; cursor:pointer;">😮</button>
+    <button data-emoji="😢" style="background:none; border:none; font-size:24px; cursor:pointer;">😢</button>
+    <button data-emoji="👍" style="background:none; border:none; font-size:24px; cursor:pointer;">👍</button>
+    <button data-emoji="🔥" style="background:none; border:none; font-size:24px; cursor:pointer;">🔥</button>
+  </div>
+
+  <!-- ==========================================
+       5. SCRIPTS
+       ========================================== -->
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="auth.js"></script>
+  <script type="module" src="app.js"></script>
+
+</body>
+</html>
